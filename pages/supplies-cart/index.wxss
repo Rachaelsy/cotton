@@ -1,0 +1,397 @@
+/* pages/supplies-cart/index.wxss — 购物车样式 */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ===== 顶部导航 ===== */
+.cart-nav {
+  background: #ffffff;
+  padding-left: 28rpx;
+  padding-right: 28rpx;
+  padding-bottom: 24rpx;
+  border-bottom: 1rpx solid #F2EBE0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+
+.nav-back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  background: #F5EEE6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.back-icon {
+  font-size: 44rpx;
+  color: #1A1A1A;
+  font-weight: 300;
+}
+
+.nav-title-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.nav-title {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+}
+
+.nav-count {
+  font-size: 26rpx;
+  color: #888888;
+}
+
+.nav-manage { }
+
+.manage-text {
+  font-size: 26rpx;
+  color: #C8902E;
+  font-weight: 600;
+}
+
+/* ===== 滚动区 ===== */
+.cart-scroll {
+  flex: 1;
+  height: 0;
+}
+
+/* ===== 空购物车 ===== */
+.empty-cart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 40rpx;
+  gap: 24rpx;
+}
+
+.empty-icon { font-size: 96rpx; }
+
+.empty-text {
+  font-size: 28rpx;
+  color: #888888;
+}
+
+.go-shopping-btn {
+  background: #C8902E;
+  border-radius: 999rpx;
+  padding: 20rpx 56rpx;
+}
+
+.go-shopping-text {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ===== 店铺分组 ===== */
+.store-group {
+  background: #ffffff;
+  border-radius: 28rpx;
+  margin: 20rpx 28rpx 0;
+  overflow: hidden;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+}
+
+.store-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  padding: 24rpx 28rpx;
+  border-bottom: 1rpx solid #F2EBE0;
+}
+
+.store-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+  flex: 1;
+}
+
+.store-cert {
+  background: #E8F5E9;
+  color: #2E7D32;
+  font-size: 20rpx;
+  font-weight: 700;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.store-disc {
+  background: #FFF3E0;
+  color: #E65100;
+  font-size: 20rpx;
+  font-weight: 700;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+/* ===== 勾选框 ===== */
+.chk {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 3rpx solid #EEE5D8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chk-on {
+  background: #C8902E;
+  border-color: #C8902E;
+}
+
+.chk-mark {
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+/* ===== 购物车商品行 ===== */
+.cart-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 24rpx 28rpx;
+  border-bottom: 1rpx solid #F2EBE0;
+}
+
+.cart-row:last-child { border-bottom: none; }
+
+.cart-row-sel { background: #FBF5EA; }
+
+.cart-img {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cart-img-icon { font-size: 68rpx; }
+
+.cart-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.cart-name {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cart-spec {
+  font-size: 22rpx;
+  color: #888888;
+}
+
+.cart-price-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8rpx;
+}
+
+.cart-price {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #FF3B30;
+}
+
+/* 数量控制 */
+.qty-ctrl {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border: 1rpx solid #EEE5D8;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.qty-btn {
+  width: 56rpx;
+  height: 52rpx;
+  background: #F8F8F8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-btn-text {
+  font-size: 30rpx;
+  color: #1A1A1A;
+  font-weight: 700;
+}
+
+.qty-num {
+  width: 60rpx;
+  height: 52rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+  border-left: 1rpx solid #F2EBE0;
+  border-right: 1rpx solid #F2EBE0;
+}
+
+.qty-display {
+  font-size: 24rpx;
+  color: #888888;
+}
+
+/* ===== 推荐区 ===== */
+.rec-section {
+  margin: 28rpx 28rpx 0;
+}
+
+.rec-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.rec-scroll { white-space: nowrap; }
+
+.rec-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 20rpx;
+  margin-right: 16rpx;
+}
+
+.rec-icon { font-size: 56rpx; }
+
+/* ===== 底部操作栏 ===== */
+.cart-bottom {
+  background: #ffffff;
+  border-top: 1rpx solid #F2EBE0;
+  padding: 20rpx 28rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+  flex-shrink: 0;
+}
+
+/* 普通模式底部 */
+.select-all-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.select-all-text {
+  font-size: 24rpx;
+  color: #555555;
+}
+
+.total-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.total-price {
+  font-size: 36rpx;
+  font-weight: 900;
+  color: #FF3B30;
+  line-height: 1;
+}
+
+.total-disc {
+  font-size: 20rpx;
+  color: #4CAF50;
+}
+
+.checkout-btn {
+  background: linear-gradient(135deg, #FF6B00, #FF3B30);
+  border-radius: 999rpx;
+  padding: 24rpx 36rpx;
+}
+
+.checkout-text {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+/* 管理模式底部 */
+.select-all-btn {
+  flex: 1;
+  background: #F5EEE6;
+  border: 3rpx solid #EEE5D8;
+  border-radius: 999rpx;
+  padding: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.select-all-btn-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #555555;
+}
+
+.delete-btn {
+  flex: 2;
+  background: #F5222D;
+  border-radius: 999rpx;
+  padding: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 20rpx rgba(245, 34, 45, 0.35);
+}
+
+.delete-btn-off {
+  opacity: 0.38;
+  box-shadow: none;
+}
+
+.delete-btn-text {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #ffffff;
+}

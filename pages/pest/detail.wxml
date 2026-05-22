@@ -1,0 +1,108 @@
+<view class="page">
+
+  <!-- 顶部导航 + 病虫害头部信息 -->
+  <view class="header" style="padding-top:{{statusBarHeight}}px;">
+    <!-- 导航行 -->
+    <view class="nav-inner">
+      <view class="back-btn" bindtap="onBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <view class="nav-right" bindtap="onShare">
+        <text class="share-icon">⤴</text>
+      </view>
+    </view>
+
+    <!-- 病虫害主信息 -->
+    <view class="pest-hero">
+      <view class="pest-icon-wrap">
+        <text class="pest-icon">{{pest.icon}}</text>
+      </view>
+      <view class="pest-info">
+        <text class="pest-name">{{pest.name}}</text>
+        <view class="pest-type-badge">
+          <text class="pest-type-text">{{pest.type}}</text>
+        </view>
+      </view>
+      <view class="treat-days-wrap">
+        <text class="treat-days-num">{{pest.treatDays}}</text>
+        <text class="treat-days-label">天防治周期</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 可滚动主体 -->
+  <scroll-view class="scroll-body" scroll-y>
+
+    <!-- 严重程度卡片 -->
+    <view class="card severity-card">
+      <text class="card-title">严重程度</text>
+      <view class="severity-row">
+        <view
+          wx:for="{{severityLevels}}"
+          wx:key="value"
+          class="severity-item"
+        >
+          <view class="severity-dot {{pest.severity === item.value ? 'dot-active' : 'dot-inactive'}}">
+            <view wx:if="{{pest.severity === item.value}}" class="dot-inner"></view>
+          </view>
+          <text class="severity-label {{pest.severity === item.value ? 'label-active' : ''}}">{{item.label}}</text>
+        </view>
+        <!-- 连接线 -->
+        <view class="severity-line"></view>
+      </view>
+      <view class="severity-tip">
+        <text class="severity-tip-icon">⚠️</text>
+        <text class="severity-tip-text" style="color:{{pest.severityColor}};">当前为{{pest.severity}}，需在{{pest.treatDays}}天内完成防治</text>
+      </view>
+    </view>
+
+    <!-- 描述卡片 -->
+    <view class="card">
+      <text class="card-title">病虫害描述</text>
+      <text class="desc-text">{{pest.desc}}</text>
+    </view>
+
+    <!-- 处理方案卡片 -->
+    <view class="card">
+      <text class="card-title">防治方案</text>
+      <view
+        wx:for="{{pest.treatments}}"
+        wx:key="n"
+        class="treatment-item"
+      >
+        <view class="treatment-num-wrap">
+          <text class="treatment-num">{{index + 1}}</text>
+        </view>
+        <view class="treatment-content">
+          <text class="treatment-name">{{item.n}}</text>
+          <text class="treatment-desc">{{item.d}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 推荐农药卡片 -->
+    <view class="card">
+      <text class="card-title">推荐农药</text>
+      <view
+        wx:for="{{pest.products}}"
+        wx:key="name"
+        class="product-item"
+      >
+        <view class="product-icon-wrap">
+          <text class="product-icon">{{item.icon}}</text>
+        </view>
+        <view class="product-info">
+          <text class="product-name">{{item.name}}</text>
+          <text class="product-price">¥{{item.price}}</text>
+        </view>
+        <view class="buy-btn" bindtap="onBuyProduct" data-name="{{item.name}}">
+          <text class="buy-btn-text">去购买</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部留白 -->
+    <view class="bottom-gap"></view>
+
+  </scroll-view>
+</view>

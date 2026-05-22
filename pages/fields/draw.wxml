@@ -1,0 +1,82 @@
+<!-- pages/fields/draw.wxml — 地块边界绘制 -->
+<view class="page">
+  <!-- 导航 -->
+  <view class="draw-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="draw-back" bindtap="onBack"><text class="db-icon">‹</text></view>
+    <view class="draw-nav-center">
+      <text class="draw-title">绘制地块边界</text>
+      <text class="draw-sub">在地图上点击添加顶点</text>
+    </view>
+    <view class="draw-help"><text class="draw-help-text">?</text></view>
+  </view>
+
+  <!-- 地图绘制区 -->
+  <view class="map-area" bindtap="onMapTap">
+    <!-- 底图 -->
+    <view class="map-bg"></view>
+    <!-- 道路 -->
+    <view class="map-road-h"></view>
+    <view class="map-road-v"></view>
+    <!-- 地图标签 -->
+    <text class="map-lbl">疏附县农田区域</text>
+
+    <!-- SVG 多边形 -->
+    <view class="draw-svg-wrap">
+      <!-- 连线（用 view 模拟，不能用 SVG 在 Skyline） -->
+      <view class="pts-hint" wx:if="{{points.length === 0}}">
+        <text class="pts-hint-icon">👆</text>
+        <text class="pts-hint-text">点击屏幕添加地块顶点</text>
+      </view>
+      <!-- 顶点圆点 -->
+      <view
+        class="pt-dot {{index === 0 ? 'first' : ''}}"
+        wx:for="{{points}}"
+        wx:key="index"
+        style="left:{{item.x - 12}}px; top:{{item.y - 12}}px"
+      ></view>
+    </view>
+
+    <!-- 工具栏 -->
+    <view class="draw-toolbar">
+      <view class="draw-tool" bindtap="onUndo" style="{{!canUndo ? 'opacity:.4' : ''}}">
+        <text class="dt-icon">↩</text>
+        <text class="dt-lbl">撤销</text>
+      </view>
+      <view class="draw-tool" bindtap="onClear">
+        <text class="dt-icon">🗑</text>
+        <text class="dt-lbl">清空</text>
+      </view>
+    </view>
+
+    <!-- 提示 -->
+    <view class="draw-hint" wx:if="{{points.length >= 3}}">
+      <text class="dh-text">💡 可继续添加点，或点击下方<text class="dh-bold">确认保存</text></text>
+    </view>
+  </view>
+
+  <!-- 底部面板 -->
+  <view class="draw-panel">
+    <view class="draw-stats">
+      <view class="draw-stat">
+        <text class="ds-val">{{points.length}}</text>
+        <text class="ds-lbl">顶点数</text>
+      </view>
+      <view class="ds-div"></view>
+      <view class="draw-stat">
+        <text class="ds-val">{{area}}</text>
+        <text class="ds-lbl">预计面积(亩)</text>
+      </view>
+      <view class="ds-div"></view>
+      <view class="draw-stat">
+        <text class="ds-val">{{points.length > 0 ? '绘制中' : '未开始'}}</text>
+        <text class="ds-lbl">状态</text>
+      </view>
+    </view>
+    <view class="draw-btns">
+      <view class="draw-cancel-btn" bindtap="onBack"><text class="draw-cancel-text">取消</text></view>
+      <view class="draw-confirm-btn {{points.length < 3 ? 'disabled' : ''}}" bindtap="onConfirm">
+        <text class="draw-confirm-text">确认保存</text>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,67 @@
+/* app.wxss — 全局样式 */
+page {
+  --br: #C8902E;
+  --br-d: #9A6E1C;
+  --br-l: #F5E6C8;
+  --br-bg: #FBF5EA;
+  --ok: #4CAF50;
+  --ok-bg: #F1F8F1;
+  --warn: #FF6B00;
+  --warn-bg: #FFF3E6;
+  --danger: #F5222D;
+  --info: #1890FF;
+  --bg: #F5EEE6;
+  --card: #ffffff;
+  --t1: #1A1A1A;
+  --t2: #555555;
+  --t3: #888888;
+  --t4: #BBBBBB;
+  --bdr: #EEE5D8;
+  --div: #F2EBE0;
+  background-color: #F5EEE6;
+  font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  box-sizing: border-box;
+}
+
+/* 通用工具类 */
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex1 { flex: 1; }
+
+.text-center { text-align: center; }
+
+/* 通用标题栏左侧返回按钮 */
+.nav-back {
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.nav-back-dark {
+  width: 64rpx;
+  height: 64rpx;
+  background: #F5EEE6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  color: #1A1A1A;
+  flex-shrink: 0;
+}

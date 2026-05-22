@@ -1,0 +1,292 @@
+/* pages/my/index.wxss — 我的 */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ===== 顶部渐变 ===== */
+.my-header {
+  background: linear-gradient(180deg, #D0E8F5 0%, #E8DFD0 100%);
+  padding-left: 28rpx;
+  padding-right: 28rpx;
+  padding-bottom: 28rpx;
+  flex-shrink: 0;
+}
+
+.header-topbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  padding-top: 10rpx;
+  padding-bottom: 12rpx;
+}
+
+.settings-btn {
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-icon { font-size: 36rpx; }
+
+/* ===== 用户卡片 ===== */
+.user-card {
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 32rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+}
+
+.uc-top {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.uc-avatar {
+  width: 100rpx;
+  height: 100rpx;
+  background: linear-gradient(135deg, #F5A623, #E8901A);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.uc-avatar-text {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.uc-info { flex: 1; }
+
+.uc-name-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.uc-name {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+}
+
+.verified-chip {
+  background: #E8F5E9;
+  border-radius: 999rpx;
+  padding: 4rpx 16rpx;
+}
+
+.verified-text {
+  font-size: 20rpx;
+  color: #4CAF50;
+  font-weight: 700;
+}
+
+.uc-tags {
+  display: flex;
+  flex-direction: row;
+  gap: 10rpx;
+  flex-wrap: wrap;
+}
+
+.uc-tag {
+  background: rgba(200, 144, 46, 0.12);
+  border-radius: 999rpx;
+  padding: 4rpx 16rpx;
+}
+
+.uc-tag-text {
+  font-size: 22rpx;
+  color: #C8902E;
+  font-weight: 600;
+}
+
+.uc-arr {
+  font-size: 40rpx;
+  color: #BBBBBB;
+  flex-shrink: 0;
+}
+
+/* 统计 */
+.uc-stats {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #F2EBE0;
+}
+
+.uc-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.uc-stat-val-row {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4rpx;
+}
+
+.uc-stat-val {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+  line-height: 1;
+}
+
+.uc-stat-unit {
+  font-size: 20rpx;
+  color: #888888;
+}
+
+.uc-stat-label {
+  font-size: 22rpx;
+  color: #888888;
+}
+
+.uc-divider {
+  width: 1rpx;
+  height: 48rpx;
+  background: #F2EBE0;
+}
+
+/* ===== 滚动区 ===== */
+.my-scroll {
+  flex: 1;
+  height: 0;
+}
+
+/* ===== 菜单组 ===== */
+.menu-group {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 28rpx;
+  margin: 24rpx 28rpx 0;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+  padding: 28rpx;
+}
+
+.mi-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mi-icon.blue   { background: #EBF3FB; }
+.mi-icon.red    { background: #FDE8EE; }
+.mi-icon.orange { background: #FFF3E0; }
+.mi-icon.green  { background: #E8F5E9; }
+
+.mi-emoji { font-size: 36rpx; }
+
+.mi-body { flex: 1; }
+
+.mi-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.mi-sub {
+  font-size: 22rpx;
+  color: #888888;
+  display: block;
+}
+
+.mi-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8rpx;
+  flex-shrink: 0;
+}
+
+.mi-verified {
+  font-size: 24rpx;
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.mi-count {
+  font-size: 28rpx;
+  color: #888888;
+  font-weight: 600;
+}
+
+.mi-badge-warn {
+  background: #FFF3E6;
+  border-radius: 999rpx;
+  padding: 4rpx 16rpx;
+}
+
+.mi-badge-text {
+  font-size: 22rpx;
+  color: #FF6B00;
+  font-weight: 700;
+}
+
+.mi-version {
+  font-size: 24rpx;
+  color: #888888;
+}
+
+.mi-arr {
+  font-size: 36rpx;
+  color: #BBBBBB;
+}
+
+.mi-div {
+  height: 1rpx;
+  background: #F2EBE0;
+  margin: 0 28rpx;
+}
+
+/* ===== 退出登录 ===== */
+.logout-wrap {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 28rpx;
+  margin: 20rpx 28rpx 0;
+  padding: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.logout-text {
+  font-size: 30rpx;
+  color: #F5222D;
+  font-weight: 600;
+}

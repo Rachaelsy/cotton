@@ -1,0 +1,123 @@
+<!-- pages/ai/index.wxml — AI问答 -->
+<view class="page">
+
+  <!-- 顶部导航 -->
+  <view class="ai-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="ai-nav-inner">
+      <view class="ai-avatar-wrap">
+        <view class="ai-avatar">
+          <text class="ai-avatar-emoji">🤖</text>
+        </view>
+        <view class="ai-online-dot"></view>
+      </view>
+      <view class="ai-nav-center">
+        <view class="ai-title-row">
+          <text class="ai-name">小棉 AI 助手</text>
+          <view class="ai-badge"><text class="ai-badge-text">AI</text></view>
+        </view>
+        <view class="ai-status-row">
+          <view class="ai-status-dot"></view>
+          <text class="ai-status-text">在线 · 随时为您服务</text>
+        </view>
+      </view>
+      <view class="ai-more-btn" bindtap="onMore">
+        <text class="ai-more-icon">···</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 聊天区域 -->
+  <scroll-view class="chat-scroll" scroll-y scroll-into-view="{{scrollToId}}" scroll-with-animation>
+
+    <view class="chat-date-line">
+      <text class="chat-date-text">今天 {{timeStr}}</text>
+    </view>
+
+    <!-- AI 欢迎卡片 -->
+    <view class="chat-ai-card">
+      <view class="cac-head">
+        <view class="cac-avatar"><text class="cac-avatar-emoji">🤖</text></view>
+        <view class="cac-info">
+          <view class="cac-name-row">
+            <text class="cac-name">小棉</text>
+            <view class="cac-ai-chip"><text class="cac-ai-text">AI</text></view>
+          </view>
+          <text class="cac-sub">我是您的专属农业助手</text>
+        </view>
+      </view>
+      <text class="cac-body">古丽大姐您好！我是<text class="cac-bold">小棉</text>，您可以说话或打字问我任何问题，比如「今天能打药吗」「我要卖棉花」，我都能帮您 😊</text>
+      <view class="quick-grid">
+        <view class="quick-item" wx:for="{{quickList}}" wx:key="index" bindtap="onQuick" data-q="{{item.t}}">
+          <text class="quick-icon">{{item.i}}</text>
+          <text class="quick-text">{{item.t}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 消息列表 -->
+    <view wx:for="{{messages}}" wx:key="id" id="msg{{item.id}}">
+      <!-- 用户消息 -->
+      <view wx:if="{{item.role === 'user'}}" class="msg-row user-row">
+        <view class="user-avatar"><text class="user-avatar-text">农</text></view>
+        <view class="msg-body">
+          <text class="msg-nm-right">我</text>
+          <view class="bubble user-bubble"><text class="bubble-text">{{item.text}}</text></view>
+        </view>
+      </view>
+      <!-- AI 消息 -->
+      <view wx:else class="msg-row ai-row">
+        <view class="cac-avatar sm"><text class="cac-avatar-emoji">🤖</text></view>
+        <view class="msg-body">
+          <text class="msg-nm-left">小棉 · {{item.time}}</text>
+          <view class="bubble ai-bubble"><text class="bubble-text">{{item.text}}</text></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 打字中 -->
+    <view wx:if="{{typing}}" class="msg-row ai-row">
+      <view class="cac-avatar sm"><text class="cac-avatar-emoji">🤖</text></view>
+      <view class="msg-body">
+        <text class="msg-nm-left">小棉</text>
+        <view class="bubble ai-bubble typing-bubble">
+          <view class="tdot"></view>
+          <view class="tdot"></view>
+          <view class="tdot"></view>
+        </view>
+      </view>
+    </view>
+
+    <view id="bottom" style="height: 20rpx"></view>
+  </scroll-view>
+
+  <!-- 底部输入区 -->
+  <view class="chat-bottom">
+    <scroll-view class="quick-row" scroll-x>
+      <view class="quick-chip" wx:for="{{chips}}" wx:key="index" bindtap="onQuick" data-q="{{item}}">
+        <text class="quick-chip-text">{{item}}</text>
+      </view>
+    </scroll-view>
+    <view class="input-row">
+      <view class="kbd-btn" bindtap="onToggleInput">
+        <text class="kbd-icon">{{voiceMode ? '⌨️' : '🎤'}}</text>
+      </view>
+      <view wx:if="{{voiceMode}}" class="voice-btn" bindtap="onVoice">
+        <text class="voice-btn-icon">🎤</text>
+        <text class="voice-btn-text">按住说话</text>
+      </view>
+      <input
+        wx:else
+        class="txt-input"
+        value="{{inputText}}"
+        bindinput="onInput"
+        placeholder="问问小棉..."
+        confirm-type="send"
+        bindconfirm="onSend"
+      />
+      <view class="send-btn {{inputText ? '' : 'off'}}" bindtap="onSend">
+        <text class="send-icon">▲</text>
+      </view>
+    </view>
+  </view>
+
+</view>

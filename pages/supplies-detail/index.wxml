@@ -1,0 +1,156 @@
+<!-- pages/supplies-detail/index.wxml — 商品详情页 -->
+<view class="page" wx:if="{{product}}">
+
+  <!-- 商品图区（含悬浮按钮） -->
+  <view class="prod-hero" style="background: {{product.imgBg}}; padding-top: {{statusBarHeight}}px">
+    <!-- 返回 & 收藏 -->
+    <view class="hero-actions">
+      <view class="hero-back" bindtap="onBack">
+        <text class="hero-back-icon">‹</text>
+      </view>
+      <view class="hero-right-btns">
+        <view class="hero-icon-btn" bindtap="onFavorite">
+          <text>♡</text>
+        </view>
+        <view class="hero-icon-btn" bindtap="onShare">
+          <text>↑</text>
+        </view>
+      </view>
+    </view>
+    <!-- 商品大图（emoji） -->
+    <view class="hero-img-wrap">
+      <text class="hero-icon">{{product.icon}}</text>
+    </view>
+    <view class="hero-pager">
+      <text class="pager-text">1 / 8</text>
+    </view>
+  </view>
+
+  <!-- 可滚动主体 -->
+  <scroll-view class="detail-scroll" scroll-y>
+
+    <!-- 价格区 -->
+    <view class="price-section">
+      <view class="price-row">
+        <text class="price-symbol">¥</text>
+        <text class="price-main">{{product.price}}</text>
+        <text class="price-orig">¥{{product.origPrice}}</text>
+      </view>
+      <!-- 优惠标签 -->
+      <view class="tags-row">
+        <text class="det-tag" wx:if="{{product.discount}}">{{product.discount}}</text>
+        <text class="det-tag">满600优惠30</text>
+        <text class="det-tag">新人立减5元</text>
+      </view>
+      <!-- 商品名称 -->
+      <text class="prod-name">{{product.name}}</text>
+      <!-- 销售统计 -->
+      <view class="stats-row">
+        <text class="stat-item">已售 <text class="stat-bold">{{product.sold}}</text></text>
+        <text class="stat-item">⭐ <text class="stat-bold">{{product.rating}}分</text></text>
+        <text class="stat-item">⚡ <text class="stat-bold">48h发货</text></text>
+      </view>
+    </view>
+
+    <!-- 配送方式 -->
+    <view class="section">
+      <text class="section-title">配送方式</text>
+      <view class="delivery-opts">
+        <view
+          class="del-opt {{delivery === 'home' ? 'del-opt-on' : ''}}"
+          bindtap="onDelivery"
+          data-type="home"
+        >
+          <text class="del-opt-icon">🚚</text>
+          <text class="del-opt-name">送货上门</text>
+          <text class="del-opt-desc">到地头 · ¥10</text>
+        </view>
+        <view
+          class="del-opt {{delivery === 'pickup' ? 'del-opt-on' : ''}}"
+          bindtap="onDelivery"
+          data-type="pickup"
+        >
+          <text class="del-opt-icon">🏪</text>
+          <text class="del-opt-name">门店自提</text>
+          <text class="del-opt-desc">疏附县分仓 · 免费</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 预计到达 -->
+    <view class="eta-row">
+      <text>📅</text>
+      <text class="eta-label">预计送达</text>
+      <text class="eta-val">两日内 · 送到地头</text>
+    </view>
+
+    <!-- 店铺信息 -->
+    <view class="store-row">
+      <text class="store-icon">🏪</text>
+      <view class="store-info">
+        <text class="store-name">{{product.store}}</text>
+        <text class="store-sub">{{product.storeVerified ? '✓ 官方认证商家 · ' : '普通商家 · '}}自营配送</text>
+      </view>
+      <text class="store-enter" bindtap="onEnterStore">进店 ›</text>
+    </view>
+
+    <!-- 规格参数 -->
+    <view class="section">
+      <text class="section-title">商品规格</text>
+      <view class="spec-row">
+        <text class="spec-label">规格</text>
+        <text class="spec-val">{{product.spec}}</text>
+      </view>
+      <view class="spec-row">
+        <text class="spec-label">分类</text>
+        <text class="spec-val">{{product.cat}}</text>
+      </view>
+      <view class="spec-row">
+        <text class="spec-label">单位</text>
+        <text class="spec-val">{{product.unit}}</text>
+      </view>
+    </view>
+
+    <!-- 服务承诺 -->
+    <view class="promise-row">
+      <text class="promise-icon">🛡</text>
+      <text class="promise-text">7天无理由退换 · 假一赔十 · 正品保证</text>
+    </view>
+
+    <view style="height: 160rpx"></view>
+  </scroll-view>
+
+  <!-- 底部操作栏（fixed） -->
+  <view class="action-bar">
+    <view class="action-icons">
+      <view class="action-icon" bindtap="onGoStore">
+        <text class="ai-icon">🏪</text>
+        <text class="ai-label">店铺</text>
+      </view>
+      <view class="action-icon" bindtap="onCustomerService">
+        <text class="ai-icon">💬</text>
+        <text class="ai-label">客服</text>
+      </view>
+      <view class="action-icon" bindtap="onGoCart">
+        <text class="ai-icon">🛒</text>
+        <text class="ai-label">购物车</text>
+        <view wx:if="{{cartCount > 0}}" class="action-badge">
+          <text class="action-badge-text">{{cartCount}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="action-divider"></view>
+    <view class="btn-cart" bindtap="onAddToCart">
+      <text class="btn-text">加入购物车</text>
+    </view>
+    <view class="btn-buy" bindtap="onBuyNow">
+      <text class="btn-text">立即购买</text>
+    </view>
+  </view>
+
+</view>
+
+<!-- 商品不存在时 -->
+<view wx:else class="not-found">
+  <text class="not-found-text">商品加载中...</text>
+</view>

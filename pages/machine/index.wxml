@@ -1,0 +1,93 @@
+<!-- pages/machine/index.wxml — 农机租赁列表页 -->
+<view class="page">
+
+  <!-- ===== 青色渐变头部 ===== -->
+  <view class="mach-header" style="padding-top: {{statusBarHeight}}px">
+    <view class="topbar">
+      <view class="topbar-titles">
+        <text class="page-title">🚜 农机租赁</text>
+        <text class="page-subtitle">FARM MACHINERY</text>
+      </view>
+    </view>
+
+    <!-- 快速筛选标签 -->
+    <view class="filter-tabs">
+      <view
+        class="filter-tab {{filterSel === item ? 'filter-tab-on' : ''}}"
+        wx:for="{{filters}}"
+        wx:key="*this"
+        bindtap="onFilter"
+        data-name="{{item}}"
+      >
+        <text class="filter-tab-text">{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 可滚动内容区 ===== -->
+  <scroll-view class="scroll-content" scroll-y enable-back-to-top style="flex:1; height:0;">
+
+    <view class="machine-list">
+      <view
+        class="machine-card"
+        wx:for="{{displayMachines}}"
+        wx:key="id"
+        bindtap="onMachine"
+        data-id="{{item.id}}"
+      >
+        <!-- 卡片左侧：图标 -->
+        <view class="card-icon-wrap">
+          <text class="card-icon">{{item.icon}}</text>
+        </view>
+
+        <!-- 卡片右侧：信息 -->
+        <view class="card-body">
+          <!-- 名称行 -->
+          <view class="card-name-row">
+            <text class="card-name">{{item.name}}</text>
+            <view class="status-badge {{item.status === 'available' ? 'badge-green' : 'badge-orange'}}">
+              <text class="badge-text">{{item.statusText}}</text>
+            </view>
+          </view>
+
+          <!-- 机构 -->
+          <text class="card-org">🏢 {{item.org}}</text>
+
+          <!-- 参数行 -->
+          <view class="card-params">
+            <view
+              class="param-item"
+              wx:for="{{item.params}}"
+              wx:key="label"
+              wx:for-item="p"
+            >
+              <text class="param-label">{{p.label}}</text>
+              <text class="param-value">{{p.value}}</text>
+            </view>
+          </view>
+
+          <!-- 底部：价格 + 评分 + 预约按钮 -->
+          <view class="card-bottom">
+            <view class="price-wrap">
+              <text class="price-main">¥{{item.price}}</text>
+              <text class="price-unit">/亩</text>
+            </view>
+            <text class="card-rating">⭐{{item.rating}}</text>
+            <view class="book-btn">
+              <text class="book-btn-text">预约</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 无结果 -->
+    <view wx:if="{{displayMachines.length === 0}}" class="empty-tip">
+      <text class="empty-icon">🔍</text>
+      <text class="empty-text">该分类暂无农机</text>
+    </view>
+
+    <view class="list-bottom"></view>
+  </scroll-view>
+
+</view>

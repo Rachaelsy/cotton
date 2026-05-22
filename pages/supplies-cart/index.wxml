@@ -1,0 +1,146 @@
+<!-- pages/supplies-cart/index.wxml — 购物车 -->
+<view class="page">
+
+  <!-- 顶部导航 -->
+  <view class="cart-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="nav-back-btn" bindtap="onBack">
+      <text class="back-icon">‹</text>
+    </view>
+    <view class="nav-title-wrap">
+      <text class="nav-title">购物车</text>
+      <text class="nav-count" wx:if="{{cartItems.length > 0}}">{{cartItems.length}}件</text>
+    </view>
+    <view class="nav-manage" bindtap="onManage" wx:if="{{cartItems.length > 0}}">
+      <text class="manage-text">{{manage ? '完成' : '管理'}}</text>
+    </view>
+    <view style="width: 80rpx" wx:else></view>
+  </view>
+
+  <!-- 购物车内容 -->
+  <scroll-view class="cart-scroll" scroll-y>
+
+    <!-- 空购物车 -->
+    <view wx:if="{{cartItems.length === 0}}" class="empty-cart">
+      <text class="empty-icon">🛒</text>
+      <text class="empty-text">购物车是空的</text>
+      <view class="go-shopping-btn" bindtap="onGoShopping">
+        <text class="go-shopping-text">去逛逛</text>
+      </view>
+    </view>
+
+    <!-- 购物车商品（按店铺分组） -->
+    <view wx:else>
+      <view class="store-group" wx:for="{{cartGroups}}" wx:key="store">
+        <!-- 店铺头部 -->
+        <view class="store-header">
+          <view
+            class="chk {{manage ? (isStoreAllSelected(item) ? 'chk-on' : '') : 'chk-on'}}"
+            bindtap="onToggleStore"
+            data-store="{{item.store}}"
+            wx:if="{{manage}}"
+          >
+            <text class="chk-mark" wx:if="{{selectedIds.indexOf(item.items[0].id) >= 0 || !manage}}">✓</text>
+          </view>
+          <view class="chk chk-on" wx:else>
+            <text class="chk-mark">✓</text>
+          </view>
+          <text class="store-name">{{item.store}}</text>
+          <text class="store-cert" wx:if="{{item.verified}}">✓认证</text>
+          <text class="store-disc" wx:if="{{item.discount}}">{{item.discount}}</text>
+        </view>
+
+        <!-- 店铺商品 -->
+        <view
+          class="cart-row {{manage && selectedIds.indexOf(ci.id) >= 0 ? 'cart-row-sel' : ''}}"
+          wx:for="{{item.items}}"
+          wx:for-item="ci"
+          wx:key="id"
+          bindtap="onToggleSel"
+          data-id="{{ci.id}}"
+        >
+          <!-- 勾选框 -->
+          <view class="chk {{selectedIds.indexOf(ci.id) >= 0 ? 'chk-on' : ''}}" wx:if="{{manage}}">
+            <text class="chk-mark" wx:if="{{selectedIds.indexOf(ci.id) >= 0}}">✓</text>
+          </view>
+          <view class="chk chk-on" wx:else>
+            <text class="chk-mark">✓</text>
+          </view>
+          <!-- 商品图 -->
+          <view class="cart-img" style="background: {{ci.imgBg}}">
+            <text class="cart-img-icon">{{ci.icon}}</text>
+          </view>
+          <!-- 商品信息 -->
+          <view class="cart-info">
+            <text class="cart-name">{{ci.name}}</text>
+            <text class="cart-spec">{{ci.spec}}</text>
+            <view class="cart-price-row">
+              <text class="cart-price">¥{{ci.price}}</text>
+              <!-- 数量控制（普通模式） -->
+              <view class="qty-ctrl" wx:if="{{!manage}}">
+                <view class="qty-btn" catchtap="onQtyMinus" data-id="{{ci.id}}">
+                  <text class="qty-btn-text">−</text>
+                </view>
+                <text class="qty-num">{{ci.qty}}</text>
+                <view class="qty-btn" catchtap="onQtyPlus" data-id="{{ci.id}}">
+                  <text class="qty-btn-text">＋</text>
+                </view>
+              </view>
+              <!-- 数量显示（管理模式） -->
+              <text class="qty-display" wx:else>×{{ci.qty}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 猜你喜欢 -->
+      <view class="rec-section" wx:if="{{!manage}}">
+        <text class="rec-title">💡 为您推荐</text>
+        <scroll-view class="rec-scroll" scroll-x>
+          <view
+            class="rec-item"
+            wx:for="{{recProds}}"
+            wx:key="id"
+            style="background: {{item.imgBg}}"
+            bindtap="onRecItem"
+            data-id="{{item.id}}"
+          >
+            <text class="rec-icon">{{item.icon}}</text>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view style="height: 160rpx"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部：普通结算 -->
+  <view class="cart-bottom" wx:if="{{cartItems.length > 0 && !manage}}">
+    <view class="select-all-wrap">
+      <view class="chk chk-on">
+        <text class="chk-mark">✓</text>
+      </view>
+      <text class="select-all-text">全选</text>
+    </view>
+    <view class="total-wrap">
+      <text class="total-price">¥{{cartTotal}}</text>
+      <text class="total-disc">已优惠¥30</text>
+    </view>
+    <view class="checkout-btn" bindtap="onCheckout">
+      <text class="checkout-text">去结算({{cartCount}})</text>
+    </view>
+  </view>
+
+  <!-- 底部：管理模式 -->
+  <view class="cart-bottom" wx:if="{{manage}}">
+    <view class="select-all-btn" bindtap="onSelectAll">
+      <text class="select-all-btn-text">全选/取消</text>
+    </view>
+    <view
+      class="delete-btn {{selectedIds.length === 0 ? 'delete-btn-off' : ''}}"
+      bindtap="onDeleteSelected"
+    >
+      <text class="delete-btn-text">🗑 删除{{selectedIds.length > 0 ? ' ' + selectedIds.length + '件' : ''}}</text>
+    </view>
+  </view>
+
+</view>

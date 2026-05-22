@@ -1,0 +1,427 @@
+/* pages/index/index.wxss — 首页 */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+  overflow: hidden;
+}
+
+.home-scroll {
+  flex: 1;
+  height: 0;
+}
+
+/* ===== 顶部渐变区 ===== */
+.home-top {
+  background: linear-gradient(180deg, #D8EAF5 0%, #EDE8DF 100%);
+  padding: 12rpx 32rpx 0;
+}
+
+.home-topbar {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 24rpx;
+}
+
+.home-topbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  flex: 1;
+}
+
+.home-greeting {
+  font-size: 24rpx;
+  color: #555555;
+}
+
+.home-title {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+  line-height: 1.25;
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 12rpx;
+  flex-shrink: 0;
+}
+
+.lang-pill {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1rpx solid rgba(200, 144, 46, 0.3);
+  border-radius: 999rpx;
+  padding: 8rpx 20rpx;
+  display: flex;
+  align-items: center;
+}
+
+.lang-pill-text {
+  font-size: 22rpx;
+  color: #C8902E;
+  font-weight: 600;
+}
+
+.notif-btn {
+  position: relative;
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-icon { font-size: 32rpx; }
+
+.notif-dot {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  width: 16rpx;
+  height: 16rpx;
+  background: #E53935;
+  border-radius: 50%;
+  border: 3rpx solid rgba(216, 234, 245, 0.9);
+}
+
+/* ===== 天气卡片 ===== */
+.weather-card {
+  background: #ffffff;
+  border-radius: 32rpx;
+  margin: 0 0 28rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+
+.wc-top {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.wc-loc-pill {
+  background: #F0F7FF;
+  border-radius: 999rpx;
+  padding: 6rpx 20rpx;
+  display: flex;
+  align-items: center;
+}
+
+.wc-loc-text {
+  font-size: 22rpx;
+  color: #1890FF;
+  font-weight: 600;
+}
+
+.wc-date {
+  font-size: 22rpx;
+  color: #888888;
+}
+
+.wc-main {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.wc-icon { font-size: 96rpx; line-height: 1; }
+
+.wc-temp {
+  font-size: 84rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+  line-height: 1;
+  margin-left: 8rpx;
+}
+
+.wc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  margin-left: 16rpx;
+}
+
+.wc-desc {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.wc-sub {
+  font-size: 22rpx;
+  color: #888888;
+}
+
+.wc-tip {
+  background: #FBF5EA;
+  border-radius: 20rpx;
+  padding: 18rpx 24rpx;
+}
+
+.wc-tip-text {
+  font-size: 24rpx;
+  color: #7A5020;
+  line-height: 1.6;
+}
+
+.tip-bold {
+  color: #C8902E;
+  font-weight: 700;
+}
+
+/* ===== 主体内容 ===== */
+.home-body {
+  background: #F5EEE6;
+}
+
+/* ===== 通用卡片 ===== */
+.hcard {
+  background: #ffffff;
+  border-radius: 32rpx;
+  margin: 24rpx 32rpx 0;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+}
+
+.hcard-last {
+  margin-bottom: 0;
+}
+
+.hcard-hd {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.hcard-title-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.hcard-bar {
+  width: 8rpx;
+  height: 32rpx;
+  background: #C8902E;
+  border-radius: 4rpx;
+}
+
+.hcard-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.hcard-more {
+  font-size: 24rpx;
+  color: #888888;
+}
+
+/* ===== 地块统计 ===== */
+.stat3 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.stat3-i {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.stat3-div {
+  width: 2rpx;
+  height: 48rpx;
+  background: #F2EBE0;
+}
+
+.stat3-v {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+  line-height: 1;
+}
+
+.stat3-v.ok  { color: #4CAF50; }
+.stat3-v.warn { color: #FF6B00; }
+
+.stat3-l {
+  font-size: 22rpx;
+  color: #888888;
+}
+
+.stat3-l-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 2rpx;
+}
+
+.stat3-unit {
+  font-size: 18rpx;
+  color: #888888;
+}
+
+/* ===== 拍照识别横幅 ===== */
+.photo-banner {
+  background: linear-gradient(135deg, #F5E0B0, #F0C870);
+  border-radius: 32rpx;
+  margin: 24rpx 32rpx 0;
+  padding: 28rpx;
+  position: relative;
+  overflow: hidden;
+}
+
+.pb-new {
+  position: absolute;
+  top: 16rpx;
+  left: 24rpx;
+  background: #F5222D;
+  border-radius: 999rpx;
+  padding: 4rpx 14rpx;
+}
+
+.pb-new-text {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pb-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24rpx;
+  margin-top: 28rpx;
+}
+
+.pb-icon-box {
+  width: 96rpx;
+  height: 96rpx;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pb-cam { font-size: 48rpx; }
+
+.pb-txt { flex: 1; }
+
+.pb-title-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.pb-title {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #5A3200;
+}
+
+.pb-ai {
+  background: #1890FF;
+  border-radius: 8rpx;
+  padding: 4rpx 12rpx;
+}
+
+.pb-ai-text {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pb-sub {
+  font-size: 22rpx;
+  color: #7A5520;
+}
+
+.pb-btn {
+  background: #C8902E;
+  border-radius: 999rpx;
+  padding: 16rpx 28rpx;
+  flex-shrink: 0;
+}
+
+.pb-btn-text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+/* ===== 功能模块网格 ===== */
+.mod-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.mod-i {
+  width: 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+  padding-bottom: 28rpx;
+}
+
+.mod-icon {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.mod-emoji { font-size: 52rpx; }
+
+.mod-new {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  background: #1890FF;
+  border-radius: 999rpx;
+  padding: 2rpx 10rpx;
+}
+
+.mod-new-text {
+  font-size: 16rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.mod-name {
+  font-size: 22rpx;
+  color: #555555;
+  text-align: center;
+  line-height: 1.3;
+}

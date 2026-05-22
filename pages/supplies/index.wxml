@@ -1,0 +1,131 @@
+<!-- pages/supplies/index.wxml — 农资商城首页 -->
+<view class="page">
+
+  <!-- ===== 顶部渐变头部 ===== -->
+  <view class="sup-header" style="padding-top: {{statusBarHeight}}px">
+    <view class="topbar">
+      <view class="topbar-left">
+        <text class="page-title">🌾 农资供应</text>
+      </view>
+      <view class="cart-btn" bindtap="goCart">
+        <text class="cart-icon">🛒</text>
+        <view wx:if="{{cartCount > 0}}" class="cart-badge">
+          <text class="cart-badge-text">{{cartCount > 99 ? '99+' : cartCount}}</text>
+        </view>
+      </view>
+    </view>
+    <!-- 搜索栏 -->
+    <view class="search-bar" bindtap="onSearch">
+      <text class="search-icon">🔍</text>
+      <text class="search-placeholder">搜索农药、化肥、种子...</text>
+    </view>
+  </view>
+
+  <!-- ===== 可滚动内容区 ===== -->
+  <scroll-view class="scroll-content" scroll-y enable-back-to-top>
+
+    <!-- 限时秒杀 -->
+    <view class="flash-section">
+      <view class="flash-header">
+        <text class="flash-lightning">⚡</text>
+        <text class="flash-title">限时秒杀</text>
+        <text class="flash-sub">距结束</text>
+        <view class="flash-timer">
+          <text class="timer-num">{{timer.h}}</text>
+          <text class="timer-colon">:</text>
+          <text class="timer-num">{{timer.m}}</text>
+          <text class="timer-colon">:</text>
+          <text class="timer-num">{{timer.s}}</text>
+        </view>
+      </view>
+      <view class="flash-items">
+        <view
+          class="flash-item"
+          wx:for="{{flashProds}}"
+          wx:key="id"
+          bindtap="onFlashItem"
+          data-id="{{item.id}}"
+        >
+          <text class="flash-item-icon">{{item.icon}}</text>
+          <text class="flash-price">¥{{item.price}}</text>
+          <text class="flash-orig">¥{{item.origPrice}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 分类导航 -->
+    <view class="cats-section">
+      <view
+        class="cat-item"
+        wx:for="{{cats}}"
+        wx:key="name"
+        bindtap="onCat"
+        data-name="{{item.name}}"
+      >
+        <view class="cat-icon-wrap" style="background: {{item.bg}}">
+          <text class="cat-icon">{{item.icon}}</text>
+        </view>
+        <text class="cat-name {{catSel === item.name ? 'cat-name-on' : ''}}">{{item.name}}</text>
+      </view>
+    </view>
+
+    <!-- 活动横幅 -->
+    <view class="banners-row">
+      <view class="banner banner-spring" bindtap="onBanner">
+        <text class="banner-tag">春耕特惠</text>
+        <text class="banner-title">种子化肥</text>
+        <text class="banner-sub">全场8折起</text>
+      </view>
+      <view class="banner banner-cert" bindtap="onBanner">
+        <text class="banner-tag">质量保证</text>
+        <text class="banner-title">认证农资</text>
+        <text class="banner-sub">假一赔十</text>
+      </view>
+    </view>
+
+    <!-- 商品列表 -->
+    <view class="sec-header">
+      <text class="sec-title">棉农都在买</text>
+      <text class="sec-more">更多 ›</text>
+    </view>
+
+    <view class="prod-grid">
+      <view
+        class="prod-card"
+        wx:for="{{displayProds}}"
+        wx:key="id"
+        bindtap="onProduct"
+        data-id="{{item.id}}"
+      >
+        <view class="prod-img" style="background: {{item.imgBg}}">
+          <text class="prod-icon">{{item.icon}}</text>
+          <text wx:if="{{item.isNew}}" class="tag tag-new">新品</text>
+          <text wx:elif="{{item.hot}}" class="tag tag-hot">🔥热销</text>
+        </view>
+        <view class="prod-body">
+          <text class="prod-name">{{item.name}}</text>
+          <text class="prod-spec">{{item.spec}}</text>
+          <text class="prod-sold">已售{{item.sold}}件</text>
+          <view class="prod-bottom">
+            <view class="prod-price-wrap">
+              <text class="prod-price">¥{{item.price}}</text>
+              <text class="prod-unit">/{{item.unit}}</text>
+            </view>
+            <view class="add-btn" catchtap="onAddToCart" data-id="{{item.id}}">
+              <text class="add-btn-icon">＋</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 无商品提示 -->
+    <view wx:if="{{displayProds.length === 0}}" class="empty-tip">
+      <text class="empty-icon">🔍</text>
+      <text class="empty-text">该分类暂无商品</text>
+    </view>
+
+    <view class="list-bottom"></view>
+  </scroll-view>
+
+</view>

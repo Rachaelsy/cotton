@@ -1,0 +1,129 @@
+<!-- pages/index/index.wxml — 首页 -->
+<view class="page">
+  <scroll-view class="home-scroll" scroll-y enable-back-to-top>
+
+    <!-- 顶部渐变区 -->
+    <view class="home-top" style="padding-top: {{statusBarHeight}}px">
+      <view class="home-topbar">
+        <view class="home-topbar-left">
+          <text class="home-greeting">{{name}} · 早上好 👋</text>
+          <text class="home-title">{{location}}</text>
+        </view>
+        <view class="home-actions">
+          <view class="lang-pill" bindtap="onLang">
+            <text class="lang-pill-text">🌐 中 | ئۇ ▾</text>
+          </view>
+          <view class="notif-btn" bindtap="onNotification">
+            <text class="notif-icon">🔔</text>
+            <view class="notif-dot"></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 天气卡片 -->
+      <view class="weather-card">
+        <view class="wc-top">
+          <view class="wc-loc-pill">
+            <text class="wc-loc-text">📍 疏附县 · 3号地块</text>
+          </view>
+          <text class="wc-date">{{today}}</text>
+        </view>
+        <view class="wc-main">
+          <text class="wc-icon">🌤</text>
+          <text class="wc-temp">22°</text>
+          <view class="wc-info">
+            <text class="wc-desc">晴转多云</text>
+            <text class="wc-sub">8°~ 24° · 西北风3级</text>
+          </view>
+        </view>
+        <view class="wc-tip">
+          <text class="wc-tip-text">🌿 <text class="tip-bold">地温稳定在14°C以上</text>，适合棉花播种，建议今日完成 <text class="tip-bold">2号地块</text>播种作业</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 主体内容区 -->
+    <view class="home-body">
+
+      <!-- 我的地块 -->
+      <view class="hcard">
+        <view class="hcard-hd">
+          <view class="hcard-title-wrap">
+            <view class="hcard-bar"></view>
+            <text class="hcard-title">我的地块</text>
+          </view>
+          <text class="hcard-more" bindtap="onGoFields">查看全部 ›</text>
+        </view>
+        <view class="stat3">
+          <view class="stat3-i">
+            <text class="stat3-v">8</text>
+            <text class="stat3-l">承包地块</text>
+          </view>
+          <view class="stat3-div"></view>
+          <view class="stat3-i">
+            <text class="stat3-v ok">486</text>
+            <view class="stat3-l-wrap">
+              <text class="stat3-unit">亩</text>
+              <text class="stat3-l">种植总面积</text>
+            </view>
+          </view>
+          <view class="stat3-div"></view>
+          <view class="stat3-i">
+            <text class="stat3-v warn">2</text>
+            <text class="stat3-l">需关注</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 拍照识别 banner -->
+      <view class="photo-banner" bindtap="onPhotoBanner">
+        <view class="pb-new"><text class="pb-new-text">NEW</text></view>
+        <view class="pb-inner">
+          <view class="pb-icon-box">
+            <text class="pb-cam">📷</text>
+          </view>
+          <view class="pb-txt">
+            <view class="pb-title-row">
+              <text class="pb-title">拍照识别</text>
+              <view class="pb-ai"><text class="pb-ai-text">AI</text></view>
+            </view>
+            <text class="pb-sub">识病虫害 · 测元素缺失</text>
+          </view>
+          <view class="pb-btn">
+            <text class="pb-btn-text">去拍照 ›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 农事管家 -->
+      <view class="hcard hcard-last">
+        <view class="hcard-hd">
+          <view class="hcard-title-wrap">
+            <view class="hcard-bar"></view>
+            <text class="hcard-title">农事管家</text>
+          </view>
+        </view>
+        <view class="mod-grid">
+          <view
+            class="mod-i"
+            wx:for="{{modules}}"
+            wx:key="id"
+            bindtap="onModule"
+            data-action="{{item.action}}"
+          >
+            <view class="mod-icon" style="background: {{item.bg}}">
+              <text class="mod-emoji">{{item.icon}}</text>
+              <view wx:if="{{item.newTag}}" class="mod-new">
+                <text class="mod-new-text">NEW</text>
+              </view>
+            </view>
+            <text class="mod-name">{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+
+    </view>
+
+    <view style="height: 40rpx"></view>
+  </scroll-view>
+</view>

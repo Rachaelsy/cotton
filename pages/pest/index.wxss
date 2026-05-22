@@ -1,0 +1,281 @@
+/* ===== 全局页面 ===== */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ===== 导航栏 ===== */
+.nav-bar {
+  background: linear-gradient(160deg, #5D3A1A, #7B4F2A);
+  flex-shrink: 0;
+}
+.nav-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 28rpx;
+}
+.back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.back-icon {
+  font-size: 52rpx;
+  color: #fff;
+  font-weight: 300;
+  line-height: 1;
+}
+.nav-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 2rpx;
+}
+.nav-right {
+  width: 64rpx;
+}
+
+/* ===== 滚动主体 ===== */
+.scroll-body {
+  flex: 1;
+  height: 0;
+}
+
+/* ===== 拍照识别大卡片 ===== */
+.recognize-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: linear-gradient(135deg, #C8902E, #E5A84A);
+  border-radius: 28rpx;
+  margin: 32rpx 28rpx 0;
+  padding: 36rpx 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(200, 144, 46, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+.recognize-icon-wrap {
+  width: 100rpx;
+  height: 100rpx;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.recognize-icon {
+  font-size: 52rpx;
+  line-height: 1;
+}
+.recognize-text-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 28rpx;
+}
+.recognize-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8rpx;
+}
+.recognize-sub {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+.ai-badge {
+  position: absolute;
+  top: 24rpx;
+  right: 28rpx;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 20rpx;
+  padding: 6rpx 20rpx;
+}
+.ai-badge-text {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 2rpx;
+}
+
+/* ===== 相册 / 历史 按钮行 ===== */
+.btn-row {
+  display: flex;
+  flex-direction: row;
+  margin: 24rpx 28rpx 0;
+  gap: 20rpx;
+}
+.btn-small {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx 0;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.07);
+  gap: 12rpx;
+}
+.btn-small-secondary {
+  background: #FFF8F0;
+  border: 2rpx solid #F0D9B8;
+}
+.btn-small-icon {
+  font-size: 36rpx;
+  line-height: 1;
+}
+.btn-small-text {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #1A1A1A;
+}
+
+/* ===== Section 标题 ===== */
+.section-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin: 40rpx 28rpx 0;
+}
+.section-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+.section-sub {
+  font-size: 24rpx;
+  color: #888;
+}
+
+/* ===== 过滤标签 ===== */
+.filter-scroll {
+  margin: 20rpx 0 0;
+  white-space: nowrap;
+}
+.filter-row {
+  display: flex;
+  flex-direction: row;
+  padding: 0 28rpx;
+  gap: 16rpx;
+}
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 40rpx;
+  padding: 12rpx 32rpx;
+  border: 2rpx solid #E8D8C4;
+  flex-shrink: 0;
+}
+.filter-tag-active {
+  background: #C8902E;
+  border-color: #C8902E;
+}
+.filter-tag-text {
+  font-size: 26rpx;
+  color: #555;
+}
+.filter-tag-active .filter-tag-text {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ===== 3列网格 ===== */
+.grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 20rpx 28rpx 0;
+  gap: 20rpx;
+}
+.grid-item {
+  width: calc((100% - 40rpx) / 3);
+  background: #fff;
+  border-radius: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 12rpx 20rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  position: relative;
+  overflow: hidden;
+}
+
+/* HOT 角标 */
+.hot-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #F5222D;
+  border-radius: 0 24rpx 0 16rpx;
+  padding: 4rpx 12rpx;
+}
+.hot-badge-text {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1rpx;
+}
+
+/* 图标区彩色背景 */
+.grid-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16rpx;
+}
+.grid-icon {
+  font-size: 48rpx;
+  line-height: 1;
+}
+
+/* 彩色背景变量 */
+.c1 { background: #FFE8E8; }
+.c2 { background: #E8F4FF; }
+.c3 { background: #FFF3E0; }
+.c4 { background: #F0F9E8; }
+.c5 { background: #EDE8FF; }
+.c6 { background: #FFE8F5; }
+
+.grid-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-bottom: 10rpx;
+  text-align: center;
+}
+
+/* 类型标签 */
+.grid-type-tag {
+  border-radius: 20rpx;
+  padding: 4rpx 16rpx;
+}
+.tag-bug     { background: #FFF0E0; }
+.tag-disease { background: #E8F5E9; }
+.tag-physio  { background: #E8F0FF; }
+.grid-type-text {
+  font-size: 20rpx;
+  color: #555;
+}
+.tag-bug     .grid-type-text { color: #FF6B00; }
+.tag-disease .grid-type-text { color: #4CAF50; }
+.tag-physio  .grid-type-text { color: #1890FF; }
+
+/* ===== 底部留白 ===== */
+.bottom-gap {
+  height: 60rpx;
+}

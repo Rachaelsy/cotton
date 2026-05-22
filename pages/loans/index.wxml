@@ -1,0 +1,144 @@
+<view class="page">
+
+  <!-- 顶部头部 -->
+  <view class="loan-hd" style="padding-top:{{statusBarHeight}}px">
+    <!-- 导航栏 -->
+    <view class="loan-nav">
+      <view class="back-btn" bindtap="onBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <text class="loan-nav-title">农业贷款</text>
+      <view style="width:64rpx"></view>
+    </view>
+
+    <!-- 副标题 -->
+    <text class="loan-subtitle">AGRICULTURAL LOANS</text>
+
+    <!-- 授信额度展示 -->
+    <view class="credit-wrap">
+      <view class="credit-left">
+        <text class="credit-label">已有授信额度</text>
+        <view class="credit-amount-row">
+          <text class="credit-currency">¥</text>
+          <text class="credit-amount">150,000</text>
+        </view>
+        <text class="credit-tip">可用额度，随借随还</text>
+      </view>
+      <view class="credit-right">
+        <text class="credit-score-label">信用分</text>
+        <text class="credit-score">852</text>
+        <text class="credit-score-rank">优质</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 可滚动主体 -->
+  <scroll-view scroll-y style="flex:1;height:0;">
+
+    <!-- 快捷入口 -->
+    <view class="quick-card">
+      <view class="quick-grid">
+        <view class="quick-item" bindtap="onQuickAction" data-name="我的贷款">
+          <view class="quick-ico" style="background:#E0F7FA">
+            <text class="quick-emoji">📋</text>
+          </view>
+          <text class="quick-lbl">我的贷款</text>
+        </view>
+        <view class="quick-item" bindtap="onQuickAction" data-name="还款计划">
+          <view class="quick-ico" style="background:#E8F5E9">
+            <text class="quick-emoji">📅</text>
+          </view>
+          <text class="quick-lbl">还款计划</text>
+        </view>
+        <view class="quick-item" bindtap="onQuickAction" data-name="账单历史">
+          <view class="quick-ico" style="background:#FFF8E1">
+            <text class="quick-emoji">🧾</text>
+          </view>
+          <text class="quick-lbl">账单历史</text>
+        </view>
+        <view class="quick-item" bindtap="onQuickAction" data-name="帮助中心">
+          <view class="quick-ico" style="background:#FCE4EC">
+            <text class="quick-emoji">💬</text>
+          </view>
+          <text class="quick-lbl">帮助中心</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 贷款产品列表标题 -->
+    <view class="section-hd">
+      <text class="section-title">推荐贷款产品</text>
+      <text class="section-more">更多 ›</text>
+    </view>
+
+    <!-- 贷款卡片列表 -->
+    <view wx:for="{{loans}}" wx:key="id" class="loan-card {{item.highlight ? 'highlight' : ''}}">
+
+      <!-- 卡片顶部：银行名 + 预授信标签 -->
+      <view class="lcard-top">
+        <view class="bank-wrap">
+          <view class="bank-dot" style="background:{{item.highlight ? '#006064' : '#757575'}}"></view>
+          <text class="bank-name">{{item.bank}}</text>
+        </view>
+        <view wx:if="{{item.preAmount}}" class="pre-tag">
+          <text class="pre-tag-text">预授信{{item.preAmount}}</text>
+        </view>
+      </view>
+
+      <!-- 产品名称 -->
+      <text class="loan-name">{{item.name}}</text>
+
+      <!-- 核心数据行 -->
+      <view class="loan-stats">
+        <view class="loan-stat-item">
+          <text class="stat-val teal">{{item.rate}}%</text>
+          <text class="stat-key">年化利率</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="loan-stat-item">
+          <text class="stat-val">{{item.maxAmount}}</text>
+          <text class="stat-key">最高额度</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="loan-stat-item">
+          <text class="stat-val">{{item.maxMonths}}月</text>
+          <text class="stat-key">最长期限</text>
+        </view>
+      </view>
+
+      <!-- 放款速度 -->
+      <view class="loan-speed-row">
+        <text class="loan-speed-icon">⚡</text>
+        <text class="loan-speed-text">{{item.speed}}</text>
+      </view>
+
+      <!-- 标签行 -->
+      <view class="loan-tags">
+        <view class="loan-tag {{item.highlight ? 'tag-teal' : 'tag-gray'}}" wx:for="{{item.tags}}" wx:key="index" wx:for-item="tag">
+          <text class="loan-tag-text">{{tag}}</text>
+        </view>
+      </view>
+
+      <!-- 分隔线 -->
+      <view class="lcard-div"></view>
+
+      <!-- 底部：申请按钮 -->
+      <view class="lcard-footer">
+        <view class="lcard-footer-info">
+          <text class="footer-info-text">担保方式：信用/抵押</text>
+        </view>
+        <view class="apply-btn {{item.highlight ? 'apply-btn-teal' : 'apply-btn-gray'}}" bindtap="onApply" data-id="{{item.id}}">
+          <text class="apply-btn-text">申请</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部提示 -->
+    <view class="footer-tip">
+      <text class="footer-tip-text">贷款有风险，借款需谨慎</text>
+    </view>
+
+    <view style="height:40rpx"></view>
+  </scroll-view>
+
+</view>

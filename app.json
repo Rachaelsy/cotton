@@ -1,0 +1,57 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/ai/index",
+    "pages/my/index",
+    "pages/supplies/index",
+    "pages/supplies-detail/index",
+    "pages/supplies-cart/index",
+    "pages/supplies-checkout/index",
+    "pages/supplies-order/index",
+    "pages/fields/index",
+    "pages/fields/draw",
+    "pages/pest/index",
+    "pages/pest/detail",
+    "pages/weather/index",
+    "pages/remote/index",
+    "pages/trade/index",
+    "pages/records/index",
+    "pages/machine/index",
+    "pages/machine/detail",
+    "pages/loans/index",
+    "pages/insurance/index",
+    "pages/expert/index",
+    "pages/expert/detail"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationStyle": "custom",
+    "backgroundColor": "#F5EEE6"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#888888",
+    "selectedColor": "#C8902E",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/ai/index", "text": "AI问答" },
+      { "pagePath": "pages/my/index", "text": "我的" }
+    ]
+  },
+  "style": "v2",
+  "renderer": "skyline",
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "defaultContentBox": true,
+      "tagNameStyleIsolation": "legacy",
+      "disableABTest": true,
+      "sdkVersionBegin": "3.0.0",
+      "sdkVersionEnd": "15.255.255"
+    }
+  },
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

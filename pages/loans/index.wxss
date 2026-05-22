@@ -1,0 +1,400 @@
+/* ===== 农业贷款页样式 ===== */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ===== 头部 ===== */
+.loan-hd {
+  background: linear-gradient(160deg, #003D2B, #006064);
+  padding: 0 28rpx 36rpx;
+  flex-shrink: 0;
+}
+
+.loan-nav {
+  display: flex;
+  align-items: center;
+  padding-bottom: 20rpx;
+}
+
+.back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-icon {
+  font-size: 44rpx;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.loan-nav-title {
+  flex: 1;
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #fff;
+}
+
+.loan-subtitle {
+  display: block;
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 4rpx;
+  text-align: center;
+  margin-bottom: 28rpx;
+}
+
+/* 授信额度展示 */
+.credit-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 28rpx;
+  padding: 28rpx 32rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.15);
+}
+
+.credit-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.credit-label {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 8rpx;
+}
+
+.credit-amount-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6rpx;
+}
+
+.credit-currency {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #fff;
+}
+
+.credit-amount {
+  font-size: 72rpx;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -2rpx;
+}
+
+.credit-tip {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 8rpx;
+}
+
+.credit-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 140rpx;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 20rpx;
+  padding: 16rpx 12rpx;
+}
+
+.credit-score-label {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4rpx;
+}
+
+.credit-score {
+  font-size: 56rpx;
+  font-weight: 900;
+  color: #B2EBF2;
+  line-height: 1;
+}
+
+.credit-score-rank {
+  font-size: 20rpx;
+  color: #80DEEA;
+  font-weight: 700;
+  margin-top: 4rpx;
+}
+
+/* ===== 快捷入口 ===== */
+.quick-card {
+  background: #fff;
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 36rpx 28rpx 12rpx;
+  margin-top: -24rpx;
+}
+
+.quick-grid {
+  display: flex;
+  flex-direction: row;
+}
+
+.quick-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 0;
+}
+
+.quick-ico {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-emoji {
+  font-size: 52rpx;
+}
+
+.quick-lbl {
+  font-size: 22rpx;
+  color: #555;
+  font-weight: 600;
+}
+
+/* ===== 区块标题 ===== */
+.section-hd {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 28rpx 12rpx;
+}
+
+.section-title {
+  flex: 1;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+}
+
+.section-more {
+  font-size: 24rpx;
+  color: #006064;
+  font-weight: 600;
+}
+
+/* ===== 贷款卡片 ===== */
+.loan-card {
+  background: #fff;
+  border-radius: 28rpx;
+  margin: 0 28rpx 20rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  border: 2rpx solid #EEEEEE;
+}
+
+.loan-card.highlight {
+  border: 2rpx solid #B2DFDB;
+  box-shadow: 0 8rpx 32rpx rgba(0, 96, 100, 0.12);
+}
+
+/* 卡片顶部 */
+.lcard-top {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.bank-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  flex: 1;
+}
+
+.bank-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+}
+
+.bank-name {
+  font-size: 22rpx;
+  color: #888;
+  font-weight: 500;
+}
+
+.pre-tag {
+  background: linear-gradient(135deg, #E0F2F1, #B2DFDB);
+  border-radius: 999rpx;
+  padding: 6rpx 16rpx;
+}
+
+.pre-tag-text {
+  font-size: 20rpx;
+  color: #00695C;
+  font-weight: 700;
+}
+
+/* 产品名 */
+.loan-name {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 900;
+  color: #1A1A1A;
+  margin-bottom: 20rpx;
+}
+
+/* 核心数据 */
+.loan-stats {
+  display: flex;
+  align-items: center;
+  background: #F8FFFE;
+  border-radius: 20rpx;
+  padding: 20rpx 0;
+  margin-bottom: 18rpx;
+  border: 2rpx solid #E0F7FA;
+}
+
+.loan-stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.stat-val {
+  font-size: 36rpx;
+  font-weight: 900;
+  color: #1A1A1A;
+}
+
+.stat-val.teal {
+  color: #006064;
+}
+
+.stat-key {
+  font-size: 20rpx;
+  color: #888;
+  font-weight: 500;
+}
+
+.stat-divider {
+  width: 2rpx;
+  height: 48rpx;
+  background: #E0F7FA;
+}
+
+/* 放款速度 */
+.loan-speed-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.loan-speed-icon {
+  font-size: 28rpx;
+}
+
+.loan-speed-text {
+  font-size: 24rpx;
+  color: #FF6B00;
+  font-weight: 700;
+}
+
+/* 标签 */
+.loan-tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-bottom: 20rpx;
+}
+
+.loan-tag {
+  border-radius: 999rpx;
+  padding: 6rpx 18rpx;
+}
+
+.tag-teal {
+  background: #E0F7FA;
+}
+
+.tag-gray {
+  background: #F5F5F5;
+}
+
+.loan-tag-text {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #006064;
+}
+
+.tag-gray .loan-tag-text {
+  color: #666;
+}
+
+/* 分隔线 */
+.lcard-div {
+  height: 2rpx;
+  background: #F2EBE0;
+  margin-bottom: 20rpx;
+}
+
+/* 卡片底部 */
+.lcard-footer {
+  display: flex;
+  align-items: center;
+}
+
+.lcard-footer-info {
+  flex: 1;
+}
+
+.footer-info-text {
+  font-size: 20rpx;
+  color: #AAAAAA;
+}
+
+/* 申请按钮 */
+.apply-btn {
+  border-radius: 999rpx;
+  padding: 18rpx 48rpx;
+}
+
+.apply-btn-teal {
+  background: linear-gradient(135deg, #006064, #00838F);
+}
+
+.apply-btn-gray {
+  background: linear-gradient(135deg, #546E7A, #78909C);
+}
+
+.apply-btn-text {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* 底部免责提示 */
+.footer-tip {
+  display: flex;
+  justify-content: center;
+  padding: 16rpx 0 0;
+}
+
+.footer-tip-text {
+  font-size: 20rpx;
+  color: #BBBBBB;
+}

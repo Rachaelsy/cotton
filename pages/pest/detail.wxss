@@ -1,0 +1,325 @@
+/* ===== 全局页面 ===== */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ===== 头部（深棕色渐变） ===== */
+.header {
+  background: linear-gradient(160deg, #5D3A1A, #7B4F2A);
+  flex-shrink: 0;
+  padding-bottom: 40rpx;
+}
+
+/* 导航行 */
+.nav-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 28rpx;
+}
+.back-btn,
+.nav-right {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.back-icon {
+  font-size: 52rpx;
+  color: #fff;
+  font-weight: 300;
+  line-height: 1;
+}
+.share-icon {
+  font-size: 38rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* 病虫害主信息区 */
+.pest-hero {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 36rpx;
+  margin-top: 8rpx;
+  gap: 28rpx;
+}
+.pest-icon-wrap {
+  width: 120rpx;
+  height: 120rpx;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pest-icon {
+  font-size: 64rpx;
+  line-height: 1;
+}
+.pest-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+.pest-name {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #fff;
+}
+.pest-type-badge {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 20rpx;
+  padding: 6rpx 24rpx;
+  align-self: flex-start;
+}
+.pest-type-text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+.treat-days-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20rpx;
+  padding: 16rpx 20rpx;
+  flex-shrink: 0;
+}
+.treat-days-num {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #FFD580;
+  line-height: 1;
+}
+.treat-days-label {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 6rpx;
+  text-align: center;
+}
+
+/* ===== 滚动主体 ===== */
+.scroll-body {
+  flex: 1;
+  height: 0;
+}
+
+/* ===== 通用卡片 ===== */
+.card {
+  background: #fff;
+  border-radius: 28rpx;
+  margin: 24rpx 28rpx 0;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+}
+.card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+  display: block;
+  margin-bottom: 24rpx;
+  padding-left: 16rpx;
+  border-left: 6rpx solid #C8902E;
+}
+
+/* ===== 严重程度卡片 ===== */
+.severity-card {
+  /* 继承 .card */
+}
+.severity-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: 0 24rpx;
+  margin-bottom: 24rpx;
+}
+.severity-line {
+  position: absolute;
+  left: 60rpx;
+  right: 60rpx;
+  top: 20rpx;
+  height: 4rpx;
+  background: #E8D8C4;
+  z-index: 0;
+}
+.severity-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  z-index: 1;
+}
+.severity-dot {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dot-inactive {
+  background: #E8D8C4;
+}
+.dot-active {
+  background: #FF9800;
+  box-shadow: 0 0 0 8rpx rgba(255, 152, 0, 0.25);
+}
+.dot-inner {
+  width: 18rpx;
+  height: 18rpx;
+  background: #fff;
+  border-radius: 50%;
+}
+.severity-label {
+  font-size: 24rpx;
+  color: #888;
+}
+.label-active {
+  color: #FF9800;
+  font-weight: 600;
+}
+.severity-tip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: #FFF8F0;
+  border-radius: 16rpx;
+  padding: 16rpx 20rpx;
+  gap: 12rpx;
+}
+.severity-tip-icon {
+  font-size: 28rpx;
+  line-height: 1;
+}
+.severity-tip-text {
+  font-size: 24rpx;
+  font-weight: 500;
+  flex: 1;
+}
+
+/* ===== 描述文字 ===== */
+.desc-text {
+  font-size: 26rpx;
+  color: #555;
+  line-height: 1.8;
+  display: block;
+}
+
+/* ===== 处理方案 ===== */
+.treatment-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 24rpx;
+  margin-bottom: 28rpx;
+}
+.treatment-item:last-child {
+  margin-bottom: 0;
+}
+.treatment-num-wrap {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C8902E, #E5A84A);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+.treatment-num {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #fff;
+}
+.treatment-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.treatment-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.treatment-desc {
+  font-size: 24rpx;
+  color: #555;
+  line-height: 1.75;
+}
+
+/* ===== 推荐农药 ===== */
+.product-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: #FFF8F0;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  gap: 20rpx;
+}
+.product-item:last-child {
+  margin-bottom: 0;
+}
+.product-icon-wrap {
+  width: 80rpx;
+  height: 80rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.07);
+}
+.product-icon {
+  font-size: 40rpx;
+  line-height: 1;
+}
+.product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.product-name {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #1A1A1A;
+}
+.product-price {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #C8902E;
+}
+.buy-btn {
+  background: linear-gradient(135deg, #C8902E, #E5A84A);
+  border-radius: 40rpx;
+  padding: 16rpx 32rpx;
+  flex-shrink: 0;
+}
+.buy-btn-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* ===== 底部留白 ===== */
+.bottom-gap {
+  height: 60rpx;
+}

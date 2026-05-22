@@ -1,0 +1,132 @@
+<!-- pages/fields/index.wxml — 地块管理 -->
+<view class="page">
+  <!-- 顶部导航 -->
+  <view class="sub-nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="sub-nav-inner">
+      <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
+      <view class="sub-nav-mid">
+        <text class="sub-nav-title">我的棉田</text>
+        <text class="sub-nav-sub">8块地 · 486亩</text>
+      </view>
+      <view class="edit-btn {{editMode ? 'done' : ''}}" bindtap="onToggleEdit">
+        <text class="edit-btn-text">{{editMode ? '完成' : '编辑'}}</text>
+      </view>
+    </view>
+    <!-- 统计栏 -->
+    <view class="fields-stats">
+      <view class="fs-i">
+        <text class="fs-v">8</text>
+        <text class="fs-l">承包地块</text>
+      </view>
+      <view class="fs-div"></view>
+      <view class="fs-i">
+        <text class="fs-v">486</text>
+        <text class="fs-u">亩</text>
+        <text class="fs-l">种植面积</text>
+      </view>
+      <view class="fs-div"></view>
+      <view class="fs-i warn">
+        <text class="fs-v">2</text>
+        <text class="fs-l">需关注</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑模式提示 -->
+  <view wx:if="{{editMode}}" class="edit-tip">
+    <text class="edit-tip-text">选择要管理的地块</text>
+  </view>
+
+  <!-- 地块列表 -->
+  <scroll-view class="fields-scroll" scroll-y>
+
+    <!-- 需关注 -->
+    <view class="sect-hd">
+      <view class="sect-dot warn-dot"></view>
+      <text class="sect-title">需要关注</text>
+      <view class="sect-cnt"><text class="sect-cnt-text">{{warnFields.length}}块</text></view>
+    </view>
+    <view
+      class="fcard warn {{item.sel ? 'sel' : ''}}"
+      wx:for="{{warnFields}}"
+      wx:key="id"
+      bindtap="onFieldDetail"
+      data-id="{{item.id}}"
+      data-group="warn"
+    >
+      <view wx:if="{{editMode}}" class="fchk">
+        <view class="fchk-inner {{item.sel ? 'on' : ''}}">
+          <text wx:if="{{item.sel}}" class="fchk-mark">✓</text>
+        </view>
+      </view>
+      <view class="fthumb warn-thumb"><text class="fthumb-emoji">🌿</text></view>
+      <view class="fbody">
+        <view class="fnrow">
+          <text class="fname">{{item.name}}</text>
+          <view class="fscore-wrap">
+            <text class="fscore {{item.scoreCls}}">{{item.score}}</text>
+            <text class="fscore-u">分</text>
+          </view>
+        </view>
+        <text class="fmeta">{{item.variety}} · {{item.irr}} · {{item.area}}亩</text>
+        <view class="ftag-row">
+          <view class="ftag warn-ftag"><text class="ftag-text">⚠ {{item.alert}}</text></view>
+          <text class="fdate">{{item.date}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 正常种植 -->
+    <view class="sect-hd">
+      <view class="sect-dot ok-dot"></view>
+      <text class="sect-title">正常种植</text>
+      <view class="sect-cnt"><text class="sect-cnt-text">{{okFields.length}}块</text></view>
+    </view>
+    <view
+      class="fcard ok {{item.sel ? 'sel' : ''}}"
+      wx:for="{{okFields}}"
+      wx:key="id"
+      bindtap="onFieldDetail"
+      data-id="{{item.id}}"
+      data-group="ok"
+    >
+      <view wx:if="{{editMode}}" class="fchk">
+        <view class="fchk-inner {{item.sel ? 'on' : ''}}">
+          <text wx:if="{{item.sel}}" class="fchk-mark">✓</text>
+        </view>
+      </view>
+      <view class="fthumb ok-thumb"><text class="fthumb-emoji">🌱</text></view>
+      <view class="fbody">
+        <view class="fnrow">
+          <text class="fname">{{item.name}}</text>
+          <view class="fscore-wrap">
+            <text class="fscore {{item.scoreCls}}">{{item.score}}</text>
+            <text class="fscore-u">分</text>
+          </view>
+        </view>
+        <text class="fmeta">{{item.variety}} · {{item.irr}} · {{item.area}}亩</text>
+        <view class="ftag-row">
+          <view class="ftag ok-ftag"><text class="ftag-text">✓ 生长正常</text></view>
+          <text class="fdate">{{item.date}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view style="height: 160rpx"></view>
+  </scroll-view>
+
+  <!-- FAB 添加按钮 -->
+  <view wx:if="{{!editMode}}" class="fab" bindtap="onAddField">
+    <text class="fab-icon">+</text>
+  </view>
+
+  <!-- 编辑操作栏 -->
+  <view wx:if="{{editMode}}" class="edit-act-bar">
+    <view class="sel-all-btn" bindtap="onSelAll">
+      <text class="sel-all-text">{{allSel ? '取消全选' : '全选'}}</text>
+    </view>
+    <view class="del-btn {{selCount > 0 ? '' : 'off'}}" bindtap="onDeleteSel">
+      <text class="del-btn-text">🗑 删除({{selCount}})</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,94 @@
+<view class="page">
+
+  <!-- 顶部导航栏 -->
+  <view class="nav-bar" style="padding-top:{{statusBarHeight}}px;">
+    <view class="nav-inner">
+      <view class="back-btn" bindtap="onBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <text class="nav-title">病虫害识别</text>
+      <view class="nav-right"></view>
+    </view>
+  </view>
+
+  <!-- 可滚动主体 -->
+  <scroll-view class="scroll-body" scroll-y>
+
+    <!-- 拍照识别大按钮 -->
+    <view class="recognize-card" bindtap="onTakePhoto">
+      <view class="recognize-icon-wrap">
+        <text class="recognize-icon">📷</text>
+      </view>
+      <view class="recognize-text-wrap">
+        <text class="recognize-title">拍照识别</text>
+        <text class="recognize-sub">对准病虫害拍照，AI 秒速诊断</text>
+      </view>
+      <view class="ai-badge">
+        <text class="ai-badge-text">AI</text>
+      </view>
+    </view>
+
+    <!-- 相册 / 历史 两个小按钮 -->
+    <view class="btn-row">
+      <view class="btn-small" bindtap="onChooseAlbum">
+        <text class="btn-small-icon">🖼</text>
+        <text class="btn-small-text">从相册选取</text>
+      </view>
+      <view class="btn-small btn-small-secondary" bindtap="onHistory">
+        <text class="btn-small-icon">🕐</text>
+        <text class="btn-small-text">历史记录</text>
+      </view>
+    </view>
+
+    <!-- 知识库标题 -->
+    <view class="section-header">
+      <text class="section-title">病虫害知识库</text>
+      <text class="section-sub">{{pests.length}} 种常见病虫害</text>
+    </view>
+
+    <!-- 过滤标签栏 -->
+    <scroll-view class="filter-scroll" scroll-x>
+      <view class="filter-row">
+        <view
+          wx:for="{{filters}}"
+          wx:key="*this"
+          class="filter-tag {{filter === item ? 'filter-tag-active' : ''}}"
+          bindtap="onFilterTap"
+          data-val="{{item}}"
+        >
+          <text class="filter-tag-text">{{item}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 3列网格 -->
+    <view class="grid">
+      <view
+        wx:for="{{filteredPests}}"
+        wx:key="id"
+        class="grid-item"
+        bindtap="onPestTap"
+        data-id="{{item.id}}"
+      >
+        <!-- HOT 角标 -->
+        <view wx:if="{{item.hot}}" class="hot-badge">
+          <text class="hot-badge-text">HOT</text>
+        </view>
+        <!-- 图标区 -->
+        <view class="grid-icon-wrap {{item.bg}}">
+          <text class="grid-icon">{{item.icon}}</text>
+        </view>
+        <!-- 名称 -->
+        <text class="grid-name">{{item.n}}</text>
+        <!-- 类型标签 -->
+        <view class="grid-type-tag {{item.type === '虫害' ? 'tag-bug' : item.type === '病害' ? 'tag-disease' : 'tag-physio'}}">
+          <text class="grid-type-text">{{item.type}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部留白 -->
+    <view class="bottom-gap"></view>
+
+  </scroll-view>
+</view>

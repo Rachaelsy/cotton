@@ -1,0 +1,274 @@
+/* pages/machine/index.wxss — 农机租赁列表页样式 */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+  box-sizing: border-box;
+}
+
+/* ===== 头部 ===== */
+.mach-header {
+  background: linear-gradient(160deg, #006064, #00ACC1);
+  flex-shrink: 0;
+  padding-left: 28rpx;
+  padding-right: 28rpx;
+  padding-bottom: 24rpx;
+}
+
+.topbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10rpx;
+  padding-bottom: 8rpx;
+}
+
+.topbar-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.page-title {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.page-subtitle {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 3rpx;
+}
+
+/* ===== 筛选标签 ===== */
+.filter-tabs {
+  display: flex;
+  flex-direction: row;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.filter-tab {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999rpx;
+  padding: 12rpx 28rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.25);
+}
+
+.filter-tab-on {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+.filter-tab-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.filter-tab-on .filter-tab-text {
+  color: #006064;
+}
+
+/* ===== 滚动区 ===== */
+.scroll-content {
+  flex: 1;
+  height: 0;
+}
+
+/* ===== 农机列表 ===== */
+.machine-list {
+  padding: 24rpx 28rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.machine-card {
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 24rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+}
+
+/* 左侧图标 */
+.card-icon-wrap {
+  width: 108rpx;
+  height: 108rpx;
+  background: linear-gradient(135deg, #E0F7FA, #B2EBF2);
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-icon {
+  font-size: 56rpx;
+}
+
+/* 右侧信息区 */
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  min-width: 0;
+}
+
+.card-name-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8rpx;
+}
+
+.card-name {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 状态 badge */
+.status-badge {
+  border-radius: 8rpx;
+  padding: 4rpx 14rpx;
+  flex-shrink: 0;
+}
+
+.badge-green {
+  background: #E8F5E9;
+}
+
+.badge-orange {
+  background: #FFF3E0;
+}
+
+.badge-text {
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.badge-green .badge-text {
+  color: #2E7D32;
+}
+
+.badge-orange .badge-text {
+  color: #E65100;
+}
+
+/* 机构 */
+.card-org {
+  font-size: 22rpx;
+  color: #888888;
+}
+
+/* 参数行 */
+.card-params {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.param-item {
+  background: #F5EEE6;
+  border-radius: 10rpx;
+  padding: 6rpx 14rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.param-label {
+  font-size: 20rpx;
+  color: #888888;
+}
+
+.param-value {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+/* 底部：价格 + 评分 + 按钮 */
+.card-bottom {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 4rpx;
+}
+
+.price-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 2rpx;
+  flex: 1;
+}
+
+.price-main {
+  font-size: 36rpx;
+  font-weight: 900;
+  color: #006064;
+}
+
+.price-unit {
+  font-size: 20rpx;
+  color: #888888;
+}
+
+.card-rating {
+  font-size: 22rpx;
+  color: #555555;
+  font-weight: 600;
+}
+
+.book-btn {
+  background: linear-gradient(135deg, #006064, #00ACC1);
+  border-radius: 999rpx;
+  padding: 12rpx 28rpx;
+}
+
+.book-btn-text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ===== 无结果 ===== */
+.empty-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 0;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 72rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #888888;
+}
+
+.list-bottom {
+  height: 40rpx;
+}

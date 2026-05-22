@@ -1,0 +1,63 @@
+<view class="page">
+  <!-- 顶部 -->
+  <view class="rec-hd" style="padding-top: {{statusBarHeight}}px">
+    <view class="rec-nav">
+      <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
+      <text class="rec-title">农事记录</text>
+      <view style="width:64rpx"></view>
+    </view>
+    <!-- 统计 -->
+    <view class="rec-stats">
+      <view class="rec-stat"><text class="rs-v">12</text><text class="rs-l">本月农事</text></view>
+      <view class="rec-sdiv"></view>
+      <view class="rec-stat"><text class="rs-v">3</text><text class="rs-l">操作类型</text></view>
+      <view class="rec-sdiv"></view>
+      <view class="rec-stat"><text class="rs-v">8</text><text class="rs-l">涉及地块</text></view>
+    </view>
+    <!-- 视图切换 -->
+    <view class="view-toggle">
+      <view class="vt-btn {{viewMode === 0 ? 'on' : ''}}" bindtap="onViewMode" data-m="0">
+        <text class="vt-text">列表</text>
+      </view>
+      <view class="vt-btn {{viewMode === 1 ? 'on' : ''}}" bindtap="onViewMode" data-m="1">
+        <text class="vt-text">日历</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 类型过滤 -->
+  <scroll-view class="type-filter-row" scroll-x>
+    <view
+      class="tfchip {{typeFilter === item ? 'on' : ''}}"
+      wx:for="{{types}}"
+      wx:key="index"
+      bindtap="onTypeFilter"
+      data-t="{{item}}"
+    >
+      <text class="tfchip-text">{{item}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 记录列表 -->
+  <scroll-view class="rec-scroll" scroll-y>
+    <view class="tl-item" wx:for="{{records}}" wx:key="id">
+      <view class="tl-dot" style="background:{{item.bg}}">
+        <text class="tl-dot-emoji">{{item.icon}}</text>
+      </view>
+      <view class="tl-body">
+        <view class="tl-title-row">
+          <text class="tl-title">{{item.type}} · {{item.field}}</text>
+          <view class="tl-field-tag"><text class="tl-field-text">{{item.amount}}</text></view>
+        </view>
+        <text class="tl-meta">{{item.worker}} · {{item.date}}</text>
+        <text class="tl-detail">{{item.detail}}</text>
+      </view>
+    </view>
+    <view style="height:160rpx"></view>
+  </scroll-view>
+
+  <!-- FAB -->
+  <view class="rec-fab" bindtap="onAddRecord">
+    <text class="rec-fab-icon">+</text>
+  </view>
+</view>
