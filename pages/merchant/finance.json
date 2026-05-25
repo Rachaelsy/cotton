@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "renderer": "skyline",
+  "componentFramework": "glass-easel",
+  "usingComponents": {
+    "merchant-tab-bar": "/components/merchant-tab-bar/index"
+  }
+}

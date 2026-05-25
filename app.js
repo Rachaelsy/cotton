@@ -6,6 +6,7 @@
 const CLOUD_ENV = 'YOUR_CLOUD_ENV_ID'
 
 const { PRODUCTS } = require('./utils/data')
+const auth = require('./utils/auth')
 
 App({
   onLaunch() {
@@ -31,6 +32,18 @@ App({
     const info = wx.getSystemInfoSync()
     this.globalData.statusBarHeight = info.statusBarHeight || 20
     this.globalData.navBarHeight = 44
+
+    // 恢复本地用户信息；静默验证 Token，过期则清除但不强制跳转
+    const cachedUser = auth.getUser()
+    if (cachedUser) {
+      this.globalData.user = cachedUser
+      auth.verify().then(valid => {
+        if (!valid) {
+          // Token 失效：清除本地状态，页面自行刷新 UI
+          this.globalData.user = null
+        }
+      })
+    }
   },
 
   // 刷新购物车数量
@@ -99,6 +112,8 @@ App({
     cartCount: 0,
     statusBarHeight: 20,
     navBarHeight: 44,
+    // 登录用户信息（role:'farmer'|'merchant', real_name, ...）
+    user: null,
     // 商品详情页传递数据用
     selectedProduct: null,
     // 本地兜底商品数据

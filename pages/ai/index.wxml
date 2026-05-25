@@ -119,5 +119,5 @@
       </view>
     </view>
   </view>
-
+  <tab-bar selected="{{1}}"></tab-bar>
 </view>

@@ -33,30 +33,32 @@ Page({
     this._stopTimer()
   },
 
-  // 加载商品数据（优先云数据库，兜底本地数据）
+  // 加载商品数据（优先后端 API，兜底本地数据）
   async _loadProducts() {
     let products = PRODUCTS
-
-    if (wx.cloud) {
-      try {
-        const db = wx.cloud.database()
-        const res = await db.collection('products').limit(20).get()
-        if (res.data && res.data.length > 0) {
-          // 云数据库有数据，统一格式（_id → id）
-          products = res.data.map(p => ({ ...p, id: p._id || p.id }))
-        } else {
-          // 云库为空，播种本地数据
-          app.initCloudProducts()
-        }
-      } catch (e) {
-        // 云不可用，使用本地数据
-        console.warn('云数据库不可用，使用本地数据')
+    try {
+      const auth = require('../../utils/auth')
+      const res = await auth.request('GET', '/api/products')
+      if (res.code === 200 && res.data && res.data.length > 0) {
+        products = res.data.map(p => ({
+          ...p,
+          id:        String(p.id),
+          spec:      p.unit || '',
+          imgBg:     p.image_url ? '#F5EEE6' : 'linear-gradient(135deg,#C8902E,#D4A043)',
+          image_url: p.image_url ? `${auth.BASE_URL}${p.image_url}` : null,
+          hot:       false,
+          isNew:     false,
+          sold:      0,
+          rating:    5.0,
+          store:     p.company_name || '认证商家',
+          cat:       p.category || '其他'
+        }))
       }
+    } catch (e) {
+      console.warn('后端 API 不可用，使用本地数据:', e.message)
     }
 
-    // 保存到全局，供详情页使用
     app.globalData.products = products
-
     this.setData({
       products,
       flashProds: products.slice(0, 3),

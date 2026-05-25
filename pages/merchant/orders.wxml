@@ -1,0 +1,79 @@
+<!-- pages/merchant/orders.wxml — 订单管理 -->
+<view class="page">
+  <scroll-view class="scroll" scroll-y>
+
+    <view class="header" style="padding-top: {{statusBarHeight}}px">
+      <text class="header-tag">棉管家·商户版</text>
+      <text class="header-title">订单管理</text>
+    </view>
+
+    <!-- Tab 切换 -->
+    <scroll-view class="tab-scroll" scroll-x>
+      <view class="tab-bar">
+        <view
+          class="tab-item {{tab===item.key?'active':''}}"
+          wx:for="{{tabs}}"
+          wx:key="key"
+          bindtap="switchTab"
+          data-key="{{item.key}}"
+        >
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 订单列表 -->
+    <view class="order-list">
+      <view class="order-card" wx:for="{{orders}}" wx:key="id">
+        <view class="order-hd">
+          <text class="order-id">{{item.id}}</text>
+          <view class="status-tag {{item.status}}">
+            <text>{{item.statusLabel}}</text>
+          </view>
+        </view>
+        <view class="order-buyer">
+          <text class="buyer-lbl">买家：</text>
+          <text class="buyer-name">{{item.buyer}}</text>
+          <text class="order-time">{{item.time}}</text>
+        </view>
+        <view class="order-goods-row">
+          <text class="goods-icon">📦</text>
+          <text class="goods-name">{{item.goods}}</text>
+        </view>
+        <view class="order-ft">
+          <text class="order-amount">实付 ¥{{item.amount}}</text>
+          <view class="order-actions">
+            <view class="action-btn detail" bindtap="onDetail" data-id="{{item.id}}">
+              <text>详情</text>
+            </view>
+            <view
+              class="action-btn ship"
+              wx:if="{{item.status==='pending'}}"
+              bindtap="onShip"
+              data-id="{{item.id}}"
+            >
+              <text>确认发货</text>
+            </view>
+            <view
+              class="action-btn refund"
+              wx:if="{{item.status==='refund'}}"
+              bindtap="onRefundHandle"
+              data-id="{{item.id}}"
+            >
+              <text>处理退款</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="empty" wx:if="{{orders.length===0}}">
+        <text class="empty-icon">📋</text>
+        <text class="empty-text">暂无相关订单</text>
+      </view>
+    </view>
+
+    <view style="height: 30rpx"></view>
+  </scroll-view>
+
+  <merchant-tab-bar selected="{{2}}"></merchant-tab-bar>
+</view>

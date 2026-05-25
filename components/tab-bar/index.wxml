@@ -1,0 +1,19 @@
+<view class="bar">
+  <view class="item {{selected===0?'on':''}}" bindtap="onTab" data-index="0">
+    <text class="icon">🏠</text>
+    <text class="label">首页</text>
+  </view>
+
+  <view class="item ai-item" bindtap="onTab" data-index="1">
+    <view class="ai-circle">
+      <text class="ai-emoji">🤖</text>
+      <view class="ai-dot"></view>
+    </view>
+    <text class="ai-label {{selected===1?'on':''}}">AI问答</text>
+  </view>
+
+  <view class="item {{selected===2?'on':''}}" bindtap="onTab" data-index="2">
+    <text class="icon">👤</text>
+    <text class="label">我的</text>
+  </view>
+</view>

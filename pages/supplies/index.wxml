@@ -98,18 +98,23 @@
         data-id="{{item.id}}"
       >
         <view class="prod-img" style="background: {{item.imgBg}}">
-          <text class="prod-icon">{{item.icon}}</text>
+          <block wx:if="{{item.image_url}}">
+            <image class="prod-photo" src="{{item.image_url}}" mode="aspectFill" lazy-load></image>
+          </block>
+          <block wx:else>
+            <text class="prod-icon">{{item.icon || '📦'}}</text>
+          </block>
           <text wx:if="{{item.isNew}}" class="tag tag-new">新品</text>
           <text wx:elif="{{item.hot}}" class="tag tag-hot">🔥热销</text>
         </view>
         <view class="prod-body">
           <text class="prod-name">{{item.name}}</text>
-          <text class="prod-spec">{{item.spec}}</text>
-          <text class="prod-sold">已售{{item.sold}}件</text>
+          <text class="prod-store">🏪 {{item.company_name || item.store || '认证商家'}}</text>
+          <text class="prod-spec">{{item.unit ? item.unit : item.spec}}</text>
           <view class="prod-bottom">
             <view class="prod-price-wrap">
               <text class="prod-price">¥{{item.price}}</text>
-              <text class="prod-unit">/{{item.unit}}</text>
+              <text class="prod-unit">/{{item.unit || item.unit}}</text>
             </view>
             <view class="add-btn" catchtap="onAddToCart" data-id="{{item.id}}">
               <text class="add-btn-icon">＋</text>

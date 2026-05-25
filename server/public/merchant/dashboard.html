@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>棉管家 · 商户后台</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #F5F6FA; color: #1A1A1A; }
+
+    /* ── 侧边栏 ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
+      background: linear-gradient(180deg, #1a3c2e 0%, #2d6a4f 100%);
+      display: flex; flex-direction: column; z-index: 100;
+    }
+    .sidebar-logo { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo .emoji { font-size: 26px; }
+    .sidebar-logo .title { font-size: 15px; font-weight: 800; color: #fff; margin-top: 5px; }
+    .sidebar-logo .sub   { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .nav { flex: 1; padding: 14px 0; overflow-y: auto; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 11px 20px;
+      color: rgba(255,255,255,0.65); cursor: pointer; font-size: 14px;
+      border-left: 3px solid transparent; position: relative; transition: all 0.15s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(34,197,94,0.18); color: #4ade80; border-left-color: #22c55e; font-weight: 600; }
+    .nav-icon { font-size: 17px; width: 20px; text-align: center; }
+    .nav-badge {
+      position: absolute; right: 14px; background: #DC2626; color: #fff;
+      font-size: 11px; font-weight: 700; min-width: 18px; height: 18px;
+      border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px;
+    }
+    .nav-section { font-size: 10px; color: rgba(255,255,255,0.3); padding: 12px 20px 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .sidebar-foot { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .merchant-name { font-size: 13px; font-weight: 700; color: #fff; }
+    .merchant-phone { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .btn-logout { margin-top: 10px; padding: 7px 14px; background: rgba(220,38,38,0.2); color: #FCA5A5; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; width: 100%; text-align: left; }
+    .btn-logout:hover { background: rgba(220,38,38,0.35); }
+
+    /* ── 主区域 ── */
+    .main { margin-left: 220px; min-height: 100vh; }
+    .topbar { background: #fff; padding: 14px 28px; border-bottom: 1px solid #EBEBEB; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .page-title { font-size: 17px; font-weight: 800; }
+    .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 13px; color: #888; }
+    .notif-dot { width: 8px; height: 8px; background: #DC2626; border-radius: 50%; }
+    .content { padding: 24px 28px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── 统计卡片 ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .stat-label { font-size: 12px; color: #888; }
+    .stat-value { font-size: 30px; font-weight: 900; color: #1A1A1A; margin-top: 5px; line-height: 1; }
+    .stat-sub   { font-size: 11px; color: #BBB; margin-top: 4px; }
+    .stat-card.gold  .stat-value { color: #C8902E; }
+    .stat-card.green .stat-value { color: #16A34A; }
+    .stat-card.blue  .stat-value { color: #2563EB; }
+    .stat-card.red   .stat-value { color: #DC2626; }
+
+    /* ── 内容卡 ── */
+    .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 20px; overflow: hidden; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #F0F0F0; }
+    .card-title { font-size: 14px; font-weight: 800; }
+    .card-body  { padding: 20px; }
+
+    /* ── 按钮 ── */
+    .btn { padding: 7px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; border: none; font-weight: 600; }
+    .btn-primary { background: #16A34A; color: #fff; }
+    .btn-primary:hover { background: #15803d; }
+    .btn-outline { background: transparent; border: 1.5px solid #E0E0E0; color: #555; }
+    .btn-outline:hover { border-color: #16A34A; color: #16A34A; }
+    .btn-danger  { background: #FEE2E2; color: #DC2626; border: none; }
+    .btn-danger:hover  { background: #FCA5A5; }
+    .btn-warn   { background: #FEF3C7; color: #D97706; border: none; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+
+    /* ── 表格 ── */
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #F8F9FA; padding: 10px 12px; text-align: left; font-size: 12px; color: #888; font-weight: 600; white-space: nowrap; }
+    tbody td { padding: 12px; border-bottom: 1px solid #F5F5F5; font-size: 13px; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #FAFAFA; }
+    .prod-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+    .prod-icon-cell { width: 40px; height: 40px; background: #F5EEE6; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; }
+    .status-on  { color: #16A34A; font-weight: 700; }
+    .status-off { color: #888; }
+    .empty-row td { text-align: center; color: #BBB; padding: 40px; }
+
+    /* ── 标签页 ── */
+    .tabs { display: flex; gap: 4px; padding: 16px 20px 0; border-bottom: 1px solid #F0F0F0; }
+    .tab { padding: 8px 16px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; font-weight: 600; }
+    .tab.active { color: #16A34A; border-bottom-color: #16A34A; }
+    .tab:hover { color: #16A34A; }
+
+    /* ── 搜索/筛选栏 ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid #F0F0F0; flex-wrap: wrap; }
+    .toolbar select, .toolbar input {
+      padding: 7px 10px; border: 1.5px solid #E0E0E0; border-radius: 8px; font-size: 13px; outline: none;
+    }
+    .toolbar select:focus, .toolbar input:focus { border-color: #16A34A; }
+
+    /* ── 状态徽章 ── */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .badge-pending  { background: #FEF3C7; color: #D97706; }
+    .badge-ship     { background: #DBEAFE; color: #2563EB; }
+    .badge-shipped  { background: #D1FAE5; color: #059669; }
+    .badge-done     { background: #F0F0F0; color: #888; }
+    .badge-refund   { background: #FEE2E2; color: #DC2626; }
+    .badge-on    { background: #D1FAE5; color: #059669; }
+    .badge-off   { background: #F0F0F0; color: #888; }
+    .badge-low   { background: #FEF3C7; color: #D97706; }
+
+    /* ── 快捷入口 ── */
+    .shortcut-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .shortcut-card {
+      background: #fff; border-radius: 12px; padding: 20px 16px; text-align: center;
+      cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.15s, box-shadow 0.15s; border: 2px solid transparent;
+    }
+    .shortcut-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); border-color: #22c55e; }
+    .shortcut-icon { font-size: 30px; margin-bottom: 8px; }
+    .shortcut-name { font-size: 13px; font-weight: 700; color: #1A1A1A; }
+    .shortcut-desc { font-size: 11px; color: #888; margin-top: 3px; }
+
+    /* ── 财务图表 ── */
+    .finance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+    .finance-card { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: 14px; padding: 20px; }
+    .finance-card.blue { background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+    .finance-card.gold { background: linear-gradient(135deg, #fffbeb, #fef3c7); }
+    .fc-label { font-size: 12px; color: #555; }
+    .fc-value { font-size: 28px; font-weight: 900; color: #15803d; margin: 6px 0 2px; }
+    .finance-card.blue .fc-value { color: #1d4ed8; }
+    .finance-card.gold .fc-value { color: #b45309; }
+    .fc-sub { font-size: 11px; color: #888; }
+
+    /* ── 销售柱状图 (纯 CSS) ── */
+    .bar-chart { display: flex; align-items: flex-end; gap: 10px; height: 120px; padding: 0 8px; }
+    .bar-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 6px; }
+    .bar { background: linear-gradient(180deg, #22c55e, #16a34a); border-radius: 4px 4px 0 0; width: 100%; min-height: 4px; transition: height 0.5s; }
+    .bar-label { font-size: 11px; color: #888; white-space: nowrap; }
+    .bar-val   { font-size: 11px; color: #16a34a; font-weight: 700; }
+
+    /* ── 客户/评价卡 ── */
+    .review-card { border: 1px solid #F0F0F0; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .review-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .reviewer-avatar { width: 34px; height: 34px; background: linear-gradient(135deg, #C8902E, #D4A043); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; font-weight: 700; margin-right: 8px; }
+    .reviewer-name { font-size: 13px; font-weight: 700; }
+    .stars { color: #F59E0B; font-size: 13px; }
+    .review-content { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 8px; }
+    .review-reply { background: #F8F9FA; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #555; margin-top: 8px; }
+
+    /* ── 弹窗 ── */
+    .modal-mask {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45); z-index: 200;
+    }
+    .modal-mask.show { display: block; }
+    .modal {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: #fff; border-radius: 16px; padding: 28px; width: 560px; max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal h3 { font-size: 17px; font-weight: 800; margin-bottom: 20px; }
+    .mfield { margin-bottom: 16px; }
+    .mfield label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .mfield input, .mfield select, .mfield textarea {
+      width: 100%; padding: 9px 12px; border: 1.5px solid #E0E0E0; border-radius: 9px; font-size: 13px; outline: none;
+    }
+    .mfield input:focus, .mfield select:focus, .mfield textarea:focus { border-color: #16A34A; }
+    .mfield textarea { resize: vertical; min-height: 72px; }
+    .mrow { display: flex; gap: 12px; }
+    .mrow .mfield { flex: 1; }
+    .req { color: #DC2626; }
+    .mbtns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .mbtn { padding: 9px 22px; border-radius: 9px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .mbtn.save { background: #16A34A; color: #fff; }
+    .mbtn.save:hover { background: #15803d; }
+    .mbtn.cancel { background: #F0F0F0; color: #555; }
+    .mbtn.cancel:hover { background: #E0E0E0; }
+
+    /* ── 图片上传 ── */
+    .img-upload-area {
+      border: 2px dashed #D4A043; border-radius: 10px; padding: 20px; text-align: center;
+      cursor: pointer; color: #888; font-size: 13px; background: #FBF5EA;
+    }
+    .img-upload-area:hover { border-color: #C8902E; }
+    .img-preview-wrap { position: relative; display: inline-block; }
+    .img-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; }
+    .img-remove { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; background: #DC2626; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: 700; }
+
+    /* ── 设置表单 ── */
+    .settings-section { margin-bottom: 28px; }
+    .settings-section h4 { font-size: 14px; font-weight: 800; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #F0F0F0; }
+    .form-row { display: flex; gap: 16px; margin-bottom: 16px; }
+    .form-field { flex: 1; }
+    .form-field label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }
+    .form-field input, .form-field select, .form-field textarea {
+      width: 100%; padding: 9px 12px; border: 1.5px solid #E0E0E0; border-radius: 9px; font-size: 13px; outline: none;
+    }
+    .form-field input:focus, .form-field textarea:focus { border-color: #16A34A; }
+
+    /* ── 提现卡 ── */
+    .withdraw-card { background: linear-gradient(135deg, #1a3c2e, #2d6a4f); border-radius: 14px; padding: 24px; color: #fff; margin-bottom: 20px; }
+    .withdraw-label { font-size: 12px; opacity: 0.7; }
+    .withdraw-amount { font-size: 40px; font-weight: 900; margin: 8px 0 4px; }
+    .withdraw-sub { font-size: 12px; opacity: 0.65; }
+    .btn-withdraw { background: #22c55e; color: #fff; border: none; padding: 10px 24px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 16px; }
+    .btn-withdraw:hover { background: #16a34a; }
+
+    /* ── 消息 ── */
+    .msg-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #F5F5F5; }
+    .msg-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .msg-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+    .msg-content { font-size: 12px; color: #888; line-height: 1.5; }
+    .msg-time { font-size: 11px; color: #BBB; white-space: nowrap; margin-left: auto; }
+
+    /* ── 响应式 ── */
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .shortcut-grid { grid-template-columns: repeat(2, 1fr); }
+      .finance-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ 侧边栏 ══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="emoji">🏪</div>
+    <div class="title">棉管家商户后台</div>
+    <div class="sub">农资管理中心</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">核心功能</div>
+    <div class="nav-item active" id="nav-shop"      onclick="show('shop')">      <span class="nav-icon">🏠</span> 店铺中心</div>
+    <div class="nav-item"        id="nav-products"  onclick="show('products')">  <span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item"        id="nav-orders"    onclick="show('orders')">    <span class="nav-icon">📋</span> 订单管理<span class="nav-badge" id="order-badge" style="display:none">0</span></div>
+    <div class="nav-section">财务与用户</div>
+    <div class="nav-item"        id="nav-finance"   onclick="show('finance')">   <span class="nav-icon">💰</span> 财务结算</div>
+    <div class="nav-item"        id="nav-customers" onclick="show('customers')"> <span class="nav-icon">👥</span> 客户评价</div>
+    <div class="nav-section">管理</div>
+    <div class="nav-item"        id="nav-messages"  onclick="show('messages')">  <span class="nav-icon">📣</span> 消息中心<span class="nav-badge" id="msg-badge">2</span></div>
+    <div class="nav-item"        id="nav-settings"  onclick="show('settings')">  <span class="nav-icon">⚙️</span> 店铺设置</div>
+  </nav>
+  <div class="sidebar-foot">
+    <div class="merchant-name" id="sidebar-name">——</div>
+    <div class="merchant-phone" id="sidebar-phone">——</div>
+    <button class="btn-logout" onclick="logout()">🚪 退出登录</button>
+  </div>
+</aside>
+
+<!-- ══════════ 主内容 ══════════ -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title" id="page-title">店铺中心</div>
+    <div class="topbar-right">
+      <span id="topbar-shop"></span>
+      <div class="notif-dot"></div>
+      <span id="topbar-time"></span>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- ══ 1. 店铺中心 ══ -->
+    <div class="panel active" id="panel-shop">
+      <div class="stats-grid">
+        <div class="stat-card gold"><div class="stat-label">今日销售额（元）</div><div class="stat-value" id="s-sales">—</div><div class="stat-sub">较昨日 +12%</div></div>
+        <div class="stat-card blue"><div class="stat-label">今日订单数</div><div class="stat-value" id="s-orders">—</div><div class="stat-sub">月累计 238 单</div></div>
+        <div class="stat-card red"> <div class="stat-label">待发货</div><div class="stat-value" id="s-ship">—</div><div class="stat-sub">请尽快处理</div></div>
+        <div class="stat-card green"><div class="stat-label">待结算（元）</div><div class="stat-value" id="s-settle">—</div><div class="stat-sub">月结算周期</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <!-- 店铺状态 -->
+        <div class="card">
+          <div class="card-head"><span class="card-title">🏪 店铺状态</span></div>
+          <div class="card-body">
+            <table style="width:100%">
+              <tr><td style="color:#888;font-size:13px;padding:6px 0">审核状态</td><td><span class="badge badge-on" id="shop-status">已通过</span></td></tr>
+              <tr><td style="color:#888;font-size:13px;padding:6px 0">主营品类</td><td style="font-size:13px;font-weight:600" id="shop-cat">—</td></tr>
+              <tr><td style="color:#888;font-size:13px;padding:6px 0">在售商品</td><td style="font-size:13px;font-weight:600" id="shop-prods">—</td></tr>
+              <tr><td style="color:#888;font-size:13px;padding:6px 0">低库存商品</td><td><span class="badge badge-low" id="shop-low">0件</span></td></tr>
+              <tr><td style="color:#888;font-size:13px;padding:6px 0">本月销售额</td><td style="font-size:13px;font-weight:700;color:#C8902E" id="shop-monthly">—</td></tr>
+              <tr><td style="color:#888;font-size:13px;padding:6px 0">累计客户数</td><td style="font-size:13px;font-weight:600" id="shop-customers">—</td></tr>
+            </table>
+          </div>
+        </div>
+        <!-- 近7日销售趋势 -->
+        <div class="card">
+          <div class="card-head"><span class="card-title">📈 近7日销售趋势</span></div>
+          <div class="card-body">
+            <div class="bar-chart" id="bar-chart"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷入口 -->
+      <div class="card">
+        <div class="card-head"><span class="card-title">⚡ 快捷入口</span></div>
+        <div class="card-body">
+          <div class="shortcut-grid">
+            <div class="shortcut-card" onclick="show('products')"><div class="shortcut-icon">📦</div><div class="shortcut-name">商品管理</div><div class="shortcut-desc">上架 / 编辑 / 库存</div></div>
+            <div class="shortcut-card" onclick="show('orders')">  <div class="shortcut-icon">📋</div><div class="shortcut-name">订单处理</div><div class="shortcut-desc">发货 / 售后</div></div>
+            <div class="shortcut-card" onclick="show('finance')"> <div class="shortcut-icon">💰</div><div class="shortcut-name">提现中心</div><div class="shortcut-desc">余额 / 结算</div></div>
+            <div class="shortcut-card" onclick="show('customers')"><div class="shortcut-icon">💬</div><div class="shortcut-name">客户评价</div><div class="shortcut-desc">回复 / 管理</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 2. 商品管理 ══ -->
+    <div class="panel" id="panel-products">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">📦 我的商品</span>
+          <button class="btn btn-primary btn-sm" onclick="openAddProduct()">＋ 上架新商品</button>
+        </div>
+        <div class="toolbar">
+          <select id="filter-status" onchange="loadProducts()">
+            <option value="">全部状态</option>
+            <option value="on">在售</option>
+            <option value="off">已下架</option>
+          </select>
+          <select id="filter-cat" onchange="loadProducts()">
+            <option value="">全部分类</option>
+            <option value="化肥">化肥</option>
+            <option value="农药">农药</option>
+            <option value="种子">种子</option>
+            <option value="农膜">农膜</option>
+            <option value="农机">农机</option>
+            <option value="其他">其他</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="loadProducts()">刷新</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th>ID</th><th>商品图</th><th>商品名称</th><th>分类</th>
+            <th>价格</th><th>单位</th><th>库存</th><th>状态</th><th>操作</th>
+          </tr></thead>
+          <tbody id="prod-table"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ 3. 订单管理 ══ -->
+    <div class="panel" id="panel-orders">
+      <div class="card">
+        <div class="card-head"><span class="card-title">📋 订单管理</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="exportOrders()">导出订单</button>
+            <button class="btn btn-outline btn-sm" onclick="loadOrders()">刷新</button>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab active" data-tab="all"        onclick="switchOrderTab(this,'all')">全部</div>
+          <div class="tab"        data-tab="pending_pay" onclick="switchOrderTab(this,'pending_pay')">待付款</div>
+          <div class="tab"        data-tab="pending_ship"onclick="switchOrderTab(this,'pending_ship')">待发货 <span id="ship-count" style="color:#DC2626"></span></div>
+          <div class="tab"        data-tab="shipped"     onclick="switchOrderTab(this,'shipped')">已发货</div>
+          <div class="tab"        data-tab="completed"   onclick="switchOrderTab(this,'completed')">已完成</div>
+          <div class="tab"        data-tab="refund"      onclick="switchOrderTab(this,'refund')">售后/退款</div>
+        </div>
+        <table>
+          <thead><tr><th>订单号</th><th>买家</th><th>商品</th><th>金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
+          <tbody id="order-table"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ 4. 财务结算 ══ -->
+    <div class="panel" id="panel-finance">
+      <div class="withdraw-card">
+        <div class="withdraw-label">可提现余额（元）</div>
+        <div class="withdraw-amount">18,650.00</div>
+        <div class="withdraw-sub">已绑定收款账户：农业银行 **** 8899 | 月结算周期</div>
+        <button class="btn-withdraw" onclick="doWithdraw()">发起提现</button>
+      </div>
+      <div class="finance-grid">
+        <div class="finance-card"><div class="fc-label">本月销售额（元）</div><div class="fc-value">86,420</div><div class="fc-sub">较上月 +18%</div></div>
+        <div class="finance-card blue"><div class="fc-label">本月订单数</div><div class="fc-value fc-blue">238</div><div class="fc-sub">平均客单价 ¥363</div></div>
+        <div class="finance-card gold"><div class="fc-label">本月退款金额（元）</div><div class="fc-value">1,240</div><div class="fc-sub">退款率 1.4%</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">📊 销售报表</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" id="period-day" onclick="setPeriod('day',this)">今日</button>
+            <button class="btn btn-outline btn-sm active-period" id="period-week" onclick="setPeriod('week',this)">本周</button>
+            <button class="btn btn-outline btn-sm" id="period-month" onclick="setPeriod('month',this)">本月</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="bar-chart" id="finance-chart" style="height:140px"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title">💳 结算明细</span></div>
+        <table>
+          <thead><tr><th>结算编号</th><th>订单号</th><th>商品</th><th>销售金额</th><th>平台佣金(3%)</th><th>实际到账</th><th>状态</th><th>时间</th></tr></thead>
+          <tbody id="settle-table"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title">🏦 提现记录</span></div>
+        <table>
+          <thead><tr><th>提现编号</th><th>提现金额</th><th>账户</th><th>状态</th><th>申请时间</th><th>到账时间</th></tr></thead>
+          <tbody id="withdraw-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ 5. 客户评价 ══ -->
+    <div class="panel" id="panel-customers">
+      <div class="tabs" style="border-bottom:1px solid #F0F0F0;padding:0 0 0 0">
+        <div class="tab active" onclick="switchCustTab(this,'customers')" style="padding:14px 20px">客户列表</div>
+        <div class="tab"       onclick="switchCustTab(this,'reviews')"   style="padding:14px 20px">评价管理</div>
+      </div>
+
+      <div id="cust-panel-customers">
+        <div class="card" style="margin-top:16px">
+          <div class="card-head"><span class="card-title">👥 下单客户</span><span style="font-size:12px;color:#888">共 38 位</span></div>
+          <table>
+            <thead><tr><th>客户</th><th>手机号</th><th>地区</th><th>累计消费(元)</th><th>订单数</th><th>最近下单</th></tr></thead>
+            <tbody id="cust-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="cust-panel-reviews" style="display:none">
+        <div class="card" style="margin-top:16px">
+          <div class="card-head">
+            <span class="card-title">⭐ 买家评价</span>
+            <span style="font-size:13px;color:#888">综合评分 <strong style="color:#F59E0B">4.8</strong> / 5.0</span>
+          </div>
+          <div class="card-body" id="reviews-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 6. 消息中心 ══ -->
+    <div class="panel" id="panel-messages">
+      <div class="card">
+        <div class="card-head"><span class="card-title">📣 消息中心</span><button class="btn btn-outline btn-sm" onclick="markAllRead()">全部已读</button></div>
+        <div class="card-body" id="msg-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ 7. 店铺设置 ══ -->
+    <div class="panel" id="panel-settings">
+      <div class="card" style="max-width:640px">
+        <div class="card-head"><span class="card-title">🏪 店铺信息</span></div>
+        <div class="card-body">
+          <div class="settings-section">
+            <h4>基本信息</h4>
+            <div class="form-row">
+              <div class="form-field"><label>联系人姓名</label><input id="s-realname" placeholder="请输入"></div>
+              <div class="form-field"><label>手机号</label><input id="s-phone" placeholder="——" disabled></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field"><label>店铺/企业名称 <span class="req">*</span></label><input id="s-company" placeholder="请输入"></div>
+              <div class="form-field"><label>主营品类</label><input id="s-category" placeholder="如：化肥、农药、种子"></div>
+            </div>
+            <div class="form-field"><label>营业执照号</label><input id="s-license" placeholder="请输入（选填）" style="max-width:360px"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">保存修改</button>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:640px;margin-top:16px">
+        <div class="card-head"><span class="card-title">🔐 安全设置</span></div>
+        <div class="card-body">
+          <div class="settings-section">
+            <h4>修改登录密码</h4>
+            <div class="form-row">
+              <div class="form-field"><label>原密码</label><input type="password" id="s-oldpwd" placeholder="请输入原密码"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field"><label>新密码</label><input type="password" id="s-newpwd" placeholder="至少6位"></div>
+              <div class="form-field"><label>确认新密码</label><input type="password" id="s-newpwd2" placeholder="再次输入"></div>
+            </div>
+            <button class="btn btn-primary" onclick="changePassword()">修改密码</button>
+          </div>
+          <div class="settings-section">
+            <h4>绑定手机号</h4>
+            <p style="font-size:13px;color:#888">当前绑定手机：<strong id="s-bound-phone">——</strong></p>
+            <button class="btn btn-outline" style="margin-top:12px" onclick="alert('手机号更换功能开发中')">更换手机号</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ══ 弹窗：新增/编辑商品 ══ -->
+<div class="modal-mask" id="modalProduct">
+  <div class="modal">
+    <h3 id="prod-modal-title">新增商品</h3>
+    <div class="mfield">
+      <label>商品名称 <span class="req">*</span></label>
+      <input id="p-name" placeholder="请输入商品名称">
+    </div>
+    <!-- 图片上传 -->
+    <div class="mfield">
+      <label>商品图片</label>
+      <div id="p-img-upload-area" class="img-upload-area" onclick="document.getElementById('p-img-input').click()">
+        <input type="file" id="p-img-input" accept="image/*" style="display:none" onchange="uploadProdImg(event)">
+        📷 点击上传图片（JPG/PNG，最大3MB）
+      </div>
+      <div id="p-img-preview-wrap" style="display:none;margin-top:8px">
+        <div class="img-preview-wrap">
+          <img id="p-img-preview" class="img-preview">
+          <div class="img-remove" onclick="removeProdImg()">✕</div>
+        </div>
+      </div>
+      <input type="hidden" id="p-image-url">
+    </div>
+    <div class="mrow">
+      <div class="mfield">
+        <label>分类</label>
+        <select id="p-cat">
+          <option value="">请选择</option>
+          <option>化肥</option><option>农药</option><option>种子</option>
+          <option>农膜</option><option>农机</option><option>其他</option>
+        </select>
+      </div>
+      <div class="mfield"><label>图标 Emoji</label><input id="p-icon" placeholder="📦"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>价格（元）<span class="req">*</span></label><input id="p-price" type="number" min="0" step="0.01"></div>
+      <div class="mfield"><label>单位</label><input id="p-unit" placeholder="如：袋(5kg)"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>库存数量</label><input id="p-stock" type="number" min="0"></div>
+      <div class="mfield"><label>状态</label><select id="p-status"><option value="on">在售</option><option value="off">已下架</option></select></div>
+    </div>
+    <div class="mfield"><label>商品简介</label><textarea id="p-desc" rows="3" placeholder="请输入商品描述、成分、适用场景..."></textarea></div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalProduct')">取消</button>
+      <button class="mbtn save" onclick="saveProduct()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 弹窗：订单详情 ══ -->
+<div class="modal-mask" id="modalOrder">
+  <div class="modal" style="width:640px">
+    <h3>订单详情</h3>
+    <div id="order-detail-content"></div>
+    <div class="mbtns"><button class="mbtn cancel" onclick="closeModal('modalOrder')">关闭</button></div>
+  </div>
+</div>
+
+<!-- ══ 弹窗：发货 ══ -->
+<div class="modal-mask" id="modalShip">
+  <div class="modal" style="width:440px">
+    <h3>📦 填写发货信息</h3>
+    <input type="hidden" id="ship-order-id">
+    <div class="mfield"><label>快递公司</label>
+      <select id="ship-carrier">
+        <option>中通快递</option><option>圆通快递</option><option>韵达快递</option>
+        <option>顺丰速运</option><option>邮政EMS</option><option>其他</option>
+      </select>
+    </div>
+    <div class="mfield"><label>运单号 <span class="req">*</span></label><input id="ship-no" placeholder="请输入快递单号"></div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalShip')">取消</button>
+      <button class="mbtn save" onclick="confirmShip()">确认发货</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 弹窗：回复评价 ══ -->
+<div class="modal-mask" id="modalReply">
+  <div class="modal" style="width:480px">
+    <h3>💬 回复评价</h3>
+    <input type="hidden" id="reply-id">
+    <div class="mfield"><label>回复内容</label><textarea id="reply-content" rows="4" placeholder="请输入回复内容..."></textarea></div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalReply')">取消</button>
+      <button class="mbtn save" onclick="submitReply()">发布回复</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   工具函数
+════════════════════════════════════════════ */
+const T_KEY = 'merchant_token'
+const U_KEY = 'merchant_user'
+
+function getToken() { return localStorage.getItem(T_KEY) || '' }
+function getUser()  { try { return JSON.parse(localStorage.getItem(U_KEY)) || {} } catch { return {} } }
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
+  if (body) opts.body = JSON.stringify(body)
+  try {
+    const r = await fetch('/api/merchant' + path, opts)
+    const text = await r.text()
+    let data
+    try { data = JSON.parse(text) } catch { throw new Error('服务器返回格式错误: ' + text.slice(0, 100)) }
+    if (data.code === 401) { logout(); return null }
+    return data
+  } catch (e) {
+    console.error('[api error]', method, path, e)
+    throw e
+  }
+}
+
+function logout() {
+  localStorage.removeItem(T_KEY)
+  localStorage.removeItem(U_KEY)
+  location.href = '/merchant/login.html'
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show') }
+function showModal(id)  { document.getElementById(id).classList.add('show') }
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+/* ── 初始化 ── */
+(function init() {
+  if (!getToken()) { location.href = '/merchant/login.html'; return }
+  const u = getUser()
+  document.getElementById('sidebar-name').textContent  = u.company_name || u.real_name || '——'
+  document.getElementById('sidebar-phone').textContent = u.phone || '——'
+  document.getElementById('topbar-shop').textContent   = u.company_name || ''
+  setInterval(() => {
+    document.getElementById('topbar-time').textContent = new Date().toLocaleString('zh-CN', { hour12: false })
+  }, 1000)
+  show('shop')
+})()
+
+/* ════════════════════════════════════════════
+   导航
+════════════════════════════════════════════ */
+const TITLES = { shop:'店铺中心', products:'商品管理', orders:'订单管理', finance:'财务结算', customers:'客户评价', messages:'消息中心', settings:'店铺设置' }
+
+function show(panel) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  document.getElementById('panel-' + panel).classList.add('active')
+  const nav = document.getElementById('nav-' + panel)
+  if (nav) nav.classList.add('active')
+  document.getElementById('page-title').textContent = TITLES[panel] || ''
+  if (panel === 'shop')      loadStats()
+  if (panel === 'products')  loadProducts()
+  if (panel === 'orders')    loadOrders('all')
+  if (panel === 'finance')   { loadFinance(); loadSettleTable(); loadWithdrawTable() }
+  if (panel === 'customers') { loadCustomers(); loadReviews() }
+  if (panel === 'messages')  loadMessages()
+  if (panel === 'settings')  loadSettings()
+}
+
+/* ════════════════════════════════════════════
+   1. 店铺中心
+════════════════════════════════════════════ */
+async function loadStats() {
+  const r = await api('GET', '/stats').catch(e => { console.error('[loadStats]', e); return null })
+  if (!r || r.code !== 200) return
+  const d = r.data
+  document.getElementById('s-sales').textContent   = '¥' + d.today_sales
+  document.getElementById('s-orders').textContent  = d.today_orders
+  document.getElementById('s-ship').textContent    = d.pending_ship
+  document.getElementById('s-settle').textContent  = '¥' + d.pending_settlement
+  document.getElementById('shop-prods').textContent = `${d.on_sale} / ${d.total_products} 件在售`
+  document.getElementById('shop-low').textContent  = d.low_stock + ' 件'
+  document.getElementById('shop-monthly').textContent = '¥' + d.monthly_sales
+  document.getElementById('shop-customers').textContent = d.total_customers + ' 位'
+
+  // 订单徽章
+  if (d.pending_ship > 0) {
+    const b = document.getElementById('order-badge')
+    b.textContent = d.pending_ship; b.style.display = 'flex'
+    document.getElementById('ship-count').textContent = '(' + d.pending_ship + ')'
+  }
+
+  // 加载商品品类到店铺状态
+  const prof = await api('GET', '/profile')
+  if (prof?.data) document.getElementById('shop-cat').textContent = prof.data.product_category || '未设置'
+
+  // 绘制柱状图
+  renderBarChart('bar-chart', [
+    {label:'5/19',val:2100},{label:'5/20',val:3400},{label:'5/21',val:1800},
+    {label:'5/22',val:4200},{label:'5/23',val:3800},{label:'5/24',val:2900},{label:'5/25',val:3280}
+  ])
+}
+
+function renderBarChart(id, data) {
+  const max = Math.max(...data.map(d=>d.val))
+  document.getElementById(id).innerHTML = data.map(d => `
+    <div class="bar-wrap">
+      <div class="bar-val">${d.val >= 1000 ? (d.val/1000).toFixed(1)+'k' : d.val}</div>
+      <div class="bar" style="height:${Math.round(d.val/max*90)}px"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>`).join('')
+}
+
+/* ════════════════════════════════════════════
+   2. 商品管理
+════════════════════════════════════════════ */
+let productsData = []
+let editProdId = null
+
+async function loadProducts() {
+  const tbody = document.getElementById('prod-table')
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="9">加载中...</td></tr>'
+  try {
+    const status = document.getElementById('filter-status').value
+    const cat    = document.getElementById('filter-cat').value
+    const params = new URLSearchParams()
+    if (status) params.append('status', status)
+    if (cat)    params.append('category', cat)
+    const qs = params.toString()
+    const r = await api('GET', '/products' + (qs ? '?' + qs : ''))
+    if (!r) return
+    productsData = r.data || []
+    if (!productsData.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="9">暂无商品，点击右上角"＋ 上架新商品"添加</td></tr>'
+      return
+    }
+    tbody.innerHTML = productsData.map(p => `
+      <tr>
+        <td style="color:#888">${p.id}</td>
+        <td>${p.image_url
+          ? `<img class="prod-thumb" src="${esc(p.image_url)}">`
+          : `<div class="prod-icon-cell">${esc(p.icon || '📦')}</div>`}</td>
+        <td style="font-weight:600;max-width:180px">${esc(p.name)}</td>
+        <td>${esc(p.category || '—')}</td>
+        <td style="color:#C8902E;font-weight:700">¥${Number(p.price).toFixed(2)}</td>
+        <td>${esc(p.unit || '—')}</td>
+        <td><span class="${p.stock===0?'badge badge-refund':p.stock<10?'badge badge-low':''}">${p.stock}</span></td>
+        <td><span class="${p.status==='on'?'badge badge-on':'badge badge-off'}">${p.status==='on'?'在售':'已下架'}</span></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-outline btn-sm" onclick="openEditProduct(${p.id})" style="margin-right:4px">编辑</button>
+          <button class="btn btn-warn btn-sm" onclick="toggleProd(${p.id},'${p.status==='on'?'off':'on'}')" style="margin-right:4px">${p.status==='on'?'下架':'上架'}</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProd(${p.id},'${esc(p.name)}')">删除</button>
+        </td>
+      </tr>`).join('')
+  } catch (e) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9" style="color:#DC2626">加载失败：${esc(e.message)} <button class="btn btn-outline btn-sm" onclick="loadProducts()" style="margin-left:8px">重试</button></td></tr>`
+    console.error('[loadProducts]', e)
+  }
+}
+
+function resetProdImg() {
+  document.getElementById('p-image-url').value = ''
+  document.getElementById('p-img-preview').src = ''
+  document.getElementById('p-img-preview-wrap').style.display = 'none'
+  document.getElementById('p-img-upload-area').style.display = 'block'
+}
+function setProdImg(url) {
+  document.getElementById('p-image-url').value = url
+  document.getElementById('p-img-preview').src = url
+  document.getElementById('p-img-preview-wrap').style.display = 'block'
+  document.getElementById('p-img-upload-area').style.display = 'none'
+}
+function removeProdImg() { resetProdImg() }
+
+async function uploadProdImg(e) {
+  const file = e.target.files[0]; if (!file) return
+  const fd = new FormData(); fd.append('image', file)
+  const r = await fetch('/api/merchant/upload', { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body: fd })
+  const data = await r.json()
+  if (data.code === 200) setProdImg(data.data.url)
+  else alert(data.msg || '上传失败')
+}
+
+function openAddProduct() {
+  editProdId = null
+  document.getElementById('prod-modal-title').textContent = '新增商品'
+  document.getElementById('p-name').value  = ''
+  document.getElementById('p-cat').value   = ''
+  document.getElementById('p-icon').value  = ''
+  document.getElementById('p-price').value = ''
+  document.getElementById('p-unit').value  = ''
+  document.getElementById('p-stock').value = ''
+  document.getElementById('p-status').value = 'on'
+  document.getElementById('p-desc').value  = ''
+  resetProdImg()
+  showModal('modalProduct')
+}
+
+function openEditProduct(id) {
+  const p = productsData.find(x => x.id === id); if (!p) return
+  editProdId = id
+  document.getElementById('prod-modal-title').textContent = '编辑商品'
+  document.getElementById('p-name').value   = p.name
+  document.getElementById('p-cat').value    = p.category || ''
+  document.getElementById('p-icon').value   = p.icon || ''
+  document.getElementById('p-price').value  = p.price
+  document.getElementById('p-unit').value   = p.unit || ''
+  document.getElementById('p-stock').value  = p.stock
+  document.getElementById('p-status').value = p.status || 'on'
+  document.getElementById('p-desc').value   = p.description || ''
+  if (p.image_url) setProdImg(p.image_url); else resetProdImg()
+  showModal('modalProduct')
+}
+
+async function saveProduct() {
+  const name = document.getElementById('p-name').value.trim()
+  if (!name) { alert('请填写商品名称'); return }
+  const price = parseFloat(document.getElementById('p-price').value)
+  if (!price || price <= 0) { alert('请填写正确价格'); return }
+  const body = {
+    name, price,
+    category:    document.getElementById('p-cat').value.trim(),
+    icon:        document.getElementById('p-icon').value.trim(),
+    unit:        document.getElementById('p-unit').value.trim(),
+    stock:       document.getElementById('p-stock').value,
+    status:      document.getElementById('p-status').value,
+    image_url:   document.getElementById('p-image-url').value || null,
+    description: document.getElementById('p-desc').value.trim()
+  }
+  const method = editProdId ? 'PUT' : 'POST'
+  const path   = editProdId ? `/products/${editProdId}` : '/products'
+  const r = await api(method, path, body)
+  if (r?.code === 200) { closeModal('modalProduct'); loadProducts(); loadStats() }
+  else alert(r?.msg || '保存失败')
+}
+
+async function toggleProd(id, status) {
+  const r = await api('PATCH', `/products/${id}/status`, { status })
+  if (r?.code === 200) loadProducts()
+  else alert(r?.msg || '操作失败')
+}
+
+async function deleteProd(id, name) {
+  if (!confirm(`确定删除商品「${name}」？此操作不可撤销。`)) return
+  const r = await api('DELETE', `/products/${id}`)
+  if (r?.code === 200) { loadProducts(); loadStats() }
+  else alert(r?.msg || '删除失败')
+}
+
+/* ════════════════════════════════════════════
+   3. 订单管理（演示数据）
+════════════════════════════════════════════ */
+const MOCK_ORDERS = [
+  { id:'MO2026052501', buyer:'古丽**哈尔', phone:'138****0001', addr:'新疆喀什疏附县向阳乡1号', items:[{name:'吡虫啉可湿性粉剂 500g',qty:3,price:68}], amount:214, fee:10, status:'pending_ship', created:'2026-05-25 08:23', note:'请尽快发货' },
+  { id:'MO2026052502', buyer:'阿迪力**',  phone:'139****0045', addr:'新疆喀什疏附县农业园区', items:[{name:'复合肥料（尿素）50kg',qty:2,price:168}], amount:346, fee:10, status:'pending_ship', created:'2026-05-25 09:11', note:'' },
+  { id:'MO2026052503', buyer:'买买提**',  phone:'135****0089', addr:'新疆喀什巴楚县农业区', items:[{name:'棉花催熟剂 1L',qty:5,price:98}], amount:500, fee:10, status:'shipped', created:'2026-05-24 14:30', logistics:'ZT1234567890', note:'' },
+  { id:'MO2026052504', buyer:'热依拉**',  phone:'136****0023', addr:'新疆喀什疏附县林业村', items:[{name:'新陆早57号棉花种子 5kg',qty:1,price:165}], amount:175, fee:10, status:'completed', created:'2026-05-22 10:15', note:'' },
+  { id:'MO2026052505', buyer:'努尔**',    phone:'158****0067', addr:'新疆喀什叶城县棉花区', items:[{name:'磷酸二铵 50kg',qty:3,price:210}], amount:640, fee:10, status:'completed', created:'2026-05-21 16:20', note:'' },
+  { id:'MO2026052506', buyer:'帕提古**',  phone:'177****0012', addr:'新疆喀什英吉沙县', items:[{name:'高效氯氰菊酯 250ml',qty:2,price:88}], amount:186, fee:10, status:'refund', created:'2026-05-20 11:35', note:'发错货了' },
+  { id:'MO2026052507', buyer:'亚力坤**',  phone:'152****0034', addr:'新疆喀什岳普湖县', items:[{name:'腐殖酸水溶肥 20kg',qty:4,price:128}], amount:522, fee:10, status:'pending_pay', created:'2026-05-25 07:50', note:'' },
+  { id:'MO2026052508', buyer:'萨努巴尔**',phone:'187****0056', addr:'新疆喀什泽普县', items:[{name:'棉花专用地膜（黑色）',qty:2,price:88}], amount:186, fee:10, status:'completed', created:'2026-05-19 09:00', note:'' },
+]
+
+let currentOrderTab = 'all'
+
+const ORDER_STATUS_MAP = {
+  pending_pay: { label:'待付款', cls:'badge-pending' },
+  pending_ship:{ label:'待发货', cls:'badge-ship' },
+  shipped:     { label:'已发货', cls:'badge-shipped' },
+  completed:   { label:'已完成', cls:'badge-done' },
+  refund:      { label:'售后/退款', cls:'badge-refund' }
+}
+
+function switchOrderTab(el, tab) {
+  document.querySelectorAll('#panel-orders .tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
+  currentOrderTab = tab
+  loadOrders(tab)
+}
+
+function loadOrders(tab) {
+  tab = tab || currentOrderTab
+  const list = tab === 'all' ? MOCK_ORDERS : MOCK_ORDERS.filter(o => o.status === tab)
+  const tbody = document.getElementById('order-table')
+  if (!list.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无订单</td></tr>'; return }
+  tbody.innerHTML = list.map(o => {
+    const st = ORDER_STATUS_MAP[o.status] || { label:o.status, cls:'badge-done' }
+    const item = o.items[0]
+    return `<tr>
+      <td style="font-size:12px;color:#888">${o.id}</td>
+      <td>${esc(o.buyer)}<br><span style="font-size:11px;color:#BBB">${o.phone}</span></td>
+      <td>${esc(item.name)} ×${item.qty}<br><span style="font-size:11px;color:#BBB">${o.items.length > 1 ? `等${o.items.length}件` : ''}</span></td>
+      <td style="font-weight:700;color:#C8902E">¥${o.amount}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td style="font-size:12px;color:#888">${o.created}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-outline btn-sm" onclick="showOrderDetail('${o.id}')" style="margin-right:4px">详情</button>
+        ${o.status === 'pending_ship' ? `<button class="btn btn-primary btn-sm" onclick="openShip('${o.id}')">发货</button>` : ''}
+        ${o.status === 'refund' ? `<button class="btn btn-danger btn-sm" onclick="handleRefund('${o.id}')">处理退款</button>` : ''}
+      </td>
+    </tr>`
+  }).join('')
+}
+
+function showOrderDetail(id) {
+  const o = MOCK_ORDERS.find(x => x.id === id); if (!o) return
+  const st = ORDER_STATUS_MAP[o.status] || { label:o.status, cls:'badge-done' }
+  document.getElementById('order-detail-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div><div class="fc-label">订单号</div><div style="font-size:14px;font-weight:700;margin-top:4px">${o.id}</div></div>
+      <div><div class="fc-label">订单状态</div><div style="margin-top:4px"><span class="badge ${st.cls}">${st.label}</span></div></div>
+      <div><div class="fc-label">买家</div><div style="font-size:14px;font-weight:600;margin-top:4px">${esc(o.buyer)} · ${o.phone}</div></div>
+      <div><div class="fc-label">下单时间</div><div style="font-size:14px;margin-top:4px">${o.created}</div></div>
+    </div>
+    <div style="background:#F8F9FA;border-radius:10px;padding:14px;margin-bottom:14px">
+      <div class="fc-label" style="margin-bottom:8px">收货地址</div>
+      <div style="font-size:13px;font-weight:600">${esc(o.addr)}</div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="fc-label" style="margin-bottom:8px">购买商品</div>
+      ${o.items.map(i => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;font-size:13px">
+          <span>${esc(i.name)} × ${i.qty}</span><span style="font-weight:700">¥${i.price * i.qty}</span>
+        </div>`).join('')}
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#888">
+        <span>运费</span><span>¥${o.fee}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:800">
+        <span>实付金额</span><span style="color:#C8902E">¥${o.amount}</span>
+      </div>
+    </div>
+    ${o.note ? `<div style="background:#FFF3E0;border-radius:8px;padding:10px 12px;font-size:13px;color:#D97706">买家备注：${esc(o.note)}</div>` : ''}
+    ${o.logistics ? `<div style="margin-top:10px;font-size:13px;color:#555">物流单号：<strong>${o.logistics}</strong></div>` : ''}
+  `
+  showModal('modalOrder')
+}
+
+function openShip(id) {
+  document.getElementById('ship-order-id').value = id
+  document.getElementById('ship-no').value = ''
+  showModal('modalShip')
+}
+
+function confirmShip() {
+  const id = document.getElementById('ship-order-id').value
+  const no = document.getElementById('ship-no').value.trim()
+  if (!no) { alert('请输入运单号'); return }
+  const o = MOCK_ORDERS.find(x => x.id === id)
+  if (o) { o.status = 'shipped'; o.logistics = no }
+  closeModal('modalShip')
+  loadOrders(currentOrderTab)
+  alert('发货成功！运单号：' + no)
+}
+
+function handleRefund(id) {
+  const o = MOCK_ORDERS.find(x => x.id === id)
+  if (confirm(`确认退款给买家 ${o?.buyer}？退款金额 ¥${o?.amount}`)) {
+    if (o) o.status = 'completed'
+    loadOrders(currentOrderTab)
+    alert('退款已处理')
+  }
+}
+
+function exportOrders() { alert('订单导出功能开发中，敬请期待') }
+
+/* ════════════════════════════════════════════
+   4. 财务结算
+════════════════════════════════════════════ */
+const MOCK_SETTLES = [
+  { id:'SE001',order:'MO2026052504',prod:'棉花种子 5kg',amount:175,comm:5.25,actual:169.75,status:'已结算',date:'2026-05-23' },
+  { id:'SE002',order:'MO2026052505',prod:'磷酸二铵 50kg',amount:640,comm:19.2,actual:620.8,status:'已结算',date:'2026-05-22' },
+  { id:'SE003',order:'MO2026052508',prod:'棉花专用地膜',amount:186,comm:5.58,actual:180.42,status:'已结算',date:'2026-05-21' },
+  { id:'SE004',order:'MO2026052503',prod:'棉花催熟剂 1L',amount:500,comm:15,actual:485,status:'结算中',date:'2026-05-24' },
+]
+const MOCK_WITHDRAWS = [
+  { id:'WD001',amount:'5000.00',account:'农业银行****8899',status:'已到账',apply:'2026-05-20',arrive:'2026-05-21' },
+  { id:'WD002',amount:'8000.00',account:'农业银行****8899',status:'处理中',apply:'2026-05-25',arrive:'预计1-3日' },
+]
+
+function loadFinance() {
+  const weekData = [
+    {label:'5/19',val:8200},{label:'5/20',val:12400},{label:'5/21',val:6800},
+    {label:'5/22',val:15200},{label:'5/23',val:11800},{label:'5/24',val:9400},{label:'5/25',val:13280}
+  ]
+  renderBarChart('finance-chart', weekData)
+}
+
+function loadSettleTable() {
+  document.getElementById('settle-table').innerHTML = MOCK_SETTLES.map(s => `
+    <tr>
+      <td style="font-size:12px;color:#888">${s.id}</td>
+      <td style="font-size:12px;color:#888">${s.order}</td>
+      <td>${esc(s.prod)}</td>
+      <td>¥${s.amount}</td>
+      <td style="color:#DC2626">-¥${s.comm}</td>
+      <td style="font-weight:700;color:#16A34A">¥${s.actual}</td>
+      <td><span class="badge ${s.status==='已结算'?'badge-on':'badge-ship'}">${s.status}</span></td>
+      <td style="font-size:12px;color:#888">${s.date}</td>
+    </tr>`).join('')
+}
+
+function loadWithdrawTable() {
+  document.getElementById('withdraw-table').innerHTML = MOCK_WITHDRAWS.map(w => `
+    <tr>
+      <td style="font-size:12px;color:#888">${w.id}</td>
+      <td style="font-weight:700;color:#C8902E">¥${w.amount}</td>
+      <td style="font-size:12px">${w.account}</td>
+      <td><span class="badge ${w.status==='已到账'?'badge-on':'badge-ship'}">${w.status}</span></td>
+      <td style="font-size:12px;color:#888">${w.apply}</td>
+      <td style="font-size:12px;color:#888">${w.arrive}</td>
+    </tr>`).join('')
+}
+
+function setPeriod(p, el) {
+  document.querySelectorAll('#panel-finance .active-period').forEach(e => e.classList.remove('active-period'))
+  el.classList.add('active-period')
+  const data = {
+    day:   [{label:'8时',val:420},{label:'10时',val:860},{label:'12时',val:1240},{label:'14时',val:980},{label:'16时',val:1340},{label:'18时',val:760},{label:'20时',val:480}],
+    week:  [{label:'5/19',val:8200},{label:'5/20',val:12400},{label:'5/21',val:6800},{label:'5/22',val:15200},{label:'5/23',val:11800},{label:'5/24',val:9400},{label:'5/25',val:13280}],
+    month: [{label:'第1周',val:38400},{label:'第2周',val:52600},{label:'第3周',val:41800},{label:'第4周',val:48200}]
+  }
+  renderBarChart('finance-chart', data[p] || data.week)
+}
+
+function doWithdraw() {
+  if (confirm('确认申请提现 ¥18,650.00 到 农业银行 ****8899？')) {
+    MOCK_WITHDRAWS.unshift({ id:'WD003', amount:'18650.00', account:'农业银行****8899', status:'处理中', apply:new Date().toLocaleDateString('zh-CN'), arrive:'预计1-3日' })
+    loadWithdrawTable()
+    alert('提现申请已提交，预计1-3个工作日到账')
+  }
+}
+
+/* ════════════════════════════════════════════
+   5. 客户评价
+════════════════════════════════════════════ */
+const MOCK_CUSTOMERS = [
+  { name:'古丽**哈尔', phone:'138****0001', region:'喀什疏附县', total:832, orders:5, last:'2026-05-25' },
+  { name:'阿迪力**',  phone:'139****0045', region:'喀什疏附县', total:1260, orders:7, last:'2026-05-25' },
+  { name:'买买提**',  phone:'135****0089', region:'喀什巴楚县', total:680, orders:4, last:'2026-05-24' },
+  { name:'热依拉**',  phone:'136****0023', region:'喀什疏附县', total:420, orders:3, last:'2026-05-22' },
+  { name:'努尔**',    phone:'158****0067', region:'喀什叶城县', total:1480, orders:9, last:'2026-05-21' },
+]
+
+const MOCK_REVIEWS = [
+  { id:1, buyer:'古丽**哈尔', prod:'吡虫啉可湿性粉剂', stars:5, date:'2026-05-23', content:'质量很好，效果非常明显，棉花叶片上的害虫没有了，发货也很快！下次还会继续购买。', reply:'' },
+  { id:2, buyer:'阿迪力**',   prod:'复合肥料（尿素）50kg', stars:5, date:'2026-05-22', content:'肥料质量可靠，袋装密封好，没有潮湿，价格也比较实惠，服务态度很好。', reply:'感谢您的好评！我们一直致力于提供优质的农资产品，欢迎再次光临🌾' },
+  { id:3, buyer:'买买提**',   prod:'棉花催熟剂 1L', stars:4, date:'2026-05-20', content:'产品效果不错，但物流稍慢了一点，希望以后发货能快一些。', reply:'' },
+  { id:4, buyer:'努尔**',     prod:'磷酸二铵 50kg', stars:5, date:'2026-05-19', content:'正品，价格合理，物流速度快，已经是第三次在这家店购买了，非常放心！', reply:'感谢您的长期支持！老客户有专属优惠，欢迎持续关注我们的店铺活动😊' },
+]
+
+function switchCustTab(el, tab) {
+  document.querySelectorAll('#panel-customers .tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
+  document.getElementById('cust-panel-customers').style.display = tab === 'customers' ? 'block' : 'none'
+  document.getElementById('cust-panel-reviews').style.display   = tab === 'reviews'   ? 'block' : 'none'
+}
+
+function loadCustomers() {
+  document.getElementById('cust-table').innerHTML = MOCK_CUSTOMERS.map(c => `
+    <tr>
+      <td style="font-weight:700">${esc(c.name)}</td>
+      <td style="color:#888;font-size:12px">${c.phone}</td>
+      <td style="font-size:12px">${c.region}</td>
+      <td style="font-weight:700;color:#C8902E">¥${c.total}</td>
+      <td>${c.orders} 单</td>
+      <td style="font-size:12px;color:#888">${c.last}</td>
+    </tr>`).join('')
+}
+
+function loadReviews() {
+  document.getElementById('reviews-list').innerHTML = MOCK_REVIEWS.map(r => `
+    <div class="review-card">
+      <div class="review-head">
+        <div style="display:flex;align-items:center">
+          <div class="reviewer-avatar">${r.buyer.charAt(0)}</div>
+          <div>
+            <div class="reviewer-name">${esc(r.buyer)}</div>
+            <div style="font-size:12px;color:#888">${r.prod} · ${r.date}</div>
+          </div>
+        </div>
+        <div>
+          <div class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+          ${!r.reply ? `<button class="btn btn-outline btn-sm" onclick="openReply(${r.id})" style="margin-top:6px">回复</button>` : ''}
+        </div>
+      </div>
+      <div class="review-content">${esc(r.content)}</div>
+      ${r.reply ? `<div class="review-reply">🏪 商家回复：${esc(r.reply)}</div>` : ''}
+    </div>`).join('')
+}
+
+function openReply(id) {
+  document.getElementById('reply-id').value = id
+  document.getElementById('reply-content').value = ''
+  showModal('modalReply')
+}
+
+function submitReply() {
+  const id = parseInt(document.getElementById('reply-id').value)
+  const content = document.getElementById('reply-content').value.trim()
+  if (!content) { alert('请输入回复内容'); return }
+  const r = MOCK_REVIEWS.find(x => x.id === id)
+  if (r) r.reply = content
+  closeModal('modalReply')
+  loadReviews()
+}
+
+/* ════════════════════════════════════════════
+   6. 消息中心
+════════════════════════════════════════════ */
+const MOCK_MSGS = [
+  { icon:'📢', bg:'#EBF5FF', title:'平台公告', content:'2026年5月起，平台对农资类目商户提供0佣金扶持政策，请查看详情。', time:'2026-05-25', read:false },
+  { icon:'📦', bg:'#F0FFF4', title:'新订单通知', content:'您有新的订单（MO2026052501）待处理，请尽快发货。', time:'2026-05-25', read:false },
+  { icon:'✅', bg:'#F0FDF4', title:'审核通过通知', content:'您的店铺入驻申请已通过审核，现在可以正常经营了！欢迎入驻棉管家平台。', time:'2026-05-10', read:true },
+  { icon:'💰', bg:'#FFFBEB', title:'结算通知', content:'您的2笔订单结算已完成，合计 ¥790.55 已转入可提现余额。', time:'2026-05-09', read:true },
+]
+
+function loadMessages() {
+  document.getElementById('msg-list').innerHTML = MOCK_MSGS.map((m, i) => `
+    <div class="msg-item" style="${!m.read ? 'background:#FFFDF0;border-radius:8px;padding:14px 10px;' : ''}">
+      <div class="msg-icon" style="background:${m.bg}">${m.icon}</div>
+      <div style="flex:1">
+        <div class="msg-title">${esc(m.title)} ${!m.read ? '<span style="background:#DC2626;color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;margin-left:4px">新</span>' : ''}</div>
+        <div class="msg-content">${esc(m.content)}</div>
+      </div>
+      <div class="msg-time">${m.time}</div>
+    </div>`).join('')
+}
+
+function markAllRead() {
+  MOCK_MSGS.forEach(m => m.read = true)
+  document.getElementById('msg-badge').style.display = 'none'
+  loadMessages()
+}
+
+/* ════════════════════════════════════════════
+   7. 店铺设置
+════════════════════════════════════════════ */
+async function loadSettings() {
+  const r = await api('GET', '/profile')
+  if (!r || r.code !== 200) return
+  const d = r.data
+  document.getElementById('s-realname').value = d.real_name || ''
+  document.getElementById('s-phone').value    = d.phone || ''
+  document.getElementById('s-company').value  = d.company_name || ''
+  document.getElementById('s-category').value = d.product_category || ''
+  document.getElementById('s-license').value  = d.business_license || ''
+  document.getElementById('s-bound-phone').textContent = d.phone || '未绑定'
+}
+
+async function saveSettings() {
+  const body = {
+    real_name:        document.getElementById('s-realname').value.trim(),
+    company_name:     document.getElementById('s-company').value.trim(),
+    product_category: document.getElementById('s-category').value.trim(),
+    business_license: document.getElementById('s-license').value.trim()
+  }
+  if (!body.company_name) { alert('店铺名称不能为空'); return }
+  const r = await api('PUT', '/profile', body)
+  if (r?.code === 200) {
+    alert('保存成功')
+    // 更新侧边栏店铺名
+    const u = getUser()
+    u.company_name = body.company_name
+    localStorage.setItem(U_KEY, JSON.stringify(u))
+    document.getElementById('sidebar-name').textContent = body.company_name
+    document.getElementById('topbar-shop').textContent  = body.company_name
+  } else alert(r?.msg || '保存失败')
+}
+
+async function changePassword() {
+  const old = document.getElementById('s-oldpwd').value
+  const np1 = document.getElementById('s-newpwd').value
+  const np2 = document.getElementById('s-newpwd2').value
+  if (!old) { alert('请输入原密码'); return }
+  if (np1.length < 6) { alert('新密码不能少于6位'); return }
+  if (np1 !== np2) { alert('两次密码不一致'); return }
+  const r = await api('POST', '/change-password', { old_password: old, new_password: np1 })
+  if (r?.code === 200) {
+    alert('密码修改成功，请重新登录')
+    logout()
+  } else alert(r?.msg || '修改失败')
+}
+</script>
+</body>
+</html>

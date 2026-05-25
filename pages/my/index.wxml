@@ -10,8 +10,8 @@
       </view>
     </view>
 
-    <!-- 用户卡片 -->
-    <view class="user-card" bindtap="onProfile">
+    <!-- ── 已登录：用户卡片 ── -->
+    <view wx:if="{{isLoggedIn}}" class="user-card" bindtap="onProfile">
       <view class="uc-top">
         <view class="uc-avatar">
           <text class="uc-avatar-text">{{userInitial}}</text>
@@ -19,7 +19,7 @@
         <view class="uc-info">
           <view class="uc-name-row">
             <text class="uc-name">{{userInfo.name}}</text>
-            <view class="verified-chip">
+            <view wx:if="{{userInfo.verified}}" class="verified-chip">
               <text class="verified-text">✓ 已认证</text>
             </view>
           </view>
@@ -31,11 +31,10 @@
         </view>
         <text class="uc-arr">›</text>
       </view>
-
       <view class="uc-stats">
         <view class="uc-stat">
           <view class="uc-stat-val-row">
-            <text class="uc-stat-val">486</text>
+            <text class="uc-stat-val">{{userInfo.landSize || 0}}</text>
             <text class="uc-stat-unit">亩</text>
           </view>
           <text class="uc-stat-label">承包面积</text>
@@ -52,15 +51,44 @@
         </view>
       </view>
     </view>
+
+    <!-- ── 未登录：游客卡片 ── -->
+    <view wx:else class="guest-card">
+      <view class="guest-avatar-wrap">
+        <view class="guest-avatar">
+          <text class="guest-avatar-icon">👤</text>
+        </view>
+        <view class="guest-text">
+          <text class="guest-title">您好，游客</text>
+          <text class="guest-sub">登录后享受完整农业服务</text>
+        </view>
+      </view>
+
+      <!-- 微信一键登录 -->
+      <button
+        class="wx-login-btn"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onWxPhoneLogin"
+        loading="{{wxLoading}}"
+      >
+        <text class="wx-btn-icon">🟢</text>
+        <text class="wx-btn-text">微信一键登录</text>
+      </button>
+
+      <!-- 手机号登录入口 -->
+      <view class="phone-login-row" bindtap="onGoPhoneLogin">
+        <text class="phone-login-text">手机号登录 / 注册</text>
+        <text class="phone-login-arr">›</text>
+      </view>
+    </view>
   </view>
 
   <!-- 菜单列表 -->
   <scroll-view class="my-scroll" scroll-y>
 
-    <!-- 菜单组 -->
     <view class="menu-group">
 
-      <view class="menu-item" bindtap="onRealName">
+      <view class="menu-item {{!isLoggedIn ? 'item-dim' : ''}}" bindtap="onRealName">
         <view class="mi-icon blue">
           <text class="mi-emoji">🪪</text>
         </view>
@@ -69,14 +97,14 @@
           <text class="mi-sub">享受补贴、贷款等专属权益</text>
         </view>
         <view class="mi-right">
-          <text class="mi-verified">✓已认证</text>
+          <text wx:if="{{isLoggedIn && userInfo.verified}}" class="mi-verified">✓已认证</text>
           <text class="mi-arr">›</text>
         </view>
       </view>
 
       <view class="mi-div"></view>
 
-      <view class="menu-item" bindtap="onFavorites">
+      <view class="menu-item {{!isLoggedIn ? 'item-dim' : ''}}" bindtap="onFavorites">
         <view class="mi-icon red">
           <text class="mi-emoji">❤️</text>
         </view>
@@ -85,14 +113,14 @@
           <text class="mi-sub">收藏的农机、农资和服务</text>
         </view>
         <view class="mi-right">
-          <text class="mi-count">8</text>
+          <text wx:if="{{isLoggedIn}}" class="mi-count">8</text>
           <text class="mi-arr">›</text>
         </view>
       </view>
 
       <view class="mi-div"></view>
 
-      <view class="menu-item" bindtap="onMyOrders">
+      <view class="menu-item {{!isLoggedIn ? 'item-dim' : ''}}" bindtap="onMyOrders">
         <view class="mi-icon orange">
           <text class="mi-emoji">📋</text>
         </view>
@@ -101,7 +129,7 @@
           <text class="mi-sub">查看预约中、进行中、已完成订单</text>
         </view>
         <view class="mi-right">
-          <view class="mi-badge-warn">
+          <view wx:if="{{isLoggedIn}}" class="mi-badge-warn">
             <text class="mi-badge-text">2进行中</text>
           </view>
           <text class="mi-arr">›</text>
@@ -126,12 +154,12 @@
 
     </view>
 
-    <!-- 退出登录 -->
-    <view class="logout-wrap" bindtap="onLogout">
+    <!-- 退出登录（仅登录时显示） -->
+    <view wx:if="{{isLoggedIn}}" class="logout-wrap" bindtap="onLogout">
       <text class="logout-text">退出登录</text>
     </view>
 
     <view style="height: 40rpx"></view>
   </scroll-view>
-
+  <tab-bar selected="{{2}}"></tab-bar>
 </view>

@@ -1,6 +1,12 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/login/index",
+    "pages/merchant/index",
+    "pages/merchant/products",
+    "pages/merchant/orders",
+    "pages/merchant/finance",
+    "pages/merchant/profile",
     "pages/ai/index",
     "pages/my/index",
     "pages/supplies/index",

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>棉管家 · 商户登录</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f4c2a 0%, #1a7a40 50%, #0f4c2a 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box {
+      background: #fff; border-radius: 20px;
+      padding: 48px 40px; width: 420px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    }
+    .brand { text-align: center; margin-bottom: 32px; }
+    .brand-icon {
+      width: 72px; height: 72px; background: linear-gradient(135deg, #15803d, #22c55e);
+      border-radius: 20px; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 36px; margin-bottom: 16px;
+    }
+    .brand-name { font-size: 22px; font-weight: 900; color: #1A1A1A; }
+    .brand-sub  { font-size: 13px; color: #888; margin-top: 4px; }
+    .label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; display: block; }
+    .input-group { position: relative; margin-bottom: 18px; }
+    .input-group input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #E0E0E0; border-radius: 10px;
+      font-size: 15px; outline: none; transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: #16A34A; }
+    .input-prefix {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: #888; font-size: 14px;
+    }
+    .input-group.has-prefix input { padding-left: 52px; }
+    .eye-btn {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      cursor: pointer; font-size: 16px; color: #888;
+    }
+    .err { color: #DC2626; font-size: 13px; margin-bottom: 14px; display: none; }
+    .btn-login {
+      width: 100%; padding: 14px; background: linear-gradient(135deg, #15803d, #16a34a);
+      color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.2s; margin-top: 8px;
+    }
+    .btn-login:hover { opacity: 0.9; }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+    .footer-links { text-align: center; margin-top: 24px; }
+    .footer-links a { font-size: 13px; color: #888; text-decoration: none; margin: 0 8px; }
+    .footer-links a:hover { color: #16A34A; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="brand">
+      <div class="brand-icon">🏪</div>
+      <div class="brand-name">棉管家 · 商户中心</div>
+      <div class="brand-sub">农资商户管理平台</div>
+    </div>
+
+    <label class="label">账号</label>
+    <div class="input-group">
+      <input id="phone" type="text" placeholder="请输入账号" onkeydown="handleKey(event)">
+    </div>
+
+    <label class="label">密码</label>
+    <div class="input-group">
+      <input id="pwd" type="password" placeholder="请输入密码" onkeydown="handleKey(event)">
+      <span class="eye-btn" onclick="togglePwd()">👁</span>
+    </div>
+
+    <div class="err" id="err"></div>
+    <button class="btn-login" id="btn" onclick="doLogin()">登 录</button>
+
+    <div class="footer-links">
+      <a href="/admin/login.html">管理员入口</a>
+      <a href="/admin/merchant-apply.html">申请入驻</a>
+    </div>
+  </div>
+
+  <script>
+    if (localStorage.getItem('merchant_token')) location.href = '/merchant/dashboard.html'
+
+    function togglePwd() {
+      var i = document.getElementById('pwd')
+      i.type = i.type === 'password' ? 'text' : 'password'
+    }
+    function handleKey(e) { if (e.key === 'Enter') doLogin() }
+
+    async function doLogin() {
+      var phone = document.getElementById('phone').value.trim()
+      var pwd   = document.getElementById('pwd').value
+      var err   = document.getElementById('err')
+      var btn   = document.getElementById('btn')
+      err.style.display = 'none'
+
+      if (!phone) { err.textContent = '请输入账号'; err.style.display = 'block'; return }
+      if (!pwd || pwd.length < 6)   { err.textContent = '密码不能少于6位';   err.style.display = 'block'; return }
+
+      btn.disabled = true; btn.textContent = '登录中...'
+      try {
+        var r = await fetch('/api/merchant/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password: pwd })
+        })
+        var data = await r.json()
+        if (data.code === 200) {
+          localStorage.setItem('merchant_token', data.data.token)
+          localStorage.setItem('merchant_user', JSON.stringify(data.data))
+          location.href = '/merchant/dashboard.html'
+        } else {
+          err.textContent = data.msg || '登录失败'
+          err.style.display = 'block'
+        }
+      } catch(e) {
+        err.textContent = '网络异常，请检查服务器是否启动'
+        err.style.display = 'block'
+      }
+      btn.disabled = false; btn.textContent = '登 录'
+    }
+  </script>
+</body>
+</html>

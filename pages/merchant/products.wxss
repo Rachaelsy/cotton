@@ -1,0 +1,153 @@
+/* pages/merchant/products.wxss */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5F6FA;
+}
+.scroll { flex: 1; height: 0; }
+
+.header {
+  background: linear-gradient(135deg, #C8902E, #D4A043);
+  padding: 8rpx 32rpx 28rpx;
+}
+.header-tag {
+  font-size: 20rpx;
+  color: rgba(255,255,255,0.65);
+  display: block;
+  margin-bottom: 12rpx;
+  padding-right: 200rpx;
+}
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-title { font-size: 36rpx; font-weight: 700; color: #fff; }
+.add-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: rgba(255,255,255,0.25);
+  border-radius: 30rpx;
+  padding: 10rpx 24rpx;
+  gap: 6rpx;
+}
+.add-icon { font-size: 28rpx; color: #fff; font-weight: 700; }
+.add-text { font-size: 24rpx; color: #fff; }
+
+/* Tab */
+.tab-bar {
+  display: flex;
+  flex-direction: row;
+  background: #fff;
+  border-bottom: 1rpx solid #F0F0F0;
+}
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 26rpx;
+  color: #888;
+}
+.tab-item.active {
+  color: #C8902E;
+  font-weight: 700;
+  border-bottom: 4rpx solid #C8902E;
+}
+
+/* Product list */
+.prod-list { padding: 20rpx 24rpx; display: flex; flex-direction: column; gap: 16rpx; }
+.prod-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+.prod-info { display: flex; flex-direction: row; gap: 20rpx; margin-bottom: 20rpx; }
+.prod-icon {
+  width: 80rpx; height: 80rpx;
+  background: #FFF7ED;
+  border-radius: 16rpx;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.prod-emoji { font-size: 40rpx; }
+.prod-detail { flex: 1; }
+.prod-name { font-size: 28rpx; font-weight: 600; color: #1A1A1A; display: block; }
+.prod-cat { font-size: 22rpx; color: #AAAAAA; margin-top: 4rpx; display: block; }
+.prod-meta { display: flex; flex-direction: row; align-items: baseline; gap: 8rpx; margin-top: 8rpx; }
+.prod-price { font-size: 30rpx; font-weight: 700; color: #C8902E; }
+.prod-unit { font-size: 20rpx; color: #AAAAAA; }
+.prod-stock { font-size: 20rpx; color: #4CAF50; margin-left: 8rpx; }
+.prod-stock.out { color: #F5222D; }
+
+.prod-actions { display: flex; flex-direction: row; gap: 12rpx; }
+.action-btn {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+}
+.action-btn.edit    { background: #EFF6FF; color: #2563EB; }
+.action-btn.off-btn { background: #FFF7ED; color: #D97706; }
+.action-btn.on-btn  { background: #F0FDF4; color: #16A34A; }
+.action-btn.del     { background: #FEF2F2; color: #DC2626; }
+
+/* Empty */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 0;
+  gap: 16rpx;
+}
+.empty-icon { font-size: 80rpx; }
+.empty-text { font-size: 26rpx; color: #AAAAAA; }
+
+/* Modal */
+.modal-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+}
+.modal {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 40rpx 32rpx;
+  z-index: 101;
+}
+.modal-title { font-size: 32rpx; font-weight: 700; color: #1A1A1A; display: block; margin-bottom: 32rpx; }
+.form-item { margin-bottom: 24rpx; }
+.form-row { display: flex; flex-direction: row; gap: 20rpx; }
+.form-item.half { flex: 1; }
+.form-label { font-size: 24rpx; color: #555; display: block; margin-bottom: 10rpx; }
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  background: #F5F6FA;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 26rpx;
+  color: #1A1A1A;
+  box-sizing: border-box;
+}
+.modal-btns { display: flex; flex-direction: row; gap: 20rpx; margin-top: 16rpx; }
+.modal-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.modal-btn.cancel  { background: #F5F6FA; color: #666; }
+.modal-btn.confirm { background: #C8902E; color: #fff; }

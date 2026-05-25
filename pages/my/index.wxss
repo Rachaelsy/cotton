@@ -273,6 +273,100 @@
   margin: 0 28rpx;
 }
 
+/* ===== 游客卡片 ===== */
+.guest-card {
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 32rpx;
+  padding: 32rpx 28rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.guest-avatar-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.guest-avatar {
+  width: 100rpx;
+  height: 100rpx;
+  background: #EEE8DF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.guest-avatar-icon { font-size: 52rpx; }
+
+.guest-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.guest-title {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+}
+
+.guest-sub {
+  font-size: 24rpx;
+  color: #888888;
+}
+
+/* 微信登录按钮 */
+.wx-login-btn {
+  background: #07C160 !important;
+  border-radius: 999rpx !important;
+  padding: 28rpx 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12rpx !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+.wx-btn-icon { font-size: 32rpx; }
+
+.wx-btn-text {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.phone-login-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 4rpx 0;
+}
+
+.phone-login-text {
+  font-size: 26rpx;
+  color: #888888;
+}
+
+.phone-login-arr {
+  font-size: 26rpx;
+  color: #888888;
+}
+
+/* 未登录时菜单项置灰 */
+.item-dim .mi-title { color: #AAAAAA; }
+.item-dim .mi-sub   { color: #CCCCCC; }
+.item-dim .mi-emoji { opacity: 0.4; }
+
 /* ===== 退出登录 ===== */
 .logout-wrap {
   background: rgba(255, 255, 255, 0.95);

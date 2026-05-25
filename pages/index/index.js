@@ -1,11 +1,13 @@
 // pages/index/index.js — 首页
-const app = getApp()
+const app  = getApp()
+const auth = require('../../utils/auth')
 
 Page({
   data: {
     statusBarHeight: 20,
-    name: '古丽巴哈尔',
-    location: '喀什 · 疏附县棉田主',
+    isLoggedIn: false,
+    name: '游客',
+    location: '新疆 · 棉花种植管理平台',
     today: '',
     modules: [
       { id: 1,  name: '地块管理',   icon: '🗺',  bg: '#E8F5E9', action: 'fields' },
@@ -32,6 +34,25 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 })
     }
+    this._refreshUser()
+  },
+
+  _refreshUser() {
+    const user = auth.getUser() || app.globalData.user
+    const loggedIn = auth.isLoggedIn() && !!user
+    if (loggedIn && user) {
+      this.setData({
+        isLoggedIn: true,
+        name: user.real_name || user.phone || '棉农',
+        location: user.location ? `喀什 · ${user.location}` : '喀什 · 疏附县棉田主'
+      })
+    } else {
+      this.setData({ isLoggedIn: false, name: '游客', location: '新疆 · 棉花种植管理平台' })
+    }
+  },
+
+  onGoLogin() {
+    wx.navigateTo({ url: '/pages/login/index' })
   },
 
   _setToday() {

@@ -1,0 +1,81 @@
+.bar {
+  flex-shrink: 0;
+  width: 750rpx;
+  height: 152rpx;
+  background: #ffffff;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 16rpx;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2rpx 20rpx rgba(0, 0, 0, 0.07);
+  overflow: visible;
+}
+
+.item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6rpx;
+}
+
+.icon {
+  font-size: 44rpx;
+  line-height: 1.2;
+}
+
+.label {
+  font-size: 20rpx;
+  color: #888888;
+  font-weight: 500;
+}
+
+.on .icon { opacity: 1; }
+.on .label {
+  color: #C8902E;
+  font-weight: 700;
+}
+
+/* AI 中间按钮 */
+.ai-item {
+  margin-top: -40rpx;
+}
+
+.ai-circle {
+  width: 108rpx;
+  height: 108rpx;
+  background: linear-gradient(145deg, #D4A043, #C8902E);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 32rpx rgba(200, 144, 46, 0.45);
+  position: relative;
+}
+
+.ai-emoji { font-size: 48rpx; }
+
+.ai-dot {
+  position: absolute;
+  top: 6rpx;
+  right: 6rpx;
+  width: 20rpx;
+  height: 20rpx;
+  background: #4ADE80;
+  border-radius: 50%;
+  border: 4rpx solid #ffffff;
+}
+
+.ai-label {
+  font-size: 20rpx;
+  color: #888888;
+  font-weight: 500;
+}
+.ai-label.on {
+  color: #C8902E;
+  font-weight: 700;
+}

@@ -1,0 +1,113 @@
+/* pages/merchant/finance.wxss */
+
+.page { display: flex; flex-direction: column; height: 100vh; background: #F5F6FA; }
+.scroll { flex: 1; height: 0; }
+
+.header {
+  background: linear-gradient(135deg, #C8902E, #D4A043);
+  padding: 8rpx 32rpx 40rpx;
+}
+.header-tag {
+  font-size: 20rpx;
+  color: rgba(255,255,255,0.65);
+  display: block;
+  margin-bottom: 10rpx;
+  padding-right: 200rpx;
+}
+.header-title { font-size: 36rpx; font-weight: 700; color: #fff; display: block; }
+
+/* Fund card */
+.fund-card {
+  margin: -20rpx 24rpx 24rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.10);
+}
+.fund-main {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  margin-bottom: 32rpx;
+}
+.fund-item { display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
+.fund-val { font-size: 34rpx; font-weight: 800; }
+.fund-val.pending  { color: #D97706; }
+.fund-val.settled  { color: #16A34A; }
+.fund-val.frozen   { color: #6B7280; }
+.fund-lbl { font-size: 22rpx; color: #888888; }
+.fund-divider { width: 1rpx; height: 60rpx; background: #EEEEEE; }
+
+.withdraw-btn {
+  background: linear-gradient(135deg, #C8902E, #D4A043);
+  border-radius: 16rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.withdraw-text { font-size: 30rpx; font-weight: 700; color: #fff; }
+
+/* Records */
+.section-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+  padding: 0 24rpx;
+  margin-bottom: 16rpx;
+}
+.record-list {
+  margin: 0 24rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+.record-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+.record-icon-wrap {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #F0FDF4;
+}
+.record-icon-wrap.refund   { background: #FEF2F2; }
+.record-icon-wrap.withdraw { background: #EFF6FF; }
+.record-icon { font-size: 30rpx; color: #16A34A; font-weight: 700; }
+.record-icon-wrap.refund .record-icon   { color: #DC2626; }
+.record-icon-wrap.withdraw .record-icon { color: #2563EB; }
+
+.record-info { flex: 1; }
+.record-top {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6rpx;
+}
+.record-type  { font-size: 26rpx; font-weight: 600; color: #1A1A1A; }
+.record-amount { font-size: 28rpx; font-weight: 700; color: #16A34A; }
+.record-amount.refund   { color: #DC2626; }
+.record-amount.withdraw { color: #2563EB; }
+
+.record-bottom {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4rpx;
+}
+.record-desc { font-size: 22rpx; color: #888888; flex: 1; }
+.record-time { font-size: 20rpx; color: #BBBBBB; }
+.record-balance { font-size: 20rpx; color: #CCCCCC; }

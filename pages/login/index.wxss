@@ -1,0 +1,237 @@
+/* pages/login/index.wxss — 登录/注册页样式 */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ── 顶部英雄区 ────────────────────────────── */
+.hero {
+  background: linear-gradient(160deg, #C8902E, #D4A043);
+  padding: 0 32rpx 48rpx;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.back-btn {
+  position: absolute;
+  top: 0;
+  left: 28rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.back-icon {
+  font-size: 56rpx;
+  color: rgba(255,255,255,0.9);
+  font-weight: 300;
+  line-height: 1;
+}
+
+.logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 24rpx;
+}
+.logo-circle {
+  width: 120rpx;
+  height: 120rpx;
+  background: rgba(255,255,255,0.25);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.15);
+}
+.logo-emoji  { font-size: 64rpx; }
+.brand-name  { font-size: 40rpx; font-weight: 800; color: #fff; }
+.brand-sub   { font-size: 22rpx; color: rgba(255,255,255,0.8); margin-top: 6rpx; }
+
+/* ── 内容卡滚动区 ──────────────────────────── */
+.card-scroll {
+  flex: 1;
+  height: 0;
+}
+
+.step-wrap {
+  background: #fff;
+  border-radius: 40rpx 40rpx 0 0;
+  margin-top: -32rpx;
+  padding: 40rpx 32rpx 0;
+  min-height: 100%;
+}
+
+/* ── 步骤标题 ──────────────────────────────── */
+.role-tag {
+  display: inline-flex;
+  background: #FBF5EA;
+  border-radius: 999rpx;
+  padding: 6rpx 24rpx;
+  margin-bottom: 16rpx;
+}
+.role-tag-text { font-size: 24rpx; color: #C8902E; font-weight: 700; }
+
+.step-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+  margin-bottom: 8rpx;
+}
+.step-sub {
+  display: block;
+  font-size: 24rpx;
+  color: #888888;
+  margin-bottom: 48rpx;
+}
+
+/* ── 身份选择卡片 ──────────────────────────── */
+.role-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24rpx;
+  background: #FAFAFA;
+  border: 2rpx solid #F0E8E0;
+  border-radius: 28rpx;
+  padding: 32rpx 28rpx;
+  margin-bottom: 20rpx;
+}
+.role-icon-wrap {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.farmer-bg   { background: #E8F5E9; }
+.merchant-bg { background: #FFF3E0; }
+.role-icon   { font-size: 52rpx; }
+.role-info   { flex: 1; }
+.role-name   { display: block; font-size: 32rpx; font-weight: 800; color: #1A1A1A; margin-bottom: 6rpx; }
+.role-desc   { display: block; font-size: 22rpx; color: #888888; }
+.role-arr    { font-size: 40rpx; color: #BBBBBB; flex-shrink: 0; }
+
+/* ── 表单字段 ──────────────────────────────── */
+.section-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #C8902E;
+  margin: 24rpx 0 16rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.section-title::before {
+  content: '';
+  display: block;
+  width: 6rpx;
+  height: 24rpx;
+  background: #C8902E;
+  border-radius: 3rpx;
+}
+
+.field-wrap { margin-bottom: 24rpx; }
+
+.field-label {
+  display: block;
+  font-size: 24rpx;
+  color: #555555;
+  font-weight: 600;
+  margin-bottom: 10rpx;
+}
+.required { color: #F5222D; }
+
+.input-box {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: #F8F4EF;
+  border: 1.5rpx solid #EEE5D8;
+  border-radius: 18rpx;
+  padding: 0 24rpx;
+  height: 88rpx;
+}
+.input-prefix {
+  font-size: 26rpx;
+  color: #888888;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+.field-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #1A1A1A;
+  height: 88rpx;
+}
+.eye-btn {
+  font-size: 32rpx;
+  padding-left: 16rpx;
+  flex-shrink: 0;
+}
+
+/* ── 提交按钮 ──────────────────────────────── */
+.submit-btn {
+  background: linear-gradient(135deg, #D4A043, #C8902E);
+  border-radius: 24rpx;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16rpx;
+  box-shadow: 0 8rpx 24rpx rgba(200, 144, 46, 0.35);
+}
+.submit-btn.loading { opacity: 0.7; }
+.submit-text {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* ── 底部切换行 ────────────────────────────── */
+.switch-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  margin-top: 28rpx;
+}
+.switch-text { font-size: 24rpx; color: #888888; }
+.switch-link { font-size: 24rpx; color: #C8902E; font-weight: 700; }
+
+
+/* ── 微信登录按钮 ────────────────────────────── */
+.wx-login-btn {
+  background: #07C160 !important;
+  border-radius: 999rpx !important;
+  padding: 28rpx 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12rpx !important;
+  border: none !important;
+  margin: 24rpx 0 0 !important;
+}
+.wx-btn-icon { font-size: 32rpx; }
+.wx-btn-text { font-size: 30rpx; font-weight: 700; color: #ffffff; }
+
+/* ── 分割线 ────────────────────────────── */
+.divider-or {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  margin: 28rpx 0 8rpx;
+}
+.divider-line { flex: 1; height: 1rpx; background: #E5DDD3; }
+.divider-text { font-size: 22rpx; color: #AAAAAA; flex-shrink: 0; }

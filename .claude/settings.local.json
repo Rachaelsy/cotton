@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem F:\\\\cotton\\\\pages -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(mysql -u root -pAdo1024imokenp -e \"CREATE DATABASE IF NOT EXISTS cotton_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")"
+    ]
+  }
+}

@@ -65,3 +65,9 @@ page {
   color: #1A1A1A;
   flex-shrink: 0;
 }
+
+/* Tab 页底部占位块，防止 scroll-view 延伸到 fixed tab bar 区域 */
+.tbar-placeholder {
+  flex-shrink: 0;
+  height: 152rpx;
+}

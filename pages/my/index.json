@@ -1,4 +1,8 @@
 {
   "navigationStyle": "custom",
-  "usingComponents": {}
+  "renderer": "skyline",
+  "componentFramework": "glass-easel",
+  "usingComponents": {
+    "tab-bar": "/components/tab-bar/index"
+  }
 }
