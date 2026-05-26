@@ -4,7 +4,6 @@ const app = getApp()
 Page({
   data: {
     product: null,
-    storeProducts: [],
     favorited: false,
     cartCount: 0,
     statusBarHeight: 20
@@ -16,22 +15,13 @@ Page({
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
       product,
-      cartCount: app.globalData.cartCount
+      cartCount: app.globalData.cartCount,
+      favorited: product ? app.isFavorited(product.id) : false
     })
-    if (product) this._loadStoreProducts(product)
   },
 
   onShow() {
     this.setData({ cartCount: app.globalData.cartCount })
-  },
-
-  // 从全局商品列表中取同店其他商品（最多6个）
-  _loadStoreProducts(product) {
-    const all = app.globalData.products || []
-    const storeProducts = all
-      .filter(p => p.store === product.store && p.id !== product.id)
-      .slice(0, 6)
-    this.setData({ storeProducts })
   },
 
   onBack() {
@@ -39,7 +29,11 @@ Page({
   },
 
   onFavorite() {
+    const p = this.data.product
+    if (!p) return
     const next = !this.data.favorited
+    if (next) app.addToFavorites(p)
+    else app.removeFromFavorites(p.id)
     this.setData({ favorited: next })
     wx.showToast({ title: next ? '已收藏' : '已取消收藏', icon: 'none', duration: 1200 })
   },
@@ -64,7 +58,12 @@ Page({
   },
 
   onGoStore() {
-    wx.showToast({ title: '进入店铺功能开发中', icon: 'none' })
+    const p = this.data.product
+    if (!p) return
+    const storeName = encodeURIComponent(p.store || p.company_name || '店铺')
+    wx.navigateTo({
+      url: `/pages/supplies-store/index?merchant_id=${p.merchant_id}&store_name=${storeName}`
+    })
   },
 
   onCustomerService() {
@@ -73,14 +72,5 @@ Page({
 
   onShowReviews() {
     wx.showToast({ title: '评价详情开发中', icon: 'none' })
-  },
-
-  onStoreProduct(e) {
-    const id = e.currentTarget.dataset.id
-    const product = (app.globalData.products || []).find(p => p.id === id)
-    if (!product) return
-    app.globalData.selectedProduct = product
-    // 重新加载本页
-    wx.redirectTo({ url: '/pages/supplies-detail/index' })
   }
 })

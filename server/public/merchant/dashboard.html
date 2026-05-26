@@ -373,14 +373,14 @@
     <div class="panel" id="panel-finance">
       <div class="withdraw-card">
         <div class="withdraw-label">可提现余额（元）</div>
-        <div class="withdraw-amount">18,650.00</div>
-        <div class="withdraw-sub">已绑定收款账户：农业银行 **** 8899 | 月结算周期</div>
+        <div class="withdraw-amount" id="f-balance">0.00</div>
+        <div class="withdraw-sub" id="f-withdraw-sub">月结算周期</div>
         <button class="btn-withdraw" onclick="doWithdraw()">发起提现</button>
       </div>
       <div class="finance-grid">
-        <div class="finance-card"><div class="fc-label">本月销售额（元）</div><div class="fc-value">86,420</div><div class="fc-sub">较上月 +18%</div></div>
-        <div class="finance-card blue"><div class="fc-label">本月订单数</div><div class="fc-value fc-blue">238</div><div class="fc-sub">平均客单价 ¥363</div></div>
-        <div class="finance-card gold"><div class="fc-label">本月退款金额（元）</div><div class="fc-value">1,240</div><div class="fc-sub">退款率 1.4%</div></div>
+        <div class="finance-card"><div class="fc-label">本月销售额（元）</div><div class="fc-value" id="f-monthly-sales">—</div><div class="fc-sub" id="f-monthly-sales-sub"></div></div>
+        <div class="finance-card blue"><div class="fc-label">本月订单数</div><div class="fc-value fc-blue" id="f-monthly-orders">—</div><div class="fc-sub" id="f-monthly-orders-sub"></div></div>
+        <div class="finance-card gold"><div class="fc-label">本月退款金额（元）</div><div class="fc-value" id="f-monthly-refund">—</div><div class="fc-sub" id="f-monthly-refund-sub"></div></div>
       </div>
 
       <div class="card">
@@ -539,7 +539,8 @@
       <div class="mfield"><label>库存数量</label><input id="p-stock" type="number" min="0"></div>
       <div class="mfield"><label>状态</label><select id="p-status"><option value="on">在售</option><option value="off">已下架</option></select></div>
     </div>
-    <div class="mfield"><label>商品简介</label><textarea id="p-desc" rows="3" placeholder="请输入商品描述、成分、适用场景..."></textarea></div>
+    <div class="mfield"><label>商品简介（显示在图片下方）</label><textarea id="p-desc" rows="3" placeholder="一两句话简要描述，如成分、适用作物等..."></textarea></div>
+    <div class="mfield"><label>详细介绍（显示在商品介绍栏）</label><textarea id="p-detail" rows="5" placeholder="详细的使用方法、注意事项、成分分析等..."></textarea></div>
     <div class="mbtns">
       <button class="mbtn cancel" onclick="closeModal('modalProduct')">取消</button>
       <button class="mbtn save" onclick="saveProduct()">保存</button>
@@ -617,7 +618,7 @@ async function api(method, path, body) {
 function logout() {
   localStorage.removeItem(T_KEY)
   localStorage.removeItem(U_KEY)
-  location.href = '/merchant/login.html'
+  location.href = '/admin/login.html'
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('show') }
@@ -631,6 +632,7 @@ var productsData = []
 var editProdId = null
 var currentOrderTab = 'all'
 var ordersData = []
+var financeData = null
 
 function getOrderStatus(status) {
   if (status === 'pending_pay')  return { label:'待付款',    cls:'badge-pending' }
@@ -643,7 +645,7 @@ function getOrderStatus(status) {
 
 /* ── 初始化 ── */
 (function init() {
-  if (!getToken()) { location.href = '/merchant/login.html'; return }
+  if (!getToken()) { location.href = '/admin/login.html'; return }
   const u = getUser()
   document.getElementById('sidebar-name').textContent  = u.company_name || u.real_name || '——'
   document.getElementById('sidebar-phone').textContent = u.phone || '——'
@@ -668,7 +670,7 @@ function show(panel) {
   if (panel === 'shop')      loadStats()
   if (panel === 'products')  loadProducts()
   if (panel === 'orders')    loadOrders('all')
-  if (panel === 'finance')   { loadFinance(); loadSettleTable(); loadWithdrawTable() }
+  if (panel === 'finance')   loadFinance()
   if (panel === 'customers') { loadCustomers(); loadReviews() }
   if (panel === 'messages')  loadMessages()
   if (panel === 'settings')  loadSettings()
@@ -701,16 +703,20 @@ async function loadStats() {
   const prof = await api('GET', '/profile')
   if (prof?.data) document.getElementById('shop-cat').textContent = prof.data.product_category || '未设置'
 
-  // 绘制柱状图
-  renderBarChart('bar-chart', [
-    {label:'5/19',val:2100},{label:'5/20',val:3400},{label:'5/21',val:1800},
-    {label:'5/22',val:4200},{label:'5/23',val:3800},{label:'5/24',val:2900},{label:'5/25',val:3280}
-  ])
+  // 绘制近7日销售趋势柱状图（真实数据）
+  if (d.weekly_trend && d.weekly_trend.length) {
+    renderBarChart('bar-chart', d.weekly_trend)
+  }
 }
 
 function renderBarChart(id, data) {
-  const max = Math.max(...data.map(d=>d.val))
-  document.getElementById(id).innerHTML = data.map(d => `
+  const el = document.getElementById(id)
+  const max = Math.max(...data.map(d => d.val))
+  if (!max) {
+    el.innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#BBB;font-size:13px">暂无销售数据</div>'
+    return
+  }
+  el.innerHTML = data.map(d => `
     <div class="bar-wrap">
       <div class="bar-val">${d.val >= 1000 ? (d.val/1000).toFixed(1)+'k' : d.val}</div>
       <div class="bar" style="height:${Math.round(d.val/max*90)}px"></div>
@@ -796,7 +802,8 @@ function openAddProduct() {
   document.getElementById('p-unit').value  = ''
   document.getElementById('p-stock').value = ''
   document.getElementById('p-status').value = 'on'
-  document.getElementById('p-desc').value  = ''
+  document.getElementById('p-desc').value   = ''
+  document.getElementById('p-detail').value = ''
   resetProdImg()
   showModal('modalProduct')
 }
@@ -813,6 +820,7 @@ function openEditProduct(id) {
   document.getElementById('p-stock').value  = p.stock
   document.getElementById('p-status').value = p.status || 'on'
   document.getElementById('p-desc').value   = p.description || ''
+  document.getElementById('p-detail').value = p.detail || ''
   if (p.image_url) setProdImg(p.image_url); else resetProdImg()
   showModal('modalProduct')
 }
@@ -830,7 +838,8 @@ async function saveProduct() {
     stock:       document.getElementById('p-stock').value,
     status:      document.getElementById('p-status').value,
     image_url:   document.getElementById('p-image-url').value || null,
-    description: document.getElementById('p-desc').value.trim()
+    description: document.getElementById('p-desc').value.trim(),
+    detail:      document.getElementById('p-detail').value.trim()
   }
   const method = editProdId ? 'PUT' : 'POST'
   const path   = editProdId ? `/products/${editProdId}` : '/products'
@@ -985,68 +994,78 @@ function exportOrders() { alert('订单导出功能开发中，敬请期待') }
 /* ════════════════════════════════════════════
    4. 财务结算
 ════════════════════════════════════════════ */
-const MOCK_SETTLES = [
-  { id:'SE001',order:'MO2026052504',prod:'棉花种子 5kg',amount:175,comm:5.25,actual:169.75,status:'已结算',date:'2026-05-23' },
-  { id:'SE002',order:'MO2026052505',prod:'磷酸二铵 50kg',amount:640,comm:19.2,actual:620.8,status:'已结算',date:'2026-05-22' },
-  { id:'SE003',order:'MO2026052508',prod:'棉花专用地膜',amount:186,comm:5.58,actual:180.42,status:'已结算',date:'2026-05-21' },
-  { id:'SE004',order:'MO2026052503',prod:'棉花催熟剂 1L',amount:500,comm:15,actual:485,status:'结算中',date:'2026-05-24' },
-]
-const MOCK_WITHDRAWS = [
-  { id:'WD001',amount:'5000.00',account:'农业银行****8899',status:'已到账',apply:'2026-05-20',arrive:'2026-05-21' },
-  { id:'WD002',amount:'8000.00',account:'农业银行****8899',status:'处理中',apply:'2026-05-25',arrive:'预计1-3日' },
-]
-
-function loadFinance() {
-  const weekData = [
-    {label:'5/19',val:8200},{label:'5/20',val:12400},{label:'5/21',val:6800},
-    {label:'5/22',val:15200},{label:'5/23',val:11800},{label:'5/24',val:9400},{label:'5/25',val:13280}
-  ]
-  renderBarChart('finance-chart', weekData)
+async function loadFinance() {
+  try {
+    const r = await api('GET', '/finance')
+    if (!r || r.code !== 200) return
+    financeData = r.data
+    document.getElementById('f-balance').textContent =
+      parseFloat(financeData.available_balance).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})
+    const ms = parseFloat(financeData.monthly_sales)
+    const mo = financeData.monthly_orders
+    const mr = parseFloat(financeData.monthly_refund)
+    document.getElementById('f-monthly-sales').textContent   = Math.round(ms).toLocaleString('zh-CN')
+    document.getElementById('f-monthly-orders').textContent  = mo
+    document.getElementById('f-monthly-refund').textContent  = Math.round(mr).toLocaleString('zh-CN')
+    document.getElementById('f-monthly-orders-sub').textContent =
+      mo > 0 ? '平均客单价 ¥' + Math.round(ms / mo) : '暂无订单'
+    const refundRate = ms > 0 ? ((mr / ms) * 100).toFixed(1) : '0.0'
+    document.getElementById('f-monthly-refund-sub').textContent = '退款率 ' + refundRate + '%'
+    // 加载本周图表
+    const tw = await api('GET', '/trend?period=week').catch(() => null)
+    if (tw?.data) renderBarChart('finance-chart', tw.data)
+    loadSettleTable(financeData.settlements)
+    loadWithdrawTable(financeData.withdrawals)
+  } catch(e) { console.error('[loadFinance]', e) }
 }
 
-function loadSettleTable() {
-  document.getElementById('settle-table').innerHTML = MOCK_SETTLES.map(s => `
+function loadSettleTable(data) {
+  const tbody = document.getElementById('settle-table')
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#BBB;padding:32px">暂无结算记录（已完成的订单将自动生成结算明细）</td></tr>'
+    return
+  }
+  tbody.innerHTML = data.map(s => `
     <tr>
-      <td style="font-size:12px;color:#888">${s.id}</td>
-      <td style="font-size:12px;color:#888">${s.order}</td>
-      <td>${esc(s.prod)}</td>
-      <td>¥${s.amount}</td>
-      <td style="color:#DC2626">-¥${s.comm}</td>
-      <td style="font-weight:700;color:#16A34A">¥${s.actual}</td>
-      <td><span class="badge ${s.status==='已结算'?'badge-on':'badge-ship'}">${s.status}</span></td>
-      <td style="font-size:12px;color:#888">${s.date}</td>
+      <td style="font-size:12px;color:#888">${esc(s.id)}</td>
+      <td style="font-size:12px;color:#888">${esc(s.order_no)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.prod)}</td>
+      <td>¥${s.amount.toFixed(2)}</td>
+      <td style="color:#DC2626">-¥${s.commission.toFixed(2)}</td>
+      <td style="font-weight:700;color:#16A34A">¥${s.actual.toFixed(2)}</td>
+      <td><span class="badge badge-on">${esc(s.status)}</span></td>
+      <td style="font-size:12px;color:#888">${esc(s.date)}</td>
     </tr>`).join('')
 }
 
-function loadWithdrawTable() {
-  document.getElementById('withdraw-table').innerHTML = MOCK_WITHDRAWS.map(w => `
+function loadWithdrawTable(data) {
+  const tbody = document.getElementById('withdraw-table')
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#BBB;padding:32px">暂无提现记录</td></tr>'
+    return
+  }
+  tbody.innerHTML = data.map(w => `
     <tr>
-      <td style="font-size:12px;color:#888">${w.id}</td>
-      <td style="font-weight:700;color:#C8902E">¥${w.amount}</td>
-      <td style="font-size:12px">${w.account}</td>
-      <td><span class="badge ${w.status==='已到账'?'badge-on':'badge-ship'}">${w.status}</span></td>
-      <td style="font-size:12px;color:#888">${w.apply}</td>
-      <td style="font-size:12px;color:#888">${w.arrive}</td>
+      <td style="font-size:12px;color:#888">${esc(w.id)}</td>
+      <td style="font-weight:700;color:#C8902E">¥${parseFloat(w.amount).toFixed(2)}</td>
+      <td style="font-size:12px">${esc(w.account)}</td>
+      <td><span class="badge ${w.status==='已到账'?'badge-on':'badge-ship'}">${esc(w.status)}</span></td>
+      <td style="font-size:12px;color:#888">${esc(w.apply_date)}</td>
+      <td style="font-size:12px;color:#888">${esc(w.arrive_date)}</td>
     </tr>`).join('')
 }
 
-function setPeriod(p, el) {
+async function setPeriod(p, el) {
   document.querySelectorAll('#panel-finance .active-period').forEach(e => e.classList.remove('active-period'))
   el.classList.add('active-period')
-  const data = {
-    day:   [{label:'8时',val:420},{label:'10时',val:860},{label:'12时',val:1240},{label:'14时',val:980},{label:'16时',val:1340},{label:'18时',val:760},{label:'20时',val:480}],
-    week:  [{label:'5/19',val:8200},{label:'5/20',val:12400},{label:'5/21',val:6800},{label:'5/22',val:15200},{label:'5/23',val:11800},{label:'5/24',val:9400},{label:'5/25',val:13280}],
-    month: [{label:'第1周',val:38400},{label:'第2周',val:52600},{label:'第3周',val:41800},{label:'第4周',val:48200}]
-  }
-  renderBarChart('finance-chart', data[p] || data.week)
+  const r = await api('GET', '/trend?period=' + p).catch(() => null)
+  if (r?.data) renderBarChart('finance-chart', r.data)
 }
 
 function doWithdraw() {
-  if (confirm('确认申请提现 ¥18,650.00 到 农业银行 ****8899？')) {
-    MOCK_WITHDRAWS.unshift({ id:'WD003', amount:'18650.00', account:'农业银行****8899', status:'处理中', apply:new Date().toLocaleDateString('zh-CN'), arrive:'预计1-3日' })
-    loadWithdrawTable()
-    alert('提现申请已提交，预计1-3个工作日到账')
-  }
+  const balance = financeData ? parseFloat(financeData.available_balance) : 0
+  if (balance <= 0) { alert('当前无可提现余额'); return }
+  if (confirm('确认申请提现 ¥' + balance.toFixed(2) + '？')) alert('提现功能开发中，敬请期待')
 }
 
 /* ════════════════════════════════════════════

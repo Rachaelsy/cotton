@@ -21,9 +21,13 @@ App({
     // 从本地存储恢复购物车
     try {
       const saved = wx.getStorageSync('cart')
-      if (saved && Array.isArray(saved)) {
-        this.globalData.cart = saved
-      }
+      if (saved && Array.isArray(saved)) this.globalData.cart = saved
+    } catch (e) {}
+
+    // 从本地存储恢复收藏
+    try {
+      const savedFavs = wx.getStorageSync('favorites')
+      if (savedFavs && Array.isArray(savedFavs)) this.globalData.favorites = savedFavs
     } catch (e) {}
 
     this._refreshCartCount()
@@ -89,6 +93,32 @@ App({
     this.saveCart()
   },
 
+  // 收藏相关
+  saveFavorites() {
+    wx.setStorageSync('favorites', this.globalData.favorites)
+  },
+
+  addToFavorites(product) {
+    const favs = this.globalData.favorites
+    if (!favs.find(f => f.id === product.id)) {
+      favs.push({ ...product })
+      this.saveFavorites()
+    }
+  },
+
+  removeFromFavorites(productId) {
+    const favs = this.globalData.favorites
+    const idx = favs.findIndex(f => f.id === productId)
+    if (idx >= 0) {
+      favs.splice(idx, 1)
+      this.saveFavorites()
+    }
+  },
+
+  isFavorited(productId) {
+    return this.globalData.favorites.some(f => f.id === productId)
+  },
+
   // 初始化云数据库商品（首次运行时播种）
   async initCloudProducts() {
     if (!wx.cloud) return
@@ -110,13 +140,11 @@ App({
   globalData: {
     cart: [],
     cartCount: 0,
+    favorites: [],
     statusBarHeight: 20,
     navBarHeight: 44,
-    // 登录用户信息（role:'farmer'|'merchant', real_name, ...）
     user: null,
-    // 商品详情页传递数据用
     selectedProduct: null,
-    // 本地兜底商品数据
     localProducts: PRODUCTS
   }
 })

@@ -1,0 +1,70 @@
+<!-- pages/favorites/index.wxml — 我的收藏 -->
+<view class="page">
+
+  <!-- 顶部 Header -->
+  <view class="header" style="padding-top:{{statusBarHeight + 8}}px">
+    <view class="header-row">
+      <view class="back-btn" bindtap="onBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <view class="title-info">
+        <text class="header-title">我的收藏</text>
+        <text class="header-sub">共 {{favorites.length}} 件商品</text>
+      </view>
+      <view class="cart-btn" bindtap="onGoCart">
+        <text class="cart-icon">🛒</text>
+        <text wx:if="{{cartCount > 0}}" class="cart-badge">{{cartCount > 99 ? '99+' : cartCount}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:if="{{favorites.length === 0}}" class="center-wrap">
+    <text class="empty-icon">❤️</text>
+    <text class="tip-text">还没有收藏的商品</text>
+    <view class="go-btn" bindtap="onGoShopping">
+      <text class="go-btn-text">去逛逛</text>
+    </view>
+  </view>
+
+  <!-- 商品列表 -->
+  <scroll-view wx:else scroll-y class="prod-scroll">
+    <view class="prod-grid">
+      <view
+        class="prod-card"
+        wx:for="{{favorites}}"
+        wx:key="id"
+        bindtap="onProductTap"
+        data-id="{{item.id}}"
+      >
+        <!-- 商品图 -->
+        <view class="prod-img-wrap" style="background:{{item.imgBg}}">
+          <image wx:if="{{item.image_url}}" class="prod-photo" src="{{item.image_url}}" mode="aspectFill"/>
+          <text wx:else class="prod-icon">{{item.icon || '📦'}}</text>
+        </view>
+        <!-- 商品信息 -->
+        <view class="prod-info">
+          <text class="prod-name">{{item.name}}</text>
+          <text wx:if="{{item.unit}}" class="prod-unit">{{item.unit}}</text>
+          <text class="prod-store">{{item.store || '认证商家'}}</text>
+          <view class="prod-bottom">
+            <view class="price-wrap">
+              <text class="price-symbol">¥</text>
+              <text class="price-main">{{item.price}}</text>
+            </view>
+            <view class="prod-actions">
+              <view class="fav-btn" catchtap="onRemoveFav" data-id="{{item.id}}">
+                <text class="fav-icon">♥</text>
+              </view>
+              <view class="add-btn" catchtap="onAddToCart" data-id="{{item.id}}">
+                <text class="add-icon">+</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view style="height:40rpx"></view>
+  </scroll-view>
+
+</view>

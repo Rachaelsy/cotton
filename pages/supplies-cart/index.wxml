@@ -67,7 +67,8 @@
           </view>
           <!-- 商品图 -->
           <view class="cart-img" style="background: {{ci.imgBg}}">
-            <text class="cart-img-icon">{{ci.icon}}</text>
+            <image wx:if="{{ci.image_url}}" class="cart-photo" src="{{ci.image_url}}" mode="aspectFill"/>
+            <text wx:else class="cart-img-icon">{{ci.icon || '📦'}}</text>
           </view>
           <!-- 商品信息 -->
           <view class="cart-info">

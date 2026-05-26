@@ -50,10 +50,10 @@ router.post('/login', async (req, res) => {
     if (!phone || !password) return res.status(400).json({ code: 400, msg: '请填写账号和密码' })
     const [rows] = await db.query('SELECT * FROM users WHERE phone=?', [phone])
     const user = rows[0]
-    if (!user) return res.status(401).json({ code: 401, msg: '账号或密码错误' })
-    if (!user.is_admin) return res.status(403).json({ code: 403, msg: '该账号无管理员权限' })
+    if (!user) return res.status(404).json({ code: 404, msg: '账号不存在' })
+    if (!user.is_admin) return res.status(403).json({ code: 403, msg: '非管理员账号' })
     const ok = await bcrypt.compare(password, user.password)
-    if (!ok) return res.status(401).json({ code: 401, msg: '账号或密码错误' })
+    if (!ok) return res.status(401).json({ code: 401, msg: '密码错误' })
     const token = jwt.sign(
       { id: user.id, phone: user.phone, real_name: user.real_name, is_admin: true },
       JWT_SECRET, { expiresIn: JWT_EXPIRES }
@@ -254,12 +254,12 @@ router.post('/applications/:id/reject', adminAuth, async (req, res) => {
 // ── POST /api/admin/products（手动新增商品）─────────────
 router.post('/products', adminAuth, async (req, res) => {
   try {
-    const { merchant_id, name, category, icon, price, unit, stock, status, image_url, description } = req.body
+    const { merchant_id, name, category, icon, price, unit, stock, status, image_url, description, detail } = req.body
     if (!merchant_id) return res.status(400).json({ code: 400, msg: '请选择所属商户' })
     if (!name || !name.trim()) return res.status(400).json({ code: 400, msg: '请填写商品名称' })
     await db.query(
-      'INSERT INTO products (merchant_id,name,category,icon,price,unit,stock,status,image_url,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      [merchant_id, name.trim(), category || '', icon || '', parseFloat(price) || 0, unit || '', parseInt(stock) || 0, status || 'on', image_url || null, description || '']
+      'INSERT INTO products (merchant_id,name,category,icon,price,unit,stock,status,image_url,description,detail) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      [merchant_id, name.trim(), category || '', icon || '', parseFloat(price) || 0, unit || '', parseInt(stock) || 0, status || 'on', image_url || null, description || '', detail || '']
     )
     res.json({ code: 200, msg: '商品已创建' })
   } catch (e) {
@@ -294,10 +294,10 @@ router.delete('/products/:id', adminAuth, async (req, res) => {
 // ── PUT /api/admin/products/:id ──────────────────────────
 router.put('/products/:id', adminAuth, async (req, res) => {
   try {
-    const { name, category, icon, price, unit, stock, status, image_url, description } = req.body
+    const { name, category, icon, price, unit, stock, status, image_url, description, detail } = req.body
     await db.query(
-      'UPDATE products SET name=?, category=?, icon=?, price=?, unit=?, stock=?, status=?, image_url=?, description=? WHERE id=?',
-      [name, category, icon || '', parseFloat(price) || 0, unit || '', parseInt(stock) || 0, status || 'on', image_url || null, description || '', req.params.id]
+      'UPDATE products SET name=?, category=?, icon=?, price=?, unit=?, stock=?, status=?, image_url=?, description=?, detail=? WHERE id=?',
+      [name, category, icon || '', parseFloat(price) || 0, unit || '', parseInt(stock) || 0, status || 'on', image_url || null, description || '', detail || '', req.params.id]
     )
     res.json({ code: 200, msg: '商品信息已更新' })
   } catch (e) {

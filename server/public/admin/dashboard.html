@@ -397,8 +397,12 @@
       </div>
     </div>
     <div class="mfield">
-      <label>商品简介</label>
-      <textarea id="p-desc" rows="4" placeholder="请输入商品简介，如成分、适用作物、使用方法等..."></textarea>
+      <label>商品简介（显示在图片下方）</label>
+      <textarea id="p-desc" rows="3" placeholder="一两句话简要描述，如成分、适用作物等..."></textarea>
+    </div>
+    <div class="mfield">
+      <label>详细介绍（显示在商品介绍栏）</label>
+      <textarea id="p-detail" rows="5" placeholder="详细的使用方法、注意事项、成分分析等..."></textarea>
     </div>
     <div class="mbtns">
       <button class="mbtn cancel" onclick="closeModal('modalProduct')">取消</button>
@@ -788,6 +792,7 @@
     document.getElementById('p-stock').value  = ''
     document.getElementById('p-status').value = 'on'
     document.getElementById('p-desc').value   = ''
+    document.getElementById('p-detail').value = ''
     resetProductImage()
 
     // 先展示弹窗
@@ -857,6 +862,7 @@
     document.getElementById('p-stock').value  = p.stock
     document.getElementById('p-status').value = p.status || 'on'
     document.getElementById('p-desc').value   = p.description || ''
+    document.getElementById('p-detail').value = p.detail || ''
     if (p.image_url) setProductImage(p.image_url)
     else resetProductImage()
     document.getElementById('modalProduct').classList.add('show')
@@ -877,7 +883,8 @@
         stock:       document.getElementById('p-stock').value,
         status:      document.getElementById('p-status').value,
         image_url:   document.getElementById('p-image-url').value || null,
-        description: document.getElementById('p-desc').value.trim()
+        description: document.getElementById('p-desc').value.trim(),
+        detail:      document.getElementById('p-detail').value.trim()
       }
       const r = await api('POST', '/products', body)
       if (r?.code === 200) { closeModal('modalProduct'); loadProducts(); alert('商品已创建') }
@@ -892,7 +899,8 @@
         stock:       document.getElementById('p-stock').value,
         status:      document.getElementById('p-status').value,
         image_url:   document.getElementById('p-image-url').value || null,
-        description: document.getElementById('p-desc').value.trim()
+        description: document.getElementById('p-desc').value.trim(),
+        detail:      document.getElementById('p-detail').value.trim()
       }
       const r = await api('PUT', `/products/${currentEditId}`, body)
       if (r?.code === 200) { closeModal('modalProduct'); loadProducts(); alert('已保存') }

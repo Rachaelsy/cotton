@@ -24,35 +24,6 @@
   <!-- ===== 可滚动内容区 ===== -->
   <scroll-view class="scroll-content" scroll-y enable-back-to-top>
 
-    <!-- 限时秒杀 -->
-    <view class="flash-section">
-      <view class="flash-header">
-        <text class="flash-lightning">⚡</text>
-        <text class="flash-title">限时秒杀</text>
-        <text class="flash-sub">距结束</text>
-        <view class="flash-timer">
-          <text class="timer-num">{{timer.h}}</text>
-          <text class="timer-colon">:</text>
-          <text class="timer-num">{{timer.m}}</text>
-          <text class="timer-colon">:</text>
-          <text class="timer-num">{{timer.s}}</text>
-        </view>
-      </view>
-      <view class="flash-items">
-        <view
-          class="flash-item"
-          wx:for="{{flashProds}}"
-          wx:key="id"
-          bindtap="onFlashItem"
-          data-id="{{item.id}}"
-        >
-          <text class="flash-item-icon">{{item.icon}}</text>
-          <text class="flash-price">¥{{item.price}}</text>
-          <text class="flash-orig">¥{{item.origPrice}}</text>
-        </view>
-      </view>
-    </view>
-
     <!-- 分类导航 -->
     <view class="cats-section">
       <view

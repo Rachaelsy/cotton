@@ -9,7 +9,8 @@ Page({
     wxLoading: false,
     userInfo: { name: '--', tags: [], verified: false, landSize: 0 },
     userInitial: '?',
-    orderCount: 0
+    orderCount: 0,
+    favCount: 0
   },
 
   onLoad() {
@@ -24,6 +25,7 @@ Page({
       this.getTabBar().setData({ selected: 2 })
     }
     this._refreshUser()
+    this.setData({ favCount: (app.globalData.favorites || []).length })
   },
 
   // 刷新登录状态
@@ -130,8 +132,7 @@ Page({
   },
 
   onFavorites() {
-    if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
-    wx.showToast({ title: '收藏功能开发中', icon: 'none' })
+    wx.navigateTo({ url: '/pages/favorites/index' })
   },
 
   onMyOrders() {

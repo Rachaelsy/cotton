@@ -8,29 +8,18 @@ Page({
     products: [],
     cats: CATS,
     catSel: '全部',
-    flashProds: [],
     displayProds: [],
-    cartCount: 0,
-    timer: { h: '00', m: '24', s: '44' }
+    cartCount: 0
   },
 
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
     this._loadProducts()
-    this._startTimer()
   },
 
   onShow() {
     this.setData({ cartCount: app.globalData.cartCount })
-  },
-
-  onHide() {
-    this._stopTimer()
-  },
-
-  onUnload() {
-    this._stopTimer()
   },
 
   // 加载商品数据（优先后端 API，兜底本地数据）
@@ -59,11 +48,7 @@ Page({
     }
 
     app.globalData.products = products
-    this.setData({
-      products,
-      flashProds: products.slice(0, 3),
-      displayProds: products
-    })
+    this.setData({ products, displayProds: products })
   },
 
   // 分类筛选
@@ -80,15 +65,6 @@ Page({
   onProduct(e) {
     const id = e.currentTarget.dataset.id
     const product = this.data.products.find(p => p.id === id)
-    if (!product) return
-    app.globalData.selectedProduct = product
-    wx.navigateTo({ url: '/pages/supplies-detail/index' })
-  },
-
-  // 点击秒杀商品进入详情
-  onFlashItem(e) {
-    const id = e.currentTarget.dataset.id
-    const product = this.data.flashProds.find(p => p.id === id)
     if (!product) return
     app.globalData.selectedProduct = product
     wx.navigateTo({ url: '/pages/supplies-detail/index' })
@@ -123,28 +99,4 @@ Page({
     wx.showToast({ title: '活动详情开发中', icon: 'none' })
   },
 
-  // 倒计时
-  _startTimer() {
-    let total = 24 * 60 + 44 // 秒
-    const tick = () => {
-      if (total <= 0) { this._stopTimer(); return }
-      total--
-      const h = Math.floor(total / 3600)
-      const m = Math.floor((total % 3600) / 60)
-      const s = total % 60
-      this.setData({
-        'timer.h': String(h).padStart(2, '0'),
-        'timer.m': String(m).padStart(2, '0'),
-        'timer.s': String(s).padStart(2, '0')
-      })
-    }
-    this._timerInterval = setInterval(tick, 1000)
-  },
-
-  _stopTimer() {
-    if (this._timerInterval) {
-      clearInterval(this._timerInterval)
-      this._timerInterval = null
-    }
-  }
 })

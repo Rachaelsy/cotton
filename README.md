@@ -38,6 +38,8 @@ node db/migrate_products.js          # 创建 products 表并插入测试商品
 node db/migrate_admin.js             # 添加 is_admin 字段 + 创建管理员账号
 node db/migrate_merchant_approval.js # 添加 apply_status/reject_reason 字段
 node db/migrate_product_image.js     # 添加 image_url 字段
+node db/migrate_orders.js            # 创建 orders 和 order_items 表
+node db/migrate_product_detail.js    # 添加 detail 字段（商品详细介绍）
 node db/seed.js                      # 插入测试用户账号
 
 # 启动服务
@@ -88,12 +90,19 @@ http://localhost:3000/admin/
 | 农户管理 | 列表查看、新增、编辑（姓名/地区/面积/作物/实名）、启用/禁用账号 |
 | 商户管理 | 列表查看、新增（自动批准）、编辑（店铺名/联系人/品类/实名）、查看审批状态、启用/禁用账号 |
 | 商品管理 | 全量商品列表、新增（选择所属商户）、编辑（名称/价格/库存/状态等）、删除 |
+| 订单管理 | 全量订单列表，按状态筛选，在线修改订单状态 |
 
 **商户入驻申请（公开页面）：**
 ```
 http://localhost:3000/admin/merchant-apply.html
 ```
 商户通过此页面提交入驻申请，管理员在"商户审批"面板审核。
+
+**商户管理后台（统一登录入口）：**
+```
+http://localhost:3000/admin/login.html
+```
+管理员和商户共用此登录页，系统根据角色自动跳转不同后台。商户功能包含：店铺统计、商品管理（CRUD + 图片上传）、订单管理（发货/退款/删除）。
 
 ---
 
@@ -105,9 +114,11 @@ http://localhost:3000/admin/merchant-apply.html
   └─ 有 Token → verify() → 有效 → /pages/index/index（农户首页）
   └─ 无 Token → /pages/login/index（农户登录/注册）
 
-网页管理后台（管理员/商户）：
-http://localhost:3000/admin/
-  └─ 使用管理员账号登录 → /admin/dashboard.html
+网页管理后台（管理员 + 商户统一登录）：
+http://localhost:3000/admin/login.html
+  └─ 管理员账号登录 → /admin/dashboard.html
+  └─ 商户账号登录  → /merchant/dashboard.html
+  └─ /merchant/login.html 自动重定向至此入口
 ```
 
 ---
@@ -135,7 +146,7 @@ cotton/
 │   ├── ── 农户页面 ──────────────────────────────────
 │   ├── index/                # 农户首页（11 模块网格 + 天气 + 快拍入口）
 │   ├── ai/                   # AI 问答（聊天气泡界面）
-│   ├── my/                   # 我的（用户卡片、实名、退出）
+│   ├── my/                   # 我的（用户卡片、实名、退出，含进行中订单徽章）
 │   ├── fields/               # 地块管理（列表 + 绘制 draw）
 │   ├── pest/                 # 病虫害识别（拍照 + 识别结果 detail）
 │   ├── weather/              # 地块气象
@@ -149,8 +160,12 @@ cotton/
 │   ├── supplies/             # 农资商城（对接商户商品 API，显示商家名）
 │   ├── supplies-detail/      # 商品详情
 │   ├── supplies-cart/        # 购物车
-│   ├── supplies-checkout/    # 结算
-│   └── supplies-order/       # 订单确认
+│   ├── supplies-checkout/    # 结算（提交后写入 MySQL 订单）
+│   ├── supplies-pay-success/ # 支付成功页（订单号展示 + 查看订单入口）
+│   ├── supplies-order/       # 订单详情（4 步进度条 + 操作栏）
+│   ├── my-orders/            # 我的订单列表（Tab：全部/待发货/配送中/已完成）
+│   ├── supplies-store/       # 店铺页（单个商户全部商品）
+│   └── favorites/            # 我的收藏（卡片网格，取消收藏，加购）
 │   │
 │   └── ── 商户页面 ──────────────────────────────────
 │       └── merchant/
@@ -168,21 +183,28 @@ cotton/
     ├── routes/
     │   ├── auth.js           # /api/auth/*（注册/登录/验证/登出）
     │   ├── products.js       # /api/products/*（商品 CRUD）
+    │   ├── orders.js         # /api/orders/*（农户下单、查看个人订单）
+    │   ├── merchant.js       # /api/merchant/*（商户登录、商品、订单、统计）
     │   └── admin.js          # /api/admin/*（管理后台 API，需 is_admin）
     ├── middleware/
     │   └── auth.js           # JWT 鉴权中间件 + roleGuard()
     ├── public/
-    │   └── admin/            # 网页管理后台静态文件
-    │       ├── index.html    # 重定向到 login.html
-    │       ├── login.html           # 管理员登录页
-    │       ├── dashboard.html       # SPA 仪表盘（概览/审批/农户/商户/商品）
-    │       └── merchant-apply.html  # 商户入驻申请（公开页面）
+    │   ├── admin/            # 网页管理后台静态文件
+    │   │   ├── index.html           # 重定向到 login.html
+    │   │   ├── login.html           # 管理员登录页（含商户入口链接）
+    │   │   ├── dashboard.html       # SPA 仪表盘（概览/审批/农户/商户/商品/订单）
+    │   │   └── merchant-apply.html  # 商户入驻申请（公开页面）
+    │   └── merchant/         # 网页商户后台静态文件
+    │       ├── login.html           # 商户登录页
+    │       └── dashboard.html       # 商户 SPA（统计/商品/订单管理）
     └── db/
         ├── database.js       # mysql2 连接池
         ├── schema.sql        # 建表：users / farmers / merchants / login_logs
         ├── migrate_products.js # 建 products 表 + 种子数据（运行一次）
         ├── migrate_admin.js            # 添加 is_admin 字段 + 创建管理员账号
         ├── migrate_merchant_approval.js # 添加 apply_status/reject_reason 字段
+        ├── migrate_orders.js           # 建 orders + order_items 表（运行一次）
+        ├── migrate_product_detail.js   # 添加 detail 字段（幂等，可重复运行）
         └── seed.js                     # 测试用户账号（可重复运行，幂等）
 ```
 
@@ -217,6 +239,16 @@ Base URL（开发）：`http://192.168.0.25:3000`
 | POST | `/api/admin/applications/:id/approve` | 管理员 | 批准入驻 |
 | POST | `/api/admin/applications/:id/reject` | 管理员 | 拒绝入驻 |
 | POST | `/api/admin/apply` | 公开 | 商户提交入驻申请 |
+| GET  | `/api/admin/orders` | 管理员 | 全量订单列表（可按状态筛选） |
+| PATCH | `/api/admin/orders/:id/status` | 管理员 | 修改订单状态 |
+| POST | `/api/merchant/login` | 公开 | 商户登录 |
+| GET  | `/api/merchant/stats` | 商户 | 店铺统计（今日订单/本月销售额等）|
+| GET  | `/api/merchant/orders` | 商户 | 本店订单列表 |
+| PATCH | `/api/merchant/orders/:id/ship` | 商户 | 发货（填写物流单号） |
+| PATCH | `/api/merchant/orders/:id/refund` | 商户 | 退款/售后处理 |
+| DELETE | `/api/merchant/orders/:id` | 商户 | 删除订单 |
+| POST | `/api/orders` | 农户 | 下单（写入 MySQL，返回订单号） |
+| GET  | `/api/orders/my` | 农户 | 查看个人订单列表 |
 
 ---
 
@@ -226,9 +258,15 @@ Base URL（开发）：`http://192.168.0.25:3000`
 users          → id, phone, password(bcrypt), role, real_name, is_verified, is_active, is_admin
 farmers        → user_id(FK), location, land_size, crop_type
 merchants      → user_id(FK), company_name, business_license, product_category, apply_status, reject_reason
-products       → id, merchant_id(FK), name, category, price, unit, stock, status, icon, image_url
+products       → id, merchant_id(FK), name, category, price, unit, stock, status, icon, image_url, description, detail
+orders         → id, order_no(UNIQUE), user_id(FK), farmer_name, farmer_phone,
+                  receiver_name, receiver_phone, address, subtotal, delivery_fee,
+                  total, pay_method, status, logistics_no, note, created_at, updated_at
+order_items    → id, order_id(FK CASCADE), merchant_id, product_id, name, icon, spec, price, qty, subtotal
 login_logs     → user_id, ip, created_at
 ```
+
+订单状态流转：`pending_ship`（待发货）→ `shipped`（已发货）→ `completed`（已完成）/ `refund`（售后中）
 
 ---
 
@@ -305,7 +343,10 @@ app.globalData = {
   user:            null,   // 当前登录用户（login 后写入，含 role/real_name/company_name 等）
   cart:            [],     // 购物车（本地 Storage 持久化）
   cartCount:       0,      // 购物车数量
+  favorites:       [],     // 收藏列表（wx.setStorageSync('favorites') 持久化）
+  products:        [],     // 已加载商品缓存（供店铺页筛选复用）
   selectedProduct: null,   // 农资详情页传参
+  currentOrder:    null,   // 当前订单（结算 → 支付成功 → 订单详情页传参）
   statusBarHeight: 20      // 状态栏高度（px）
 }
 ```

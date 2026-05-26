@@ -7,19 +7,30 @@ Page({
     cartItems: [],
     cartTotal: '0',
     totalWithFee: '10',
-    payMethod: 'wechat',
-    submitting: false
+    submitting: false,
+    editingAddr: false,
+    receiverName: '',
+    receiverPhone: '',
+    address: ''
   },
 
   onLoad() {
     const info = wx.getSystemInfoSync()
     const cart = app.globalData.cart
     const cartTotal = cart.reduce((s, c) => s + c.price * c.qty, 0)
+    // 恢复上次填写的收货信息
+    let saved = {}
+    try { saved = wx.getStorageSync('shipping_address') || {} } catch (e) {}
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
       cartItems: cart,
       cartTotal: cartTotal.toFixed(0),
-      totalWithFee: (cartTotal + 10).toFixed(0)
+      totalWithFee: (cartTotal + 10).toFixed(0),
+      receiverName:  saved.receiverName  || '',
+      receiverPhone: saved.receiverPhone || '',
+      address:       saved.address       || '',
+      // 若没有保存过地址，直接进入编辑模式
+      editingAddr: !saved.receiverName
     })
   },
 
@@ -27,16 +38,36 @@ Page({
     wx.navigateBack()
   },
 
-  onPayMethod(e) {
-    this.setData({ payMethod: e.currentTarget.dataset.method })
+  onNameInput(e)  { this.setData({ receiverName:  e.detail.value }) },
+  onPhoneInput(e) { this.setData({ receiverPhone: e.detail.value }) },
+  onAddrInput(e)  { this.setData({ address:       e.detail.value }) },
+
+  onEditAddr() {
+    this.setData({ editingAddr: true })
   },
 
-  onChangeAddr() {
-    wx.showToast({ title: '地址管理开发中', icon: 'none' })
+  onConfirmAddr() {
+    const { receiverName, receiverPhone, address } = this.data
+    if (!receiverName.trim())  { wx.showToast({ title: '请填写收货人姓名', icon: 'none' }); return }
+    if (!receiverPhone.trim()) { wx.showToast({ title: '请填写手机号',     icon: 'none' }); return }
+    if (!address.trim())       { wx.showToast({ title: '请填写收货地址',   icon: 'none' }); return }
+    // 持久化，下次进入自动回填
+    try {
+      wx.setStorageSync('shipping_address', {
+        receiverName:  receiverName.trim(),
+        receiverPhone: receiverPhone.trim(),
+        address:       address.trim()
+      })
+    } catch (e) {}
+    this.setData({ editingAddr: false })
   },
 
   async onPay() {
     if (this.data.submitting) return
+    const { receiverName, receiverPhone, address } = this.data
+    if (!receiverName.trim() || !receiverPhone.trim() || !address.trim()) {
+      wx.showToast({ title: '请先填写收货信息', icon: 'none' }); return
+    }
     this.setData({ submitting: true })
 
     const order = {
@@ -53,11 +84,11 @@ Page({
       subtotal: parseFloat(this.data.cartTotal),
       deliveryFee: 10,
       total: parseFloat(this.data.totalWithFee),
-      payMethod: this.data.payMethod,
+      payMethod: 'wechat',
       status: '待发货',
-      address: '新疆喀什地区疏附县疏附乡 3号棉田',
-      receiverName: '古丽巴哈尔',
-      receiverPhone: '138****5678',
+      address: address.trim(),
+      receiverName: receiverName.trim(),
+      receiverPhone: receiverPhone.trim(),
       createTime: Date.now()
     }
 

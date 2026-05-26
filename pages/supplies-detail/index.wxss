@@ -14,7 +14,6 @@
   height: 520rpx;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
 }
 
 .hero-actions {
@@ -342,61 +341,7 @@
   margin: 16rpx 0;
 }
 
-/* ===== ⑥ 店内推荐 ===== */
-.store-scroll {
-  width: 100%;
-}
-
-.store-prods-row {
-  display: flex;
-  flex-direction: row;
-  gap: 20rpx;
-  padding-bottom: 4rpx;
-}
-
-.store-prod-card {
-  width: 200rpx;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-
-.store-prod-img {
-  width: 200rpx;
-  height: 200rpx;
-  border-radius: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.store-prod-photo {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.store-prod-icon { font-size: 72rpx; }
-
-.store-prod-name {
-  font-size: 22rpx;
-  color: #1A1A1A;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.store-prod-price {
-  font-size: 26rpx;
-  font-weight: 800;
-  color: #FF3B30;
-}
-
-/* ===== ⑦ 商品介绍：规格 ===== */
+/* ===== ⑥ 商品介绍：规格 ===== */
 .spec-row {
   display: flex;
   flex-direction: row;
@@ -457,10 +402,7 @@
 
 /* ===== 底部操作栏 ===== */
 .action-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   background: #ffffff;
   border-top: 1rpx solid #F2EBE0;
   padding: 16rpx 24rpx;

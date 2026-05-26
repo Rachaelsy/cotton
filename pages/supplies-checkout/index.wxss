@@ -81,6 +81,96 @@
 }
 
 /* ===== 收货地址 ===== */
+
+/* 显示模式 */
+.addr-display-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16rpx;
+  align-items: flex-start;
+}
+
+.addr-display-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.addr-display-name-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.addr-display-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.addr-display-phone {
+  font-size: 26rpx;
+  color: #555;
+}
+
+.addr-display-detail {
+  font-size: 26rpx;
+  color: #555;
+  line-height: 1.5;
+}
+
+.addr-empty {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 0;
+}
+
+.addr-empty-icon { font-size: 36rpx; }
+
+.addr-empty-text {
+  font-size: 28rpx;
+  color: #BBBBBB;
+}
+
+.addr-edit-btn {
+  margin-top: 20rpx;
+  border: 2rpx solid #C8902E;
+  border-radius: 999rpx;
+  padding: 14rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addr-edit-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #C8902E;
+}
+
+/* 编辑模式 */
+.addr-edit-form { }
+
+.addr-confirm-btn {
+  margin-top: 20rpx;
+  background: linear-gradient(135deg, #C8902E, #D4A043);
+  border-radius: 999rpx;
+  padding: 18rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addr-confirm-text {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #fff;
+}
+
 .addr-row {
   display: flex;
   flex-direction: row;
@@ -96,35 +186,24 @@
   gap: 6rpx;
 }
 
-.addr-name-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.addr-name {
-  font-size: 28rpx;
-  font-weight: 700;
+.addr-input {
+  background: #F8F4EF;
+  border-radius: 12rpx;
+  padding: 14rpx 18rpx;
+  font-size: 26rpx;
   color: #1A1A1A;
 }
 
-.addr-phone {
-  font-size: 24rpx;
-  color: #888888;
+.addr-name-row {
+  display: flex;
+  flex-direction: row;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
 }
 
-.addr-detail {
-  font-size: 24rpx;
-  color: #555555;
-  line-height: 1.5;
-}
-
-.addr-change {
-  font-size: 22rpx;
-  color: #C8902E;
-  margin-top: 4rpx;
-}
+.addr-name-input { flex: 1; }
+.addr-phone-input { flex: 1; }
+.addr-detail-input { width: 100%; }
 
 /* ===== 订单商品 ===== */
 .co-item {

@@ -191,6 +191,13 @@
 
 .cart-img-icon { font-size: 68rpx; }
 
+.cart-photo {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 20rpx;
+  display: block;
+}
+
 .cart-info {
   flex: 1;
   display: flex;

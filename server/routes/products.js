@@ -25,6 +25,10 @@ router.get('/', async (req, res) => {
       sql += ' AND p.category = ?'
       params.push(category)
     }
+    if (req.query.merchant_id) {
+      sql += ' AND p.merchant_id = ?'
+      params.push(parseInt(req.query.merchant_id))
+    }
     sql += ' ORDER BY p.created_at DESC'
     const [rows] = await db.query(sql, params)
     return ok(res, rows)

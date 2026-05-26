@@ -113,7 +113,7 @@
           <text class="mi-sub">收藏的农机、农资和服务</text>
         </view>
         <view class="mi-right">
-          <text wx:if="{{isLoggedIn}}" class="mi-count">8</text>
+          <text wx:if="{{favCount > 0}}" class="mi-count">{{favCount}}</text>
           <text class="mi-arr">›</text>
         </view>
       </view>

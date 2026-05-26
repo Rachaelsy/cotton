@@ -145,6 +145,27 @@ router.get('/stats', merchantAuth, async (req, res) => {
       FROM orders o
       JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
     `, [mid])
+    const [[tc]] = await db.query(`
+      SELECT COUNT(DISTINCT o.user_id) AS total_customers
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+    `, [mid])
+    const [wtRows] = await db.query(`
+      SELECT DATE(o.created_at) AS day, SUM(o.total) AS amount
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE o.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY DATE(o.created_at) ORDER BY day ASC
+    `, [mid])
+    const today = new Date()
+    const days = Array.from({length: 7}, (_, i) => {
+      const d = new Date(today); d.setDate(today.getDate() - 6 + i)
+      return d.toISOString().slice(0, 10)
+    })
+    const wtMap = {}
+    wtRows.forEach(r => { wtMap[String(r.day).slice(0, 10)] = parseFloat(r.amount || 0) })
+    const weekly_trend = days.map(d => {
+      const [, mm, dd] = d.split('-')
+      return { label: parseInt(mm) + '/' + parseInt(dd), val: Math.round(wtMap[d] || 0) }
+    })
     return ok(res, {
       total_products: p.total    || 0,
       on_sale:        p.on_sale  || 0,
@@ -155,10 +176,105 @@ router.get('/stats', merchantAuth, async (req, res) => {
       pending_ship:       o.pending_ship   || 0,
       pending_settlement: '0.00',
       monthly_sales:      parseFloat(o.monthly_sales || 0).toFixed(2),
-      total_customers:    0,
-      unread_messages:    0
+      total_customers:    tc.total_customers || 0,
+      unread_messages:    0,
+      weekly_trend
     })
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/merchant/finance — 财务结算数据
+// ─────────────────────────────────────────────────────────────
+router.get('/finance', merchantAuth, async (req, res) => {
+  try {
+    const mid = req.merchant.merchant_id
+    const [[m]] = await db.query(`
+      SELECT
+        COUNT(*) AS monthly_orders,
+        IFNULL(SUM(o.total), 0) AS monthly_sales,
+        IFNULL(SUM(CASE WHEN o.status='refund' THEN o.total ELSE 0 END), 0) AS monthly_refund
+      FROM orders o
+      JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')
+    `, [mid])
+    const [settleRows] = await db.query(`
+      SELECT o.id, o.order_no, o.total, o.created_at,
+             GROUP_CONCAT(i.name ORDER BY i.id SEPARATOR '、') AS prod_names
+      FROM orders o
+      JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE o.status='completed'
+      GROUP BY o.id ORDER BY o.created_at DESC LIMIT 50
+    `, [mid])
+    return ok(res, {
+      available_balance: '0.00',
+      monthly_sales:  parseFloat(m.monthly_sales  || 0).toFixed(2),
+      monthly_orders: parseInt(m.monthly_orders)  || 0,
+      monthly_refund: parseFloat(m.monthly_refund || 0).toFixed(2),
+      settlements: settleRows.map((s, idx) => {
+        const amount     = parseFloat(s.total)
+        const commission = parseFloat((amount * 0.03).toFixed(2))
+        return {
+          id:         'SE' + String(idx + 1).padStart(3, '0'),
+          order_no:   s.order_no,
+          prod:       s.prod_names || '商品',
+          amount,
+          commission,
+          actual:     parseFloat((amount - commission).toFixed(2)),
+          status:     '已结算',
+          date:       String(s.created_at).slice(0, 10)
+        }
+      }),
+      withdrawals: []
+    })
+  } catch(e) { console.error('[merchant-finance]', e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/merchant/trend?period=day|week|month — 销售趋势图表数据
+// ─────────────────────────────────────────────────────────────
+router.get('/trend', merchantAuth, async (req, res) => {
+  const mid = req.merchant.merchant_id
+  const { period = 'week' } = req.query
+  try {
+    let data = []
+    if (period === 'day') {
+      const [rows] = await db.query(`
+        SELECT HOUR(o.created_at) AS h, IFNULL(SUM(o.total), 0) AS amount
+        FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+        WHERE DATE(o.created_at)=CURDATE() GROUP BY h ORDER BY h
+      `, [mid])
+      const hm = {}; rows.forEach(r => { hm[r.h] = parseFloat(r.amount) })
+      data = [0,3,6,9,12,15,18,21].map(h => ({ label: h + '时', val: Math.round(hm[h] || 0) }))
+    } else if (period === 'month') {
+      const [rows] = await db.query(`
+        SELECT FLOOR((DAY(o.created_at)-1)/7)+1 AS w, IFNULL(SUM(o.total), 0) AS amount
+        FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+        WHERE DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')
+        GROUP BY w ORDER BY w
+      `, [mid])
+      const wm = {}; rows.forEach(r => { wm[r.w] = parseFloat(r.amount) })
+      data = [1,2,3,4].map(w => ({ label: '第' + w + '周', val: Math.round(wm[w] || 0) }))
+    } else {
+      const today = new Date()
+      const days = Array.from({length: 7}, (_, i) => {
+        const d = new Date(today); d.setDate(today.getDate() - 6 + i)
+        return d.toISOString().slice(0, 10)
+      })
+      const [rows] = await db.query(`
+        SELECT DATE(o.created_at) AS day, IFNULL(SUM(o.total), 0) AS amount
+        FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+        WHERE o.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY DATE(o.created_at) ORDER BY day
+      `, [mid])
+      const dm = {}; rows.forEach(r => { dm[String(r.day).slice(0, 10)] = parseFloat(r.amount) })
+      data = days.map(d => {
+        const [, mm, dd] = d.split('-')
+        return { label: parseInt(mm) + '/' + parseInt(dd), val: Math.round(dm[d] || 0) }
+      })
+    }
+    return ok(res, data)
+  } catch(e) { console.error('[merchant-trend]', e); return fail(res, '服务器错误', 500) }
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -178,29 +294,29 @@ router.get('/products', merchantAuth, async (req, res) => {
 })
 
 router.post('/products', merchantAuth, async (req, res) => {
-  const { name, category, icon, price, unit, stock, status, image_url, description } = req.body
+  const { name, category, icon, price, unit, stock, status, image_url, description, detail } = req.body
   if (!name?.trim()) return fail(res, '商品名称不能为空')
   if (!price || isNaN(price) || Number(price) <= 0) return fail(res, '请填写正确的价格')
   try {
     const [r] = await db.query(
-      'INSERT INTO products (merchant_id,name,category,icon,price,unit,stock,status,image_url,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      'INSERT INTO products (merchant_id,name,category,icon,price,unit,stock,status,image_url,description,detail) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
       [req.merchant.merchant_id, name.trim(), category||'', icon||'📦',
-       parseFloat(price), unit||'', parseInt(stock)||0, status||'on', image_url||null, description||'']
+       parseFloat(price), unit||'', parseInt(stock)||0, status||'on', image_url||null, description||'', detail||'']
     )
     return ok(res, { id: r.insertId }, '商品已上架')
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
 })
 
 router.put('/products/:id', merchantAuth, async (req, res) => {
-  const { name, category, icon, price, unit, stock, status, image_url, description } = req.body
+  const { name, category, icon, price, unit, stock, status, image_url, description, detail } = req.body
   try {
     const [rows] = await db.query('SELECT id FROM products WHERE id=? AND merchant_id=?',
       [req.params.id, req.merchant.merchant_id])
     if (!rows.length) return fail(res, '商品不存在或无权限', 404)
     await db.query(
-      'UPDATE products SET name=?,category=?,icon=?,price=?,unit=?,stock=?,status=?,image_url=?,description=? WHERE id=?',
+      'UPDATE products SET name=?,category=?,icon=?,price=?,unit=?,stock=?,status=?,image_url=?,description=?,detail=? WHERE id=?',
       [name, category||'', icon||'📦', parseFloat(price)||0, unit||'', parseInt(stock)||0,
-       status||'on', image_url||null, description||'', req.params.id]
+       status||'on', image_url||null, description||'', detail||'', req.params.id]
     )
     return ok(res, null, '修改成功')
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }

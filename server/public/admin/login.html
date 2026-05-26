@@ -53,35 +53,39 @@
     .btn:hover { opacity: 0.88; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .err { color: #DC2626; font-size: 13px; margin-top: 12px; text-align: center; min-height: 20px; }
-    .merchant-link {
-      display: block;
+    .role-hint {
+      display: none;
+      text-align: center;
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: #F0FDF4;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #16A34A;
+      font-weight: 600;
+    }
+    .footer-link {
       text-align: center;
       margin-top: 20px;
       padding-top: 16px;
       border-top: 1px solid #F0F0F0;
+      font-size: 13px;
+      color: #888;
     }
-    .merchant-link a {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #C8902E;
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .merchant-link a:hover { text-decoration: underline; }
+    .footer-link a { color: #C8902E; text-decoration: none; font-weight: 600; }
+    .footer-link a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="logo">
       <div class="logo-icon">🌾</div>
-      <div class="logo-title">棉管家管理后台</div>
-      <div class="logo-sub">仅限系统管理员登录</div>
+      <div class="logo-title">棉管家后台</div>
+      <div class="logo-sub">管理员 · 商户统一登录入口</div>
     </div>
     <div class="field">
-      <label>管理员账号</label>
-      <input id="phone" type="tel" placeholder="请输入手机号" autocomplete="username">
+      <label>账号</label>
+      <input id="phone" type="text" placeholder="请输入手机号" autocomplete="username">
     </div>
     <div class="field">
       <label>密码</label>
@@ -89,46 +93,72 @@
     </div>
     <button class="btn" id="loginBtn" onclick="doLogin()">登 录</button>
     <div class="err" id="err"></div>
-    <div class="merchant-link">
-      <a href="/merchant/login.html">🏪 商户入口</a>
-    </div>
+    <div class="role-hint" id="role-hint"></div>
+    <div class="footer-link">还没有账号？<a href="/admin/merchant-apply.html">申请商户入驻</a></div>
   </div>
 
   <script>
     // 已登录则直接跳转
     if (localStorage.getItem('admin_token')) {
       window.location.href = '/admin/dashboard.html'
+    } else if (localStorage.getItem('merchant_token')) {
+      window.location.href = '/merchant/dashboard.html'
     }
 
     document.getElementById('pwd').addEventListener('keydown', e => {
       if (e.key === 'Enter') doLogin()
     })
 
+    async function postJSON(url, body) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      return { status: res.status, data: await res.json() }
+    }
+
     async function doLogin() {
-      const phone = document.getElementById('phone').value.trim()
+      const phone    = document.getElementById('phone').value.trim()
       const password = document.getElementById('pwd').value
-      const btn = document.getElementById('loginBtn')
-      const err = document.getElementById('err')
+      const btn      = document.getElementById('loginBtn')
+      const err      = document.getElementById('err')
+      const hint     = document.getElementById('role-hint')
 
       if (!phone || !password) { err.textContent = '请填写账号和密码'; return }
       btn.disabled = true
       btn.textContent = '登录中...'
       err.textContent = ''
+      hint.style.display = 'none'
 
       try {
-        const res = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, password })
-        })
-        const data = await res.json()
-        if (data.code === 200) {
-          localStorage.setItem('admin_token', data.data.token)
-          localStorage.setItem('admin_name', data.data.real_name || '管理员')
+        // ① 尝试管理员登录
+        const admin = await postJSON('/api/admin/login', { phone, password })
+        if (admin.data.code === 200) {
+          localStorage.setItem('admin_token', admin.data.data.token)
+          localStorage.setItem('admin_name',  admin.data.data.real_name || '管理员')
+          hint.textContent = '✅ 管理员身份，正在跳转…'
+          hint.style.display = 'block'
           window.location.href = '/admin/dashboard.html'
-        } else {
-          err.textContent = data.msg || '登录失败'
+          return
         }
+
+        // ② 账号不存在(404)或非管理员账号(403)时，尝试商户登录
+        if (admin.status === 404 || admin.status === 403) {
+          const merchant = await postJSON('/api/merchant/login', { phone, password })
+          if (merchant.data.code === 200) {
+            localStorage.setItem('merchant_token', merchant.data.data.token)
+            localStorage.setItem('merchant_user',  JSON.stringify(merchant.data.data))
+            hint.textContent = '✅ 商户身份，正在跳转…'
+            hint.style.display = 'block'
+            window.location.href = '/merchant/dashboard.html'
+            return
+          }
+          err.textContent = merchant.data.msg || '账号或密码错误'
+          return
+        }
+
+        err.textContent = admin.data.msg || '登录失败'
       } catch {
         err.textContent = '网络错误，请检查服务器连接'
       } finally {

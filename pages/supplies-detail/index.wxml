@@ -1,25 +1,25 @@
 <!-- pages/supplies-detail/index.wxml — 商品详情页 -->
 <view class="page" wx:if="{{product}}">
 
-  <!-- ① 商品图片区 -->
-  <view class="prod-hero" style="background:{{product.imgBg}}; padding-top:{{statusBarHeight}}px">
-    <view class="hero-actions">
-      <view class="hero-back" bindtap="onBack">
-        <text class="hero-back-icon">‹</text>
+  <!-- 滚动主体（含图片区，整体可滚动） -->
+  <scroll-view class="detail-scroll" scroll-y>
+
+    <!-- ① 商品图片区 -->
+    <view class="prod-hero" style="background:{{product.imgBg}}; padding-top:{{statusBarHeight}}px">
+      <view class="hero-actions">
+        <view class="hero-back" bindtap="onBack">
+          <text class="hero-back-icon">‹</text>
+        </view>
+      </view>
+      <view class="hero-img-wrap">
+        <block wx:if="{{product.image_url}}">
+          <image class="hero-photo" src="{{product.image_url}}" mode="aspectFill"></image>
+        </block>
+        <block wx:else>
+          <text class="hero-icon">{{product.icon || '📦'}}</text>
+        </block>
       </view>
     </view>
-    <view class="hero-img-wrap">
-      <block wx:if="{{product.image_url}}">
-        <image class="hero-photo" src="{{product.image_url}}" mode="aspectFill"></image>
-      </block>
-      <block wx:else>
-        <text class="hero-icon">{{product.icon || '📦'}}</text>
-      </block>
-    </view>
-  </view>
-
-  <!-- 滚动主体 -->
-  <scroll-view class="detail-scroll" scroll-y>
 
     <!-- ② 商品名称 + 价格 -->
     <view class="name-section">
@@ -108,37 +108,7 @@
       </view>
     </view>
 
-    <!-- ⑥ 店内其他商品 -->
-    <view class="section" wx:if="{{storeProducts.length > 0}}">
-      <view class="section-head">
-        <text class="section-title">店内推荐</text>
-        <text class="section-more" bindtap="onGoStore">进店看看 ›</text>
-      </view>
-      <scroll-view scroll-x class="store-scroll">
-        <view class="store-prods-row">
-          <view
-            class="store-prod-card"
-            wx:for="{{storeProducts}}"
-            wx:key="id"
-            bindtap="onStoreProduct"
-            data-id="{{item.id}}"
-          >
-            <view class="store-prod-img" style="background:{{item.imgBg}}">
-              <block wx:if="{{item.image_url}}">
-                <image class="store-prod-photo" src="{{item.image_url}}" mode="aspectFill"></image>
-              </block>
-              <block wx:else>
-                <text class="store-prod-icon">{{item.icon || '📦'}}</text>
-              </block>
-            </view>
-            <text class="store-prod-name">{{item.name}}</text>
-            <text class="store-prod-price">¥{{item.price}}</text>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
-    <!-- ⑦ 商品介绍（规格 + 详情文字） -->
+    <!-- ⑥ 商品介绍（规格 + 详情文字） -->
     <view class="section">
       <text class="section-title">商品介绍</text>
       <view class="spec-row">
@@ -157,9 +127,9 @@
         <text class="spec-label">库存</text>
         <text class="spec-val">{{product.stock || 0}} {{product.unit || '件'}}</text>
       </view>
-      <view wx:if="{{product.description}}" class="desc-block">
+      <view wx:if="{{product.detail}}" class="desc-block">
         <view class="desc-divider"></view>
-        <text class="desc-text">{{product.description}}</text>
+        <text class="desc-text">{{product.detail}}</text>
       </view>
       <view wx:else class="desc-placeholder">
         <text class="desc-placeholder-icon">{{product.icon || '📦'}}</text>
