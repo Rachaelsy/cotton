@@ -1,137 +1,125 @@
-<!-- pages/supplies-order/index.wxml — 订单追踪 -->
+<!-- pages/supplies-order/index.wxml — 订单详情 -->
 <view class="page">
 
-  <!-- 顶部（绿色渐变） -->
+  <!-- 顶部（橙绿色渐变） -->
   <view class="ord-header" style="padding-top: {{statusBarHeight}}px">
     <view class="ord-topbar">
       <view class="ord-back" bindtap="onBack">
         <text class="ord-back-icon">‹</text>
       </view>
-      <view class="ord-status-wrap">
-        <text class="ord-status">配送中</text>
-        <text class="ord-eta">预计今天下午送达地头</text>
-      </view>
-      <view class="ord-more" bindtap="onMore">
-        <text class="ord-more-dot">···</text>
+      <text class="ord-nav-title">订单详情</text>
+      <view style="width: 64rpx"></view>
+    </view>
+    <!-- 当前状态 -->
+    <view class="ord-status-block">
+      <text class="ord-status-icon">{{statusIcon}}</text>
+      <view class="ord-status-info">
+        <text class="ord-status-label">{{statusLabel}}</text>
+        <text class="ord-status-sub">{{statusSub}}</text>
       </view>
     </view>
   </view>
 
-  <!-- 白色圆角内容卡片 -->
+  <!-- 状态进度条 -->
+  <view class="steps-bar">
+    <view class="step" wx:for="{{steps}}" wx:key="index">
+      <view class="step-dot {{item.done ? 'step-dot-done' : ''}} {{item.active ? 'step-dot-active' : ''}}">
+        <text class="step-check" wx:if="{{item.done}}">✓</text>
+        <text class="step-num" wx:else>{{index + 1}}</text>
+      </view>
+      <text class="step-label {{item.done || item.active ? 'step-label-on' : ''}}">{{item.label}}</text>
+      <view class="step-line" wx:if="{{index < steps.length - 1}}">
+        <view class="step-line-fill" style="width: {{item.done ? '100%' : '0%'}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 可滚动内容 -->
   <scroll-view class="ord-scroll" scroll-y>
-    <view class="ord-card">
-
-      <!-- 物流进度标题 -->
-      <view class="log-title-row">
-        <text class="log-title">物流进度</text>
-        <view class="log-door-btn" bindtap="onDoor">
-          <text class="log-door-text">🚚 配货上门</text>
-        </view>
-      </view>
-
-      <!-- 物流时间线 -->
-      <view class="timeline">
-        <view class="tl-item" wx:for="{{timeline}}" wx:key="index">
-          <view class="tl-left">
-            <view class="tl-dot tl-dot-done"></view>
-            <view class="tl-line tl-line-done" wx:if="{{index < timeline.length - 1}}"></view>
-          </view>
-          <view class="tl-content">
-            <text class="tl-txt" style="color: {{index === 0 ? '#4CAF50' : '#1A1A1A'}}">{{item.title}}</text>
-            <text class="tl-sub">{{item.sub}}</text>
-            <text class="tl-time">{{item.time}}</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 配送员信息 -->
-      <view class="driver-card">
-        <view class="driver-ava">
-          <text class="driver-ava-icon">🚛</text>
-        </view>
-        <view class="driver-info">
-          <view class="driver-name-row">
-            <text class="driver-name">王师傅</text>
-            <text class="driver-cert">认证司机</text>
-          </view>
-          <text class="driver-sub">新疆喀什 · 车牌 新K 3A88</text>
-        </view>
-        <view class="driver-btns">
-          <view class="driver-btn driver-btn-phone" bindtap="onCallDriver">
-            <text>📞</text>
-          </view>
-          <view class="driver-btn driver-btn-msg" bindtap="onMsgDriver">
-            <text>💬</text>
-          </view>
-        </view>
-      </view>
+    <view class="ord-body">
 
       <!-- 收货地址 -->
-      <view class="del-addr">
-        <text class="del-addr-icon">📦</text>
-        <view class="del-addr-info">
-          <view class="del-addr-name-row">
-            <text class="del-addr-name">古丽巴哈尔</text>
-            <text class="del-addr-phone">138****5678</text>
+      <view class="section-card">
+        <view class="section-head">
+          <text class="section-icon">📍</text>
+          <text class="section-title">收货信息</text>
+        </view>
+        <view class="addr-row">
+          <view class="addr-name-row">
+            <text class="addr-name">{{order.receiverName}}</text>
+            <text class="addr-phone">{{order.receiverPhone}}</text>
           </view>
-          <text class="del-addr-detail">新疆喀什地区疏附县疏附乡 3号棉田</text>
-          <text class="del-addr-coord">（地块中心坐标 39.42°N 75.96°E）</text>
+          <text class="addr-detail">{{order.address}}</text>
         </view>
       </view>
 
       <!-- 订单商品 -->
-      <view class="ord-items-title">
-        <text class="ord-items-title-text">订单商品</text>
-      </view>
-      <view class="ord-item" wx:for="{{orderItems}}" wx:key="id">
-        <view class="ord-item-img" style="background: {{item.imgBg}}">
-          <text class="ord-item-icon">{{item.icon}}</text>
+      <view class="section-card">
+        <view class="section-head">
+          <text class="section-icon">📦</text>
+          <text class="section-title">订单商品</text>
         </view>
-        <view class="ord-item-info">
-          <text class="ord-item-name">{{item.name}}</text>
-          <text class="ord-item-spec">{{item.spec}} × {{item.qty}}</text>
+        <view class="ord-item" wx:for="{{order.items}}" wx:key="id">
+          <view class="ord-item-img" style="background: {{item.imgBg || '#FBF5EA'}}">
+            <text class="ord-item-icon">{{item.icon || '📦'}}</text>
+          </view>
+          <view class="ord-item-info">
+            <text class="ord-item-name">{{item.name}}</text>
+            <text class="ord-item-spec">{{item.spec}} × {{item.qty}}</text>
+          </view>
+          <text class="ord-item-price">¥{{item.price * item.qty}}</text>
         </view>
-        <text class="ord-item-price">¥{{item.price * item.qty}}</text>
       </view>
 
       <!-- 订单信息 -->
-      <view class="ord-info-card">
-        <view class="ord-kv">
-          <text class="ord-kv-k">订单编号</text>
-          <text class="ord-kv-v">{{orderNo}}</text>
+      <view class="section-card">
+        <view class="section-head">
+          <text class="section-icon">🧾</text>
+          <text class="section-title">订单信息</text>
         </view>
-        <view class="ord-kv">
-          <text class="ord-kv-k">支付方式</text>
-          <text class="ord-kv-v">{{payMethodLabel}}</text>
+        <view class="kv-row">
+          <text class="kv-k">订单编号</text>
+          <view class="kv-no-wrap" bindtap="onCopyNo">
+            <text class="kv-v">{{orderNo}}</text>
+            <text class="kv-copy">复制</text>
+          </view>
         </view>
-        <view class="ord-kv">
-          <text class="ord-kv-k">商品合计</text>
-          <text class="ord-kv-v">¥{{orderTotal}}</text>
+        <view class="kv-row">
+          <text class="kv-k">支付方式</text>
+          <text class="kv-v">{{payMethodLabel}}</text>
         </view>
-        <view class="ord-kv">
-          <text class="ord-kv-k">运费</text>
-          <text class="ord-kv-v">¥10</text>
+        <view class="kv-row">
+          <text class="kv-k">商品合计</text>
+          <text class="kv-v">¥{{order.subtotal}}</text>
         </view>
-        <view class="ord-kv ord-kv-total">
-          <text class="ord-kv-k">实付款</text>
-          <text class="ord-kv-v-red">¥{{orderTotalWithFee}}</text>
+        <view class="kv-row">
+          <text class="kv-k">运费</text>
+          <text class="kv-v">¥10</text>
+        </view>
+        <view class="kv-row kv-row-total">
+          <text class="kv-k-bold">实付金额</text>
+          <text class="kv-v-red">¥{{order.total}}</text>
         </view>
       </view>
 
-      <view style="height: 20rpx"></view>
+      <view style="height: 40rpx"></view>
     </view>
   </scroll-view>
 
-  <!-- 底部操作 -->
+  <!-- 底部操作栏 -->
   <view class="ord-bottom">
-    <view class="ord-btn ord-btn-ghost" bindtap="onContact">
-      <text class="ord-btn-text">联系客服</text>
+    <view class="action-btn action-contact" bindtap="onContact">
+      <text class="action-icon">💬</text>
+      <text class="action-label">联系卖家</text>
     </view>
-    <view class="ord-btn ord-btn-ghost" bindtap="onAfterSale">
-      <text class="ord-btn-text">申请售后</text>
+    <view class="action-btn action-refund" bindtap="onAfterSale">
+      <text class="action-icon">🔄</text>
+      <text class="action-label">退款/售后</text>
     </view>
-    <view class="ord-btn ord-btn-primary" bindtap="onConfirmReceive">
-      <text class="ord-btn-text-white">✓ 确认收货</text>
+    <view class="action-btn action-logistics {{!shipped ? 'action-disabled' : ''}}" bindtap="onLogistics">
+      <text class="action-icon">🚚</text>
+      <text class="action-label">查看物流</text>
+      <text class="action-sub" wx:if="{{!shipped}}">未发货</text>
     </view>
   </view>
 

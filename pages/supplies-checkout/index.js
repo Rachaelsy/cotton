@@ -47,7 +47,8 @@ Page({
         price: ci.price,
         qty: ci.qty,
         icon: ci.icon,
-        store: ci.store
+        store: ci.store,
+        merchant_id: ci.merchant_id
       })),
       subtotal: parseFloat(this.data.cartTotal),
       deliveryFee: 10,
@@ -60,15 +61,27 @@ Page({
       createTime: Date.now()
     }
 
-    // 保存订单到云数据库
+    // 提交订单到后端数据库
+    const auth = require('../../utils/auth')
     try {
-      if (wx.cloud) {
-        const db = wx.cloud.database()
-        const res = await db.collection('orders').add({ data: order })
-        order.orderId = res._id
+      const res = await auth.request('POST', '/api/orders', {
+        items: order.items,
+        subtotal: order.subtotal,
+        deliveryFee: order.deliveryFee,
+        total: order.total,
+        payMethod: order.payMethod,
+        receiverName: order.receiverName,
+        receiverPhone: order.receiverPhone,
+        address: order.address
+      })
+      if (res.code === 200) {
+        order.orderId = res.data.orderId
+        order.orderNo = res.data.orderNo
+      } else {
+        console.warn('订单保存失败:', res.msg)
       }
     } catch (e) {
-      console.warn('订单保存失败:', e.message)
+      console.warn('订单保存异常:', e.message)
     }
 
     // 将订单存入 globalData 供追踪页使用
@@ -77,10 +90,6 @@ Page({
     // 清空购物车
     app.clearCart()
 
-    wx.showToast({ title: '支付成功！', icon: 'success', duration: 1200 })
-
-    setTimeout(() => {
-      wx.redirectTo({ url: '/pages/supplies-order/index' })
-    }, 1200)
+    wx.redirectTo({ url: '/pages/supplies-pay-success/index' })
   }
 })

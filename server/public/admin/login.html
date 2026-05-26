@@ -53,6 +53,23 @@
     .btn:hover { opacity: 0.88; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .err { color: #DC2626; font-size: 13px; margin-top: 12px; text-align: center; min-height: 20px; }
+    .merchant-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #F0F0F0;
+    }
+    .merchant-link a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #C8902E;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .merchant-link a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -72,6 +89,9 @@
     </div>
     <button class="btn" id="loginBtn" onclick="doLogin()">登 录</button>
     <div class="err" id="err"></div>
+    <div class="merchant-link">
+      <a href="/merchant/login.html">🏪 商户入口</a>
+    </div>
   </div>
 
   <script>

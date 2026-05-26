@@ -8,7 +8,8 @@ Page({
     isLoggedIn: false,
     wxLoading: false,
     userInfo: { name: '--', tags: [], verified: false, landSize: 0 },
-    userInitial: '?'
+    userInitial: '?',
+    orderCount: 0
   },
 
   onLoad() {
@@ -42,9 +43,20 @@ Page({
         },
         userInitial: name.charAt(0)
       })
+      this._loadOrderCount()
     } else {
-      this.setData({ isLoggedIn: false })
+      this.setData({ isLoggedIn: false, orderCount: 0 })
     }
+  },
+
+  async _loadOrderCount() {
+    try {
+      const res = await auth.request('GET', '/api/orders/my')
+      if (res.code === 200) {
+        const active = (res.data || []).filter(o => o.status === 'pending_ship' || o.status === 'shipped')
+        this.setData({ orderCount: active.length })
+      }
+    } catch { /* 忽略，不影响主界面 */ }
   },
 
   // 预先获取 wx.login code（在 onLoad 时调用，有效期 5 分钟）
@@ -124,7 +136,7 @@ Page({
 
   onMyOrders() {
     if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
-    wx.navigateTo({ url: '/pages/supplies-cart/index' })
+    wx.navigateTo({ url: '/pages/my-orders/index' })
   },
 
   onAbout() {

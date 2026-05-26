@@ -1,0 +1,245 @@
+/* pages/my-orders/index.wxss — 我的订单 */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ===== 顶部 ===== */
+.header {
+  background: linear-gradient(160deg, #92400e, #C8902E);
+  flex-shrink: 0;
+  padding-left: 28rpx;
+  padding-right: 28rpx;
+  padding-bottom: 0;
+}
+
+.topbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-top: 10rpx;
+  padding-bottom: 20rpx;
+}
+
+.back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-icon {
+  color: #fff;
+  font-size: 44rpx;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* ===== Tabs ===== */
+.tabs {
+  display: flex;
+  flex-direction: row;
+  padding-bottom: 0;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18rpx 0;
+  border-bottom: 4rpx solid transparent;
+}
+
+.tab-active {
+  border-bottom-color: #fff;
+}
+
+.tab-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+
+.tab-active .tab-text {
+  color: #fff;
+  font-weight: 800;
+}
+
+/* ===== 列表 ===== */
+.scroll {
+  flex: 1;
+  height: 0;
+}
+
+.list {
+  padding: 20rpx 28rpx 0;
+}
+
+/* ===== 订单卡片 ===== */
+.order-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+
+.card-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.order-no {
+  font-size: 22rpx;
+  color: #AAAAAA;
+  flex: 1;
+}
+
+.status-tag {
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+
+.tag-ship     { background: #FFF7ED; }
+.tag-shipped  { background: #EFF6FF; }
+.tag-done     { background: #F0FDF4; }
+.tag-refund   { background: #FFF1F2; }
+.tag-pending  { background: #FAFAFA; }
+
+.status-text {
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.tag-ship    .status-text { color: #D97706; }
+.tag-shipped .status-text { color: #3B82F6; }
+.tag-done    .status-text { color: #16A34A; }
+.tag-refund  .status-text { color: #E11D48; }
+.tag-pending .status-text { color: #888888; }
+
+/* ===== 商品行 ===== */
+.goods-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 0;
+  border-top: 1rpx solid #F5EEE6;
+  border-bottom: 1rpx solid #F5EEE6;
+  margin-bottom: 16rpx;
+}
+
+.goods-icon-wrap {
+  width: 80rpx;
+  height: 80rpx;
+  background: #FBF5EA;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.goods-icon { font-size: 40rpx; }
+
+.goods-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.goods-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+  line-height: 1.4;
+}
+
+.goods-spec {
+  font-size: 22rpx;
+  color: #888;
+}
+
+.goods-more {
+  font-size: 22rpx;
+  color: #C8902E;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ===== 卡片底部 ===== */
+.card-foot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-time {
+  font-size: 22rpx;
+  color: #BBBBBB;
+}
+
+.amount-row {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6rpx;
+}
+
+.amount-label {
+  font-size: 22rpx;
+  color: #888;
+}
+
+.amount-val {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: #FF3B30;
+}
+
+/* ===== 状态 ===== */
+.loading-wrap, .empty-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 120rpx;
+  gap: 16rpx;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #AAAAAA;
+}
+
+.empty-icon { font-size: 80rpx; }
+
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #555;
+}
+
+.empty-sub {
+  font-size: 24rpx;
+  color: #AAAAAA;
+}

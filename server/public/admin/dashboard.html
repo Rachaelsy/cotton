@@ -88,7 +88,10 @@
     }
     .table-title { font-size: 15px; font-weight: 700; flex: 1; }
     .badge { font-size: 12px; background: #F0F0F0; color: #555; padding: 2px 10px; border-radius: 999px; }
-    .badge-warn { background: #FEF3C7; color: #D97706; }
+    .badge-warn   { background: #FEF3C7; color: #D97706; }
+    .badge-info   { background: #EFF6FF; color: #2563EB; }
+    .badge-ok     { background: #F0FDF4; color: #16A34A; }
+    .badge-danger { background: #FFF1F2; color: #E11D48; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead th {
       background: #FAFAFA; padding: 10px 12px; text-align: left;
@@ -188,6 +191,9 @@
     <div class="nav-item" data-panel="products" onclick="switchPanel(this)">
       <span class="nav-icon">📦</span> 商品管理
     </div>
+    <div class="nav-item" data-panel="orders" onclick="switchPanel(this)">
+      <span class="nav-icon">📋</span> 订单管理
+    </div>
   </nav>
   <div class="sidebar-foot">
     <div class="admin-info">当前登录</div>
@@ -268,6 +274,30 @@
         </div>
         <table><thead><tr><th>ID</th><th>商品名</th><th>所属商户</th><th>分类</th><th>价格</th><th>单位</th><th>库存</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="productTable"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══ 订单管理面板 ══ -->
+    <div class="panel" id="panel-orders">
+      <div class="table-wrap">
+        <div class="table-head" style="flex-wrap:wrap;gap:10px">
+          <span class="table-title">订单列表</span>
+          <span class="badge" id="orders-count">0</span>
+          <div style="display:flex;gap:6px;margin-left:auto">
+            <select id="orders-status-filter" style="padding:5px 10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;outline:none" onchange="loadAdminOrders()">
+              <option value="">全部状态</option>
+              <option value="pending_ship">待发货</option>
+              <option value="shipped">配送中</option>
+              <option value="completed">已完成</option>
+              <option value="refund">售后/退款</option>
+            </select>
+            <button class="act-btn" onclick="loadAdminOrders()" style="background:#F0F0F0;color:#555">刷新</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>订单号</th><th>农户</th><th>商品</th><th>实付金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
+          <tbody id="ordersTable"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody>
+        </table>
       </div>
     </div>
 
@@ -417,7 +447,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -434,6 +464,7 @@
     else if (panel === 'farmers')  loadFarmers()
     else if (panel === 'merchants') loadMerchants()
     else if (panel === 'products') loadProducts()
+    else if (panel === 'orders')   loadAdminOrders()
   }
 
   function fmt(dt) {
@@ -882,6 +913,64 @@
     const r = await api('PATCH', `/users/${userId}/status`, { is_active: !isActive })
     if (r?.code === 200) { loadPanel(panel) }
     else alert(r?.msg || '操作失败')
+  }
+
+  // ── 订单管理 ─────────────────────────────────
+  const ADMIN_ORDER_STATUS = {
+    pending_ship: { label:'待发货',    cls:'badge-warn'    },
+    shipped:      { label:'配送中',    cls:'badge-info'    },
+    completed:    { label:'已完成',    cls:'badge-ok'      },
+    refund:       { label:'售后/退款', cls:'badge-danger'  }
+  }
+  let adminOrdersData = []
+
+  async function loadAdminOrders() {
+    const tbody = document.getElementById('ordersTable')
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载中...</td></tr>'
+    try {
+      const status = document.getElementById('orders-status-filter').value
+      const qs = status ? '?status=' + status : ''
+      const r = await api('GET', '/orders' + qs)
+      if (!r) return
+      adminOrdersData = r.data || []
+      document.getElementById('orders-count').textContent = adminOrdersData.length
+      if (!adminOrdersData.length) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无订单</td></tr>'
+        return
+      }
+      tbody.innerHTML = adminOrdersData.map(o => {
+        const st = ADMIN_ORDER_STATUS[o.status] || { label: o.status, cls: 'badge' }
+        const item = o.items && o.items[0]
+        const created = o.created_at ? String(o.created_at).slice(0,16).replace('T',' ') : ''
+        return `<tr>
+          <td style="font-size:12px;color:#888">${esc(o.order_no)}</td>
+          <td>${esc(o.farmer_name||o.receiver_name)}<br><span style="font-size:11px;color:#BBB">${esc(o.farmer_phone||'')}</span></td>
+          <td>${item ? esc(item.name)+' ×'+item.qty : '—'}${o.items.length>1?`<br><span style="font-size:11px;color:#BBB">等${o.items.length}件</span>`:''}</td>
+          <td style="font-weight:700;color:#C8902E">¥${o.total}</td>
+          <td><span class="badge ${st.cls}">${st.label}</span></td>
+          <td style="font-size:12px;color:#888">${created}</td>
+          <td style="white-space:nowrap">
+            <select style="padding:4px 8px;border:1.5px solid #E0E0E0;border-radius:6px;font-size:12px" onchange="updateOrderStatus(${o.id},this.value,this)">
+              <option value="">改状态</option>
+              <option value="pending_ship">待发货</option>
+              <option value="shipped">已发货</option>
+              <option value="completed">已完成</option>
+              <option value="refund">售后/退款</option>
+            </select>
+          </td>
+        </tr>`
+      }).join('')
+    } catch(e) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="7">加载失败：${esc(e.message)} <button onclick="loadAdminOrders()">重试</button></td></tr>`
+    }
+  }
+
+  async function updateOrderStatus(id, status, sel) {
+    if (!status) return
+    if (!confirm(`确定将订单状态改为"${ADMIN_ORDER_STATUS[status]?.label || status}"？`)) { sel.value=''; return }
+    const r = await api('PATCH', `/orders/${id}/status`, { status })
+    if (r?.code === 200) { loadAdminOrders() }
+    else { alert(r?.msg || '操作失败'); sel.value='' }
   }
 
   // ── 弹窗通用 ─────────────────────────────────

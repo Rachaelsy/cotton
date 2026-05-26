@@ -135,19 +135,28 @@ router.get('/stats', merchantAuth, async (req, res) => {
              SUM(CASE WHEN stock = 0   THEN 1 ELSE 0 END) AS no_stock
       FROM products WHERE merchant_id=?
     `, [mid])
+    const [[o]] = await db.query(`
+      SELECT
+        COUNT(*) AS total_orders,
+        SUM(CASE WHEN o.status='pending_ship' THEN 1 ELSE 0 END) AS pending_ship,
+        SUM(CASE WHEN DATE(o.created_at)=CURDATE() THEN 1 ELSE 0 END) AS today_orders,
+        SUM(CASE WHEN DATE(o.created_at)=CURDATE() THEN o.total ELSE 0 END) AS today_sales,
+        SUM(CASE WHEN DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m') THEN o.total ELSE 0 END) AS monthly_sales
+      FROM orders o
+      JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+    `, [mid])
     return ok(res, {
       total_products: p.total    || 0,
       on_sale:        p.on_sale  || 0,
       low_stock:      p.low_stock|| 0,
       no_stock:       p.no_stock || 0,
-      // 以下为演示数据（订单/财务系统上线后替换）
-      today_orders:       7,
-      today_sales:        '3280.00',
-      pending_ship:       4,
-      pending_settlement: '18650.00',
-      monthly_sales:      '86420.00',
-      total_customers:    38,
-      unread_messages:    2
+      today_orders:       o.today_orders   || 0,
+      today_sales:        parseFloat(o.today_sales   || 0).toFixed(2),
+      pending_ship:       o.pending_ship   || 0,
+      pending_settlement: '0.00',
+      monthly_sales:      parseFloat(o.monthly_sales || 0).toFixed(2),
+      total_customers:    0,
+      unread_messages:    0
     })
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
 })
@@ -216,6 +225,87 @@ router.delete('/products/:id', merchantAuth, async (req, res) => {
     if (!rows.length) return fail(res, '商品不存在或无权限', 404)
     await db.query('DELETE FROM products WHERE id=?', [req.params.id])
     return ok(res, null, '已删除')
+  } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
+// GET  /api/merchant/orders — 商户查看订单
+// ─────────────────────────────────────────────────────────────
+router.get('/orders', merchantAuth, async (req, res) => {
+  try {
+    const { status } = req.query
+    const mid = req.merchant.merchant_id
+    let sql = `
+      SELECT o.id, o.order_no, o.farmer_name, o.farmer_phone,
+             o.receiver_name, o.receiver_phone, o.address,
+             o.subtotal, o.delivery_fee, o.total,
+             o.pay_method, o.status, o.logistics_no, o.note,
+             o.created_at,
+             GROUP_CONCAT(
+               CONCAT(i.icon,'|',i.name,'|',i.spec,'|',i.price,'|',i.qty)
+               SEPARATOR ';;'
+             ) AS items_raw
+      FROM orders o
+      JOIN order_items i ON i.order_id = o.id AND i.merchant_id = ?
+    `
+    const params = [mid]
+    if (status && status !== 'all') { sql += ' WHERE o.status = ?'; params.push(status) }
+    sql += ' GROUP BY o.id ORDER BY o.created_at DESC'
+
+    const [rows] = await db.query(sql, params)
+    const orders = rows.map(o => ({
+      ...o,
+      items: (o.items_raw || '').split(';;').filter(Boolean).map(s => {
+        const [icon, name, spec, price, qty] = s.split('|')
+        return { icon, name, spec, price: parseFloat(price), qty: parseInt(qty) }
+      })
+    }))
+    return ok(res, orders)
+  } catch(e) { console.error('[merchant-orders]', e); return fail(res, '服务器错误', 500) }
+})
+
+router.patch('/orders/:id/ship', merchantAuth, async (req, res) => {
+  const { logistics_no } = req.body
+  if (!logistics_no) return fail(res, '请填写物流单号')
+  try {
+    const mid = req.merchant.merchant_id
+    const [rows] = await db.query(
+      `SELECT o.id FROM orders o JOIN order_items i ON i.order_id=o.id
+       WHERE o.id=? AND i.merchant_id=? AND o.status='pending_ship' LIMIT 1`,
+      [req.params.id, mid]
+    )
+    if (!rows.length) return fail(res, '订单不存在或无法发货', 404)
+    await db.query(`UPDATE orders SET status='shipped', logistics_no=? WHERE id=?`,
+      [logistics_no, req.params.id])
+    return ok(res, null, '发货成功')
+  } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
+})
+
+router.patch('/orders/:id/refund', merchantAuth, async (req, res) => {
+  try {
+    const mid = req.merchant.merchant_id
+    const [rows] = await db.query(
+      `SELECT o.id FROM orders o JOIN order_items i ON i.order_id=o.id
+       WHERE o.id=? AND i.merchant_id=? LIMIT 1`,
+      [req.params.id, mid]
+    )
+    if (!rows.length) return fail(res, '订单不存在', 404)
+    await db.query(`UPDATE orders SET status='completed' WHERE id=?`, [req.params.id])
+    return ok(res, null, '退款已处理')
+  } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
+})
+
+router.delete('/orders/:id', merchantAuth, async (req, res) => {
+  try {
+    const mid = req.merchant.merchant_id
+    const [rows] = await db.query(
+      `SELECT o.id FROM orders o JOIN order_items i ON i.order_id=o.id
+       WHERE o.id=? AND i.merchant_id=? LIMIT 1`,
+      [req.params.id, mid]
+    )
+    if (!rows.length) return fail(res, '订单不存在或无权删除', 404)
+    await db.query('DELETE FROM orders WHERE id=?', [req.params.id])
+    return ok(res, null, '订单已删除')
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
 })
 

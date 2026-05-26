@@ -1,0 +1,86 @@
+<!-- pages/my-orders/index.wxml — 我的订单 -->
+<view class="page">
+
+  <!-- 顶部 -->
+  <view class="header" style="padding-top: {{statusBarHeight}}px">
+    <view class="topbar">
+      <view class="back-btn" bindtap="onBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <text class="header-title">我的订单</text>
+      <view style="width: 64rpx"></view>
+    </view>
+
+    <!-- Tab栏 -->
+    <view class="tabs">
+      <view
+        class="tab {{activeTab === item.key ? 'tab-active' : ''}}"
+        wx:for="{{tabs}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="onTabTap"
+      >
+        <text class="tab-text">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 内容区 -->
+  <scroll-view class="scroll" scroll-y>
+
+    <!-- 加载中 -->
+    <view wx:if="{{loading}}" class="loading-wrap">
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view wx:elif="{{empty}}" class="empty-wrap">
+      <text class="empty-icon">📋</text>
+      <text class="empty-title">暂无订单</text>
+      <text class="empty-sub">去农资供应逛逛吧</text>
+    </view>
+
+    <!-- 订单列表 -->
+    <view wx:else class="list">
+      <view
+        class="order-card"
+        wx:for="{{orders}}"
+        wx:key="id"
+        data-order="{{item}}"
+        bindtap="onOrderTap"
+      >
+        <!-- 卡片头 -->
+        <view class="card-head">
+          <text class="order-no">订单号：{{item.order_no}}</text>
+          <view class="status-tag {{item.statusCls}}">
+            <text class="status-text">{{item.statusLabel}}</text>
+          </view>
+        </view>
+
+        <!-- 商品行 -->
+        <view class="goods-row">
+          <view class="goods-icon-wrap">
+            <text class="goods-icon">{{item.firstItem.icon || '📦'}}</text>
+          </view>
+          <view class="goods-info">
+            <text class="goods-name">{{item.firstItem.name || '商品'}}</text>
+            <text class="goods-spec">{{item.firstItem.spec}} × {{item.firstItem.qty}}</text>
+          </view>
+          <text wx:if="{{item.moreCount > 0}}" class="goods-more">+{{item.moreCount}}件</text>
+        </view>
+
+        <!-- 底部行 -->
+        <view class="card-foot">
+          <text class="order-time">{{item.createDate}}</text>
+          <view class="amount-row">
+            <text class="amount-label">实付</text>
+            <text class="amount-val">¥{{item.total}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view style="height: 40rpx"></view>
+  </scroll-view>
+
+</view>

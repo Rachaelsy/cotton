@@ -129,8 +129,8 @@
           <text class="mi-sub">查看预约中、进行中、已完成订单</text>
         </view>
         <view class="mi-right">
-          <view wx:if="{{isLoggedIn}}" class="mi-badge-warn">
-            <text class="mi-badge-text">2进行中</text>
+          <view wx:if="{{isLoggedIn && orderCount > 0}}" class="mi-badge-warn">
+            <text class="mi-badge-text">{{orderCount}}进行中</text>
           </view>
           <text class="mi-arr">›</text>
         </view>

@@ -625,6 +625,22 @@ function showModal(id)  { document.getElementById(id).classList.add('show') }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
 
+/* ── 全局状态（必须在 init IIFE 之前声明）── */
+var TITLES = { shop:'店铺中心', products:'商品管理', orders:'订单管理', finance:'财务结算', customers:'客户评价', messages:'消息中心', settings:'店铺设置' }
+var productsData = []
+var editProdId = null
+var currentOrderTab = 'all'
+var ordersData = []
+
+function getOrderStatus(status) {
+  if (status === 'pending_pay')  return { label:'待付款',    cls:'badge-pending' }
+  if (status === 'pending_ship') return { label:'待发货',    cls:'badge-ship'    }
+  if (status === 'shipped')      return { label:'已发货',    cls:'badge-shipped' }
+  if (status === 'completed')    return { label:'已完成',    cls:'badge-done'    }
+  if (status === 'refund')       return { label:'售后/退款', cls:'badge-refund'  }
+  return { label: status, cls: 'badge-done' }
+}
+
 /* ── 初始化 ── */
 (function init() {
   if (!getToken()) { location.href = '/merchant/login.html'; return }
@@ -641,7 +657,6 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 /* ════════════════════════════════════════════
    导航
 ════════════════════════════════════════════ */
-const TITLES = { shop:'店铺中心', products:'商品管理', orders:'订单管理', finance:'财务结算', customers:'客户评价', messages:'消息中心', settings:'店铺设置' }
 
 function show(panel) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
@@ -706,8 +721,6 @@ function renderBarChart(id, data) {
 /* ════════════════════════════════════════════
    2. 商品管理
 ════════════════════════════════════════════ */
-let productsData = []
-let editProdId = null
 
 async function loadProducts() {
   const tbody = document.getElementById('prod-table')
@@ -840,29 +853,8 @@ async function deleteProd(id, name) {
 }
 
 /* ════════════════════════════════════════════
-   3. 订单管理（演示数据）
+   3. 订单管理
 ════════════════════════════════════════════ */
-const MOCK_ORDERS = [
-  { id:'MO2026052501', buyer:'古丽**哈尔', phone:'138****0001', addr:'新疆喀什疏附县向阳乡1号', items:[{name:'吡虫啉可湿性粉剂 500g',qty:3,price:68}], amount:214, fee:10, status:'pending_ship', created:'2026-05-25 08:23', note:'请尽快发货' },
-  { id:'MO2026052502', buyer:'阿迪力**',  phone:'139****0045', addr:'新疆喀什疏附县农业园区', items:[{name:'复合肥料（尿素）50kg',qty:2,price:168}], amount:346, fee:10, status:'pending_ship', created:'2026-05-25 09:11', note:'' },
-  { id:'MO2026052503', buyer:'买买提**',  phone:'135****0089', addr:'新疆喀什巴楚县农业区', items:[{name:'棉花催熟剂 1L',qty:5,price:98}], amount:500, fee:10, status:'shipped', created:'2026-05-24 14:30', logistics:'ZT1234567890', note:'' },
-  { id:'MO2026052504', buyer:'热依拉**',  phone:'136****0023', addr:'新疆喀什疏附县林业村', items:[{name:'新陆早57号棉花种子 5kg',qty:1,price:165}], amount:175, fee:10, status:'completed', created:'2026-05-22 10:15', note:'' },
-  { id:'MO2026052505', buyer:'努尔**',    phone:'158****0067', addr:'新疆喀什叶城县棉花区', items:[{name:'磷酸二铵 50kg',qty:3,price:210}], amount:640, fee:10, status:'completed', created:'2026-05-21 16:20', note:'' },
-  { id:'MO2026052506', buyer:'帕提古**',  phone:'177****0012', addr:'新疆喀什英吉沙县', items:[{name:'高效氯氰菊酯 250ml',qty:2,price:88}], amount:186, fee:10, status:'refund', created:'2026-05-20 11:35', note:'发错货了' },
-  { id:'MO2026052507', buyer:'亚力坤**',  phone:'152****0034', addr:'新疆喀什岳普湖县', items:[{name:'腐殖酸水溶肥 20kg',qty:4,price:128}], amount:522, fee:10, status:'pending_pay', created:'2026-05-25 07:50', note:'' },
-  { id:'MO2026052508', buyer:'萨努巴尔**',phone:'187****0056', addr:'新疆喀什泽普县', items:[{name:'棉花专用地膜（黑色）',qty:2,price:88}], amount:186, fee:10, status:'completed', created:'2026-05-19 09:00', note:'' },
-]
-
-let currentOrderTab = 'all'
-
-const ORDER_STATUS_MAP = {
-  pending_pay: { label:'待付款', cls:'badge-pending' },
-  pending_ship:{ label:'待发货', cls:'badge-ship' },
-  shipped:     { label:'已发货', cls:'badge-shipped' },
-  completed:   { label:'已完成', cls:'badge-done' },
-  refund:      { label:'售后/退款', cls:'badge-refund' }
-}
-
 function switchOrderTab(el, tab) {
   document.querySelectorAll('#panel-orders .tab').forEach(t => t.classList.remove('active'))
   el.classList.add('active')
@@ -870,59 +862,77 @@ function switchOrderTab(el, tab) {
   loadOrders(tab)
 }
 
-function loadOrders(tab) {
+async function loadOrders(tab) {
   tab = tab || currentOrderTab
-  const list = tab === 'all' ? MOCK_ORDERS : MOCK_ORDERS.filter(o => o.status === tab)
   const tbody = document.getElementById('order-table')
-  if (!list.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无订单</td></tr>'; return }
-  tbody.innerHTML = list.map(o => {
-    const st = ORDER_STATUS_MAP[o.status] || { label:o.status, cls:'badge-done' }
-    const item = o.items[0]
-    return `<tr>
-      <td style="font-size:12px;color:#888">${o.id}</td>
-      <td>${esc(o.buyer)}<br><span style="font-size:11px;color:#BBB">${o.phone}</span></td>
-      <td>${esc(item.name)} ×${item.qty}<br><span style="font-size:11px;color:#BBB">${o.items.length > 1 ? `等${o.items.length}件` : ''}</span></td>
-      <td style="font-weight:700;color:#C8902E">¥${o.amount}</td>
-      <td><span class="badge ${st.cls}">${st.label}</span></td>
-      <td style="font-size:12px;color:#888">${o.created}</td>
-      <td style="white-space:nowrap">
-        <button class="btn btn-outline btn-sm" onclick="showOrderDetail('${o.id}')" style="margin-right:4px">详情</button>
-        ${o.status === 'pending_ship' ? `<button class="btn btn-primary btn-sm" onclick="openShip('${o.id}')">发货</button>` : ''}
-        ${o.status === 'refund' ? `<button class="btn btn-danger btn-sm" onclick="handleRefund('${o.id}')">处理退款</button>` : ''}
-      </td>
-    </tr>`
-  }).join('')
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载中...</td></tr>'
+  try {
+    const qs = (tab && tab !== 'all') ? '?status=' + tab : ''
+    const r = await api('GET', '/orders' + qs)
+    if (!r) return
+    ordersData = r.data || []
+    if (!ordersData.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无订单</td></tr>'
+      return
+    }
+    const pendingShip = ordersData.filter(o => o.status === 'pending_ship').length
+    const badge = document.getElementById('ship-count')
+    if (badge) badge.textContent = pendingShip ? ` (${pendingShip})` : ''
+    tbody.innerHTML = ordersData.map(o => {
+      const st = getOrderStatus(o.status)
+      const item = o.items && o.items[0]
+      const created = o.created_at ? String(o.created_at).slice(0, 16).replace('T',' ') : ''
+      return `<tr>
+        <td style="font-size:12px;color:#888">${esc(o.order_no)}</td>
+        <td>${esc(o.farmer_name || o.receiver_name)}<br><span style="font-size:11px;color:#BBB">${esc(o.farmer_phone || '')}</span></td>
+        <td>${item ? esc(item.name) + ' ×' + item.qty : '—'}<br><span style="font-size:11px;color:#BBB">${o.items.length > 1 ? `等${o.items.length}件` : ''}</span></td>
+        <td style="font-weight:700;color:#C8902E">¥${o.total}</td>
+        <td><span class="badge ${st.cls}">${st.label}</span></td>
+        <td style="font-size:12px;color:#888">${created}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-outline btn-sm" onclick="showOrderDetail(${o.id})" style="margin-right:4px">详情</button>
+          ${o.status === 'pending_ship' ? `<button class="btn btn-primary btn-sm" onclick="openShip(${o.id})" style="margin-right:4px">发货</button>` : ''}
+          ${o.status === 'refund' ? `<button class="btn btn-danger btn-sm" onclick="handleRefund(${o.id})" style="margin-right:4px">处理退款</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id},'${esc(o.order_no)}')">删除</button>
+        </td>
+      </tr>`
+    }).join('')
+  } catch(e) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">加载失败：${esc(e.message)} <button onclick="loadOrders()">重试</button></td></tr>`
+  }
 }
 
 function showOrderDetail(id) {
-  const o = MOCK_ORDERS.find(x => x.id === id); if (!o) return
-  const st = ORDER_STATUS_MAP[o.status] || { label:o.status, cls:'badge-done' }
+  const o = ordersData.find(x => x.id === id); if (!o) return
+  const st = getOrderStatus(o.status)
+  const created = o.created_at ? String(o.created_at).slice(0, 16).replace('T',' ') : ''
   document.getElementById('order-detail-content').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <div><div class="fc-label">订单号</div><div style="font-size:14px;font-weight:700;margin-top:4px">${o.id}</div></div>
+      <div><div class="fc-label">订单号</div><div style="font-size:14px;font-weight:700;margin-top:4px">${esc(o.order_no)}</div></div>
       <div><div class="fc-label">订单状态</div><div style="margin-top:4px"><span class="badge ${st.cls}">${st.label}</span></div></div>
-      <div><div class="fc-label">买家</div><div style="font-size:14px;font-weight:600;margin-top:4px">${esc(o.buyer)} · ${o.phone}</div></div>
-      <div><div class="fc-label">下单时间</div><div style="font-size:14px;margin-top:4px">${o.created}</div></div>
+      <div><div class="fc-label">买家</div><div style="font-size:14px;font-weight:600;margin-top:4px">${esc(o.farmer_name || o.receiver_name)} · ${esc(o.farmer_phone || '')}</div></div>
+      <div><div class="fc-label">下单时间</div><div style="font-size:14px;margin-top:4px">${created}</div></div>
     </div>
     <div style="background:#F8F9FA;border-radius:10px;padding:14px;margin-bottom:14px">
       <div class="fc-label" style="margin-bottom:8px">收货地址</div>
-      <div style="font-size:13px;font-weight:600">${esc(o.addr)}</div>
+      <div style="font-size:13px;font-weight:600">${esc(o.receiver_name)} · ${esc(o.receiver_phone || '')}</div>
+      <div style="font-size:13px;margin-top:4px">${esc(o.address)}</div>
     </div>
     <div style="margin-bottom:14px">
       <div class="fc-label" style="margin-bottom:8px">购买商品</div>
-      ${o.items.map(i => `
+      ${(o.items || []).map(i => `
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;font-size:13px">
-          <span>${esc(i.name)} × ${i.qty}</span><span style="font-weight:700">¥${i.price * i.qty}</span>
+          <span>${i.icon || ''} ${esc(i.name)} × ${i.qty}</span><span style="font-weight:700">¥${(i.price * i.qty).toFixed(2)}</span>
         </div>`).join('')}
       <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#888">
-        <span>运费</span><span>¥${o.fee}</span>
+        <span>运费</span><span>¥${o.delivery_fee}</span>
       </div>
       <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:800">
-        <span>实付金额</span><span style="color:#C8902E">¥${o.amount}</span>
+        <span>实付金额</span><span style="color:#C8902E">¥${o.total}</span>
       </div>
     </div>
     ${o.note ? `<div style="background:#FFF3E0;border-radius:8px;padding:10px 12px;font-size:13px;color:#D97706">买家备注：${esc(o.note)}</div>` : ''}
-    ${o.logistics ? `<div style="margin-top:10px;font-size:13px;color:#555">物流单号：<strong>${o.logistics}</strong></div>` : ''}
+    ${o.logistics_no ? `<div style="margin-top:10px;font-size:13px;color:#555">物流单号：<strong>${esc(o.logistics_no)}</strong></div>` : ''}
   `
   showModal('modalOrder')
 }
@@ -933,24 +943,41 @@ function openShip(id) {
   showModal('modalShip')
 }
 
-function confirmShip() {
+async function confirmShip() {
   const id = document.getElementById('ship-order-id').value
   const no = document.getElementById('ship-no').value.trim()
   if (!no) { alert('请输入运单号'); return }
-  const o = MOCK_ORDERS.find(x => x.id === id)
-  if (o) { o.status = 'shipped'; o.logistics = no }
-  closeModal('modalShip')
-  loadOrders(currentOrderTab)
-  alert('发货成功！运单号：' + no)
+  try {
+    const r = await api('PATCH', '/orders/' + id + '/ship', { logistics_no: no })
+    if (!r) return
+    closeModal('modalShip')
+    loadOrders(currentOrderTab)
+    alert('发货成功！运单号：' + no)
+  } catch(e) { alert('发货失败：' + e.message) }
 }
 
-function handleRefund(id) {
-  const o = MOCK_ORDERS.find(x => x.id === id)
-  if (confirm(`确认退款给买家 ${o?.buyer}？退款金额 ¥${o?.amount}`)) {
-    if (o) o.status = 'completed'
-    loadOrders(currentOrderTab)
-    alert('退款已处理')
+async function handleRefund(id) {
+  const o = ordersData.find(x => x.id === id)
+  if (confirm(`确认处理退款？买家：${o?.farmer_name || o?.receiver_name}，金额 ¥${o?.total}`)) {
+    try {
+      const r = await api('PATCH', '/orders/' + id + '/refund', {})
+      if (!r) return
+      loadOrders(currentOrderTab)
+      alert('退款已处理')
+    } catch(e) { alert('操作失败：' + e.message) }
   }
+}
+
+async function deleteOrder(id, orderNo) {
+  if (!confirm(`确定删除订单 ${orderNo}？此操作不可撤销。`)) return
+  try {
+    const r = await api('DELETE', '/orders/' + id)
+    if (r && r.code === 200) {
+      loadOrders(currentOrderTab)
+    } else {
+      alert(r?.msg || '删除失败')
+    }
+  } catch(e) { alert('删除失败：' + e.message) }
 }
 
 function exportOrders() { alert('订单导出功能开发中，敬请期待') }

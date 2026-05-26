@@ -305,6 +305,59 @@ router.put('/products/:id', adminAuth, async (req, res) => {
   }
 })
 
+// ── GET /api/admin/orders ────────────────────────────────
+router.get('/orders', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.query
+    let sql = `
+      SELECT o.id, o.order_no, o.farmer_name, o.farmer_phone,
+             o.receiver_name, o.receiver_phone, o.address,
+             o.subtotal, o.delivery_fee, o.total,
+             o.pay_method, o.status, o.logistics_no, o.note,
+             o.created_at,
+             GROUP_CONCAT(
+               CONCAT(i.icon,'|',i.name,'|',i.spec,'|',i.price,'|',i.qty)
+               SEPARATOR ';;'
+             ) AS items_raw
+      FROM orders o
+      LEFT JOIN order_items i ON i.order_id = o.id
+    `
+    const params = []
+    if (status && status !== 'all') { sql += ' WHERE o.status = ?'; params.push(status) }
+    sql += ' GROUP BY o.id ORDER BY o.created_at DESC'
+
+    const [rows] = await db.query(sql, params)
+    const orders = rows.map(o => ({
+      ...o,
+      items: (o.items_raw || '').split(';;').filter(Boolean).map(s => {
+        const [icon, name, spec, price, qty] = s.split('|')
+        return { icon, name, spec, price: parseFloat(price), qty: parseInt(qty) }
+      })
+    }))
+    res.json({ code: 200, data: orders })
+  } catch (e) {
+    console.error('[admin-orders]', e)
+    res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+// ── PATCH /api/admin/orders/:id/status ──────────────────
+router.patch('/orders/:id/status', adminAuth, async (req, res) => {
+  try {
+    const { status, logistics_no } = req.body
+    const valid = ['pending_ship', 'shipped', 'completed', 'refund']
+    if (!valid.includes(status)) return res.status(400).json({ code: 400, msg: '状态无效' })
+    const fields = ['status=?']
+    const params = [status]
+    if (logistics_no) { fields.push('logistics_no=?'); params.push(logistics_no) }
+    params.push(req.params.id)
+    await db.query(`UPDATE orders SET ${fields.join(',')} WHERE id=?`, params)
+    res.json({ code: 200, msg: '已更新' })
+  } catch (e) {
+    console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
 // ── PATCH /api/admin/users/:id/status ───────────────────
 router.patch('/users/:id/status', adminAuth, async (req, res) => {
   try {

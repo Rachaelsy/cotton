@@ -19,13 +19,19 @@ app.use((req, _res, next) => {
 })
 
 // ── 静态文件 ─────────────────────────────────
-app.use('/admin',    express.static(path.join(__dirname, 'public/admin')))
-app.use('/merchant', express.static(path.join(__dirname, 'public/merchant')))
+// HTML 文件禁止缓存，确保每次加载最新版本
+const noCache = (_req, res, next) => {
+  res.set('Cache-Control', 'no-store')
+  next()
+}
+app.use('/admin',    noCache, express.static(path.join(__dirname, 'public/admin')))
+app.use('/merchant', noCache, express.static(path.join(__dirname, 'public/merchant')))
 app.use('/uploads',  express.static(path.join(__dirname, 'public/uploads')))
 
 // ── 路由 ────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'))
 app.use('/api/products', require('./routes/products'))
+app.use('/api/orders',   require('./routes/orders'))
 app.use('/api/admin',    require('./routes/admin'))
 app.use('/api/merchant', require('./routes/merchant'))
 

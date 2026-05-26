@@ -4,8 +4,13 @@
   <!-- ===== 顶部渐变头部 ===== -->
   <view class="sup-header" style="padding-top: {{statusBarHeight}}px">
     <view class="topbar">
-      <view class="topbar-left">
-        <text class="page-title">🌾 农资供应</text>
+      <text class="page-title">🌾 农资供应</text>
+    </view>
+    <!-- 搜索栏 + 购物车 -->
+    <view class="search-row">
+      <view class="search-bar" bindtap="onSearch">
+        <text class="search-icon">🔍</text>
+        <text class="search-placeholder">搜索农药、化肥、种子...</text>
       </view>
       <view class="cart-btn" bindtap="goCart">
         <text class="cart-icon">🛒</text>
@@ -13,11 +18,6 @@
           <text class="cart-badge-text">{{cartCount > 99 ? '99+' : cartCount}}</text>
         </view>
       </view>
-    </view>
-    <!-- 搜索栏 -->
-    <view class="search-bar" bindtap="onSearch">
-      <text class="search-icon">🔍</text>
-      <text class="search-placeholder">搜索农药、化肥、种子...</text>
     </view>
   </view>
 
