@@ -238,11 +238,12 @@
     <div class="nav-item active" id="nav-shop"      onclick="show('shop')">      <span class="nav-icon">🏠</span> 店铺中心</div>
     <div class="nav-item"        id="nav-products"  onclick="show('products')">  <span class="nav-icon">📦</span> 商品管理</div>
     <div class="nav-item"        id="nav-orders"    onclick="show('orders')">    <span class="nav-icon">📋</span> 订单管理<span class="nav-badge" id="order-badge" style="display:none">0</span></div>
+    <div class="nav-item"        id="nav-aftersale" onclick="show('aftersale')"> <span class="nav-icon">🔄</span> 售后管理<span class="nav-badge" id="aftersale-badge" style="display:none">0</span></div>
     <div class="nav-section">财务与用户</div>
     <div class="nav-item"        id="nav-finance"   onclick="show('finance')">   <span class="nav-icon">💰</span> 财务结算</div>
     <div class="nav-item"        id="nav-customers" onclick="show('customers')"> <span class="nav-icon">👥</span> 客户评价</div>
     <div class="nav-section">管理</div>
-    <div class="nav-item"        id="nav-messages"  onclick="show('messages')">  <span class="nav-icon">📣</span> 消息中心<span class="nav-badge" id="msg-badge">2</span></div>
+    <div class="nav-item"        id="nav-messages"  onclick="show('messages')">  <span class="nav-icon">📣</span> 消息中心<span class="nav-badge" id="msg-badge" style="display:none">0</span></div>
     <div class="nav-item"        id="nav-settings"  onclick="show('settings')">  <span class="nav-icon">⚙️</span> 店铺设置</div>
   </nav>
   <div class="sidebar-foot">
@@ -360,7 +361,6 @@
           <div class="tab"        data-tab="pending_ship"onclick="switchOrderTab(this,'pending_ship')">待发货 <span id="ship-count" style="color:#DC2626"></span></div>
           <div class="tab"        data-tab="shipped"     onclick="switchOrderTab(this,'shipped')">已发货</div>
           <div class="tab"        data-tab="completed"   onclick="switchOrderTab(this,'completed')">已完成</div>
-          <div class="tab"        data-tab="refund"      onclick="switchOrderTab(this,'refund')">售后/退款</div>
         </div>
         <table>
           <thead><tr><th>订单号</th><th>买家</th><th>商品</th><th>金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
@@ -369,14 +369,48 @@
       </div>
     </div>
 
-    <!-- ══ 4. 财务结算 ══ -->
-    <div class="panel" id="panel-finance">
-      <div class="withdraw-card">
-        <div class="withdraw-label">可提现余额（元）</div>
-        <div class="withdraw-amount" id="f-balance">0.00</div>
-        <div class="withdraw-sub" id="f-withdraw-sub">月结算周期</div>
-        <button class="btn-withdraw" onclick="doWithdraw()">发起提现</button>
+    <!-- ══ 4. 售后管理 ══ -->
+    <div class="panel" id="panel-aftersale">
+      <div class="card">
+        <div class="card-head"><span class="card-title">🔄 售后申请列表</span></div>
+        <div class="tabs" style="border-bottom:1px solid #F0F0F0;margin-bottom:12px">
+          <div class="tab active" id="afs-tab-all"      onclick="switchAftersaleTab(this,'all')">全部</div>
+          <div class="tab"       id="afs-tab-pending"   onclick="switchAftersaleTab(this,'pending')">待处理</div>
+          <div class="tab"       id="afs-tab-approved"  onclick="switchAftersaleTab(this,'approved')">已同意</div>
+          <div class="tab"       id="afs-tab-rejected"  onclick="switchAftersaleTab(this,'rejected')">已拒绝</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>买家</th><th>订单号</th><th>售后类型</th><th>原因</th>
+              <th>状态</th><th>申请时间</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="afs-table"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody>
+        </table>
       </div>
+    </div>
+
+    <!-- ══ 5. 财务结算 ══ -->
+    <div class="panel" id="panel-finance">
+      <!-- 余额卡片 -->
+      <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+        <div class="withdraw-card" style="flex:1;min-width:260px">
+          <div class="withdraw-label">可提现余额（元）</div>
+          <div class="withdraw-amount" id="f-balance">0.00</div>
+          <div class="withdraw-sub" id="f-withdraw-sub" style="margin-bottom:12px">确认收货并经过 7 天售后期后可提现</div>
+          <button class="btn-withdraw" onclick="doWithdraw()">发起提现</button>
+        </div>
+        <div class="withdraw-card" style="flex:1;min-width:200px;background:linear-gradient(135deg,#D97706,#B45309)">
+          <div class="withdraw-label">冻结中（元）</div>
+          <div class="withdraw-amount" id="f-frozen">0.00</div>
+          <div class="withdraw-sub">确认收货后冻结 7 天售后期</div>
+          <div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.8)">
+            发货后 10 天未确认 → 系统自动确认
+          </div>
+        </div>
+      </div>
+
       <div class="finance-grid">
         <div class="finance-card"><div class="fc-label">本月销售额（元）</div><div class="fc-value" id="f-monthly-sales">—</div><div class="fc-sub" id="f-monthly-sales-sub"></div></div>
         <div class="finance-card blue"><div class="fc-label">本月订单数</div><div class="fc-value fc-blue" id="f-monthly-orders">—</div><div class="fc-sub" id="f-monthly-orders-sub"></div></div>
@@ -398,9 +432,12 @@
       </div>
 
       <div class="card">
-        <div class="card-head"><span class="card-title">💳 结算明细</span></div>
+        <div class="card-head">
+          <span class="card-title">💳 结算明细</span>
+          <span style="font-size:12px;color:#888">扣除 3% 平台佣金后到账</span>
+        </div>
         <table>
-          <thead><tr><th>结算编号</th><th>订单号</th><th>商品</th><th>销售金额</th><th>平台佣金(3%)</th><th>实际到账</th><th>状态</th><th>时间</th></tr></thead>
+          <thead><tr><th>结算编号</th><th>订单号</th><th>商品</th><th>销售金额</th><th>佣金(3%)</th><th>实际到账</th><th>资金状态</th><th>完成时间</th></tr></thead>
           <tbody id="settle-table"></tbody>
         </table>
       </div>
@@ -408,7 +445,7 @@
       <div class="card">
         <div class="card-head"><span class="card-title">🏦 提现记录</span></div>
         <table>
-          <thead><tr><th>提现编号</th><th>提现金额</th><th>账户</th><th>状态</th><th>申请时间</th><th>到账时间</th></tr></thead>
+          <thead><tr><th>提现编号</th><th>提现金额</th><th>状态</th><th>备注</th><th>申请时间</th><th>到账时间</th></tr></thead>
           <tbody id="withdraw-table"></tbody>
         </table>
       </div>
@@ -466,6 +503,7 @@
               <div class="form-field"><label>主营品类</label><input id="s-category" placeholder="如：化肥、农药、种子"></div>
             </div>
             <div class="form-field"><label>营业执照号</label><input id="s-license" placeholder="请输入（选填）" style="max-width:360px"></div>
+            <div class="form-field"><label>客服微信号</label><input id="s-wechat" placeholder="请输入微信号，农户联系客服时展示" style="max-width:360px"></div>
           </div>
           <button class="btn btn-primary" onclick="saveSettings()">保存修改</button>
         </div>
@@ -576,6 +614,17 @@
   </div>
 </div>
 
+<!-- ══ 弹窗：售后详情 ══ -->
+<div class="modal-mask" id="modalAftersaleDetail">
+  <div class="modal" style="width:580px">
+    <h3>🔄 售后申请详情</h3>
+    <div id="afs-detail-content"></div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalAftersaleDetail')">关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 弹窗：回复评价 ══ -->
 <div class="modal-mask" id="modalReply">
   <div class="modal" style="width:480px">
@@ -627,7 +676,7 @@ function showModal(id)  { document.getElementById(id).classList.add('show') }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
 
 /* ── 全局状态（必须在 init IIFE 之前声明）── */
-var TITLES = { shop:'店铺中心', products:'商品管理', orders:'订单管理', finance:'财务结算', customers:'客户评价', messages:'消息中心', settings:'店铺设置' }
+var TITLES = { shop:'店铺中心', products:'商品管理', orders:'订单管理', aftersale:'售后管理', finance:'财务结算', customers:'客户评价', messages:'消息中心', settings:'店铺设置' }
 var productsData = []
 var editProdId = null
 var currentOrderTab = 'all'
@@ -654,6 +703,14 @@ function getOrderStatus(status) {
     document.getElementById('topbar-time').textContent = new Date().toLocaleString('zh-CN', { hour12: false })
   }, 1000)
   show('shop')
+  // 初始化未读消息角标
+  api('GET', '/messages').then(r => {
+    if (r?.code === 200) {
+      const unread = r.data.unread || 0
+      const badge  = document.getElementById('msg-badge')
+      if (badge) { badge.textContent = unread; badge.style.display = unread > 0 ? '' : 'none' }
+    }
+  }).catch(() => {})
 })()
 
 /* ════════════════════════════════════════════
@@ -670,6 +727,7 @@ function show(panel) {
   if (panel === 'shop')      loadStats()
   if (panel === 'products')  loadProducts()
   if (panel === 'orders')    loadOrders('all')
+  if (panel === 'aftersale') loadAftersale('all')
   if (panel === 'finance')   loadFinance()
   if (panel === 'customers') { loadCustomers(); loadReviews() }
   if (panel === 'messages')  loadMessages()
@@ -901,8 +959,7 @@ async function loadOrders(tab) {
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="showOrderDetail(${o.id})" style="margin-right:4px">详情</button>
           ${o.status === 'pending_ship' ? `<button class="btn btn-primary btn-sm" onclick="openShip(${o.id})" style="margin-right:4px">发货</button>` : ''}
-          ${o.status === 'refund' ? `<button class="btn btn-danger btn-sm" onclick="handleRefund(${o.id})" style="margin-right:4px">处理退款</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id},'${esc(o.order_no)}')">删除</button>
+          ${o.status === 'refund' ? `<button class="btn btn-danger btn-sm" onclick="handleRefund(${o.id})">处理退款</button>` : ''}
         </td>
       </tr>`
     }).join('')
@@ -977,17 +1034,6 @@ async function handleRefund(id) {
   }
 }
 
-async function deleteOrder(id, orderNo) {
-  if (!confirm(`确定删除订单 ${orderNo}？此操作不可撤销。`)) return
-  try {
-    const r = await api('DELETE', '/orders/' + id)
-    if (r && r.code === 200) {
-      loadOrders(currentOrderTab)
-    } else {
-      alert(r?.msg || '删除失败')
-    }
-  } catch(e) { alert('删除失败：' + e.message) }
-}
 
 function exportOrders() { alert('订单导出功能开发中，敬请期待') }
 
@@ -999,19 +1045,26 @@ async function loadFinance() {
     const r = await api('GET', '/finance')
     if (!r || r.code !== 200) return
     financeData = r.data
-    document.getElementById('f-balance').textContent =
-      parseFloat(financeData.available_balance).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2})
+    const fmt = v => { const n = parseFloat(v); return isNaN(n) ? '0.00' : n.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2}) }
+    document.getElementById('f-balance').textContent = fmt(financeData.available_balance)
+    document.getElementById('f-frozen').textContent  = fmt(financeData.frozen_balance)
+    const sub = document.getElementById('f-withdraw-sub')
+    const av  = parseFloat(financeData.available_balance) || 0
+    const fr  = parseFloat(financeData.frozen_balance)    || 0
+    sub.textContent = av > 0
+      ? `可提现 ¥${fmt(av)}，另有 ¥${fmt(fr)} 冻结中`
+      : fr > 0 ? `¥${fmt(fr)} 冻结中，售后期结束后可提现` : '暂无待结算资金'
+
     const ms = parseFloat(financeData.monthly_sales)
     const mo = financeData.monthly_orders
     const mr = parseFloat(financeData.monthly_refund)
-    document.getElementById('f-monthly-sales').textContent   = Math.round(ms).toLocaleString('zh-CN')
-    document.getElementById('f-monthly-orders').textContent  = mo
-    document.getElementById('f-monthly-refund').textContent  = Math.round(mr).toLocaleString('zh-CN')
+    document.getElementById('f-monthly-sales').textContent  = Math.round(ms).toLocaleString('zh-CN')
+    document.getElementById('f-monthly-orders').textContent = mo
+    document.getElementById('f-monthly-refund').textContent = Math.round(mr).toLocaleString('zh-CN')
     document.getElementById('f-monthly-orders-sub').textContent =
       mo > 0 ? '平均客单价 ¥' + Math.round(ms / mo) : '暂无订单'
     const refundRate = ms > 0 ? ((mr / ms) * 100).toFixed(1) : '0.0'
     document.getElementById('f-monthly-refund-sub').textContent = '退款率 ' + refundRate + '%'
-    // 加载本周图表
     const tw = await api('GET', '/trend?period=week').catch(() => null)
     if (tw?.data) renderBarChart('finance-chart', tw.data)
     loadSettleTable(financeData.settlements)
@@ -1022,20 +1075,32 @@ async function loadFinance() {
 function loadSettleTable(data) {
   const tbody = document.getElementById('settle-table')
   if (!data || !data.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#BBB;padding:32px">暂无结算记录（已完成的订单将自动生成结算明细）</td></tr>'
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#BBB;padding:32px">暂无结算记录（订单确认收货后生成）</td></tr>'
     return
   }
-  tbody.innerHTML = data.map(s => `
-    <tr>
+  const FUND_LABEL = { frozen:'冻结中', available:'可提现', withdrawn:'已提现', pending:'未完成' }
+  const FUND_CLS   = { frozen:'badge-ship', available:'badge-on', withdrawn:'badge-done', pending:'badge-pending' }
+  tbody.innerHTML = data.map(s => {
+    let statusHtml
+    if (s.fund_status === 'frozen' && s.days_left !== null) {
+      statusHtml = `<span class="badge badge-ship">冻结中</span>
+        <div style="font-size:11px;color:#D97706;margin-top:3px">
+          ${s.days_left > 0 ? s.days_left + '天后解冻' : '即将解冻'}
+        </div>`
+    } else {
+      statusHtml = `<span class="badge ${FUND_CLS[s.fund_status]||'badge-done'}">${FUND_LABEL[s.fund_status]||s.fund_status||'—'}</span>`
+    }
+    return `<tr>
       <td style="font-size:12px;color:#888">${esc(s.id)}</td>
       <td style="font-size:12px;color:#888">${esc(s.order_no)}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.prod)}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.prod)}">${esc(s.prod)}</td>
       <td>¥${s.amount.toFixed(2)}</td>
       <td style="color:#DC2626">-¥${s.commission.toFixed(2)}</td>
       <td style="font-weight:700;color:#16A34A">¥${s.actual.toFixed(2)}</td>
-      <td><span class="badge badge-on">${esc(s.status)}</span></td>
+      <td>${statusHtml}</td>
       <td style="font-size:12px;color:#888">${esc(s.date)}</td>
-    </tr>`).join('')
+    </tr>`
+  }).join('')
 }
 
 function loadWithdrawTable(data) {
@@ -1048,8 +1113,8 @@ function loadWithdrawTable(data) {
     <tr>
       <td style="font-size:12px;color:#888">${esc(w.id)}</td>
       <td style="font-weight:700;color:#C8902E">¥${parseFloat(w.amount).toFixed(2)}</td>
-      <td style="font-size:12px">${esc(w.account)}</td>
-      <td><span class="badge ${w.status==='已到账'?'badge-on':'badge-ship'}">${esc(w.status)}</span></td>
+      <td><span class="badge ${w.status==='已到账'?'badge-on':w.status==='已拒绝'?'badge-refund':'badge-ship'}">${esc(w.status)}</span></td>
+      <td style="font-size:12px;color:#888">${esc(w.note)||'—'}</td>
       <td style="font-size:12px;color:#888">${esc(w.apply_date)}</td>
       <td style="font-size:12px;color:#888">${esc(w.arrive_date)}</td>
     </tr>`).join('')
@@ -1062,10 +1127,21 @@ async function setPeriod(p, el) {
   if (r?.data) renderBarChart('finance-chart', r.data)
 }
 
-function doWithdraw() {
+async function doWithdraw() {
   const balance = financeData ? parseFloat(financeData.available_balance) : 0
-  if (balance <= 0) { alert('当前无可提现余额'); return }
-  if (confirm('确认申请提现 ¥' + balance.toFixed(2) + '？')) alert('提现功能开发中，敬请期待')
+  if (balance <= 0) { alert('当前无可提现余额，请等待售后期结束（确认收货后 7 天）'); return }
+  const input = prompt(`当前可提现 ¥${balance.toFixed(2)}，请输入提现金额：`, balance.toFixed(2))
+  if (input === null) return
+  const amount = parseFloat(input)
+  if (isNaN(amount) || amount < 1) { alert('请输入有效金额（最低 1 元）'); return }
+  if (amount > balance + 0.01) { alert(`提现金额不能超过可提现余额 ¥${balance.toFixed(2)}`); return }
+  const r = await api('POST', '/withdraw', { amount }).catch(() => null)
+  if (r && r.code === 200) {
+    alert(r.msg || '提现申请已提交')
+    loadFinance()
+  } else {
+    alert(r?.msg || '提现失败，请重试')
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -1145,29 +1221,66 @@ function submitReply() {
 /* ════════════════════════════════════════════
    6. 消息中心
 ════════════════════════════════════════════ */
-const MOCK_MSGS = [
-  { icon:'📢', bg:'#EBF5FF', title:'平台公告', content:'2026年5月起，平台对农资类目商户提供0佣金扶持政策，请查看详情。', time:'2026-05-25', read:false },
-  { icon:'📦', bg:'#F0FFF4', title:'新订单通知', content:'您有新的订单（MO2026052501）待处理，请尽快发货。', time:'2026-05-25', read:false },
-  { icon:'✅', bg:'#F0FDF4', title:'审核通过通知', content:'您的店铺入驻申请已通过审核，现在可以正常经营了！欢迎入驻棉管家平台。', time:'2026-05-10', read:true },
-  { icon:'💰', bg:'#FFFBEB', title:'结算通知', content:'您的2笔订单结算已完成，合计 ¥790.55 已转入可提现余额。', time:'2026-05-09', read:true },
-]
+const MSG_ICON = { order:'📦', aftersale:'🔄', announcement:'📢' }
+const MSG_BG   = { order:'#F0FFF4', aftersale:'#FFF7ED', announcement:'#EBF5FF' }
 
-function loadMessages() {
-  document.getElementById('msg-list').innerHTML = MOCK_MSGS.map((m, i) => `
-    <div class="msg-item" style="${!m.read ? 'background:#FFFDF0;border-radius:8px;padding:14px 10px;' : ''}">
-      <div class="msg-icon" style="background:${m.bg}">${m.icon}</div>
-      <div style="flex:1">
-        <div class="msg-title">${esc(m.title)} ${!m.read ? '<span style="background:#DC2626;color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;margin-left:4px">新</span>' : ''}</div>
+async function loadMessages() {
+  const el = document.getElementById('msg-list')
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#BBB">加载中...</div>'
+  const r = await api('GET', '/messages').catch(() => null)
+  if (!r || r.code !== 200) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#BBB">加载失败</div>'
+    return
+  }
+  const { list, unread } = r.data
+  // 更新侧边栏角标
+  const badge = document.getElementById('msg-badge')
+  if (badge) { badge.textContent = unread; badge.style.display = unread > 0 ? '' : 'none' }
+
+  if (!list || !list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:60px;color:#BBB">暂无消息</div>'
+    return
+  }
+  el.innerHTML = list.map(m => {
+    const icon = MSG_ICON[m.type] || '📣'
+    const bg   = MSG_BG[m.type]  || '#F5F5F5'
+    const time = m.created_at ? String(m.created_at).slice(0, 16) : ''
+    const unreadTag = !m.is_read
+      ? '<span style="background:#DC2626;color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;margin-left:6px;vertical-align:middle">新</span>'
+      : ''
+    return `<div class="msg-item" style="${!m.is_read ? 'background:#FFFDF0;border-radius:8px;padding:14px 10px;' : ''}"
+      onclick="markOneRead(${m.id}, this)">
+      <div class="msg-icon" style="background:${bg}">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div class="msg-title">${esc(m.title)}${unreadTag}</div>
         <div class="msg-content">${esc(m.content)}</div>
       </div>
-      <div class="msg-time">${m.time}</div>
-    </div>`).join('')
+      <div class="msg-time" style="flex-shrink:0">${time}</div>
+    </div>`
+  }).join('')
 }
 
-function markAllRead() {
-  MOCK_MSGS.forEach(m => m.read = true)
-  document.getElementById('msg-badge').style.display = 'none'
+async function markAllRead() {
+  await api('PATCH', '/messages/read-all').catch(() => null)
   loadMessages()
+}
+
+async function markOneRead(id, el) {
+  if (el.style.background) {
+    el.style.background = ''
+    el.style.borderRadius = ''
+    el.style.padding = ''
+    const tag = el.querySelector('span[style*="DC2626"]')
+    if (tag) tag.remove()
+    await api('PATCH', `/messages/${id}/read`).catch(() => null)
+    // 更新角标
+    const badge = document.getElementById('msg-badge')
+    if (badge) {
+      const cur = parseInt(badge.textContent) - 1
+      badge.textContent = cur
+      badge.style.display = cur > 0 ? '' : 'none'
+    }
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -1182,6 +1295,7 @@ async function loadSettings() {
   document.getElementById('s-company').value  = d.company_name || ''
   document.getElementById('s-category').value = d.product_category || ''
   document.getElementById('s-license').value  = d.business_license || ''
+  document.getElementById('s-wechat').value   = d.wechat_id || ''
   document.getElementById('s-bound-phone').textContent = d.phone || '未绑定'
 }
 
@@ -1190,7 +1304,8 @@ async function saveSettings() {
     real_name:        document.getElementById('s-realname').value.trim(),
     company_name:     document.getElementById('s-company').value.trim(),
     product_category: document.getElementById('s-category').value.trim(),
-    business_license: document.getElementById('s-license').value.trim()
+    business_license: document.getElementById('s-license').value.trim(),
+    wechat_id:        document.getElementById('s-wechat').value.trim()
   }
   if (!body.company_name) { alert('店铺名称不能为空'); return }
   const r = await api('PUT', '/profile', body)
@@ -1203,6 +1318,112 @@ async function saveSettings() {
     document.getElementById('sidebar-name').textContent = body.company_name
     document.getElementById('topbar-shop').textContent  = body.company_name
   } else alert(r?.msg || '保存失败')
+}
+
+/* ════════════════════════════════════════════
+   售后管理
+════════════════════════════════════════════ */
+var aftersaleCurrentTab = 'all'
+var _aftersaleList = []
+
+async function loadAftersale(tab) {
+  tab = tab || aftersaleCurrentTab
+  aftersaleCurrentTab = tab
+  const tbody = document.getElementById('afs-table')
+  tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载中...</td></tr>'
+  const url = tab === 'all' ? '/aftersale' : '/aftersale?status=' + tab
+  const r = await api('GET', url).catch(() => null)
+  if (!r || r.code !== 200) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载失败</td></tr>'
+    return
+  }
+  _aftersaleList = r.data || []
+
+  const allR = tab === 'all' ? _aftersaleList : (await api('GET', '/aftersale').catch(() => null))?.data || []
+  const pendingCount = allR.filter(a => a.status === 'pending').length
+  const badge = document.getElementById('aftersale-badge')
+  if (badge) { badge.textContent = pendingCount; badge.style.display = pendingCount > 0 ? '' : 'none' }
+
+  if (!_aftersaleList.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无售后申请</td></tr>'
+    return
+  }
+  const STATUS_MAP = { pending:'待处理', approved:'已同意', rejected:'已拒绝' }
+  const STATUS_CLS = { pending:'badge-ship', approved:'badge-done', rejected:'badge-refund' }
+  tbody.innerHTML = _aftersaleList.map(a => `
+    <tr>
+      <td>${esc(a.farmer_name || '—')}</td>
+      <td style="font-size:12px;color:#666">${esc(a.order_no)}</td>
+      <td>${esc(a.aftersale_type)}</td>
+      <td>${esc(a.reason)}${a.other_reason ? '：'+esc(a.other_reason) : ''}</td>
+      <td><span class="badge ${STATUS_CLS[a.status]||'badge-done'}">${STATUS_MAP[a.status]||a.status}</span></td>
+      <td style="font-size:12px;color:#666">${a.created_at ? a.created_at.slice(0,16) : '—'}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="viewAftersaleDetail(${a.id})">查看详情</button>
+      </td>
+    </tr>
+  `).join('')
+}
+
+function switchAftersaleTab(el, tab) {
+  document.querySelectorAll('#panel-aftersale .tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
+  loadAftersale(tab)
+}
+
+function viewAftersaleDetail(id) {
+  const a = _aftersaleList.find(x => x.id === id)
+  if (!a) return
+  const STATUS_MAP = { pending:'待处理', approved:'已同意', rejected:'已拒绝' }
+  const STATUS_CLS = { pending:'badge-ship', approved:'badge-done', rejected:'badge-refund' }
+  const imgs = (a.images || '').split(',').filter(Boolean)
+  document.getElementById('afs-detail-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:16px">
+      <div class="mfield" style="margin:0"><label>买家</label><div>${esc(a.farmer_name||'—')}</div></div>
+      <div class="mfield" style="margin:0"><label>订单号</label><div style="font-size:12px;color:#666">${esc(a.order_no)}</div></div>
+      <div class="mfield" style="margin:0"><label>售后类型</label><div>${esc(a.aftersale_type)}</div></div>
+      <div class="mfield" style="margin:0"><label>状态</label>
+        <span class="badge ${STATUS_CLS[a.status]||'badge-done'}">${STATUS_MAP[a.status]||a.status}</span>
+        ${a.handle_note ? `<span style="margin-left:8px;font-size:12px;color:#666">${esc(a.handle_note)}</span>` : ''}
+      </div>
+    </div>
+    <div class="mfield"><label>申请原因</label><div>${esc(a.reason)}${a.other_reason?'：'+esc(a.other_reason):''}</div></div>
+    ${a.description ? `<div class="mfield"><label>问题描述</label>
+      <div style="background:#F9FAFB;padding:10px 14px;border-radius:8px;line-height:1.8;white-space:pre-wrap">${esc(a.description)}</div>
+    </div>` : ''}
+    ${imgs.length ? `<div class="mfield"><label>买家上传凭证（${imgs.length} 张）</label>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+        ${imgs.map(u=>`<img src="${esc(u)}" style="width:110px;height:110px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid #E5E7EB"
+          onclick="window.open('${esc(u)}','_blank')" title="点击查看原图">`).join('')}
+      </div>
+    </div>` : `<div style="color:#BBB;font-size:13px;margin-bottom:12px">买家未上传凭证图片</div>`}
+    ${a.status === 'pending' ? `
+      <div style="display:flex;gap:10px;margin-top:8px;padding-top:16px;border-top:1px solid #F0F0F0">
+        <button class="btn" style="flex:1;background:#16A34A;color:#fff;padding:10px"
+          onclick="handleAftersale(${a.id},'approved')">✓ 同意售后</button>
+        <button class="btn" style="flex:1;background:#DC2626;color:#fff;padding:10px"
+          onclick="handleAftersale(${a.id},'rejected')">✗ 拒绝申请</button>
+      </div>` : ''}
+  `
+  showModal('modalAftersaleDetail')
+}
+
+async function handleAftersale(id, action) {
+  let handle_note = ''
+  if (action === 'rejected') {
+    handle_note = prompt('请输入拒绝原因（可选）：')
+    if (handle_note === null) return
+  } else {
+    if (!confirm('确认同意该售后申请？')) return
+  }
+  const r = await api('PATCH', '/aftersale/' + id + '/handle', { action, handle_note: handle_note || '' }).catch(() => null)
+  if (r && r.code === 200) {
+    closeModal('modalAftersaleDetail')
+    alert(r.msg || '操作成功')
+    loadAftersale(aftersaleCurrentTab)
+  } else {
+    alert(r?.msg || '操作失败')
+  }
 }
 
 async function changePassword() {

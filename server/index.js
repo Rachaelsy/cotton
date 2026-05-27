@@ -34,6 +34,7 @@ app.use('/api/products', require('./routes/products'))
 app.use('/api/orders',   require('./routes/orders'))
 app.use('/api/admin',    require('./routes/admin'))
 app.use('/api/merchant', require('./routes/merchant'))
+app.use('/api/upload',  require('./routes/upload'))
 
 // 健康检查
 app.get('/api/ping', (_req, res) => res.json({ code: 200, msg: 'pong' }))
@@ -51,4 +52,5 @@ app.use((err, _req, res, _next) => {
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`🚀 棉管家后端启动成功 → http://localhost:${PORT}`)
+  require('./scheduler').startScheduler()
 })

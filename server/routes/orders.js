@@ -1,8 +1,9 @@
 // server/routes/orders.js — 农户订单接口
-const express = require('express')
-const jwt     = require('jsonwebtoken')
-const db      = require('../db/database')
-const router  = express.Router()
+const express  = require('express')
+const jwt      = require('jsonwebtoken')
+const db       = require('../db/database')
+const { notifyNewOrder, notifyAftersale } = require('../utils/notify')
+const router   = express.Router()
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
@@ -95,6 +96,8 @@ router.post('/', farmerAuth, async (req, res) => {
 
     await conn.commit()
     conn.release()
+    // 异步通知商户（不阻塞响应）
+    notifyNewOrder(orderId, orderNo, items).catch(e => console.error('[notify-order]', e))
     return ok(res, { orderId, orderNo }, '订单创建成功')
   } catch (e) {
     await conn.rollback()
@@ -137,6 +140,71 @@ router.get('/my', farmerAuth, async (req, res) => {
     return ok(res, orders)
   } catch (e) {
     console.error('[my-orders]', e)
+    return fail(res, '服务器错误', 500)
+  }
+})
+
+// ─────────────────────────────────────────────
+// POST /api/orders/:id/aftersale — 农户提交售后申请
+// ─────────────────────────────────────────────
+router.post('/:id/aftersale', farmerAuth, async (req, res) => {
+  const { id } = req.params
+  const { aftersale_type, reason, other_reason, description, images } = req.body
+  if (!aftersale_type) return fail(res, '请选择售后类型')
+  if (!reason)         return fail(res, '请选择售后原因')
+  if (reason === '其他' && !other_reason?.trim()) return fail(res, '请填写具体原因')
+  try {
+    const [orders] = await db.query(
+      'SELECT id, order_no FROM orders WHERE id=? AND user_id=?',
+      [id, req.user.id]
+    )
+    if (!orders.length) return fail(res, '订单不存在', 404)
+    const [[item]] = await db.query(
+      'SELECT merchant_id FROM order_items WHERE order_id=? LIMIT 1', [id]
+    )
+    if (!item) return fail(res, '订单商品不存在', 404)
+    const [[user]] = await db.query('SELECT real_name FROM users WHERE id=?', [req.user.id])
+    // 同一订单只允许一条未拒绝的申请
+    const [existing] = await db.query(
+      "SELECT id FROM aftersale_requests WHERE order_id=? AND status != 'rejected'", [id]
+    )
+    if (existing.length) return fail(res, '该订单已有售后申请，请勿重复提交')
+    const [insertResult] = await db.query(
+      `INSERT INTO aftersale_requests
+       (order_id, order_no, merchant_id, user_id, farmer_name, aftersale_type, reason, other_reason, description, images)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [id, orders[0].order_no, item.merchant_id, req.user.id,
+       user?.real_name || '', aftersale_type, reason, other_reason || '', description || '',
+       Array.isArray(images) ? images.join(',') : (images || '')]
+    )
+    // 异步通知商户
+    notifyAftersale(item.merchant_id, orders[0].order_no, insertResult.insertId)
+      .catch(e => console.error('[notify-aftersale]', e))
+    return ok(res, null, '售后申请已提交')
+  } catch (e) {
+    console.error('[aftersale-submit]', e)
+    return fail(res, '提交失败，请重试', 500)
+  }
+})
+
+// ─────────────────────────────────────────────
+// PATCH /api/orders/:id/confirm — 农户确认收货
+// ─────────────────────────────────────────────
+router.patch('/:id/confirm', farmerAuth, async (req, res) => {
+  const { id } = req.params
+  try {
+    const [rows] = await db.query(
+      'SELECT id FROM orders WHERE id=? AND user_id=? AND status=?',
+      [id, req.user.id, 'shipped']
+    )
+    if (!rows.length) return fail(res, '订单不存在或状态不符', 404)
+    await db.query(
+      "UPDATE orders SET status='completed', confirmed_at=NOW(), fund_status='frozen' WHERE id=?",
+      [id]
+    )
+    return ok(res, null, '确认收货成功')
+  } catch (e) {
+    console.error('[confirm-order]', e)
     return fail(res, '服务器错误', 500)
   }
 })

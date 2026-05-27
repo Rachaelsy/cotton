@@ -1,13 +1,13 @@
 // server/routes/merchant.js — 商户后台接口
 require('dotenv').config()
-const express = require('express')
-const bcrypt  = require('bcryptjs')
-const jwt     = require('jsonwebtoken')
-const db      = require('../db/database')
-const multer  = require('multer')
-const path    = require('path')
-const fs      = require('fs')
-const router  = express.Router()
+const express  = require('express')
+const bcrypt   = require('bcryptjs')
+const jwt      = require('jsonwebtoken')
+const db       = require('../db/database')
+const multer   = require('multer')
+const path     = require('path')
+const fs       = require('fs')
+const router   = express.Router()
 
 // ── 图片上传配置 ─────────────────────────────────────────────
 const uploadDir = path.join(__dirname, '../public/uploads/products')
@@ -85,7 +85,7 @@ router.get('/profile', merchantAuth, async (req, res) => {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.is_verified,
              m.id AS merchant_id, m.company_name, m.business_license,
-             m.product_category, m.apply_status
+             m.product_category, m.apply_status, m.wechat_id
       FROM users u JOIN merchants m ON m.user_id = u.id WHERE u.id = ?
     `, [req.merchant.id])
     if (!rows.length) return fail(res, '用户不存在', 404)
@@ -94,12 +94,12 @@ router.get('/profile', merchantAuth, async (req, res) => {
 })
 
 router.put('/profile', merchantAuth, async (req, res) => {
-  const { real_name, company_name, product_category, business_license } = req.body
+  const { real_name, company_name, product_category, business_license, wechat_id } = req.body
   try {
     if (real_name) await db.query('UPDATE users SET real_name=? WHERE id=?', [real_name, req.merchant.id])
     await db.query(
-      'UPDATE merchants SET company_name=?, product_category=?, business_license=? WHERE user_id=?',
-      [company_name||'', product_category||'', business_license||'', req.merchant.id]
+      'UPDATE merchants SET company_name=?, product_category=?, business_license=?, wechat_id=? WHERE user_id=?',
+      [company_name||'', product_category||'', business_license||'', wechat_id||'', req.merchant.id]
     )
     return ok(res, null, '店铺信息已更新')
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
@@ -120,6 +120,46 @@ router.post('/change-password', merchantAuth, async (req, res) => {
       [await bcrypt.hash(new_password, 10), req.merchant.id])
     return ok(res, null, '密码已修改，请重新登录')
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
+// GET  /api/merchant/aftersale        — 售后申请列表
+// PATCH /api/merchant/aftersale/:id/handle — 处理售后
+// ─────────────────────────────────────────────────────────────
+router.get('/aftersale', merchantAuth, async (req, res) => {
+  try {
+    const { status } = req.query
+    const mid = req.merchant.merchant_id
+    let sql = `
+      SELECT a.*, o.total AS order_total
+      FROM aftersale_requests a
+      LEFT JOIN orders o ON o.id = a.order_id
+      WHERE a.merchant_id = ?
+    `
+    const params = [mid]
+    if (status && status !== 'all') { sql += ' AND a.status = ?'; params.push(status) }
+    sql += ' ORDER BY a.created_at DESC'
+    const [rows] = await db.query(sql, params)
+    return ok(res, rows)
+  } catch(e) { console.error('[merchant-aftersale]', e); return fail(res, '服务器错误', 500) }
+})
+
+router.patch('/aftersale/:id/handle', merchantAuth, async (req, res) => {
+  const { id } = req.params
+  const { action, handle_note } = req.body
+  if (!['approved', 'rejected'].includes(action)) return fail(res, '操作类型无效')
+  try {
+    const [rows] = await db.query(
+      'SELECT id FROM aftersale_requests WHERE id=? AND merchant_id=?',
+      [id, req.merchant.merchant_id]
+    )
+    if (!rows.length) return fail(res, '记录不存在或无权限', 404)
+    await db.query(
+      'UPDATE aftersale_requests SET status=?, handle_note=? WHERE id=?',
+      [action, handle_note || '', id]
+    )
+    return ok(res, null, action === 'approved' ? '已同意售后' : '已拒绝申请')
+  } catch(e) { console.error('[merchant-aftersale-handle]', e); return fail(res, '服务器错误', 500) }
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -149,6 +189,11 @@ router.get('/stats', merchantAuth, async (req, res) => {
       SELECT COUNT(DISTINCT o.user_id) AS total_customers
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
     `, [mid])
+    const [[frozen]] = await db.query(`
+      SELECT IFNULL(SUM(o.total * 0.97), 0) AS amount
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE o.fund_status='frozen'
+    `, [mid])
     const [wtRows] = await db.query(`
       SELECT DATE(o.created_at) AS day, SUM(o.total) AS amount
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
@@ -174,7 +219,7 @@ router.get('/stats', merchantAuth, async (req, res) => {
       today_orders:       o.today_orders   || 0,
       today_sales:        parseFloat(o.today_sales   || 0).toFixed(2),
       pending_ship:       o.pending_ship   || 0,
-      pending_settlement: '0.00',
+      pending_settlement: parseFloat(frozen?.amount || 0).toFixed(2),
       monthly_sales:      parseFloat(o.monthly_sales || 0).toFixed(2),
       total_customers:    tc.total_customers || 0,
       unread_messages:    0,
@@ -189,45 +234,129 @@ router.get('/stats', merchantAuth, async (req, res) => {
 router.get('/finance', merchantAuth, async (req, res) => {
   try {
     const mid = req.merchant.merchant_id
+
+    // 可提现余额（扣除 3% 佣金）
+    const [[avail]] = await db.query(`
+      SELECT IFNULL(SUM(o.total * 0.97), 0) AS amount
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE o.fund_status='available'
+    `, [mid])
+
+    // 冻结中余额
+    const [[frozen]] = await db.query(`
+      SELECT IFNULL(SUM(o.total * 0.97), 0) AS amount
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE o.fund_status='frozen'
+    `, [mid])
+
+    // 本月统计
     const [[m]] = await db.query(`
       SELECT
         COUNT(*) AS monthly_orders,
         IFNULL(SUM(o.total), 0) AS monthly_sales,
         IFNULL(SUM(CASE WHEN o.status='refund' THEN o.total ELSE 0 END), 0) AS monthly_refund
-      FROM orders o
-      JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')
     `, [mid])
+
+    // 结算明细（已完成的订单，含资金状态和确认时间）
     const [settleRows] = await db.query(`
       SELECT o.id, o.order_no, o.total, o.created_at,
+             o.fund_status, o.confirmed_at, o.auto_confirmed,
              GROUP_CONCAT(i.name ORDER BY i.id SEPARATOR '、') AS prod_names
-      FROM orders o
-      JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE o.status='completed'
-      GROUP BY o.id ORDER BY o.created_at DESC LIMIT 50
+      GROUP BY o.id ORDER BY o.created_at DESC LIMIT 100
     `, [mid])
+
+    // 提现记录
+    const [wdRows] = await db.query(
+      'SELECT * FROM withdrawals WHERE merchant_id=? ORDER BY created_at DESC LIMIT 30',
+      [mid]
+    )
+
+    const now = Date.now()
     return ok(res, {
-      available_balance: '0.00',
-      monthly_sales:  parseFloat(m.monthly_sales  || 0).toFixed(2),
-      monthly_orders: parseInt(m.monthly_orders)  || 0,
-      monthly_refund: parseFloat(m.monthly_refund || 0).toFixed(2),
+      available_balance: parseFloat(avail.amount).toFixed(2),
+      frozen_balance:    parseFloat(frozen.amount).toFixed(2),
+      monthly_sales:     parseFloat(m.monthly_sales  || 0).toFixed(2),
+      monthly_orders:    parseInt(m.monthly_orders)  || 0,
+      monthly_refund:    parseFloat(m.monthly_refund || 0).toFixed(2),
       settlements: settleRows.map((s, idx) => {
         const amount     = parseFloat(s.total)
         const commission = parseFloat((amount * 0.03).toFixed(2))
+        const actual     = parseFloat((amount - commission).toFixed(2))
+        // 距解冻剩余天数（确认收货后 7 天）
+        let daysLeft = null
+        if (s.fund_status === 'frozen' && s.confirmed_at) {
+          const releaseAt = new Date(s.confirmed_at).getTime() + 7 * 24 * 3600 * 1000
+          daysLeft = Math.max(0, Math.ceil((releaseAt - now) / (24 * 3600 * 1000)))
+        }
         return {
-          id:         'SE' + String(idx + 1).padStart(3, '0'),
-          order_no:   s.order_no,
-          prod:       s.prod_names || '商品',
+          id:           'SE' + String(idx + 1).padStart(3, '0'),
+          order_no:     s.order_no,
+          prod:         s.prod_names || '商品',
           amount,
           commission,
-          actual:     parseFloat((amount - commission).toFixed(2)),
-          status:     '已结算',
-          date:       String(s.created_at).slice(0, 10)
+          actual,
+          fund_status:  s.fund_status,
+          days_left:    daysLeft,
+          confirmed_at: s.confirmed_at ? String(s.confirmed_at).slice(0, 10) : null,
+          auto_confirmed: !!s.auto_confirmed,
+          date:         String(s.created_at).slice(0, 10)
         }
       }),
-      withdrawals: []
+      withdrawals: wdRows.map(w => ({
+        id:         'WD' + String(w.id).padStart(4, '0'),
+        amount:     parseFloat(w.amount),
+        status:     w.status === 'paid' ? '已到账' : w.status === 'rejected' ? '已拒绝' : '处理中',
+        note:       w.note || '',
+        apply_date: String(w.created_at).slice(0, 10),
+        arrive_date: w.paid_at ? String(w.paid_at).slice(0, 10) : '—'
+      }))
     })
   } catch(e) { console.error('[merchant-finance]', e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/merchant/withdraw — 发起提现
+// ─────────────────────────────────────────────────────────────
+router.post('/withdraw', merchantAuth, async (req, res) => {
+  const mid = req.merchant.merchant_id
+  const amount = parseFloat(req.body.amount)
+  if (!amount || amount < 1) return fail(res, '提现金额不能少于 1 元')
+  try {
+    // 查询可提现余额
+    const [[avail]] = await db.query(`
+      SELECT IFNULL(SUM(o.total * 0.97), 0) AS amount
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE o.fund_status='available'
+    `, [mid])
+    const available = parseFloat(avail.amount)
+    if (amount > available + 0.01) return fail(res, `可提现余额不足，当前可提现 ¥${available.toFixed(2)}`)
+
+    // 按金额从旧到新标记订单为已提现
+    const [oRows] = await db.query(`
+      SELECT o.id, ROUND(o.total * 0.97, 2) AS net
+      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE o.fund_status='available'
+      GROUP BY o.id ORDER BY o.confirmed_at ASC
+    `, [mid])
+    let remaining = amount
+    const toWithdraw = []
+    for (const row of oRows) {
+      if (remaining <= 0) break
+      toWithdraw.push(row.id)
+      remaining -= parseFloat(row.net)
+    }
+    if (toWithdraw.length) {
+      const ph = toWithdraw.map(() => '?').join(',')
+      await db.query(`UPDATE orders SET fund_status='withdrawn' WHERE id IN (${ph})`, toWithdraw)
+    }
+    await db.query('INSERT INTO withdrawals (merchant_id, amount) VALUES (?, ?)',
+      [mid, amount.toFixed(2)])
+    return ok(res, null, `提现申请已提交，¥${amount.toFixed(2)} 将在 1-3 个工作日内到账`)
+  } catch(e) { console.error('[merchant-withdraw]', e); return fail(res, '服务器错误', 500) }
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -391,7 +520,7 @@ router.patch('/orders/:id/ship', merchantAuth, async (req, res) => {
       [req.params.id, mid]
     )
     if (!rows.length) return fail(res, '订单不存在或无法发货', 404)
-    await db.query(`UPDATE orders SET status='shipped', logistics_no=? WHERE id=?`,
+    await db.query(`UPDATE orders SET status='shipped', logistics_no=?, shipped_at=NOW() WHERE id=?`,
       [logistics_no, req.params.id])
     return ok(res, null, '发货成功')
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
@@ -431,6 +560,38 @@ router.delete('/orders/:id', merchantAuth, async (req, res) => {
 router.post('/upload', merchantAuth, upload.single('image'), (req, res) => {
   if (!req.file) return fail(res, '请选择图片文件')
   return ok(res, { url: `/uploads/products/${req.file.filename}` }, '上传成功')
+})
+
+// ─────────────────────────────────────────────────────────────
+// GET  /api/merchant/messages        — 获取消息列表
+// PATCH /api/merchant/messages/read-all — 全部已读
+// PATCH /api/merchant/messages/:id/read — 单条已读
+// ─────────────────────────────────────────────────────────────
+router.get('/messages', merchantAuth, async (req, res) => {
+  try {
+    const mid = req.merchant.merchant_id
+    const [rows] = await db.query(
+      `SELECT * FROM messages WHERE merchant_id=? ORDER BY created_at DESC LIMIT 100`,
+      [mid]
+    )
+    const unread = rows.filter(m => !m.is_read).length
+    return ok(res, { list: rows, unread })
+  } catch(e) { console.error('[merchant-messages]', e); return fail(res, '服务器错误', 500) }
+})
+
+router.patch('/messages/read-all', merchantAuth, async (req, res) => {
+  try {
+    await db.query('UPDATE messages SET is_read=1 WHERE merchant_id=?', [req.merchant.merchant_id])
+    return ok(res, null, '已全部标为已读')
+  } catch(e) { return fail(res, '服务器错误', 500) }
+})
+
+router.patch('/messages/:id/read', merchantAuth, async (req, res) => {
+  try {
+    await db.query('UPDATE messages SET is_read=1 WHERE id=? AND merchant_id=?',
+      [req.params.id, req.merchant.merchant_id])
+    return ok(res, null)
+  } catch(e) { return fail(res, '服务器错误', 500) }
 })
 
 module.exports = router

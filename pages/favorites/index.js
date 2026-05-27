@@ -29,7 +29,7 @@ Page({
     const product = this.data.favorites.find(p => p.id === id)
     if (!product) return
     app.globalData.selectedProduct = product
-    wx.navigateTo({ url: '/pages/supplies-detail/index' })
+    wx.navigateTo({ url: '/subpkg-supplies/supplies-detail/index' })
   },
 
   onRemoveFav(e) {
@@ -49,7 +49,7 @@ Page({
   },
 
   onGoCart() {
-    wx.navigateTo({ url: '/pages/supplies-cart/index' })
+    wx.navigateTo({ url: '/subpkg-supplies/supplies-cart/index' })
   },
 
   onGoShopping() {

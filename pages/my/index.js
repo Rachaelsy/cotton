@@ -137,7 +137,7 @@ Page({
 
   onMyOrders() {
     if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
-    wx.navigateTo({ url: '/pages/my-orders/index' })
+    wx.navigateTo({ url: '/subpkg-supplies/my-orders/index' })
   },
 
   onAbout() {

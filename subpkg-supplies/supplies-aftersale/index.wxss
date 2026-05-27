@@ -1,0 +1,326 @@
+/* pages/supplies-aftersale/index.wxss — 售后申请页样式 */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ===== 顶部导航 ===== */
+.as-header {
+  background: linear-gradient(160deg, #92400e, #C8902E);
+  padding-left: 28rpx;
+  padding-right: 28rpx;
+  padding-bottom: 24rpx;
+  flex-shrink: 0;
+}
+
+.as-topbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-top: 10rpx;
+}
+
+.as-back {
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.as-back-icon {
+  color: #ffffff;
+  font-size: 44rpx;
+}
+
+.as-title {
+  flex: 1;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* ===== 滚动区 ===== */
+.as-scroll {
+  flex: 1;
+  height: 0;
+}
+
+/* ===== 通用 Section ===== */
+.as-section {
+  background: #ffffff;
+  margin: 16rpx 28rpx 0;
+  border-radius: 24rpx;
+  padding: 28rpx 24rpx 24rpx;
+}
+
+.as-section-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6rpx;
+  margin-bottom: 24rpx;
+}
+
+.as-req {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #E53935;
+  line-height: 1;
+}
+
+.as-section-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.as-optional {
+  font-size: 22rpx;
+  color: #BBBBBB;
+}
+
+/* ===== ① 售后类型 ===== */
+.type-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16rpx;
+}
+
+.type-item {
+  flex: 1;
+  border: 2rpx solid #EEE5D8;
+  border-radius: 16rpx;
+  padding: 20rpx 12rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  background: #FAFAFA;
+}
+
+.type-item-on {
+  border-color: #C8902E;
+  background: #FBF5EA;
+}
+
+.type-radio {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  border: 3rpx solid #CCCCCC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.type-radio-on {
+  border-color: #C8902E;
+}
+
+.type-radio-dot {
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 50%;
+  background: #C8902E;
+}
+
+.type-label {
+  font-size: 24rpx;
+  color: #555555;
+  font-weight: 600;
+  flex: 1;
+}
+
+.type-label-on {
+  color: #C8902E;
+}
+
+/* ===== ② 售后原因宫格 ===== */
+.reason-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.reason-item {
+  width: 200rpx;
+  border: 2rpx solid #EEE5D8;
+  border-radius: 12rpx;
+  padding: 18rpx 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FAFAFA;
+}
+
+.reason-item-on {
+  border-color: #C8902E;
+  background: #FBF5EA;
+}
+
+.reason-text {
+  font-size: 22rpx;
+  color: #555555;
+  font-weight: 600;
+  text-align: center;
+}
+
+.reason-text-on {
+  color: #C8902E;
+}
+
+/* ===== ③ 其他原因输入 ===== */
+.other-input {
+  background: #F8F4EF;
+  border-radius: 12rpx;
+  padding: 20rpx 20rpx;
+  font-size: 26rpx;
+  color: #1A1A1A;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ===== ④ 问题描述 ===== */
+.desc-wrap {
+  background: #F8F4EF;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  position: relative;
+}
+
+.desc-textarea {
+  width: 100%;
+  min-height: 160rpx;
+  font-size: 26rpx;
+  color: #1A1A1A;
+  line-height: 1.7;
+  box-sizing: border-box;
+}
+
+.desc-count {
+  display: block;
+  text-align: right;
+  font-size: 20rpx;
+  color: #BBBBBB;
+  margin-top: 8rpx;
+}
+
+.input-placeholder {
+  color: #BBBBBB;
+  font-size: 26rpx;
+}
+
+/* ===== ⑤ 上传凭证 ===== */
+.upload-tip {
+  font-size: 22rpx;
+  color: #AAAAAA;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.upload-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.upload-item {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  position: relative;
+}
+
+.upload-img {
+  width: 180rpx;
+  height: 180rpx;
+  display: block;
+}
+
+.upload-del {
+  position: absolute;
+  top: 6rpx;
+  right: 6rpx;
+  width: 44rpx;
+  height: 44rpx;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-del-icon {
+  font-size: 22rpx;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.upload-add {
+  width: 180rpx;
+  height: 180rpx;
+  border: 3rpx dashed #D4C5A9;
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  background: #FAFAFA;
+}
+
+.upload-add-icon {
+  font-size: 56rpx;
+  color: #C8902E;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.upload-add-label {
+  font-size: 20rpx;
+  color: #888888;
+}
+
+/* ===== 底部提交按钮 ===== */
+.as-bottom {
+  background: #ffffff;
+  border-top: 1rpx solid #F2EBE0;
+  padding: 20rpx 28rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.submit-btn {
+  border-radius: 999rpx;
+  padding: 28rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-btn-on {
+  background: linear-gradient(135deg, #C8902E, #D4A043);
+  box-shadow: 0 8rpx 32rpx rgba(200, 144, 46, 0.4);
+}
+
+.submit-btn-off {
+  background: #D9D9D9;
+}
+
+.submit-text {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #ffffff;
+}

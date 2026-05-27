@@ -34,13 +34,16 @@ copy .env.example .env
 # 修改 .env 中的 DB_HOST / DB_USER / DB_PASS
 
 # 建表（首次）
-node db/migrate_products.js          # 创建 products 表并插入测试商品
-node db/migrate_admin.js             # 添加 is_admin 字段 + 创建管理员账号
-node db/migrate_merchant_approval.js # 添加 apply_status/reject_reason 字段
-node db/migrate_product_image.js     # 添加 image_url 字段
-node db/migrate_orders.js            # 创建 orders 和 order_items 表
-node db/migrate_product_detail.js    # 添加 detail 字段（商品详细介绍）
-node db/seed.js                      # 插入测试用户账号
+node db/migrate_products.js           # 创建 products 表并插入测试商品
+node db/migrate_admin.js              # 添加 is_admin 字段 + 创建管理员账号
+node db/migrate_merchant_approval.js  # 添加 apply_status/reject_reason 字段
+node db/migrate_product_image.js      # 添加 image_url 字段
+node db/migrate_orders.js             # 创建 orders 和 order_items 表
+node db/migrate_product_detail.js     # 添加 detail 字段（商品详细介绍）
+node db/migrate_merchant_wechat.js    # 添加 wechat_id 字段（商家客服微信号）
+node db/migrate_aftersale.js          # 创建 aftersale_requests 表
+node db/migrate_aftersale_images.js   # 添加 images 字段（售后凭证图片）
+node db/seed.js                       # 插入测试用户账号
 
 # 启动服务
 node index.js
@@ -102,7 +105,16 @@ http://localhost:3000/admin/merchant-apply.html
 ```
 http://localhost:3000/admin/login.html
 ```
-管理员和商户共用此登录页，系统根据角色自动跳转不同后台。商户功能包含：店铺统计、商品管理（CRUD + 图片上传）、订单管理（发货/退款/删除）。
+管理员和商户共用此登录页，系统根据角色自动跳转不同后台。商户功能包含：
+
+| 面板 | 功能 |
+|------|------|
+| 店铺中心 | 今日销售/订单/待发货/结算统计 |
+| 商品管理 | CRUD + 图片上传 + 简介/详情字段 |
+| 订单管理 | 全部/待发货/已发货/已完成，发货填单号 |
+| 售后管理 | 售后申请列表（分 Tab），查看详情（描述+凭证图片），一键同意/拒绝 |
+| 财务结算 | 结算明细、提现记录 |
+| 店铺设置 | 基础信息 + 客服微信号 + 修改密码 |
 
 ---
 
@@ -162,7 +174,8 @@ cotton/
 │   ├── supplies-cart/        # 购物车
 │   ├── supplies-checkout/    # 结算（提交后写入 MySQL 订单）
 │   ├── supplies-pay-success/ # 支付成功页（订单号展示 + 查看订单入口）
-│   ├── supplies-order/       # 订单详情（4 步进度条 + 操作栏）
+│   ├── supplies-order/       # 订单详情（4 步进度条 + 确认收货 + 售后入口）
+│   ├── supplies-aftersale/   # 售后申请（类型/原因/描述/图片上传）
 │   ├── my-orders/            # 我的订单列表（Tab：全部/待发货/配送中/已完成）
 │   ├── supplies-store/       # 店铺页（单个商户全部商品）
 │   └── favorites/            # 我的收藏（卡片网格，取消收藏，加购）
@@ -182,9 +195,10 @@ cotton/
     ├── API.md                # 接口文档
     ├── routes/
     │   ├── auth.js           # /api/auth/*（注册/登录/验证/登出）
-    │   ├── products.js       # /api/products/*（商品 CRUD）
-    │   ├── orders.js         # /api/orders/*（农户下单、查看个人订单）
-    │   ├── merchant.js       # /api/merchant/*（商户登录、商品、订单、统计）
+    │   ├── products.js       # /api/products/*（商品 CRUD，含 merchant_wechat）
+    │   ├── orders.js         # /api/orders/*（农户下单、查询、确认收货、售后提交）
+    │   ├── merchant.js       # /api/merchant/*（商户登录、商品、订单、售后审批）
+    │   ├── upload.js         # /api/upload（multer 文件上传，存至 public/uploads/）
     │   └── admin.js          # /api/admin/*（管理后台 API，需 is_admin）
     ├── middleware/
     │   └── auth.js           # JWT 鉴权中间件 + roleGuard()
@@ -196,16 +210,20 @@ cotton/
     │   │   └── merchant-apply.html  # 商户入驻申请（公开页面）
     │   └── merchant/         # 网页商户后台静态文件
     │       ├── login.html           # 商户登录页
-    │       └── dashboard.html       # 商户 SPA（统计/商品/订单管理）
+    │       └── dashboard.html       # 商户 SPA（统计/商品/订单/售后/财务/设置）
+    ├── public/uploads/       # 图片上传目录（wx.uploadFile → POST /api/upload）
     └── db/
         ├── database.js       # mysql2 连接池
         ├── schema.sql        # 建表：users / farmers / merchants / login_logs
-        ├── migrate_products.js # 建 products 表 + 种子数据（运行一次）
-        ├── migrate_admin.js            # 添加 is_admin 字段 + 创建管理员账号
-        ├── migrate_merchant_approval.js # 添加 apply_status/reject_reason 字段
-        ├── migrate_orders.js           # 建 orders + order_items 表（运行一次）
-        ├── migrate_product_detail.js   # 添加 detail 字段（幂等，可重复运行）
-        └── seed.js                     # 测试用户账号（可重复运行，幂等）
+        ├── migrate_products.js           # 建 products 表 + 种子数据
+        ├── migrate_admin.js              # 添加 is_admin 字段 + 创建管理员账号
+        ├── migrate_merchant_approval.js  # 添加 apply_status/reject_reason 字段
+        ├── migrate_orders.js             # 建 orders + order_items 表
+        ├── migrate_product_detail.js     # 添加 products.detail 字段
+        ├── migrate_merchant_wechat.js    # 添加 merchants.wechat_id 字段
+        ├── migrate_aftersale.js          # 建 aftersale_requests 表
+        ├── migrate_aftersale_images.js   # 添加 aftersale_requests.images 字段
+        └── seed.js                       # 测试用户账号（幂等）
 ```
 
 ---
@@ -247,26 +265,39 @@ Base URL（开发）：`http://192.168.0.25:3000`
 | PATCH | `/api/merchant/orders/:id/ship` | 商户 | 发货（填写物流单号） |
 | PATCH | `/api/merchant/orders/:id/refund` | 商户 | 退款/售后处理 |
 | DELETE | `/api/merchant/orders/:id` | 商户 | 删除订单 |
+| GET  | `/api/merchant/aftersale` | 商户 | 售后申请列表（可按 status 筛选） |
+| PATCH | `/api/merchant/aftersale/:id/handle` | 商户 | 审批售后（approved/rejected + 备注）|
+| GET/PUT | `/api/merchant/profile` | 商户 | 获取/更新店铺信息（含 wechat_id）|
 | POST | `/api/orders` | 农户 | 下单（写入 MySQL，返回订单号） |
 | GET  | `/api/orders/my` | 农户 | 查看个人订单列表 |
+| POST | `/api/orders/:id/aftersale` | 农户 | 提交售后申请（含图片 URL） |
+| PATCH | `/api/orders/:id/confirm` | 农户 | 确认收货（状态改为 completed） |
+| POST | `/api/upload` | Token | 上传图片文件，返回 `/uploads/xxx` URL |
 
 ---
 
 ## 数据库表结构
 
 ```
-users          → id, phone, password(bcrypt), role, real_name, is_verified, is_active, is_admin
-farmers        → user_id(FK), location, land_size, crop_type
-merchants      → user_id(FK), company_name, business_license, product_category, apply_status, reject_reason
-products       → id, merchant_id(FK), name, category, price, unit, stock, status, icon, image_url, description, detail
-orders         → id, order_no(UNIQUE), user_id(FK), farmer_name, farmer_phone,
-                  receiver_name, receiver_phone, address, subtotal, delivery_fee,
-                  total, pay_method, status, logistics_no, note, created_at, updated_at
-order_items    → id, order_id(FK CASCADE), merchant_id, product_id, name, icon, spec, price, qty, subtotal
-login_logs     → user_id, ip, created_at
+users                → id, phone, password(bcrypt), role, real_name, is_verified, is_active, is_admin
+farmers              → user_id(FK), location, land_size, crop_type
+merchants            → user_id(FK), company_name, business_license, product_category,
+                        apply_status, reject_reason, wechat_id
+products             → id, merchant_id(FK), name, category, price, unit, stock, status,
+                        icon, image_url, description, detail
+orders               → id, order_no(UNIQUE), user_id(FK), farmer_name, farmer_phone,
+                        receiver_name, receiver_phone, address, subtotal, delivery_fee,
+                        total, pay_method, status, logistics_no, note, created_at, updated_at
+order_items          → id, order_id(FK CASCADE), merchant_id, product_id, name, icon, spec, price, qty, subtotal
+aftersale_requests   → id, order_id, order_no, merchant_id, user_id, farmer_name,
+                        aftersale_type, reason, other_reason, description, images(TEXT),
+                        status(pending/approved/rejected), handle_note, created_at, updated_at
+login_logs           → user_id, ip, created_at
 ```
 
 订单状态流转：`pending_ship`（待发货）→ `shipped`（已发货）→ `completed`（已完成）/ `refund`（售后中）
+
+售后状态流转：`pending`（待处理）→ `approved`（已同意）/ `rejected`（已拒绝）
 
 ---
 

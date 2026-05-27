@@ -65,24 +65,10 @@ Page({
 
   onModule(e) {
     const action = e.currentTarget.dataset.action
-    const routes = {
-      fields:    '/pages/fields/index',
-      remote:    '/pages/remote/index',
-      pest:      '/pages/pest/index',
-      weather:   '/pages/weather/index',
-      records:   '/pages/records/index',
-      machine:   '/pages/machine/index',
-      supplies:  '/pages/supplies/index',
-      trade:     '/pages/trade/index',
-      loans:     '/pages/loans/index',
-      insurance: '/pages/insurance/index',
-      expert:    '/pages/expert/index'
-    }
-    const url = routes[action]
-    if (url) {
-      wx.navigateTo({ url })
+    if (action === 'supplies') {
+      wx.navigateTo({ url: '/subpkg-supplies/supplies/index' })
     } else {
-      wx.showToast({ title: '该功能开发中', icon: 'none' })
+      wx.showToast({ title: '正在开发中，敬请期待', icon: 'none', duration: 2000 })
     }
   },
 

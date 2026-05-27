@@ -194,6 +194,9 @@
     <div class="nav-item" data-panel="orders" onclick="switchPanel(this)">
       <span class="nav-icon">📋</span> 订单管理
     </div>
+    <div class="nav-item" data-panel="announcements" onclick="switchPanel(this)">
+      <span class="nav-icon">📢</span> 平台公告
+    </div>
   </nav>
   <div class="sidebar-foot">
     <div class="admin-info">当前登录</div>
@@ -274,6 +277,20 @@
         </div>
         <table><thead><tr><th>ID</th><th>商品名</th><th>所属商户</th><th>分类</th><th>价格</th><th>单位</th><th>库存</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="productTable"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ══ 平台公告面板 ══ -->
+    <div class="panel" id="panel-announcements">
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">平台公告管理</span>
+          <button class="act-btn" style="margin-left:auto" onclick="showAnnounceModal()">＋ 发布公告</button>
+        </div>
+        <table>
+          <thead><tr><th>公告标题</th><th>内容摘要</th><th>发布时间</th><th>操作</th></tr></thead>
+          <tbody id="announce-table"><tr class="empty-row"><td colspan="4">加载中...</td></tr></tbody>
+        </table>
       </div>
     </div>
 
@@ -451,7 +468,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -463,12 +480,13 @@
   }
 
   function loadPanel(panel) {
-    if (panel === 'overview')      loadOverview()
+    if (panel === 'overview')         loadOverview()
     else if (panel === 'applications') loadApplications()
-    else if (panel === 'farmers')  loadFarmers()
-    else if (panel === 'merchants') loadMerchants()
-    else if (panel === 'products') loadProducts()
-    else if (panel === 'orders')   loadAdminOrders()
+    else if (panel === 'farmers')     loadFarmers()
+    else if (panel === 'merchants')   loadMerchants()
+    else if (panel === 'products')    loadProducts()
+    else if (panel === 'orders')      loadAdminOrders()
+    else if (panel === 'announcements') loadAnnouncements()
   }
 
   function fmt(dt) {
@@ -987,11 +1005,96 @@
     m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show') })
   })
 
-  function esc(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;') }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
   function logout() { localStorage.clear(); window.location.href = '/admin/login.html' }
+
+  // ── 平台公告 ────────────────────────────────
+  async function loadAnnouncements() {
+    const tbody = document.getElementById('announce-table')
+    if (!tbody) return
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">加载中...</td></tr>'
+    const r = await api('GET', '/announcements')
+    if (!r || r.code !== 200) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">加载失败</td></tr>'
+      return
+    }
+    const list = r.data || []
+    if (!list.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">暂无公告</td></tr>'
+      return
+    }
+    tbody.innerHTML = list.map(a => `
+      <tr>
+        <td style="font-weight:600">${esc(a.title)}</td>
+        <td style="color:#555;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+            title="${esc(a.content)}">${esc(a.content)}</td>
+        <td style="color:#888;font-size:12px">${String(a.created_at).slice(0,16)}</td>
+        <td><button class="act-btn" style="background:#FEE2E2;color:#DC2626"
+          onclick="deleteAnnouncement(${a.id})">删除</button></td>
+      </tr>`).join('')
+  }
+
+  function showAnnounceModal() {
+    document.getElementById('ann-title').value = ''
+    document.getElementById('ann-content').value = ''
+    document.getElementById('ann-result').textContent = ''
+    document.getElementById('modalAnnounce').style.display = 'flex'
+  }
+  function closeAnnounceModal() {
+    document.getElementById('modalAnnounce').style.display = 'none'
+  }
+
+  async function submitAnnouncement() {
+    const title   = document.getElementById('ann-title').value.trim()
+    const content = document.getElementById('ann-content').value.trim()
+    const resultEl = document.getElementById('ann-result')
+    if (!title)   { resultEl.style.color='#DC2626'; resultEl.textContent='请填写公告标题'; return }
+    if (!content) { resultEl.style.color='#DC2626'; resultEl.textContent='请填写公告内容'; return }
+    resultEl.style.color='#888'; resultEl.textContent='发送中...'
+    const r = await api('POST', '/announcements', { title, content })
+    if (r?.code === 200) {
+      resultEl.style.color='#16A34A'
+      resultEl.textContent = r.msg || '发布成功'
+      setTimeout(() => { closeAnnounceModal(); loadAnnouncements() }, 1200)
+    } else {
+      resultEl.style.color='#DC2626'
+      resultEl.textContent = r?.msg || '发布失败'
+    }
+  }
+
+  async function deleteAnnouncement(id) {
+    if (!confirm('确认删除该公告？已推送给商户的消息不会撤回。')) return
+    const r = await api('DELETE', '/announcements/' + id)
+    if (r?.code === 200) loadAnnouncements()
+    else alert(r?.msg || '删除失败')
+  }
 
   // 初始加载
   loadOverview()
 </script>
+
+<!-- 发布公告弹窗 -->
+<div id="modalAnnounce" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:520px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <h3 style="font-size:17px;font-weight:800;margin-bottom:20px">📢 发布平台公告</h3>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px">公告标题 *</label>
+      <input id="ann-title" type="text" placeholder="请输入公告标题（50字以内）" maxlength="50"
+        style="width:100%;padding:10px 14px;border:1.5px solid #E0E0E0;border-radius:10px;font-size:14px;outline:none">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:6px">公告内容 *</label>
+      <textarea id="ann-content" rows="5" placeholder="请输入公告内容..." maxlength="500"
+        style="width:100%;padding:10px 14px;border:1.5px solid #E0E0E0;border-radius:10px;font-size:14px;outline:none;resize:vertical"></textarea>
+    </div>
+    <div id="ann-result" style="font-size:13px;min-height:20px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeAnnounceModal()"
+        style="padding:10px 24px;border:1.5px solid #E0E0E0;border-radius:10px;background:#fff;cursor:pointer;font-size:14px">取消</button>
+      <button onclick="submitAnnouncement()"
+        style="padding:10px 24px;background:#C8902E;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600">发布公告</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

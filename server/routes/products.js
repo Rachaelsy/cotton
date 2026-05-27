@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
   try {
     const { category } = req.query
     let sql = `
-      SELECT p.*, m.company_name
+      SELECT p.*, m.company_name, m.wechat_id AS merchant_wechat
       FROM products p
       LEFT JOIN merchants m ON m.id = p.merchant_id
       WHERE p.status = 'on'

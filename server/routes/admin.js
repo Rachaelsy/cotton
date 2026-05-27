@@ -1,12 +1,13 @@
 // server/routes/admin.js — 后台管理 API
-const express = require('express')
-const router  = express.Router()
-const bcrypt  = require('bcryptjs')
-const jwt     = require('jsonwebtoken')
-const multer  = require('multer')
-const path    = require('path')
-const fs      = require('fs')
-const db      = require('../db/database')
+const express  = require('express')
+const router   = express.Router()
+const bcrypt   = require('bcryptjs')
+const jwt      = require('jsonwebtoken')
+const multer   = require('multer')
+const path     = require('path')
+const fs       = require('fs')
+const db       = require('../db/database')
+const { broadcastAnnouncement } = require('../utils/notify')
 
 // ── 图片上传配置 ─────────────────────────────────────────
 const uploadDir = path.join(__dirname, '../public/uploads/products')
@@ -29,6 +30,9 @@ const JWT_SECRET  = process.env.JWT_SECRET
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d'
 
 // ── 管理员身份验证中间件 ──────────────────────────────────
+const R_OK   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
+const R_FAIL = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
+
 function adminAuth(req, res, next) {
   const auth = req.headers.authorization || ''
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
@@ -395,6 +399,40 @@ router.post('/apply', async (req, res) => {
   } catch (e) {
     console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
   }
+})
+
+// ─────────────────────────────────────────────────────────────
+// GET  /api/admin/announcements — 公告列表
+// POST /api/admin/announcements — 发布公告（广播给所有商户）
+// DELETE /api/admin/announcements/:id — 删除公告
+// ─────────────────────────────────────────────────────────────
+router.get('/announcements', adminAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM announcements ORDER BY created_at DESC LIMIT 100')
+    return R_OK(res, rows)
+  } catch(e) { console.error('[admin-announcements]', e); return R_FAIL(res, '服务器错误', 500) }
+})
+
+router.post('/announcements', adminAuth, async (req, res) => {
+  const { title, content } = req.body
+  if (!title?.trim()) return R_FAIL(res, '请填写公告标题')
+  if (!content?.trim()) return R_FAIL(res, '请填写公告内容')
+  try {
+    const [r] = await db.query(
+      'INSERT INTO announcements (title, content) VALUES (?,?)',
+      [title.trim(), content.trim()]
+    )
+    const count = await broadcastAnnouncement(r.insertId, title.trim(), content.trim())
+    return R_OK(res, { id: r.insertId, merchant_count: count },
+      `公告已发布，已通知 ${count} 家商户`)
+  } catch(e) { console.error('[admin-announcement-post]', e); return R_FAIL(res, '服务器错误', 500) }
+})
+
+router.delete('/announcements/:id', adminAuth, async (req, res) => {
+  try {
+    await db.query('DELETE FROM announcements WHERE id=?', [req.params.id])
+    return R_OK(res, null, '已删除')
+  } catch(e) { return R_FAIL(res, '服务器错误', 500) }
 })
 
 module.exports = router

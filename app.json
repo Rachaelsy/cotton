@@ -10,14 +10,6 @@
     "pages/ai/index",
     "pages/my/index",
     "pages/favorites/index",
-    "pages/supplies/index",
-    "pages/supplies-detail/index",
-    "pages/supplies-store/index",
-    "pages/supplies-cart/index",
-    "pages/supplies-checkout/index",
-    "pages/supplies-pay-success/index",
-    "pages/supplies-order/index",
-    "pages/my-orders/index",
     "pages/fields/index",
     "pages/fields/draw",
     "pages/pest/index",
@@ -32,6 +24,23 @@
     "pages/insurance/index",
     "pages/expert/index",
     "pages/expert/detail"
+  ],
+  "subpackages": [
+    {
+      "root": "subpkg-supplies",
+      "name": "supplies",
+      "pages": [
+        "supplies/index",
+        "supplies-detail/index",
+        "supplies-store/index",
+        "supplies-cart/index",
+        "supplies-checkout/index",
+        "supplies-pay-success/index",
+        "supplies-order/index",
+        "supplies-aftersale/index",
+        "my-orders/index"
+      ]
+    }
   ],
   "window": {
     "navigationBarTextStyle": "black",
