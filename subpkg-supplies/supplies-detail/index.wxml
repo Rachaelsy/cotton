@@ -72,39 +72,41 @@
     <view class="section">
       <view class="section-head">
         <text class="section-title">买家评价</text>
-        <text class="section-more" bindtap="onShowReviews">全部128条 ›</text>
+        <text wx:if="{{reviewTotal > 0}}" class="section-more" bindtap="onShowReviews">全部{{reviewTotal}}条 ›</text>
       </view>
-      <view class="review-summary">
-        <text class="review-score">5.0</text>
-        <view class="review-stars">
-          <text class="star">★</text><text class="star">★</text><text class="star">★</text><text class="star">★</text><text class="star">★</text>
-        </view>
-        <text class="review-pct">好评率 98%</text>
-      </view>
-      <view class="review-item">
-        <view class="review-top">
-          <text class="reviewer-avatar">古</text>
-          <view class="reviewer-info">
-            <text class="reviewer-name">古丽**哈尔</text>
-            <text class="review-stars-row">★★★★★</text>
+
+      <!-- 有评价 -->
+      <view wx:if="{{reviews.length > 0}}">
+        <view class="review-summary">
+          <text class="review-score">{{avgRating}}</text>
+          <view class="review-stars">
+            <text class="star">★</text><text class="star">★</text><text class="star">★</text><text class="star">★</text><text class="star">★</text>
           </view>
-          <text class="review-date">2025-04</text>
+          <text class="review-pct">共 {{reviewTotal}} 条评价</text>
         </view>
-        <text class="review-content">质量很好，发货快，效果不错！棉花长势明显改善了。</text>
-        <text class="review-spec">规格：{{product.spec || product.unit || '默认规格'}}</text>
-      </view>
-      <view class="review-divider"></view>
-      <view class="review-item">
-        <view class="review-top">
-          <text class="reviewer-avatar">阿</text>
-          <view class="reviewer-info">
-            <text class="reviewer-name">阿迪力**</text>
-            <text class="review-stars-row">★★★★★</text>
+        <view wx:for="{{reviews}}" wx:key="id">
+          <view class="review-item">
+            <view class="review-top">
+              <text class="reviewer-avatar">{{item.farmer_name.slice(0,1) || '买'}}</text>
+              <view class="reviewer-info">
+                <text class="reviewer-name">{{item.farmer_name.length > 1 ? item.farmer_name.slice(0,1) + '**' + item.farmer_name.slice(-1) : item.farmer_name + '**'}}</text>
+                <text class="review-stars-row">{{item.rating >= 1 ? '★' : '☆'}}{{item.rating >= 2 ? '★' : '☆'}}{{item.rating >= 3 ? '★' : '☆'}}{{item.rating >= 4 ? '★' : '☆'}}{{item.rating >= 5 ? '★' : '☆'}}</text>
+              </view>
+              <text class="review-date">{{item.month}}</text>
+            </view>
+            <text wx:if="{{item.content}}" class="review-content">{{item.content}}</text>
+            <text wx:else class="review-content review-no-content">该用户没有填写评价</text>
+            <view wx:if="{{item.reply}}" class="review-reply">
+              <text class="review-reply-text">🏪 商家回复：{{item.reply}}</text>
+            </view>
           </view>
-          <text class="review-date">2025-03</text>
+          <view wx:if="{{index < reviews.length - 1}}" class="review-divider"></view>
         </view>
-        <text class="review-content">正品，价格实惠，商家服务态度很好，下次还会买。</text>
-        <text class="review-spec">规格：{{product.spec || product.unit || '默认规格'}}</text>
+      </view>
+
+      <!-- 暂无评价 -->
+      <view wx:elif="{{reviewsLoaded}}" class="review-empty">
+        <text class="review-empty-text">暂无评价，快来抢首评吧～</text>
       </view>
     </view>
 

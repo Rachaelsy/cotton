@@ -67,13 +67,15 @@ Page({
     const action = e.currentTarget.dataset.action
     if (action === 'supplies') {
       wx.navigateTo({ url: '/subpkg-supplies/supplies/index' })
+    } else if (action === 'fields') {
+      wx.navigateTo({ url: '/pages/fields/index' })
     } else {
       wx.showToast({ title: '正在开发中，敬请期待', icon: 'none', duration: 2000 })
     }
   },
 
   onGoFields() {
-    wx.showToast({ title: '地块管理开发中', icon: 'none' })
+    wx.navigateTo({ url: '/pages/fields/index' })
   },
 
   onPhotoBanner() {

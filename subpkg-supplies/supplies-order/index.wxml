@@ -113,8 +113,8 @@
   <!-- 已完成底部：仅三大入口 -->
   <view wx:if="{{isCompleted}}" class="ord-bottom ord-bottom-row">
     <view class="c3btn c3btn-review" bindtap="onReview">
-      <text class="c3btn-icon">⭐</text>
-      <text class="c3btn-label">去评价</text>
+      <text class="c3btn-icon">{{hasReviewed ? '✅' : '⭐'}}</text>
+      <text class="c3btn-label">{{hasReviewed ? '已评价' : '去评价'}}</text>
     </view>
     <view class="c3btn c3btn-contact" bindtap="onContact">
       <text class="c3btn-icon">💬</text>

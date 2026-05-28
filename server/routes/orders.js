@@ -201,6 +201,7 @@ router.get('/my', farmerAuth, async (req, res) => {
       SELECT o.id, o.order_no, o.subtotal, o.delivery_fee, o.total,
              o.pay_method, o.status, o.logistics_no, o.address,
              o.receiver_name, o.receiver_phone, o.created_at, o.pay_expires_at,
+             (SELECT COUNT(*) FROM reviews rv WHERE rv.order_id = o.id) AS has_reviewed,
              GROUP_CONCAT(
                CONCAT(i.icon,'|',i.name,'|',i.spec,'|',i.price,'|',i.qty)
                SEPARATOR ';;'
@@ -268,6 +269,37 @@ router.post('/:id/aftersale', farmerAuth, async (req, res) => {
   } catch (e) {
     console.error('[aftersale-submit]', e)
     return fail(res, '提交失败，请重试', 500)
+  }
+})
+
+// ─────────────────────────────────────────────
+// POST /api/orders/:id/review — 农户提交评价（已完成订单）
+// ─────────────────────────────────────────────
+router.post('/:id/review', farmerAuth, async (req, res) => {
+  const { id } = req.params
+  const rating = parseInt(req.body.rating)
+  const content = (req.body.content || '').trim()
+  if (!rating || rating < 1 || rating > 5) return fail(res, '请选择评分（1-5星）')
+  try {
+    const [rows] = await db.query(
+      'SELECT id, status FROM orders WHERE id=? AND user_id=?', [id, req.user.id]
+    )
+    if (!rows.length) return fail(res, '订单不存在', 404)
+    if (rows[0].status !== 'completed') return fail(res, '只能评价已完成的订单')
+    const [[item]] = await db.query(
+      'SELECT merchant_id FROM order_items WHERE order_id=? LIMIT 1', [id]
+    )
+    if (!item) return fail(res, '订单商品不存在', 404)
+    const [[user]] = await db.query('SELECT real_name FROM users WHERE id=?', [req.user.id])
+    await db.query(
+      'INSERT INTO reviews (order_id,merchant_id,user_id,farmer_name,rating,content) VALUES (?,?,?,?,?,?)',
+      [id, item.merchant_id, req.user.id, user?.real_name || '买家', rating, content || null]
+    )
+    return ok(res, null, '评价成功，感谢您的反馈')
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') return fail(res, '该订单已评价')
+    console.error('[review-submit]', e)
+    return fail(res, '服务器错误', 500)
   }
 })
 

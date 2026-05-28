@@ -47,7 +47,7 @@ function signToken(user) {
  */
 router.post('/register', async (req, res) => {
   const { phone, password, role, real_name,
-          location, land_size, crop_type,
+          location, land_size,
           company_name, business_license, product_category } = req.body
 
   // ── 基础校验 ──────────────────────────────
@@ -78,8 +78,8 @@ router.post('/register', async (req, res) => {
     // ── 插入角色扩展信息 ───────────────────────
     if (role === 'farmer') {
       await db.query(
-        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
-        [userId, location || '', parseFloat(land_size) || 0, crop_type || '棉花']
+        'INSERT INTO farmers (user_id,location,land_size) VALUES (?,?,?)',
+        [userId, location || '', parseFloat(land_size) || 0]
       )
     } else {
       await db.query(
@@ -130,7 +130,7 @@ router.post('/login', async (req, res) => {
     let profile = {}
     if (user.role === 'farmer') {
       const [rows2] = await db.query(
-        'SELECT location,land_size,crop_type FROM farmers WHERE user_id=?', [user.id]
+        'SELECT location,land_size FROM farmers WHERE user_id=?', [user.id]
       )
       if (rows2.length) profile = rows2[0]
     } else {
@@ -189,7 +189,7 @@ router.get('/verify', authMiddleware, async (req, res) => {
     let profile = {}
     if (user.role === 'farmer') {
       const [r] = await db.query(
-        'SELECT location,land_size,crop_type FROM farmers WHERE user_id=?', [user.id]
+        'SELECT location,land_size FROM farmers WHERE user_id=?', [user.id]
       )
       if (r.length) profile = r[0]
     } else {
@@ -265,8 +265,8 @@ router.post('/wx-login', async (req, res) => {
         [phone, openid, 'farmer']
       )
       await db.query(
-        'INSERT INTO farmers (user_id, location, land_size, crop_type) VALUES (?, ?, ?, ?)',
-        [result.insertId, '', 0, '棉花']
+        'INSERT INTO farmers (user_id, location, land_size) VALUES (?, ?, ?)',
+        [result.insertId, '', 0]
       )
       const [newRow] = await db.query('SELECT * FROM users WHERE id=?', [result.insertId])
       user = newRow[0]
@@ -277,7 +277,7 @@ router.post('/wx-login', async (req, res) => {
     // ── 6. 查角色信息 ──────────────────────────
     let profile = {}
     if (user.role === 'farmer') {
-      const [r] = await db.query('SELECT location,land_size,crop_type FROM farmers WHERE user_id=?', [user.id])
+      const [r] = await db.query('SELECT location,land_size FROM farmers WHERE user_id=?', [user.id])
       if (r.length) profile = r[0]
     }
 
@@ -294,14 +294,14 @@ router.post('/wx-login', async (req, res) => {
 // PUT /api/auth/profile  更新个人资料
 // ─────────────────────────────────────────────
 router.put('/profile', authMiddleware, async (req, res) => {
-  const { real_name, location, land_size, crop_type } = req.body
+  const { real_name, location, land_size } = req.body
   if (!real_name || !real_name.trim()) return fail(res, '姓名不能为空')
   try {
     await db.query('UPDATE users SET real_name=? WHERE id=?', [real_name.trim(), req.user.id])
     if (req.user.role === 'farmer') {
       await db.query(
-        'UPDATE farmers SET location=?, land_size=?, crop_type=? WHERE user_id=?',
-        [location || '', parseFloat(land_size) || 0, crop_type || '棉花', req.user.id]
+        'UPDATE farmers SET location=?, land_size=? WHERE user_id=?',
+        [location || '', parseFloat(land_size) || 0, req.user.id]
       )
     }
     return ok(res, null, '保存成功')

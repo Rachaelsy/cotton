@@ -56,6 +56,7 @@ Page({
     shipped: false,
     canConfirmReceipt: false,
     isCompleted: false,
+    hasReviewed: false,
     showSuccessPopup: false
   },
 
@@ -80,8 +81,9 @@ Page({
         if (res.code === 200 && Array.isArray(res.data)) {
           const fresh = res.data.find(o => String(o.id) === String(saved.orderId))
           if (fresh) {
-            order.status      = DB_STATUS_MAP[fresh.status] || '待发货'
-            order.logisticsNo = fresh.logistics_no || ''
+            order.status       = DB_STATUS_MAP[fresh.status] || '待发货'
+            order.logisticsNo  = fresh.logistics_no || ''
+            order.has_reviewed = fresh.has_reviewed
           }
         }
       } catch (e) {
@@ -114,7 +116,8 @@ Page({
       steps,
       shipped: cfg.shipped,
       canConfirmReceipt: status === '已发货',
-      isCompleted:       status === '已完成'
+      isCompleted:       status === '已完成',
+      hasReviewed:       !!(order.has_reviewed)
     })
   },
 
@@ -183,7 +186,14 @@ Page({
   },
 
   onReview() {
-    wx.showToast({ title: '评价功能开发中', icon: 'none' })
+    if (this.data.hasReviewed) {
+      wx.showToast({ title: '已评价过该订单', icon: 'none' }); return
+    }
+    const order = this.data.order
+    const items = encodeURIComponent(JSON.stringify(order.items || []))
+    wx.navigateTo({
+      url: `/subpkg-supplies/supplies-review/index?order_id=${order.orderId}&order_no=${this.data.orderNo}&items=${items}`
+    })
   },
 
   onLogistics() {

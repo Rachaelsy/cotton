@@ -729,7 +729,7 @@ function show(panel) {
   if (panel === 'orders')    loadOrders('all')
   if (panel === 'aftersale') loadAftersale('all')
   if (panel === 'finance')   loadFinance()
-  if (panel === 'customers') { loadCustomers(); loadReviews() }
+  if (panel === 'customers') { loadCustomers() }
   if (panel === 'messages')  loadMessages()
   if (panel === 'settings')  loadSettings()
 }
@@ -1158,18 +1158,12 @@ const MOCK_CUSTOMERS = [
   { name:'努尔**',    phone:'158****0067', region:'喀什叶城县', total:1480, orders:9, last:'2026-05-21' },
 ]
 
-const MOCK_REVIEWS = [
-  { id:1, buyer:'古丽**哈尔', prod:'吡虫啉可湿性粉剂', stars:5, date:'2026-05-23', content:'质量很好，效果非常明显，棉花叶片上的害虫没有了，发货也很快！下次还会继续购买。', reply:'' },
-  { id:2, buyer:'阿迪力**',   prod:'复合肥料（尿素）50kg', stars:5, date:'2026-05-22', content:'肥料质量可靠，袋装密封好，没有潮湿，价格也比较实惠，服务态度很好。', reply:'感谢您的好评！我们一直致力于提供优质的农资产品，欢迎再次光临🌾' },
-  { id:3, buyer:'买买提**',   prod:'棉花催熟剂 1L', stars:4, date:'2026-05-20', content:'产品效果不错，但物流稍慢了一点，希望以后发货能快一些。', reply:'' },
-  { id:4, buyer:'努尔**',     prod:'磷酸二铵 50kg', stars:5, date:'2026-05-19', content:'正品，价格合理，物流速度快，已经是第三次在这家店购买了，非常放心！', reply:'感谢您的长期支持！老客户有专属优惠，欢迎持续关注我们的店铺活动😊' },
-]
-
 function switchCustTab(el, tab) {
   document.querySelectorAll('#panel-customers .tab').forEach(t => t.classList.remove('active'))
   el.classList.add('active')
   document.getElementById('cust-panel-customers').style.display = tab === 'customers' ? 'block' : 'none'
   document.getElementById('cust-panel-reviews').style.display   = tab === 'reviews'   ? 'block' : 'none'
+  if (tab === 'reviews') loadReviews()
 }
 
 function loadCustomers() {
@@ -1184,25 +1178,46 @@ function loadCustomers() {
     </tr>`).join('')
 }
 
-function loadReviews() {
-  document.getElementById('reviews-list').innerHTML = MOCK_REVIEWS.map(r => `
-    <div class="review-card">
-      <div class="review-head">
-        <div style="display:flex;align-items:center">
-          <div class="reviewer-avatar">${r.buyer.charAt(0)}</div>
-          <div>
-            <div class="reviewer-name">${esc(r.buyer)}</div>
-            <div style="font-size:12px;color:#888">${r.prod} · ${r.date}</div>
+async function loadReviews() {
+  const el = document.getElementById('reviews-list')
+  el.innerHTML = '<p style="color:#aaa;padding:24px">加载中...</p>'
+  try {
+    const r = await api('GET', '/reviews')
+    if (!r || r.code !== 200) { el.innerHTML = '<p style="color:#aaa;padding:24px">加载失败</p>'; return }
+    const { reviews, total, avg_rating } = r.data
+    // 更新标题行评分
+    const titleEl = document.querySelector('#cust-panel-reviews .card-head span:last-child')
+    if (titleEl) titleEl.innerHTML = total > 0
+      ? `综合评分 <strong style="color:#F59E0B">${avg_rating}</strong> / 5.0 &nbsp;共 ${total} 条`
+      : '暂无评价'
+    if (!reviews.length) {
+      el.innerHTML = '<p style="color:#aaa;padding:32px;text-align:center">暂无买家评价</p>'; return
+    }
+    el.innerHTML = reviews.map(r => {
+      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating)
+      const maskedName = r.farmer_name.length > 1
+        ? r.farmer_name[0] + '**' + r.farmer_name.slice(-1)
+        : r.farmer_name + '**'
+      return `
+        <div class="review-card">
+          <div class="review-head">
+            <div style="display:flex;align-items:center">
+              <div class="reviewer-avatar">${esc(r.farmer_name[0] || '买')}</div>
+              <div>
+                <div class="reviewer-name">${esc(maskedName)}</div>
+                <div style="font-size:12px;color:#888">${esc(r.prod_names || '商品')} · ${esc(r.date)}</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="stars">${stars}</div>
+              ${!r.reply ? `<button class="btn btn-outline btn-sm" onclick="openReply(${r.id})" style="margin-top:6px">回复</button>` : ''}
+            </div>
           </div>
-        </div>
-        <div>
-          <div class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
-          ${!r.reply ? `<button class="btn btn-outline btn-sm" onclick="openReply(${r.id})" style="margin-top:6px">回复</button>` : ''}
-        </div>
-      </div>
-      <div class="review-content">${esc(r.content)}</div>
-      ${r.reply ? `<div class="review-reply">🏪 商家回复：${esc(r.reply)}</div>` : ''}
-    </div>`).join('')
+          <div class="review-content">${r.content ? esc(r.content) : '<span style="color:#bbb">该用户没有填写评价</span>'}</div>
+          ${r.reply ? `<div class="review-reply">🏪 商家回复：${esc(r.reply)}</div>` : ''}
+        </div>`
+    }).join('')
+  } catch(e) { el.innerHTML = '<p style="color:#aaa;padding:24px">加载失败，请刷新重试</p>' }
 }
 
 function openReply(id) {
@@ -1211,14 +1226,19 @@ function openReply(id) {
   showModal('modalReply')
 }
 
-function submitReply() {
-  const id = parseInt(document.getElementById('reply-id').value)
+async function submitReply() {
+  const id = document.getElementById('reply-id').value
   const content = document.getElementById('reply-content').value.trim()
   if (!content) { alert('请输入回复内容'); return }
-  const r = MOCK_REVIEWS.find(x => x.id === id)
-  if (r) r.reply = content
-  closeModal('modalReply')
-  loadReviews()
+  try {
+    const r = await api('PATCH', `/reviews/${id}/reply`, { reply: content })
+    if (r && r.code === 200) {
+      closeModal('modalReply')
+      loadReviews()
+    } else {
+      alert(r?.msg || '回复失败')
+    }
+  } catch { alert('网络错误，请重试') }
 }
 
 /* ════════════════════════════════════════════

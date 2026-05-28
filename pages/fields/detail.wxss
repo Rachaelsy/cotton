@@ -1,0 +1,137 @@
+/* pages/fields/detail.wxss */
+
+.page { display: flex; flex-direction: column; height: 100vh; background: #F5EEE6; }
+
+/* ===== 顶部 ===== */
+.header {
+  background: linear-gradient(160deg, #3d2b1a, #6b4c2a);
+  flex-shrink: 0; padding-left: 28rpx; padding-right: 28rpx;
+}
+.topbar {
+  display: flex; flex-direction: row; align-items: center;
+  padding-top: 10rpx; padding-bottom: 20rpx;
+}
+.back-btn {
+  width: 64rpx; height: 64rpx; background: rgba(255,255,255,0.15);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.back-icon { color: #fff; font-size: 44rpx; }
+.header-title { flex: 1; text-align: center; font-size: 32rpx; font-weight: 800; color: #fff; }
+.edit-btn {
+  width: 80rpx; height: 56rpx; background: rgba(255,255,255,0.2);
+  border-radius: 28rpx; display: flex; align-items: center; justify-content: center;
+}
+.edit-text { font-size: 24rpx; color: #fff; font-weight: 600; }
+
+/* ===== 滚动 ===== */
+.scroll { flex: 1; height: 0; }
+.body   { padding: 20rpx 20rpx 0; }
+
+/* ===== 地图卡片 ===== */
+.map-card { border-radius: 20rpx; overflow: hidden; margin-bottom: 16rpx; height: 320rpx; position: relative; }
+.detail-map { width: 100%; height: 100%; }
+.no-map-tip {
+  position: absolute; inset: 0; background: #EEE;
+  display: flex; align-items: center; justify-content: center;
+}
+.no-map-text { font-size: 26rpx; color: #AAAAAA; }
+.map-layer-btn {
+  position: absolute; bottom: 16rpx; right: 16rpx;
+  background: rgba(0,0,0,0.55); border-radius: 999rpx;
+  padding: 10rpx 22rpx;
+}
+.map-layer-text { font-size: 22rpx; color: #fff; font-weight: 600; }
+
+/* ===== 信息卡片 ===== */
+.info-card {
+  background: #fff; border-radius: 20rpx; padding: 24rpx;
+  margin-bottom: 16rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+}
+
+/* 健康评分行 */
+.health-row {
+  display: flex; flex-direction: row; align-items: center; gap: 24rpx;
+}
+.health-score-wrap {
+  display: flex; flex-direction: row; align-items: baseline; gap: 4rpx;
+}
+.health-score      { font-size: 80rpx; font-weight: 900; line-height: 1; }
+.score-ok          { color: #16A34A; }
+.score-warn        { color: #DC2626; }
+.health-score-unit { font-size: 28rpx; color: #555; }
+.health-right      { flex: 1; display: flex; flex-direction: column; gap: 10rpx; }
+.status-tag { border-radius: 999rpx; padding: 8rpx 20rpx; align-self: flex-start; }
+.tag-ok   { background: #F0FDF4; }
+.tag-warn { background: #FEF2F2; }
+.status-tag-text { font-size: 22rpx; font-weight: 700; }
+.tag-ok   .status-tag-text { color: #16A34A; }
+.tag-warn .status-tag-text { color: #DC2626; }
+.health-label { font-size: 22rpx; color: #AAAAAA; }
+
+/* KV 行 */
+.card-title-row { margin-bottom: 16rpx; }
+.card-title     { font-size: 26rpx; font-weight: 800; color: #1A1A1A; }
+.kv-row {
+  display: flex; flex-direction: row; align-items: center;
+  justify-content: space-between; padding: 16rpx 0;
+  border-bottom: 1rpx solid #F5EEE6;
+}
+.kv-last   { border-bottom: none; }
+.kv-k      { font-size: 26rpx; color: #888; }
+.kv-v      { font-size: 26rpx; color: #1A1A1A; font-weight: 600; }
+.kv-empty  { color: #BBBBBB; font-weight: 400; }
+
+/* ===== 删除按钮 ===== */
+.delete-btn {
+  background: #FEF2F2; border: 2rpx solid #FECACA; border-radius: 20rpx;
+  padding: 28rpx; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16rpx;
+}
+.delete-text { font-size: 28rpx; font-weight: 700; color: #DC2626; }
+
+/* ===== 编辑弹窗 ===== */
+.modal-mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4); z-index: 20;
+}
+.modal {
+  position: fixed; left: 0; right: 0; bottom: 0; background: #fff;
+  border-radius: 32rpx 32rpx 0 0; z-index: 21;
+  padding: 0 32rpx 40rpx; display: flex; flex-direction: column; max-height: 80vh;
+}
+.modal-handle {
+  width: 72rpx; height: 8rpx; background: #E0E0E0; border-radius: 4rpx;
+  align-self: center; margin: 20rpx 0 0;
+}
+.modal-head {
+  display: flex; flex-direction: row; align-items: center;
+  padding: 20rpx 0; border-bottom: 1rpx solid #F0F0F0; margin-bottom: 8rpx;
+}
+.modal-title { flex: 1; font-size: 30rpx; font-weight: 800; color: #1A1A1A; }
+.modal-close {
+  width: 56rpx; height: 56rpx; background: #F5F5F5; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close-text { font-size: 28rpx; color: #888; }
+.modal-scroll { flex: 1; }
+.field-row {
+  display: flex; flex-direction: row; align-items: center;
+  padding: 22rpx 0; border-bottom: 1rpx solid #F5F5F5;
+}
+.field-label { width: 160rpx; font-size: 26rpx; color: #555; flex-shrink: 0; }
+.req         { color: #EF4444; }
+.field-input { flex: 1; font-size: 26rpx; color: #1A1A1A; text-align: right; }
+.field-picker {
+  flex: 1; display: flex; flex-direction: row;
+  align-items: center; justify-content: flex-end; gap: 8rpx;
+}
+.picker-val { font-size: 26rpx; color: #1A1A1A; }
+.picker-ph  { font-size: 26rpx; color: #BBBBBB; }
+.picker-arr { font-size: 28rpx; color: #CCCCCC; }
+.modal-save {
+  height: 96rpx; background: linear-gradient(135deg, #6b4c2a, #C8902E);
+  border-radius: 999rpx; display: flex; align-items: center;
+  justify-content: center; margin-top: 24rpx;
+}
+.modal-save-off { opacity: 0.5; }
+.modal-save-text { font-size: 30rpx; font-weight: 800; color: #fff; }

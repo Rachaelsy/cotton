@@ -174,14 +174,6 @@
                    data-field="regLandSize" bindinput="onInput" />
           </view>
         </view>
-        <view class="field-wrap">
-          <text class="field-label">主种作物</text>
-          <view class="input-box">
-            <input class="field-input" placeholder="默认：棉花"
-                   value="{{regCropType}}"
-                   data-field="regCropType" bindinput="onInput" />
-          </view>
-        </view>
       </block>
 
 

@@ -69,18 +69,6 @@
           <text class="field-unit">亩</text>
         </view>
       </view>
-      <view class="field-div"></view>
-
-      <view class="field-row">
-        <text class="field-label">主种作物</text>
-        <picker mode="selector" range="{{cropOptions}}" value="{{cropIndex}}" bindchange="onCropChange">
-          <view class="field-picker">
-            <text class="field-picker-val">{{form.crop_type}}</text>
-            <text class="field-picker-arr">›</text>
-          </view>
-        </picker>
-      </view>
-
     </view>
 
     <!-- 保存按钮 -->

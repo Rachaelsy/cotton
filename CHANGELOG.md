@@ -1,5 +1,37 @@
 # 变更日志
 
+## [1.9.0] — 2026-05-28
+
+### 新增
+
+- **地块管理（全链路）**（`pages/fields/`）：
+  - **地块列表页**（`index`）：显示所有地块，按状态分组（需要关注 / 正常种植），展示面积、品种、灌溉方式、健康评分，从 `GET /api/plots` 实时加载
+  - **地图绘制页**（`draw`）：使用 WeChat 原生 `<map>` 组件，**默认卫星遥感图**（`enable-satellite`），在地图上打点采集真实经纬度，点击第一个顶点（`bindmarkertap`）闭合多边形；球面积公式计算实际亩数，Haversine 公式计算周长；完成绘制后底部弹出表单（地块名称、品种、播种日期、灌溉方式、土壤类型）；工具栏：定位、卫星/地图切换、撤销、清空
+  - **地块详情页**（`detail`）：地图展示已绘制多边形（卫星图，右下角切换按钮）、健康评分状态卡、基础信息卡、编辑弹窗（PUT）、删除二次确认（DELETE）
+  - **后端 API**（`server/routes/plots.js`）：完整 CRUD — `GET /api/plots`、`POST /api/plots`、`GET /api/plots/:id`、`PUT /api/plots/:id`、`DELETE /api/plots/:id`
+  - **数据库**：`migrate_plots.js` — 新建 `plots` 表（id、user_id、name、variety、area、perimeter、coordinates JSON、sow_date、irrigation、soil_type、health_score、health_issue、status）
+  - **首页**：点击「地块管理」模块正式跳转至地块列表（原为 toast 提示）
+
+- **买家评价系统**：
+  - **评价提交页**（`subpkg-supplies/supplies-review/`）：五星评分选择器 + 文字输入（选填）；提交成功显示完成态；每个订单只能评价一次
+  - **订单详情页**：「去评价」按钮已完成订单时亮起；已评价后显示「已评价」灰色状态（从 `GET /api/orders/my` 的 `has_reviewed` 字段读取）
+  - **商品详情页**：底部展示真实买家评价（最近 5 条）：平均评分、脱敏姓名（`古**尔`）、星级、内容、商家回复；暂无评价时显示引导文字
+  - **商户后台**：「评价管理」Tab 从 `GET /api/merchant/reviews` 拉取真实数据；展示订单商品名称、评分、内容；「回复」按钮调用 `PATCH /api/merchant/reviews/:id/reply` 实时更新
+  - **后端 API**：`POST /api/orders/:id/review`（需已完成订单、不可重复）；`GET /api/products/reviews?merchant_id=X`（公开）；`GET /api/merchant/reviews`；`PATCH /api/merchant/reviews/:id/reply`
+  - **数据库**：`migrate_reviews.js` — 新建 `reviews` 表，`order_id` 唯一约束
+
+### 改进
+
+- **注册页**：移除「主种作物」输入框，简化注册流程
+- **个人资料页**：移除「主种作物」选择器
+- **管理员后台**：农户列表移除「作物」列及弹窗中的主种作物输入项，所有后端接口同步删除 `crop_type` 参数
+
+### Bug 修复
+
+- 修复商户财务结算「综合评分」、列头「佣金(3%)」文字写死不随实际佣金率更新（前端动态从 API 响应读取 `commission_rate`，后端 finance 接口新增 `commission_rate` 字段）
+
+---
+
 ## [1.7.0] — 2026-05-28
 
 ### 新增

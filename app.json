@@ -13,6 +13,7 @@
     "pages/favorites/index",
     "pages/fields/index",
     "pages/fields/draw",
+    "pages/fields/detail",
     "pages/pest/index",
     "pages/pest/detail",
     "pages/weather/index",
@@ -40,6 +41,7 @@
         "supplies-pay-success/index",
         "supplies-order/index",
         "supplies-aftersale/index",
+        "supplies-review/index",
         "my-orders/index"
       ]
     }

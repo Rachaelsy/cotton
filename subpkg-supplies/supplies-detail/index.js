@@ -1,13 +1,19 @@
 ﻿// pages/supplies-detail/index.js — 商品详情页
 const app = getApp()
 
+const auth = require('../../utils/auth')
+
 Page({
   data: {
     product: null,
     favorited: false,
     cartCount: 0,
     statusBarHeight: 20,
-    showCsPopup: false
+    showCsPopup: false,
+    reviews: [],
+    reviewTotal: 0,
+    avgRating: '0.0',
+    reviewsLoaded: false
   },
 
   onLoad() {
@@ -19,10 +25,25 @@ Page({
       cartCount: app.globalData.cartCount,
       favorited: product ? app.isFavorited(product.id) : false
     })
+    if (product?.merchant_id) this._loadReviews(product.merchant_id)
   },
 
   onShow() {
     this.setData({ cartCount: app.globalData.cartCount })
+  },
+
+  async _loadReviews(merchantId) {
+    try {
+      const res = await auth.request('GET', `/api/products/reviews?merchant_id=${merchantId}&limit=5`)
+      if (res.code === 200) {
+        this.setData({
+          reviews:      res.data.reviews || [],
+          reviewTotal:  res.data.total   || 0,
+          avgRating:    res.data.avg_rating || '0.0',
+          reviewsLoaded: true
+        })
+      }
+    } catch { /* 评价加载失败不影响商品展示 */ }
   },
 
   onBack() {
@@ -91,6 +112,6 @@ Page({
   },
 
   onShowReviews() {
-    wx.showToast({ title: '评价详情开发中', icon: 'none' })
+    wx.showToast({ title: `共 ${this.data.reviewTotal} 条评价`, icon: 'none' })
   }
 })

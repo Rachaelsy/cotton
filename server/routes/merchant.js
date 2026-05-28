@@ -608,4 +608,48 @@ router.patch('/messages/:id/read', merchantAuth, async (req, res) => {
   } catch(e) { return fail(res, '服务器错误', 500) }
 })
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/merchant/reviews — 获取本店全部评价
+// ─────────────────────────────────────────────────────────────
+router.get('/reviews', merchantAuth, async (req, res) => {
+  const mid = req.merchant.merchant_id
+  try {
+    const [rows] = await db.query(`
+      SELECT r.id, r.order_id, r.rating, r.content, r.reply, r.farmer_name,
+             o.order_no,
+             DATE_FORMAT(r.created_at,'%Y-%m-%d') AS date,
+             GROUP_CONCAT(i.name ORDER BY i.id SEPARATOR '、') AS prod_names
+      FROM reviews r
+      JOIN orders o ON o.id = r.order_id
+      JOIN order_items i ON i.order_id = r.order_id AND i.merchant_id = ?
+      WHERE r.merchant_id = ?
+      GROUP BY r.id
+      ORDER BY r.created_at DESC LIMIT 100
+    `, [mid, mid])
+    const [[stats]] = await db.query(
+      'SELECT COUNT(*) AS total, IFNULL(AVG(rating),0) AS avg FROM reviews WHERE merchant_id=?', [mid]
+    )
+    return ok(res, {
+      reviews:    rows,
+      total:      stats.total,
+      avg_rating: parseFloat(stats.avg).toFixed(1)
+    })
+  } catch(e) { console.error('[merchant-reviews]', e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
+// PATCH /api/merchant/reviews/:id/reply — 商家回复评价
+// ─────────────────────────────────────────────────────────────
+router.patch('/reviews/:id/reply', merchantAuth, async (req, res) => {
+  const mid = req.merchant.merchant_id
+  const reply = (req.body.reply || '').trim()
+  if (!reply) return fail(res, '回复内容不能为空')
+  try {
+    const [rows] = await db.query('SELECT id FROM reviews WHERE id=? AND merchant_id=?', [req.params.id, mid])
+    if (!rows.length) return fail(res, '评价不存在', 404)
+    await db.query('UPDATE reviews SET reply=?, replied_at=NOW() WHERE id=?', [reply, req.params.id])
+    return ok(res, null, '回复成功')
+  } catch(e) { return fail(res, '服务器错误', 500) }
+})
+
 module.exports = router

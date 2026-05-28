@@ -93,7 +93,7 @@ router.get('/stats', adminAuth, async (req, res) => {
 // ── POST /api/admin/farmers（手动新增农户）──────────────
 router.post('/farmers', adminAuth, async (req, res) => {
   try {
-    const { phone, password, real_name, location, land_size, crop_type, is_verified } = req.body
+    const { phone, password, real_name, location, land_size, is_verified } = req.body
     if (!/^1\d{10}$/.test(phone))        return res.status(400).json({ code: 400, msg: '手机号格式不正确' })
     if (!password || password.length < 6) return res.status(400).json({ code: 400, msg: '密码不能少于6位' })
     if (!real_name || !real_name.trim())  return res.status(400).json({ code: 400, msg: '请填写姓名' })
@@ -105,8 +105,8 @@ router.post('/farmers', adminAuth, async (req, res) => {
       [phone, hash, 'farmer', real_name.trim(), is_verified ? 1 : 0]
     )
     await db.query(
-      'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
-      [r.insertId, location || '', parseFloat(land_size) || 0, crop_type || '棉花']
+      'INSERT INTO farmers (user_id,location,land_size) VALUES (?,?,?)',
+      [r.insertId, location || '', parseFloat(land_size) || 0]
     )
     res.json({ code: 200, msg: '农户已创建' })
   } catch (e) {
@@ -119,7 +119,7 @@ router.get('/farmers', adminAuth, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.is_verified, u.is_active, u.created_at,
-             f.id AS farmer_id, f.location, f.land_size, f.crop_type
+             f.id AS farmer_id, f.location, f.land_size
       FROM users u LEFT JOIN farmers f ON f.user_id = u.id
       WHERE u.role = 'farmer'
       ORDER BY u.created_at DESC
@@ -133,15 +133,15 @@ router.get('/farmers', adminAuth, async (req, res) => {
 // ── PUT /api/admin/farmers/:id ───────────────────────────
 router.put('/farmers/:id', adminAuth, async (req, res) => {
   try {
-    const { real_name, location, land_size, crop_type, is_verified } = req.body
+    const { real_name, location, land_size, is_verified } = req.body
     const userId = req.params.id
     if (real_name !== undefined)
       await db.query('UPDATE users SET real_name=? WHERE id=?', [real_name, userId])
     if (is_verified !== undefined)
       await db.query('UPDATE users SET is_verified=? WHERE id=?', [is_verified ? 1 : 0, userId])
     await db.query(
-      'UPDATE farmers SET location=?, land_size=?, crop_type=? WHERE user_id=?',
-      [location, parseFloat(land_size) || 0, crop_type || '棉花', userId]
+      'UPDATE farmers SET location=?, land_size=? WHERE user_id=?',
+      [location, parseFloat(land_size) || 0, userId]
     )
     res.json({ code: 200, msg: '农户信息已更新' })
   } catch (e) {

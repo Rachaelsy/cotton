@@ -255,8 +255,8 @@
           <span class="badge" id="farmer-count">0</span>
           <button class="act-btn approve" onclick="openFarmerAdd()">+ 新增农户</button>
         </div>
-        <table><thead><tr><th>ID</th><th>手机号</th><th>姓名</th><th>地区</th><th>面积(亩)</th><th>作物</th><th>实名</th><th>状态</th><th>操作</th></tr></thead>
-        <tbody id="farmerTable"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody></table>
+        <table><thead><tr><th>ID</th><th>手机号</th><th>姓名</th><th>地区</th><th>面积(亩)</th><th>实名</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="farmerTable"><tr class="empty-row"><td colspan="8">加载中...</td></tr></tbody></table>
       </div>
     </div>
 
@@ -340,10 +340,7 @@
       <input id="f-pwd" type="password" placeholder="6位以上密码">
     </div>
     <div class="mfield"><label>所在地区</label><input id="f-location" placeholder="如：喀什·疏附县"></div>
-    <div class="mrow">
-      <div class="mfield"><label>承包面积（亩）</label><input id="f-land" type="number" min="0"></div>
-      <div class="mfield"><label>主种作物</label><input id="f-crop" placeholder="棉花"></div>
-    </div>
+    <div class="mfield"><label>承包面积（亩）</label><input id="f-land" type="number" min="0"></div>
     <div class="mfield">
       <label>实名认证</label>
       <select id="f-verified"><option value="0">未认证</option><option value="1">已认证</option></select>
@@ -618,14 +615,14 @@
     tbody.innerHTML = r.data.length ? r.data.map(u => `
       <tr>
         <td>${u.id}</td><td>${u.phone}</td><td>${u.real_name||'—'}</td>
-        <td>${u.location||'—'}</td><td>${u.land_size||0}</td><td>${u.crop_type||'棉花'}</td>
+        <td>${u.location||'—'}</td><td>${u.land_size||0}</td>
         <td>${u.is_verified?'✅':'—'}</td>
         <td class="${u.is_active?'status-on':'status-off'}">${u.is_active?'正常':'已禁用'}</td>
         <td>
           <button class="act-btn edit" onclick="openFarmerEdit(${u.id})">编辑</button>
           <button class="act-btn ${u.is_active?'disable':'enable'}" onclick="toggleStatus(${u.id},${!!u.is_active},'farmers')">${u.is_active?'禁用':'启用'}</button>
         </td>
-      </tr>`).join('') : '<tr class="empty-row"><td colspan="9">暂无农户数据</td></tr>'
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="8">暂无农户数据</td></tr>'
   }
 
   function openFarmerEdit(id) {
@@ -639,7 +636,6 @@
     document.getElementById('f-pwd').value      = ''
     document.getElementById('f-location').value = u.location || ''
     document.getElementById('f-land').value     = u.land_size || ''
-    document.getElementById('f-crop').value     = u.crop_type || '棉花'
     document.getElementById('f-verified').value = u.is_verified ? '1' : '0'
     document.getElementById('f-pwd-wrap').style.display = 'none'
     document.getElementById('modalFarmer').classList.add('show')
@@ -658,7 +654,6 @@
         phone, password: pwd, real_name: name,
         location:    document.getElementById('f-location').value.trim(),
         land_size:   document.getElementById('f-land').value,
-        crop_type:   document.getElementById('f-crop').value.trim() || '棉花',
         is_verified: document.getElementById('f-verified').value === '1'
       }
       const r = await api('POST', '/farmers', body)
@@ -670,7 +665,6 @@
         real_name:   name,
         location:    document.getElementById('f-location').value.trim(),
         land_size:   document.getElementById('f-land').value,
-        crop_type:   document.getElementById('f-crop').value.trim() || '棉花',
         is_verified: document.getElementById('f-verified').value === '1'
       }
       const r = await api('PUT', `/farmers/${currentEditId}`, body)

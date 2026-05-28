@@ -137,7 +137,6 @@ Page({
       real_name: regRealName.trim(),
       location:  regLocation.trim(),
       land_size: parseFloat(regLandSize) || 0,
-      crop_type: regCropType || '棉花'
     }
 
     this.setData({ regLoading: true })

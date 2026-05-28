@@ -1,0 +1,92 @@
+<!-- subpkg-supplies/supplies-review/index.wxml — 买家评价 -->
+<view class="page">
+
+  <!-- 顶部 -->
+  <view class="header" style="padding-top: {{statusBarHeight}}px">
+    <view class="topbar">
+      <view class="back-btn" bindtap="onBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <text class="header-title">买家评价</text>
+      <view style="width: 64rpx"></view>
+    </view>
+  </view>
+
+  <scroll-view class="scroll" scroll-y>
+    <view class="body">
+
+      <!-- 提交成功态 -->
+      <view wx:if="{{submitted}}" class="success-wrap">
+        <text class="success-emoji">🎉</text>
+        <text class="success-title">评价成功！</text>
+        <text class="success-sub">感谢您的反馈，您的评价将帮助更多买家</text>
+        <view class="done-btn" bindtap="onDone">
+          <text class="done-text">返回订单</text>
+        </view>
+      </view>
+
+      <!-- 评价表单 -->
+      <view wx:else>
+
+        <!-- 订单商品预览 -->
+        <view class="items-card">
+          <text class="items-title">评价订单 {{orderNo}}</text>
+          <view class="item-row" wx:for="{{items}}" wx:key="index">
+            <view class="item-icon-wrap">
+              <text class="item-icon">{{item.icon || '📦'}}</text>
+            </view>
+            <text class="item-name">{{item.name}}</text>
+          </view>
+        </view>
+
+        <!-- 星级评分 -->
+        <view class="rate-card">
+          <text class="rate-label">整体评分</text>
+          <view class="stars-row">
+            <view
+              class="star-btn"
+              wx:for="{{[1,2,3,4,5]}}"
+              wx:key="*this"
+              data-val="{{item}}"
+              bindtap="onStarTap"
+            >
+              <text class="star {{rating >= item ? 'star-on' : 'star-off'}}">★</text>
+            </view>
+          </view>
+          <text class="rate-hint">
+            {{rating === 0 ? '点击星星评分' :
+              rating === 1 ? '非常差' :
+              rating === 2 ? '较差' :
+              rating === 3 ? '一般' :
+              rating === 4 ? '满意' : '非常满意 ✨'}}
+          </text>
+        </view>
+
+        <!-- 文字评价 -->
+        <view class="content-card">
+          <text class="content-label">评价内容（选填）</text>
+          <textarea
+            class="content-input"
+            placeholder="说说商品质量、发货速度、商家服务..."
+            maxlength="300"
+            bindinput="onContentInput"
+            value="{{content}}"
+          ></textarea>
+          <text class="content-count">{{content.length}}/300</text>
+        </view>
+
+        <!-- 提交按钮 -->
+        <view
+          class="submit-btn {{!rating || submitting ? 'submit-disabled' : ''}}"
+          bindtap="onSubmit"
+        >
+          <text class="submit-text">{{submitting ? '提交中...' : '提交评价'}}</text>
+        </view>
+
+      </view>
+
+      <view style="height: 60rpx"></view>
+    </view>
+  </scroll-view>
+
+</view>

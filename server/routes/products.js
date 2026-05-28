@@ -39,6 +39,36 @@ router.get('/', async (req, res) => {
 })
 
 // ─────────────────────────────────────────────
+// GET /api/products/reviews?merchant_id=X — 公开：获取该商户的评价列表
+// ─────────────────────────────────────────────
+router.get('/reviews', async (req, res) => {
+  const merchantId = parseInt(req.query.merchant_id)
+  if (!merchantId) return fail(res, '缺少商户ID')
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50)
+  try {
+    const [rows] = await db.query(`
+      SELECT r.id, r.rating, r.content, r.reply, r.farmer_name,
+             DATE_FORMAT(r.created_at,'%Y-%m') AS month
+      FROM reviews r
+      WHERE r.merchant_id = ?
+      ORDER BY r.created_at DESC LIMIT ?
+    `, [merchantId, limit])
+    const [[stats]] = await db.query(
+      'SELECT COUNT(*) AS total, IFNULL(AVG(rating),0) AS avg FROM reviews WHERE merchant_id=?',
+      [merchantId]
+    )
+    return ok(res, {
+      reviews:    rows,
+      total:      stats.total,
+      avg_rating: parseFloat(stats.avg).toFixed(1)
+    })
+  } catch (e) {
+    console.error('[reviews-public]', e)
+    return fail(res, '获取评价失败', 500)
+  }
+})
+
+// ─────────────────────────────────────────────
 // 以下接口需要登录且身份为 merchant
 // ─────────────────────────────────────────────
 

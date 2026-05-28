@@ -1,68 +1,90 @@
-const app = getApp()
+// pages/fields/index.js — 地块管理列表
+const app  = getApp()
+const auth = require('../../utils/auth')
+
 Page({
   data: {
     statusBarHeight: 20,
-    editMode: false,
-    selCount: 0,
-    allSel: false,
-    warnFields: [
-      { id:1, name:'5号地', area:68, score:72, scoreCls:'warn', variety:'新陆早57号', irr:'滴灌', alert:'🐛 蚜虫中度', tag:'w', date:'4月21日 10:30', sel:false },
-      { id:2, name:'7号地', area:52, score:65, scoreCls:'warn', variety:'新陆早57号', irr:'漫灌', alert:'🌿 长势偏弱', tag:'w', date:'4月20日 15:20', sel:false }
-    ],
-    okFields: [
-      { id:3, name:'3号地·主力田', area:120, score:92, scoreCls:'excel', variety:'新陆早74号', irr:'滴灌', alert:'', tag:'g', date:'4月21日 08:15', sel:false },
-      { id:4, name:'1号地', area:88, score:88, scoreCls:'good', variety:'新陆早74号', irr:'滴灌', alert:'', tag:'g', date:'4月20日 17:00', sel:false },
-      { id:5, name:'2号地', area:75, score:85, scoreCls:'good', variety:'新陆早57号', irr:'滴灌', alert:'', tag:'g', date:'4月19日 09:30', sel:false },
-      { id:6, name:'4号地', area:83, score:82, scoreCls:'good', variety:'新陆早74号', irr:'滴灌', alert:'', tag:'g', date:'4月18日 14:20', sel:false }
-    ]
+    loading: true,
+    totalCount: 0,
+    totalArea: '0',
+    attentionCount: 0,
+    warnFields: [],
+    okFields: []
   },
+
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
   },
-  onBack() { wx.navigateBack() },
-  onToggleEdit() {
-    this.setData({ editMode: !this.data.editMode, selCount: 0, allSel: false })
-    const all = this.data.warnFields.concat(this.data.okFields).map(f => ({...f, sel: false}))
-    const wf = all.slice(0, this.data.warnFields.length)
-    const of = all.slice(this.data.warnFields.length)
-    this.setData({ warnFields: wf, okFields: of })
+
+  onShow() {
+    this._load()
   },
-  onToggleSel(e) {
-    const { id, group } = e.currentTarget.dataset
-    const key = group === 'warn' ? 'warnFields' : 'okFields'
-    const list = this.data[key].map(f => f.id === id ? {...f, sel: !f.sel} : f)
-    this.setData({ [key]: list })
-    const cnt = [...this.data.warnFields, ...this.data.okFields].filter(f => f.sel).length
-    this.setData({ selCount: cnt })
-  },
-  onSelAll() {
-    const next = !this.data.allSel
-    const wf = this.data.warnFields.map(f => ({...f, sel: next}))
-    const of = this.data.okFields.map(f => ({...f, sel: next}))
-    const cnt = next ? wf.length + of.length : 0
-    this.setData({ allSel: next, warnFields: wf, okFields: of, selCount: cnt })
-  },
-  onDeleteSel() {
-    if (!this.data.selCount) return
-    wx.showModal({
-      title: '删除地块',
-      content: `确定删除选中的 ${this.data.selCount} 块地？`,
-      confirmColor: '#F5222D',
-      success: (res) => {
-        if (res.confirm) {
-          const wf = this.data.warnFields.filter(f => !f.sel)
-          const of = this.data.okFields.filter(f => !f.sel)
-          this.setData({ warnFields: wf, okFields: of, editMode: false, selCount: 0 })
-          wx.showToast({ title: '已删除', icon: 'success' })
-        }
+
+  async _load() {
+    this.setData({ loading: true })
+    try {
+      const res = await auth.request('GET', '/api/plots')
+      if (res.code === 200) {
+        const plots = (res.data || []).map(p => this._format(p))
+        const totalArea = plots.reduce((s, p) => s + parseFloat(p.area || 0), 0)
+        const warn = plots.filter(p => p.status === 'attention')
+        const ok   = plots.filter(p => p.status !== 'attention')
+        this.setData({
+          loading: false,
+          totalCount:     plots.length,
+          totalArea:      totalArea.toFixed(0),
+          attentionCount: warn.length,
+          warnFields: warn,
+          okFields:   ok
+        })
+      } else {
+        this.setData({ loading: false })
       }
-    })
+    } catch {
+      this.setData({ loading: false })
+      wx.showToast({ title: '网络异常', icon: 'none' })
+    }
   },
+
+  _format(p) {
+    const score = p.health_score || 100
+    let scoreCls = 'excel'
+    if (score < 75) scoreCls = 'warn'
+    else if (score < 88) scoreCls = 'good'
+
+    let tagText = ''
+    let tagType = 'ok'
+    if (p.status === 'attention') {
+      tagText = p.health_issue || '需关注'
+      tagType = 'warn'
+    } else if (score >= 90) {
+      tagText = '长势优'
+    } else if (score >= 80) {
+      tagText = '长势良好'
+    } else {
+      tagText = '长势正常'
+    }
+
+    const date = p.updated_at
+      ? new Date(p.updated_at).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) + '日'
+      : ''
+
+    return { ...p, scoreCls, tagText, tagType, date }
+  },
+
+  onBack() {
+    if (getCurrentPages().length > 1) wx.navigateBack()
+    else wx.switchTab({ url: '/pages/index/index' })
+  },
+
   onFieldDetail(e) {
-    if (this.data.editMode) { this.onToggleSel(e); return }
-    wx.showToast({ title: '地块详情开发中', icon: 'none' })
+    const id = e.currentTarget.dataset.id
+    app.globalData.currentPlot = [...this.data.warnFields, ...this.data.okFields].find(p => p.id === id)
+    wx.navigateTo({ url: `/pages/fields/detail?id=${id}` })
   },
+
   onAddField() {
     wx.navigateTo({ url: '/pages/fields/draw' })
   }

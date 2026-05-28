@@ -47,6 +47,8 @@ node db/migrate_fund_status.js        # 添加资金状态字段 + 创建 withdr
 node db/migrate_messages.js           # 创建 messages + announcements 表
 node db/migrate_commission.js         # 添加 merchants.commission_rate 字段
 node db/migrate_pay_expires.js        # 添加 orders.pay_expires_at 字段
+node db/migrate_reviews.js            # 创建 reviews 表（买家评价）
+node db/migrate_plots.js              # 创建 plots 表（农户地块）
 node db/seed.js                       # 插入测试用户账号
 
 # 启动服务
@@ -94,7 +96,7 @@ http://localhost:3000/admin/
 |------|------|
 | 数据概览 | 用户/农户/商户/待审批/商品统计，最近注册用户 |
 | 商户审批 | 待审批申请列表，一键批准或拒绝（含填写原因），侧边栏角标提醒 |
-| 农户管理 | 列表查看、新增、编辑（姓名/地区/面积/作物/实名）、启用/禁用账号 |
+| 农户管理 | 列表查看、新增、编辑（姓名/地区/面积/实名）、启用/禁用账号 |
 | 商户管理 | 列表查看、新增（自动批准）、编辑（店铺名/联系人/品类/实名）、查看审批状态、启用/禁用账号、**单独设置佣金费率** |
 | 商品管理 | 全量商品列表、新增（选择所属商户）、编辑（名称/价格/库存/状态等）、删除 |
 | 订单管理 | 全量订单列表，按状态筛选，在线修改订单状态 |
@@ -165,7 +167,7 @@ cotton/
 │   ├── ai/                   # AI 问答（聊天气泡界面）
 │   ├── my/                   # 我的（用户卡片、实名、退出，含进行中订单徽章）
 │   ├── favorites/            # 我的收藏（卡片网格，取消收藏，加购）
-│   ├── fields/               # 地块管理（列表 + 绘制 draw）
+│   ├── fields/               # 地块管理（列表 + 绘制 draw + 详情 detail）
 │   ├── pest/                 # 病虫害识别（拍照 + 识别结果 detail）
 │   ├── weather/              # 地块气象
 │   ├── remote/               # 遥感监测（NDVI/旱情）
@@ -194,6 +196,7 @@ cotton/
    ├── supplies-pay-success/ # 支付成功（多商家拆单卡片展示）
 │   ├── supplies-order/       # 订单详情（进度条 + 确认收货 + 售后）
 │   ├── supplies-aftersale/   # 售后申请（类型/原因/描述/图片上传）
+│   ├── supplies-review/      # 买家评价（五星选择 + 文字，已评价状态）
 │   └── my-orders/            # 我的订单列表（Tab：全部/待付款/待发货/配送中/已完成）
 │
 └── server/
@@ -202,10 +205,11 @@ cotton/
     ├── .env.example          # 配置模板
     ├── API.md                # 接口文档
     ├── routes/
-    │   ├── auth.js           # /api/auth/*（注册/登录/验证/登出）
-    │   ├── products.js       # /api/products/*（商品 CRUD，含 merchant_wechat）
-    │   ├── orders.js         # /api/orders/*（农户下单、查询、确认收货、售后提交）
-    │   ├── merchant.js       # /api/merchant/*（商户登录、商品、订单、售后审批）
+    │   ├── auth.js           # /api/auth/*（注册/登录/验证/登出/个人资料）
+    │   ├── products.js       # /api/products/*（商品 CRUD + 公开评价列表）
+    │   ├── orders.js         # /api/orders/*（下单、查询、确认收货、售后、提交评价）
+    │   ├── plots.js          # /api/plots/*（农户地块 CRUD）
+    │   ├── merchant.js       # /api/merchant/*（商户登录、商品、订单、售后、评价回复）
     │   ├── upload.js         # /api/upload（multer 文件上传，存至 public/uploads/）
     │   └── admin.js          # /api/admin/*（管理后台 API，需 is_admin）
     ├── middleware/
@@ -286,8 +290,17 @@ Base URL（开发）：`http://192.168.0.28:3000`
 | PATCH | `/api/orders/:id/pay` | 农户 | 付款确认（`pending_payment` → `pending_ship`，通知商户） |
 | PATCH | `/api/orders/:id/cancel` | 农户 | 取消待付款订单（释放库存） |
 | PATCH | `/api/orders/:id/confirm` | 农户 | 确认收货（状态改为 completed，资金冻结 7 天） |
-| PUT   | `/api/auth/profile` | 农户 | 更新个人资料（地区/面积/作物） |
+| PUT   | `/api/auth/profile` | 农户 | 更新个人资料（地区/面积） |
 | PATCH | `/api/admin/merchants/:id/commission` | 管理员 | 设置商户佣金费率（0~100%） |
+| POST  | `/api/orders/:id/review` | 农户 | 提交评价（已完成订单，每单一次） |
+| GET   | `/api/products/reviews?merchant_id=X` | 公开 | 获取商户评价列表（商品详情页展示） |
+| GET   | `/api/merchant/reviews` | 商户 | 获取本店全部评价 |
+| PATCH | `/api/merchant/reviews/:id/reply` | 商户 | 回复买家评价 |
+| GET   | `/api/plots` | 农户 | 获取本人全部地块 |
+| POST  | `/api/plots` | 农户 | 新建地块（含坐标、面积、基础信息） |
+| GET   | `/api/plots/:id` | 农户 | 获取单个地块详情 |
+| PUT   | `/api/plots/:id` | 农户 | 编辑地块（名称/品种/评分/状态等） |
+| DELETE | `/api/plots/:id` | 农户 | 删除地块 |
 | POST | `/api/upload` | Token | 上传图片文件，返回 `/uploads/xxx` URL |
 | GET  | `/api/admin/announcements` | 管理员 | 公告列表 |
 | POST | `/api/admin/announcements` | 管理员 | 发布公告（广播至所有商户消息中心） |
@@ -299,7 +312,7 @@ Base URL（开发）：`http://192.168.0.28:3000`
 
 ```
 users                → id, phone, password(bcrypt), role, real_name, is_verified, is_active, is_admin
-farmers              → user_id(FK), location, land_size, crop_type
+farmers              → user_id(FK), location, land_size
 merchants            → user_id(FK), company_name, business_license, product_category,
                         apply_status, reject_reason, wechat_id, commission_rate(DECIMAL 默认5.00)
 products             → id, merchant_id(FK), name, category, price, unit, stock, status,
@@ -317,6 +330,11 @@ withdrawals          → id, merchant_id, amount, status, note, created_at, paid
 messages             → id, merchant_id, type(order/aftersale/announcement),
                         title, content, related_id, is_read, created_at
 announcements        → id, title, content, created_at
+reviews              → id, order_id(UNIQUE), merchant_id, user_id, farmer_name,
+                        rating(1-5), content, reply, replied_at, created_at
+plots                → id, user_id(FK), name, variety, area(亩), perimeter(米),
+                        coordinates(JSON), sow_date, irrigation, soil_type,
+                        health_score(0-100), health_issue, status(normal/attention)
 login_logs           → user_id, ip, created_at
 ```
 
@@ -405,6 +423,8 @@ app.globalData = {
   products:        [],     // 已加载商品缓存（供店铺页筛选复用）
   selectedProduct: null,   // 农资详情页传参
   currentOrder:    null,   // 当前订单（结算 → 支付成功 → 订单详情页传参）
+  currentOrders:   [],     // 多商家拆单订单组（待付款页/支付成功页传参）
+  currentPlot:     null,   // 当前地块（列表 → 详情页传参）
   statusBarHeight: 20      // 状态栏高度（px）
 }
 ```
