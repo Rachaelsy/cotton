@@ -51,14 +51,42 @@ async function releaseFunds() {
   }
 }
 
+// 30 分钟未付款 → 自动关闭订单 + 释放库存
+async function autoExpireOrders() {
+  try {
+    const [rows] = await db.query(`
+      SELECT o.id FROM orders o
+      WHERE o.status = 'pending_payment'
+        AND o.pay_expires_at IS NOT NULL
+        AND o.pay_expires_at <= NOW()
+    `)
+    if (!rows.length) return
+    for (const row of rows) {
+      const [items] = await db.query(
+        'SELECT product_id, qty FROM order_items WHERE order_id=?', [row.id]
+      )
+      for (const item of items) {
+        if (!item.product_id) continue
+        await db.query('UPDATE products SET stock=stock+? WHERE id=?', [item.qty, item.product_id])
+      }
+      await db.query(
+        `UPDATE orders SET status='cancelled', pay_expires_at=NULL WHERE id=?`, [row.id]
+      )
+    }
+    console.log(`[scheduler] 超时关单: ${rows.length} 笔`)
+  } catch (e) {
+    console.error('[scheduler] autoExpireOrders:', e.message)
+  }
+}
+
 function startScheduler() {
-  // 启动时立即执行一次
   autoConfirmReceipt()
   releaseFunds()
-  // 之后每小时执行
+  autoExpireOrders()
   setInterval(autoConfirmReceipt, 60 * 60 * 1000)
   setInterval(releaseFunds,       60 * 60 * 1000)
-  console.log('[scheduler] 已启动，每小时执行（自动确认收货 + 资金解冻）')
+  setInterval(autoExpireOrders,   5  * 60 * 1000)   // 每 5 分钟扫一次
+  console.log('[scheduler] 已启动（自动确认收货 + 资金解冻 + 超时关单）')
 }
 
 module.exports = { startScheduler }

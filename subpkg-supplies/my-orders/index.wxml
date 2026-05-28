@@ -73,8 +73,18 @@
         <view class="card-foot">
           <text class="order-time">{{item.createDate}}</text>
           <view class="amount-row">
-            <text class="amount-label">实付</text>
+            <text class="amount-label">{{item.status === 'pending_payment' ? '待付' : '实付'}}</text>
             <text class="amount-val">¥{{item.total}}</text>
+          </view>
+        </view>
+
+        <!-- 待付款操作行 -->
+        <view wx:if="{{item.status === 'pending_payment'}}" class="action-row">
+          <view class="action-btn cancel-btn" catchtap="onCancelOrder" data-order="{{item}}">
+            <text class="action-btn-text cancel-text">取消订单</text>
+          </view>
+          <view class="action-btn pay-btn" catchtap="onPayOrder" data-order="{{item}}">
+            <text class="action-btn-text pay-text">去支付</text>
           </view>
         </view>
       </view>

@@ -5,7 +5,7 @@
 // 查看方法：Windows 运行 ipconfig，找 IPv4 地址（如 192.168.1.5）
 // 部署上线后改为 https://your-server.com
 const IS_DEV_REAL_DEVICE = true   // 真机调试时设为 true，模拟器设为 false
-const LOCAL_IP = '192.168.0.25'   // 电脑局域网 IP
+const LOCAL_IP = '192.168.0.28'   // 电脑局域网 IP
 
 const BASE_URL = IS_DEV_REAL_DEVICE
   ? `http://${LOCAL_IP}:3000`

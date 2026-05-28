@@ -1,0 +1,63 @@
+<!-- subpkg-supplies/supplies-pay/index.wxml — 待付款 -->
+<view class="page">
+
+  <!-- 顶部 -->
+  <view class="nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="nav-inner">
+      <text class="nav-title">待付款</text>
+    </view>
+  </view>
+
+  <!-- 倒计时提示 -->
+  <view class="countdown-bar {{expired ? 'expired' : ''}}">
+    <text class="cd-icon">{{expired ? '⏰' : '⏱'}}</text>
+    <text class="cd-text" wx:if="{{!expired}}">请在 <text class="cd-num">{{countdownStr}}</text> 内完成支付，超时自动取消</text>
+    <text class="cd-text" wx:else>订单已超时，即将自动关闭</text>
+  </view>
+
+  <scroll-view class="scroll" scroll-y>
+  <view class="scroll-inner">
+
+    <!-- 每个商家订单 -->
+    <view class="order-card" wx:for="{{orders}}" wx:key="orderId">
+      <view class="card-store-row">
+        <text class="store-tag">🏪</text>
+        <text class="store-name">{{item.store}}</text>
+      </view>
+      <view class="card-item-row">
+        <view class="item-thumb" style="background: {{item.firstItem.imgBg || '#FBF5EA'}}">
+          <text class="item-thumb-icon">{{item.firstItem.icon || '📦'}}</text>
+        </view>
+        <view class="item-info">
+          <text class="item-name">{{item.firstItem.name || '商品'}}</text>
+          <text class="item-more" wx:if="{{item.itemCount > 1}}">等共 {{item.itemCount}} 件</text>
+        </view>
+        <text class="item-total">¥{{item.total}}</text>
+      </view>
+      <view class="card-no-row">
+        <text class="card-no-label">订单号</text>
+        <text class="card-no-val">{{item.orderNo}}</text>
+      </view>
+    </view>
+
+    <!-- 合计 -->
+    <view class="total-card">
+      <text class="total-label">合计应付</text>
+      <text class="total-val">¥{{grandTotal}}</text>
+    </view>
+
+    <view style="height: 200rpx"></view>
+  </view>
+  </scroll-view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-bar">
+    <view class="cancel-btn" bindtap="onCancel">
+      <text class="cancel-text">{{cancelling ? '取消中...' : '取消订单'}}</text>
+    </view>
+    <view class="pay-btn {{(expired || paying) ? 'pay-btn-off' : ''}}" bindtap="onPay">
+      <text class="pay-text">{{paying ? '支付中...' : '立即支付 ¥' + grandTotal}}</text>
+    </view>
+  </view>
+
+</view>

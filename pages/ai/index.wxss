@@ -120,6 +120,10 @@
 .chat-scroll {
   flex: 1;
   height: 0;
+  width: 100%;
+}
+
+.chat-inner {
   padding: 24rpx 28rpx 8rpx;
 }
 
@@ -220,8 +224,7 @@
 }
 
 .quick-item {
-  flex: 1;
-  min-width: calc(50% - 8rpx);
+  width: 47%;
   background: #FBF5EA;
   border: 1rpx solid #EEE5D8;
   border-radius: 20rpx;
@@ -340,10 +343,14 @@
 }
 
 .quick-row {
+  padding: 16rpx 0 0;
+  width: 100%;
+}
+
+.quick-chips-inner {
   display: flex;
   flex-direction: row;
-  padding: 20rpx 28rpx 0;
-  white-space: nowrap;
+  padding: 0 28rpx;
 }
 
 .quick-chip {

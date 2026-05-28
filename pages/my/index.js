@@ -119,7 +119,8 @@ Page({
   },
 
   onProfile() {
-    wx.showToast({ title: '个人资料编辑中', icon: 'none' })
+    if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
+    wx.navigateTo({ url: '/pages/profile/index' })
   },
 
   onSettings() {

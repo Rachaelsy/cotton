@@ -180,7 +180,7 @@ router.get('/merchants', adminAuth, async (req, res) => {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.is_verified, u.is_active, u.created_at,
              m.id AS merchant_id, m.company_name, m.business_license, m.product_category,
-             m.apply_status, m.reject_reason,
+             m.apply_status, m.reject_reason, m.commission_rate,
              (SELECT COUNT(*) FROM products p WHERE p.merchant_id = m.id) AS product_count
       FROM users u LEFT JOIN merchants m ON m.user_id = u.id
       WHERE u.role = 'merchant'
@@ -208,6 +208,19 @@ router.put('/merchants/:id', adminAuth, async (req, res) => {
     res.json({ code: 200, msg: '商户信息已更新' })
   } catch (e) {
     console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+// ── PATCH /api/admin/merchants/:id/commission ────────────
+router.patch('/merchants/:id/commission', adminAuth, async (req, res) => {
+  const rate = parseFloat(req.body.commission_rate)
+  if (isNaN(rate) || rate < 0 || rate > 100)
+    return R_FAIL(res, '佣金费率需在 0 ~ 100 之间')
+  try {
+    await db.query('UPDATE merchants SET commission_rate=? WHERE user_id=?', [rate, req.params.id])
+    R_OK(res, { commission_rate: rate }, '佣金费率已更新')
+  } catch (e) {
+    console.error(e); R_FAIL(res, '更新失败')
   }
 })
 

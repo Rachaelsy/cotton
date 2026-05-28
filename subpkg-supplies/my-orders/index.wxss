@@ -121,7 +121,8 @@
 .tag-shipped  { background: #EFF6FF; }
 .tag-done     { background: #F0FDF4; }
 .tag-refund   { background: #FFF1F2; }
-.tag-pending  { background: #FAFAFA; }
+.tag-pending  { background: #FFFBEB; }
+.tag-cancel   { background: #F5F5F5; }
 
 .status-text {
   font-size: 22rpx;
@@ -132,7 +133,8 @@
 .tag-shipped .status-text { color: #3B82F6; }
 .tag-done    .status-text { color: #16A34A; }
 .tag-refund  .status-text { color: #E11D48; }
-.tag-pending .status-text { color: #888888; }
+.tag-pending .status-text { color: #D97706; }
+.tag-cancel  .status-text { color: #AAAAAA; }
 
 /* ===== 商品行 ===== */
 .goods-row {
@@ -215,6 +217,38 @@
   font-weight: 900;
   color: #FF3B30;
 }
+
+/* ===== 待付款操作行 ===== */
+.action-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 16rpx;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #F5EEE6;
+}
+
+.action-btn {
+  border-radius: 999rpx;
+  padding: 14rpx 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-btn {
+  border: 2rpx solid #D4C4AE;
+  background: #ffffff;
+}
+
+.pay-btn {
+  background: linear-gradient(135deg, #C8902E, #D4A043);
+}
+
+.action-btn-text { font-size: 24rpx; font-weight: 700; }
+.cancel-text { color: #888888; }
+.pay-text    { color: #ffffff; }
 
 /* ===== 状态 ===== */
 .loading-wrap, .empty-wrap {

@@ -136,8 +136,8 @@
       </view>
     </view>
     <view class="co-pay-btn" bindtap="onPay">
-      <text class="co-pay-text" wx:if="{{!submitting}}">确认支付 ¥{{totalWithFee}}</text>
-      <text class="co-pay-text" wx:else>处理中...</text>
+      <text class="co-pay-text" wx:if="{{!submitting}}">提交订单</text>
+      <text class="co-pay-text" wx:else>提交中...</text>
     </view>
   </view>
 

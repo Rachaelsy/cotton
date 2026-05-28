@@ -235,19 +235,26 @@ router.get('/finance', merchantAuth, async (req, res) => {
   try {
     const mid = req.merchant.merchant_id
 
-    // 可提现余额（扣除 3% 佣金）
+    // 读取该商户的实际佣金率（admin 可调整，默认 5%）
+    const [[merchantInfo]] = await db.query(
+      'SELECT commission_rate FROM merchants WHERE id=?', [mid]
+    )
+    const commissionRate = parseFloat(merchantInfo?.commission_rate || 5) / 100
+    const keepRate = parseFloat((1 - commissionRate).toFixed(4))
+
+    // 可提现余额（扣除佣金后）
     const [[avail]] = await db.query(`
-      SELECT IFNULL(SUM(o.total * 0.97), 0) AS amount
+      SELECT IFNULL(SUM(o.total * ?), 0) AS amount
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE o.fund_status='available'
-    `, [mid])
+    `, [keepRate, mid])
 
-    // 冻结中余额
+    // 冻结中余额（扣除佣金后）
     const [[frozen]] = await db.query(`
-      SELECT IFNULL(SUM(o.total * 0.97), 0) AS amount
+      SELECT IFNULL(SUM(o.total * ?), 0) AS amount
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE o.fund_status='frozen'
-    `, [mid])
+    `, [keepRate, mid])
 
     // 本月统计
     const [[m]] = await db.query(`
@@ -276,7 +283,9 @@ router.get('/finance', merchantAuth, async (req, res) => {
     )
 
     const now = Date.now()
+    const commissionPct = parseFloat((commissionRate * 100).toFixed(2))
     return ok(res, {
+      commission_rate:   commissionPct,
       available_balance: parseFloat(avail.amount).toFixed(2),
       frozen_balance:    parseFloat(frozen.amount).toFixed(2),
       monthly_sales:     parseFloat(m.monthly_sales  || 0).toFixed(2),
@@ -284,8 +293,8 @@ router.get('/finance', merchantAuth, async (req, res) => {
       monthly_refund:    parseFloat(m.monthly_refund || 0).toFixed(2),
       settlements: settleRows.map((s, idx) => {
         const amount     = parseFloat(s.total)
-        const commission = parseFloat((amount * 0.03).toFixed(2))
-        const actual     = parseFloat((amount - commission).toFixed(2))
+        const commission = parseFloat((amount * commissionRate).toFixed(2))
+        const actual     = parseFloat((amount * keepRate).toFixed(2))
         // 距解冻剩余天数（确认收货后 7 天）
         let daysLeft = null
         if (s.fund_status === 'frozen' && s.confirmed_at) {
@@ -494,7 +503,12 @@ router.get('/orders', merchantAuth, async (req, res) => {
       JOIN order_items i ON i.order_id = o.id AND i.merchant_id = ?
     `
     const params = [mid]
-    if (status && status !== 'all') { sql += ' WHERE o.status = ?'; params.push(status) }
+    // 未付款和已取消的订单不向商户展示
+    if (status && status !== 'all') {
+      sql += ` WHERE o.status = ?`; params.push(status)
+    } else {
+      sql += ` WHERE o.status NOT IN ('pending_payment','cancelled')`
+    }
     sql += ' GROUP BY o.id ORDER BY o.created_at DESC'
 
     const [rows] = await db.query(sql, params)

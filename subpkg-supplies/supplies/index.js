@@ -24,12 +24,15 @@ Page({
 
   // 加载商品数据（优先后端 API，兜底本地数据）
   async _loadProducts() {
-    let products = PRODUCTS
+    // 立即渲染本地数据，避免网络等待期间显示空列表
+    app.globalData.products = PRODUCTS
+    this.setData({ products: PRODUCTS, displayProds: PRODUCTS })
+
     try {
       const auth = require('../../utils/auth')
       const res = await auth.request('GET', '/api/products')
       if (res.code === 200 && res.data && res.data.length > 0) {
-        products = res.data.map(p => ({
+        const products = res.data.map(p => ({
           ...p,
           id:        String(p.id),
           spec:      p.unit || '',
@@ -43,13 +46,14 @@ Page({
           cat:             p.category || '其他',
           merchant_wechat: p.merchant_wechat || ''
         }))
+        app.globalData.products = products
+        const { catSel } = this.data
+        const displayProds = catSel === '全部' ? products : products.filter(p => p.cat === catSel)
+        this.setData({ products, displayProds })
       }
     } catch (e) {
       console.warn('后端 API 不可用，使用本地数据:', e.message)
     }
-
-    app.globalData.products = products
-    this.setData({ products, displayProds: products })
   },
 
   // 分类筛选

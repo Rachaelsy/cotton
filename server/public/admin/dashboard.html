@@ -115,6 +115,12 @@
     .act-btn.approve { background: #DCFCE7; color: #16A34A; }
     .act-btn.reject  { background: #FEE2E2; color: #DC2626; }
     .empty-row td { text-align: center; color: #BBB; padding: 40px; }
+    .commission-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      background: #FEF9C3; color: #92400E; font-size: 12px; font-weight: 700;
+      cursor: pointer; border: 1px solid #FDE68A; transition: background .15s;
+    }
+    .commission-badge:hover { background: #FDE68A; }
 
     /* ── 弹窗 ── */
     .modal-mask {
@@ -262,8 +268,8 @@
           <span class="badge" id="merchant-count">0</span>
           <button class="act-btn approve" onclick="openMerchantAdd()">+ 新增商户</button>
         </div>
-        <table><thead><tr><th>ID</th><th>手机号</th><th>店铺名</th><th>联系人</th><th>品类</th><th>商品数</th><th>审批</th><th>状态</th><th>操作</th></tr></thead>
-        <tbody id="merchantTable"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody></table>
+        <table><thead><tr><th>ID</th><th>手机号</th><th>店铺名</th><th>联系人</th><th>品类</th><th>商品数</th><th>审批</th><th>状态</th><th>佣金率</th><th>操作</th></tr></thead>
+        <tbody id="merchantTable"><tr class="empty-row"><td colspan="10">加载中...</td></tr></tbody></table>
       </div>
     </div>
 
@@ -700,11 +706,13 @@
     tbody.innerHTML = r.data.length ? r.data.map(u => {
       const statusClass = { pending:'status-pending', approved:'status-approved', rejected:'status-rejected' }[u.apply_status] || ''
       const statusText  = { pending:'待审批', approved:'已批准', rejected:'已拒绝' }[u.apply_status] || u.apply_status
+      const rate = u.commission_rate != null ? parseFloat(u.commission_rate).toFixed(2) : '5.00'
       return `<tr>
         <td>${u.id}</td><td>${u.phone}</td><td>${u.company_name||'—'}</td>
         <td>${u.real_name||'—'}</td><td>${u.product_category||'—'}</td><td>${u.product_count||0}</td>
         <td class="${statusClass}">${statusText}</td>
         <td class="${u.is_active?'status-on':'status-off'}">${u.is_active?'正常':'已禁用'}</td>
+        <td><span class="commission-badge" onclick="openCommission(${u.id},'${esc(u.company_name||'')}',${rate})">${rate}%</span></td>
         <td>
           <button class="act-btn edit" onclick="openMerchantEdit(${u.id})">编辑</button>
           <button class="act-btn ${u.is_active?'disable':'enable'}" onclick="toggleStatus(${u.id},${!!u.is_active},'merchants')">${u.is_active?'禁用':'启用'}</button>
@@ -1069,9 +1077,65 @@
     else alert(r?.msg || '删除失败')
   }
 
+  // ── 佣金费率 ─────────────────────────────────
+  let _commissionUserId = null
+
+  function openCommission(userId, companyName, currentRate) {
+    _commissionUserId = userId
+    document.getElementById('comm-title').textContent = `设置佣金费率 — ${companyName || '商户'}`
+    document.getElementById('comm-rate').value = currentRate
+    document.getElementById('comm-result').textContent = ''
+    document.getElementById('modalCommission').style.display = 'flex'
+  }
+
+  function closeCommissionModal() {
+    document.getElementById('modalCommission').style.display = 'none'
+    _commissionUserId = null
+  }
+
+  async function saveCommission() {
+    const rate = parseFloat(document.getElementById('comm-rate').value)
+    const resultEl = document.getElementById('comm-result')
+    if (isNaN(rate) || rate < 0 || rate > 100) {
+      resultEl.style.color = '#DC2626'
+      resultEl.textContent = '请输入 0 ~ 100 之间的数字'
+      return
+    }
+    const r = await api('PATCH', `/merchants/${_commissionUserId}/commission`, { commission_rate: rate })
+    if (r?.code === 200) {
+      resultEl.style.color = '#15803d'
+      resultEl.textContent = '已保存'
+      setTimeout(() => { closeCommissionModal(); loadMerchants() }, 900)
+    } else {
+      resultEl.style.color = '#DC2626'
+      resultEl.textContent = r?.msg || '保存失败'
+    }
+  }
+
   // 初始加载
   loadOverview()
 </script>
+
+<!-- 佣金费率弹窗 -->
+<div id="modalCommission" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:400px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <h3 id="comm-title" style="font-size:16px;font-weight:800;margin-bottom:6px;color:#1A1A1A">设置佣金费率</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:20px">平台从该商户每笔订单中抽取的佣金比例</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <input id="comm-rate" type="number" min="0" max="100" step="0.01" placeholder="5.00"
+        style="flex:1;padding:12px 16px;border:1.5px solid #E0E0E0;border-radius:10px;font-size:22px;font-weight:700;text-align:center;outline:none">
+      <span style="font-size:22px;font-weight:700;color:#555">%</span>
+    </div>
+    <p style="font-size:11px;color:#AAAAAA;margin-bottom:16px">范围：0%（免佣）～ 100%，保留两位小数</p>
+    <div id="comm-result" style="font-size:13px;min-height:18px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeCommissionModal()"
+        style="padding:10px 24px;border:1.5px solid #E0E0E0;border-radius:10px;background:#fff;cursor:pointer;font-size:14px">取消</button>
+      <button onclick="saveCommission()"
+        style="padding:10px 24px;background:#15803d;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600">保存</button>
+    </div>
+  </div>
+</div>
 
 <!-- 发布公告弹窗 -->
 <div id="modalAnnounce" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:300;align-items:center;justify-content:center">

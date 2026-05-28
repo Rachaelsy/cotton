@@ -1,5 +1,69 @@
 # 变更日志
 
+## [1.7.0] — 2026-05-28
+
+### 新增
+
+- **个人资料编辑页**（`pages/profile/`）：点击"我的"页面姓名右侧箭头进入，可编辑所在地区、承包面积、主种作物（选择器），保存后同步写库并更新本地缓存
+- **后端 API**：`PUT /api/auth/profile` 更新农户个人信息（location、land_size、crop_type）
+- **待付款页**（`subpkg-supplies/supplies-pay/`）：独立结算等待页面；从 `app.globalData.currentOrders` 读取订单，展示倒计时（从真实 `pay_expires_at` 计算），含「取消订单」和「去支付」操作
+- **管理员后台 — 商户佣金费率管理**：商户列表新增"佣金率"列（黄色角标），点击可弹窗为每个商户单独设置平台佣金比例（0%~100%，精确到小数点后两位）
+- **数据库迁移**：
+  - `migrate_commission.js`：`merchants` 表新增 `commission_rate DECIMAL(5,2) NOT NULL DEFAULT 5.00`
+  - `migrate_pay_expires.js`：`orders` 表新增 `pay_expires_at TIMESTAMP NULL`
+
+### 改进
+
+- **订单流程重设计**（`server/routes/orders.js`）：
+  - 提交订单 → 立即锁库存（`UPDATE products SET stock=stock-? WHERE stock>=?`）→ 状态 `pending_payment` + 30 分钟支付截止时间
+  - 付款（`PATCH /api/orders/:id/pay`）→ `pending_ship`，同时异步通知商户
+  - 超时或主动取消（`PATCH /api/orders/:id/cancel`）→ `cancelled` 并释放库存
+- **定时任务**（`server/scheduler.js`）：新增 `autoExpireOrders()`，每 5 分钟扫描 `pay_expires_at <= NOW()` 的待付款订单，批量关单并还库存
+- **商户订单列表**：屏蔽 `pending_payment` 和 `cancelled` 状态，商户仅看到已付款后的订单
+- **我的订单页**（`subpkg-supplies/my-orders/`）：
+  - 新增"待付款"Tab，卡片底部展示倒计时操作行（取消 / 去支付）
+  - 完善状态映射，新增 `pending_payment`（待付款）、`cancelled`（已取消）
+- **农资供应页**（`subpkg-supplies/supplies/index.js`）：本地兜底数据立即渲染，API 响应后更新；分类筛选状态在 API 返回时保持正确
+
+### Bug 修复
+
+- 修复财务结算佣金始终显示 3%（根因：可提现余额 / 冻结余额 SQL 及结算明细 JS 均硬编码 `0.03`/`0.97`，未读取 `merchants.commission_rate`）；三处计算现均动态使用数据库存储的实际佣金率，前端标题和列头也同步显示真实百分比
+- 修复 AI 问答页文字被右侧截断、快捷提问横排变竖列问题（Skyline 约束：`scroll-view` 不可直接设 `display:flex`；改用内层 wrapper view 承担 flex 布局）
+- 修复农资供应商品不显示（根因：`utils/auth.js` 局域网 IP 地址变更后未同步更新）
+
+---
+
+## [1.6.0] — 2026-05-27
+
+### 新增
+
+- **多商家拆单**：购物车含多个商家商品时，结算自动按 `merchant_id` 拆分，分别调用 `POST /api/orders` 为每家商户创建独立订单；`app.globalData.currentOrders` 存储所有订单数组
+- **支付成功页重设计**：改为逐商家卡片展示（店铺名、商品缩略、小计、可复制订单号），底部汇总合计金额与下单时间；"查看全部订单"跳转至 `my-orders`
+- **农资功能分包**（`subpkg-supplies/`）：将 9 个农资相关页面从主包迁出，建立独立分包，主包体积从 ~1.21 MB 降至 ~230 KB
+
+  | 迁移页面 | 原路径 |
+  |---|---|
+  | 农资商城 | `pages/supplies/` |
+  | 商品详情 | `pages/supplies-detail/` |
+  | 店铺页 | `pages/supplies-store/` |
+  | 购物车 | `pages/supplies-cart/` |
+  | 确认订单 | `pages/supplies-checkout/` |
+  | 支付成功 | `pages/supplies-pay-success/` |
+  | 订单详情 | `pages/supplies-order/` |
+  | 售后申请 | `pages/supplies-aftersale/` |
+  | 我的订单 | `pages/my-orders/` |
+
+- **`.wxignore`**：新增忽略文件，排除 `server/`（983 KB）和 `*.md` 不进入小程序包
+- **`project.config.json`**：同步设置 `packOptions.ignore`，双重保障排除后端目录
+
+### 改进
+
+- **确认订单页**：商品列表图片区域优先展示真实 `image_url`，无图时退回 emoji 图标，与购物车展示一致
+- **首页功能模块**：仅"农资供应"可跳转，其余功能点击统一提示"正在开发中，敬请期待"
+- **商家后台 — 订单管理**：移除"删除订单"按钮及 `deleteOrder` 函数，订单记录不可在商户侧删除
+
+---
+
 ## [1.5.0] — 2026-05-27
 
 ### 新增

@@ -291,6 +291,27 @@ router.post('/wx-login', async (req, res) => {
 })
 
 // ─────────────────────────────────────────────
+// PUT /api/auth/profile  更新个人资料
+// ─────────────────────────────────────────────
+router.put('/profile', authMiddleware, async (req, res) => {
+  const { real_name, location, land_size, crop_type } = req.body
+  if (!real_name || !real_name.trim()) return fail(res, '姓名不能为空')
+  try {
+    await db.query('UPDATE users SET real_name=? WHERE id=?', [real_name.trim(), req.user.id])
+    if (req.user.role === 'farmer') {
+      await db.query(
+        'UPDATE farmers SET location=?, land_size=?, crop_type=? WHERE user_id=?',
+        [location || '', parseFloat(land_size) || 0, crop_type || '棉花', req.user.id]
+      )
+    }
+    return ok(res, null, '保存成功')
+  } catch (err) {
+    console.error('[profile]', err)
+    return fail(res, '保存失败')
+  }
+})
+
+// ─────────────────────────────────────────────
 // POST /api/auth/logout  登出
 // ─────────────────────────────────────────────
 router.post('/logout', authMiddleware, (req, res) => {

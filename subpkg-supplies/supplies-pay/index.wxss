@@ -1,0 +1,222 @@
+/* subpkg-supplies/supplies-pay/index.wxss */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #F5EEE6;
+}
+
+/* ===== 导航 ===== */
+.nav {
+  background: #ffffff;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  flex-shrink: 0;
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 28rpx 20rpx;
+}
+
+.nav-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+}
+
+/* ===== 倒计时条 ===== */
+.countdown-bar {
+  background: #FEF3C7;
+  border-bottom: 1rpx solid #FDE68A;
+  padding: 20rpx 32rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.countdown-bar.expired {
+  background: #FEE2E2;
+  border-bottom-color: #FECACA;
+}
+
+.cd-icon { font-size: 28rpx; }
+
+.cd-text {
+  font-size: 24rpx;
+  color: #92400E;
+}
+
+.expired .cd-text { color: #991B1B; }
+
+.cd-num {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #D97706;
+}
+
+/* ===== 滚动区 ===== */
+.scroll { flex: 1; height: 0; width: 100%; }
+
+.scroll-inner { padding: 24rpx 28rpx 0; }
+
+/* ===== 订单卡片 ===== */
+.order-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.06);
+}
+
+.card-store-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 20rpx;
+}
+
+.store-tag { font-size: 28rpx; }
+
+.store-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.card-item-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.item-thumb {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.item-thumb-icon { font-size: 44rpx; }
+
+.item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.item-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.item-more { font-size: 22rpx; color: #C8902E; }
+
+.item-total {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #FF3B30;
+  flex-shrink: 0;
+}
+
+.card-no-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #F5EEE6;
+}
+
+.card-no-label {
+  font-size: 22rpx;
+  color: #AAAAAA;
+}
+
+.card-no-val {
+  font-size: 22rpx;
+  color: #555555;
+}
+
+/* ===== 合计卡片 ===== */
+.total-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 28rpx 32rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.06);
+}
+
+.total-label {
+  font-size: 28rpx;
+  color: #555555;
+  font-weight: 600;
+}
+
+.total-val {
+  font-size: 44rpx;
+  font-weight: 900;
+  color: #FF3B30;
+}
+
+/* ===== 底部操作栏 ===== */
+.bottom-bar {
+  background: #ffffff;
+  border-top: 1rpx solid #F2EBE0;
+  padding: 20rpx 28rpx;
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  flex-direction: row;
+  gap: 20rpx;
+  flex-shrink: 0;
+}
+
+.cancel-btn {
+  border: 2rpx solid #D4C4AE;
+  border-radius: 999rpx;
+  padding: 28rpx 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-text {
+  font-size: 28rpx;
+  color: #888888;
+}
+
+.pay-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #C8902E, #D4A043);
+  border-radius: 999rpx;
+  padding: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 20rpx rgba(200,144,46,0.35);
+}
+
+.pay-btn-off {
+  opacity: 0.5;
+}
+
+.pay-text {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #ffffff;
+}

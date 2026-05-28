@@ -434,10 +434,10 @@
       <div class="card">
         <div class="card-head">
           <span class="card-title">💳 结算明细</span>
-          <span style="font-size:12px;color:#888">扣除 3% 平台佣金后到账</span>
+          <span id="settle-rate-tip" style="font-size:12px;color:#888">扣除 3% 平台佣金后到账</span>
         </div>
         <table>
-          <thead><tr><th>结算编号</th><th>订单号</th><th>商品</th><th>销售金额</th><th>佣金(3%)</th><th>实际到账</th><th>资金状态</th><th>完成时间</th></tr></thead>
+          <thead><tr><th>结算编号</th><th>订单号</th><th>商品</th><th>销售金额</th><th id="settle-commission-th">佣金(3%)</th><th>实际到账</th><th>资金状态</th><th>完成时间</th></tr></thead>
           <tbody id="settle-table"></tbody>
         </table>
       </div>
@@ -1067,6 +1067,9 @@ async function loadFinance() {
     document.getElementById('f-monthly-refund-sub').textContent = '退款率 ' + refundRate + '%'
     const tw = await api('GET', '/trend?period=week').catch(() => null)
     if (tw?.data) renderBarChart('finance-chart', tw.data)
+    const pct = financeData.commission_rate ?? 3
+    document.getElementById('settle-rate-tip').textContent = `扣除 ${pct}% 平台佣金后到账`
+    document.getElementById('settle-commission-th').textContent = `佣金(${pct}%)`
     loadSettleTable(financeData.settlements)
     loadWithdrawTable(financeData.withdrawals)
   } catch(e) { console.error('[loadFinance]', e) }

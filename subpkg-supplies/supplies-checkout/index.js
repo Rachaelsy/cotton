@@ -137,6 +137,6 @@ Page({
     // 清空购物车
     app.clearCart()
 
-    wx.redirectTo({ url: '/subpkg-supplies/supplies-pay-success/index' })
+    wx.redirectTo({ url: '/subpkg-supplies/supplies-pay/index' })
   }
 })

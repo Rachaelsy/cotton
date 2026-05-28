@@ -28,6 +28,7 @@
 
   <!-- 聊天区域 -->
   <scroll-view class="chat-scroll" scroll-y scroll-into-view="{{scrollToId}}" scroll-with-animation>
+  <view class="chat-inner">
 
     <view class="chat-date-line">
       <text class="chat-date-text">今天 {{timeStr}}</text>
@@ -88,13 +89,16 @@
     </view>
 
     <view id="bottom" style="height: 20rpx"></view>
+  </view>
   </scroll-view>
 
   <!-- 底部输入区 -->
   <view class="chat-bottom">
     <scroll-view class="quick-row" scroll-x>
-      <view class="quick-chip" wx:for="{{chips}}" wx:key="index" bindtap="onQuick" data-q="{{item}}">
-        <text class="quick-chip-text">{{item}}</text>
+      <view class="quick-chips-inner">
+        <view class="quick-chip" wx:for="{{chips}}" wx:key="index" bindtap="onQuick" data-q="{{item}}">
+          <text class="quick-chip-text">{{item}}</text>
+        </view>
       </view>
     </scroll-view>
     <view class="input-row">
