@@ -55,6 +55,23 @@ node db/seed.js                       # 插入测试用户账号
 node index.js
 ```
 
+### AI 功能配置（可选）
+
+在 `server/.env` 中填写至少一个 AI API Key：
+
+```bash
+# 推荐：Groq（完全免费，注册地址：https://console.groq.com）
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 可选：Siliconflow（图片视觉分析需要此 Key）
+SILICONFLOW_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 可选：DeepSeek 直连（需充值）
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+API 优先级：**Groq（文字）> Siliconflow（文字+视觉）> DeepSeek（文字）**
+
 ### 前端配置
 
 编辑 `utils/auth.js` 第 7-8 行：
@@ -164,7 +181,7 @@ cotton/
 │   │
 │   ├── ── 农户主包页面 ───────────────────────────────
 │   ├── index/                # 农户首页（功能网格，仅农资供应可跳转，其余提示开发中）
-│   ├── ai/                   # AI 问答（聊天气泡界面）
+│   ├── ai/                   # AI 问答（接入 Groq/DeepSeek，支持拍照识别）
 │   ├── my/                   # 我的（用户卡片、实名、退出，含进行中订单徽章）
 │   ├── favorites/            # 我的收藏（卡片网格，取消收藏，加购）
 │   ├── fields/               # 地块管理（列表 + 绘制 draw + 详情 detail）
@@ -209,6 +226,7 @@ cotton/
     │   ├── products.js       # /api/products/*（商品 CRUD + 公开评价列表）
     │   ├── orders.js         # /api/orders/*（下单、查询、确认收货、售后、提交评价）
     │   ├── plots.js          # /api/plots/*（农户地块 CRUD）
+    │   ├── ai.js             # /api/ai/*（AI 问答代理 + 图片分析，支持 Groq/Siliconflow/DeepSeek）
     │   ├── merchant.js       # /api/merchant/*（商户登录、商品、订单、售后、评价回复）
     │   ├── upload.js         # /api/upload（multer 文件上传，存至 public/uploads/）
     │   └── admin.js          # /api/admin/*（管理后台 API，需 is_admin）
@@ -301,6 +319,8 @@ Base URL（开发）：`http://192.168.0.28:3000`
 | GET   | `/api/plots/:id` | 农户 | 获取单个地块详情 |
 | PUT   | `/api/plots/:id` | 农户 | 编辑地块（名称/品种/评分/状态等） |
 | DELETE | `/api/plots/:id` | 农户 | 删除地块 |
+| POST  | `/api/ai/chat` | 公开 | AI 文字问答（携带历史上下文，代理到 Groq/Siliconflow/DeepSeek） |
+| POST  | `/api/ai/photo` | 公开 | 图片分析（multipart，调用 Siliconflow Qwen2-VL 视觉模型）|
 | POST | `/api/upload` | Token | 上传图片文件，返回 `/uploads/xxx` URL |
 | GET  | `/api/admin/announcements` | 管理员 | 公告列表 |
 | POST | `/api/admin/announcements` | 管理员 | 发布公告（广播至所有商户消息中心） |
@@ -425,6 +445,7 @@ app.globalData = {
   currentOrder:    null,   // 当前订单（结算 → 支付成功 → 订单详情页传参）
   currentOrders:   [],     // 多商家拆单订单组（待付款页/支付成功页传参）
   currentPlot:     null,   // 当前地块（列表 → 详情页传参）
+  pendingPhoto:    null,   // 首页拍照后传给 AI 页的图片（{ tempFilePath }）
   statusBarHeight: 20      // 状态栏高度（px）
 }
 ```

@@ -318,6 +318,13 @@
 
 .user-bubble .bubble-text { color: #ffffff; }
 
+.bubble-img {
+  width: 360rpx;
+  border-radius: 16rpx;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
 /* 打字动画 */
 .typing-bubble {
   display: flex;

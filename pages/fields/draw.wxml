@@ -1,110 +1,109 @@
 <!-- pages/fields/draw.wxml — 地块边界绘制 -->
 <view class="page">
 
-  <!-- 顶部导航 -->
+  <!-- 顶部导航（三种模式共用，标题随状态切换） -->
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
     <view class="nav-back" bindtap="onBack">
       <text class="nav-back-icon">‹</text>
     </view>
     <view class="nav-center">
-      <text class="nav-title">绘制地块边界</text>
-      <text class="nav-sub">{{tipText}}</text>
+      <text class="nav-title">{{showForm ? '填写地块信息' : '绘制地块边界'}}</text>
+      <text class="nav-sub">{{showForm ? '已绘制约 ' + area + ' 亩' : tipText}}</text>
     </view>
     <view class="nav-help">
       <text class="nav-help-text">?</text>
     </view>
   </view>
 
-  <!-- 地图（默认卫星遥感图） -->
-  <map
-    id="mymap"
-    class="map"
-    latitude="{{mapLat}}"
-    longitude="{{mapLng}}"
-    scale="16"
-    markers="{{markers}}"
-    polylines="{{polylines}}"
-    polygons="{{polygons}}"
-    enable-satellite="{{isSatellite}}"
-    show-location
-    enable-zoom
-    enable-scroll
-    enable-rotate="{{false}}"
-    bindtap="onMapTap"
-    bindmarkertap="onMarkerTap"
-  ></map>
+  <!-- ══════════ 绘制模式 ══════════ -->
+  <view wx:if="{{!showForm}}" class="draw-container">
 
-  <!-- 右侧工具栏 -->
-  <view class="toolbar">
-    <view class="tool-btn" bindtap="onLocate">
-      <text class="tool-icon">📍</text>
-      <text class="tool-lbl">定位</text>
-    </view>
-    <view class="tool-btn {{isSatellite ? 'tool-active' : ''}}" bindtap="onToggleSatellite">
-      <text class="tool-icon">🛰</text>
-      <text class="tool-lbl">{{isSatellite ? '卫星' : '地图'}}</text>
-    </view>
-    <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onUndo">
-      <text class="tool-icon">↩</text>
-      <text class="tool-lbl">撤销</text>
-    </view>
-    <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onClear">
-      <text class="tool-icon">🗑</text>
-      <text class="tool-lbl">清空</text>
-    </view>
-  </view>
+    <map
+      id="mymap"
+      class="map"
+      latitude="{{mapLat}}"
+      longitude="{{mapLng}}"
+      scale="16"
+      markers="{{markers}}"
+      polylines="{{polylines}}"
+      polygons="{{polygons}}"
+      enable-satellite="{{isSatellite}}"
+      show-location
+      enable-zoom
+      enable-scroll
+      enable-rotate="{{false}}"
+      bindtap="onMapTap"
+      bindmarkertap="onMarkerTap"
+      bindcallouttap="onCalloutTap"
+    ></map>
 
-  <!-- 当前面积浮层（≥3个点后显示） -->
-  <view wx:if="{{points.length >= 3}}" class="area-float">
-    <text class="area-label">当前面积</text>
-    <view class="area-row">
-      <text class="area-val">{{area}}</text>
-      <text class="area-unit">亩</text>
+    <!-- 右侧工具栏 -->
+    <view class="toolbar">
+      <view class="tool-btn" bindtap="onLocate">
+        <text class="tool-icon">📍</text>
+        <text class="tool-lbl">定位</text>
+      </view>
+      <view class="tool-btn {{isSatellite ? 'tool-active' : ''}}" bindtap="onToggleSatellite">
+        <text class="tool-icon">🛰</text>
+        <text class="tool-lbl">{{isSatellite ? '卫星' : '地图'}}</text>
+      </view>
+      <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onUndo">
+        <text class="tool-icon">↩</text>
+        <text class="tool-lbl">撤销</text>
+      </view>
+      <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onClear">
+        <text class="tool-icon">🗑</text>
+        <text class="tool-lbl">清空</text>
+      </view>
     </view>
-  </view>
 
-  <!-- 底部信息栏 + 按钮 -->
-  <view class="bottom-bar">
-    <view class="stats-row">
-      <view class="stat">
-        <text class="stat-val">{{points.length}}</text>
-        <text class="stat-lbl">顶点</text>
-      </view>
-      <view class="stat-div"></view>
-      <view class="stat">
-        <text class="stat-val">{{area}}</text>
-        <text class="stat-lbl">亩</text>
-      </view>
-      <view class="stat-div"></view>
-      <view class="stat">
-        <text class="stat-val">{{perimeter}}</text>
-        <text class="stat-lbl">米周长</text>
+    <!-- 面积浮层 -->
+    <view wx:if="{{points.length >= 3}}" class="area-float">
+      <text class="area-label">当前面积</text>
+      <view class="area-row">
+        <text class="area-val">{{area}}</text>
+        <text class="area-unit">亩</text>
       </view>
     </view>
-    <view class="btn-row">
-      <view class="cancel-btn" bindtap="onBack">
-        <text class="cancel-text">✕ 取消</text>
-      </view>
-      <view
-        class="finish-btn {{points.length < 3 ? 'finish-disabled' : ''}}"
-        bindtap="onFinishDraw"
-      >
-        <text class="finish-text">✓ 完成绘制</text>
-      </view>
-    </view>
-  </view>
 
-  <!-- 表单底部弹层（完成绘制后出现） -->
-  <view wx:if="{{showForm}}" class="form-mask" catchtap=""></view>
-  <view wx:if="{{showForm}}" class="form-sheet">
-    <view class="form-handle"></view>
-    <view class="form-head">
-      <text class="form-title">填写地块信息</text>
-      <text class="form-area-tip">已绘制约 {{area}} 亩</text>
+    <!-- 底部信息 + 按钮 -->
+    <view class="bottom-bar">
+      <view class="stats-row">
+        <view class="stat">
+          <text class="stat-val">{{points.length}}</text>
+          <text class="stat-lbl">顶点</text>
+        </view>
+        <view class="stat-div"></view>
+        <view class="stat">
+          <text class="stat-val">{{area}}</text>
+          <text class="stat-lbl">亩</text>
+        </view>
+        <view class="stat-div"></view>
+        <view class="stat">
+          <text class="stat-val">{{perimeter}}</text>
+          <text class="stat-lbl">米周长</text>
+        </view>
+      </view>
+      <view class="btn-row">
+        <view class="cancel-btn" bindtap="onBack">
+          <text class="cancel-text">✕ 取消</text>
+        </view>
+        <view
+          class="finish-btn {{points.length < 3 ? 'finish-disabled' : ''}}"
+          bindtap="onFinishDraw"
+        >
+          <text class="finish-text">✓ 完成绘制</text>
+        </view>
+      </view>
     </view>
+
+  </view><!-- /draw-container -->
+
+  <!-- ══════════ 表单模式（普通流，无 fixed，Skyline 安全）══════════ -->
+  <view wx:if="{{showForm}}" class="form-container">
 
     <scroll-view class="form-scroll" scroll-y>
-      <!-- 地块名称 -->
+
       <view class="field-row">
         <text class="field-label">地块名称 <text class="req">*</text></text>
         <input
@@ -116,7 +115,6 @@
         />
       </view>
 
-      <!-- 种植品种 -->
       <view class="field-row">
         <text class="field-label">种植品种</text>
         <input
@@ -128,7 +126,6 @@
         />
       </view>
 
-      <!-- 播种日期 -->
       <view class="field-row">
         <text class="field-label">播种日期</text>
         <picker mode="date" value="{{form.sowDate}}" bindchange="onSowDateChange">
@@ -141,7 +138,6 @@
         </picker>
       </view>
 
-      <!-- 灌溉方式 -->
       <view class="field-row">
         <text class="field-label">灌溉方式</text>
         <picker mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange">
@@ -152,7 +148,6 @@
         </picker>
       </view>
 
-      <!-- 土壤类型 -->
       <view class="field-row">
         <text class="field-label">土壤类型</text>
         <picker mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange">
@@ -168,12 +163,10 @@
       <view style="height: 20rpx"></view>
     </scroll-view>
 
-    <view
-      class="save-btn {{saving ? 'save-disabled' : ''}}"
-      bindtap="onSave"
-    >
-      <text class="save-text">{{saving ? '保存中...' : '💾 保存地块'}}</text>
+    <view class="form-save-btn {{saving ? 'save-disabled' : ''}}" bindtap="onSave">
+      <text class="form-save-text">{{saving ? '保存中...' : '💾 保存地块'}}</text>
     </view>
-  </view>
+
+  </view><!-- /form-container -->
 
 </view>

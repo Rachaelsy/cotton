@@ -62,7 +62,16 @@
         <view class="user-avatar"><text class="user-avatar-text">农</text></view>
         <view class="msg-body">
           <text class="msg-nm-right">我</text>
-          <view class="bubble user-bubble"><text class="bubble-text">{{item.text}}</text></view>
+          <view class="bubble user-bubble">
+            <image
+              wx:if="{{item.image}}"
+              class="bubble-img"
+              src="{{item.image}}"
+              mode="widthFix"
+              show-menu-by-longpress
+            ></image>
+            <text wx:if="{{item.text}}" class="bubble-text">{{item.text}}</text>
+          </view>
         </view>
       </view>
       <!-- AI 消息 -->

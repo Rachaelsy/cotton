@@ -1,33 +1,50 @@
 /* pages/fields/draw.wxss */
 
-.page { display: flex; flex-direction: column; height: 100vh; position: relative; }
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
-/* ===== 顶部导航 ===== */
+/* ===== 顶部导航（正常流，不再 absolute，确保不遮挡表单触摸） ===== */
 .nav {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 10;
-  background: rgba(255,255,255,0.95);
-  display: flex; flex-direction: row; align-items: center;
-  padding-left: 20rpx; padding-right: 20rpx; padding-bottom: 16rpx;
+  background: rgba(255,255,255,0.97);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 20rpx;
+  padding-right: 20rpx;
+  padding-bottom: 16rpx;
+  flex-shrink: 0;
   box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.1);
+  z-index: 10;
 }
 .nav-back {
   width: 64rpx; height: 64rpx; background: #F5F5F5; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
 }
 .nav-back-icon { font-size: 44rpx; color: #333; }
-.nav-center { flex: 1; display: flex; flex-direction: column; align-items: center; }
-.nav-title  { font-size: 28rpx; font-weight: 800; color: #1A1A1A; }
-.nav-sub    { font-size: 20rpx; color: #888; margin-top: 4rpx; }
+.nav-center    { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.nav-title     { font-size: 28rpx; font-weight: 800; color: #1A1A1A; }
+.nav-sub       { font-size: 20rpx; color: #888; margin-top: 4rpx; }
 .nav-help {
   width: 64rpx; height: 64rpx; background: #F5F5F5; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
 }
 .nav-help-text { font-size: 28rpx; color: #888; font-weight: 700; }
 
-/* ===== 地图 ===== */
+/* ===== 绘制容器（地图 + 叠加控件，position:relative 作为绝对定位基准） ===== */
+.draw-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ===== 地图（填满 draw-container） ===== */
 .map { width: 100%; flex: 1; }
 
-/* ===== 右侧工具栏 ===== */
+/* ===== 右侧工具栏（absolute within draw-container） ===== */
 .toolbar {
   position: absolute; right: 24rpx; top: 50%;
   display: flex; flex-direction: column; gap: 16rpx; z-index: 10;
@@ -43,9 +60,9 @@
 .tool-icon { font-size: 36rpx; }
 .tool-lbl  { font-size: 18rpx; color: #555; }
 
-/* ===== 面积浮层 ===== */
+/* ===== 面积浮层（absolute within draw-container） ===== */
 .area-float {
-  position: absolute; left: 50%; top: 50%;
+  position: absolute; left: 50%; top: 40%;
   background: #fff; border-radius: 20rpx; padding: 20rpx 32rpx;
   display: flex; flex-direction: column; align-items: center;
   box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.18); z-index: 5;
@@ -55,7 +72,7 @@
 .area-val   { font-size: 64rpx; font-weight: 900; color: #1A1A1A; line-height: 1; }
 .area-unit  { font-size: 28rpx; color: #555; }
 
-/* ===== 底部信息栏 ===== */
+/* ===== 底部信息栏（absolute within draw-container） ===== */
 .bottom-bar {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: #1F2937; z-index: 10; padding: 20rpx 28rpx 40rpx;
@@ -64,7 +81,7 @@
   display: flex; flex-direction: row; align-items: center;
   justify-content: space-around; padding-bottom: 20rpx;
 }
-.stat { display: flex; flex-direction: column; align-items: center; gap: 4rpx; }
+.stat     { display: flex; flex-direction: column; align-items: center; gap: 4rpx; }
 .stat-val { font-size: 36rpx; font-weight: 900; color: #C8902E; }
 .stat-lbl { font-size: 20rpx; color: rgba(255,255,255,0.6); }
 .stat-div { width: 1rpx; height: 48rpx; background: rgba(255,255,255,0.15); }
@@ -74,7 +91,7 @@
   border: 2rpx solid rgba(255,255,255,0.2); border-radius: 16rpx;
   display: flex; align-items: center; justify-content: center;
 }
-.cancel-text { font-size: 28rpx; font-weight: 700; color: rgba(255,255,255,0.7); }
+.cancel-text  { font-size: 28rpx; font-weight: 700; color: rgba(255,255,255,0.7); }
 .finish-btn {
   flex: 2; height: 88rpx;
   background: linear-gradient(135deg, #C8902E, #D4A043);
@@ -83,32 +100,29 @@
 .finish-disabled { opacity: 0.4; }
 .finish-text { font-size: 28rpx; font-weight: 800; color: #fff; }
 
-/* ===== 表单弹层 ===== */
-.form-mask {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4); z-index: 20;
+/* ===== 表单容器（普通流，无 fixed/absolute，Skyline 触摸安全） ===== */
+.form-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #F5EEE6;
+  padding: 0 32rpx 40rpx;
 }
-.form-sheet {
-  position: fixed; left: 0; right: 0; bottom: 0;
-  background: #fff; border-radius: 32rpx 32rpx 0 0; z-index: 21;
-  padding: 0 32rpx 40rpx; display: flex; flex-direction: column; max-height: 80vh;
+
+.form-scroll {
+  flex: 1;
+  height: 0;
 }
-.form-handle {
-  width: 72rpx; height: 8rpx; background: #E0E0E0; border-radius: 4rpx;
-  align-self: center; margin: 20rpx 0 0;
-}
-.form-head {
-  display: flex; flex-direction: row; align-items: center;
-  justify-content: space-between; padding: 20rpx 0 24rpx;
-  border-bottom: 1rpx solid #F0F0F0; margin-bottom: 8rpx;
-}
-.form-title    { font-size: 30rpx; font-weight: 800; color: #1A1A1A; }
-.form-area-tip { font-size: 22rpx; color: #C8902E; font-weight: 600; }
-.form-scroll   { flex: 1; }
+
+/* 表单行（和其他页面保持统一风格） */
 .field-row {
   display: flex; flex-direction: row; align-items: center;
-  padding: 24rpx 0; border-bottom: 1rpx solid #F5F5F5;
+  padding: 28rpx 0; border-bottom: 1rpx solid #E8E0D6;
+  background: #fff; margin-top: 2rpx; padding-left: 24rpx; padding-right: 24rpx;
 }
+.field-row:first-child { border-radius: 16rpx 16rpx 0 0; margin-top: 16rpx; }
+.field-row:last-child  { border-bottom: none; border-radius: 0 0 16rpx 16rpx; }
+
 .field-label { width: 160rpx; font-size: 26rpx; color: #555; flex-shrink: 0; }
 .req         { color: #EF4444; }
 .field-input { flex: 1; font-size: 26rpx; color: #1A1A1A; text-align: right; }
@@ -119,10 +133,12 @@
 .picker-val         { font-size: 26rpx; color: #1A1A1A; }
 .picker-placeholder { font-size: 26rpx; color: #BBBBBB; }
 .picker-arrow       { font-size: 28rpx; color: #CCCCCC; }
-.save-btn {
+
+/* 保存按钮 */
+.form-save-btn {
   height: 96rpx; background: linear-gradient(135deg, #6b4c2a, #C8902E);
   border-radius: 999rpx; display: flex; align-items: center;
-  justify-content: center; margin-top: 24rpx;
+  justify-content: center; margin-top: 32rpx; flex-shrink: 0;
 }
-.save-disabled { opacity: 0.5; }
-.save-text { font-size: 30rpx; font-weight: 800; color: #fff; }
+.save-disabled   { opacity: 0.5; }
+.form-save-text  { font-size: 30rpx; font-weight: 800; color: #fff; }

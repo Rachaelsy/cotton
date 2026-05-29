@@ -102,10 +102,19 @@ Page({
     this._updateMap(pts, false)
   },
 
-  // ── 点击第一个 marker → 闭合多边形 ────────
+  // ── 点击第一个 marker（dot）→ 闭合多边形 ─
   onMarkerTap(e) {
-    if (this.data.showForm) return
-    const { markerId } = e
+    if (this.data.closed || this.data.showForm) return
+    const markerId = e.detail?.markerId ?? e.markerId
+    if (markerId === 0 && this.data.points.length >= 3) {
+      this._closePolygon()
+    }
+  },
+
+  // ── 点击 callout"点我闭合"→ 闭合多边形 ──
+  onCalloutTap(e) {
+    if (this.data.closed || this.data.showForm) return
+    const markerId = e.detail?.markerId ?? e.markerId
     if (markerId === 0 && this.data.points.length >= 3) {
       this._closePolygon()
     }
@@ -206,8 +215,7 @@ Page({
       type: 'gcj02',
       success: (res) => {
         this.setData({ mapLat: res.latitude, mapLng: res.longitude })
-        const ctx = wx.createMapContext('mymap')
-        ctx.moveToLocation({ latitude: res.latitude, longitude: res.longitude })
+        wx.createMapContext('mymap').moveToLocation({ latitude: res.latitude, longitude: res.longitude })
       },
       fail: () => wx.showToast({ title: '定位失败，请检查权限', icon: 'none' })
     })

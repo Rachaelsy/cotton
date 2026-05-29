@@ -1,4 +1,7 @@
-// pages/ai/index.js — AI问答
+// pages/ai/index.js — AI问答（接入 DeepSeek / Siliconflow，支持图片分析）
+const app  = getApp()
+const auth = require('../../utils/auth')
+
 Page({
   data: {
     statusBarHeight: 20,
@@ -22,10 +25,9 @@ Page({
   onLoad() {
     const info = wx.getSystemInfoSync()
     const d = new Date()
-    const h = d.getHours(), m = d.getMinutes()
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
-      timeStr: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+      timeStr: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
     })
   },
 
@@ -33,8 +35,15 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1 })
     }
+    // 检测首页拍照传来的待分析图片
+    const photo = app.globalData.pendingPhoto
+    if (photo) {
+      app.globalData.pendingPhoto = null
+      this._sendPhoto(photo)
+    }
   },
 
+  // ── 发送文字消息 ──────────────────────────────
   onQuick(e) {
     const q = e.currentTarget.dataset.q
     this.setData({ inputText: q })
@@ -47,36 +56,83 @@ Page({
 
   onSend() {
     const text = this.data.inputText.trim()
-    if (!text) return
-    this._doSend(text)
+    if (!text || this.data.typing) return
     this.setData({ inputText: '' })
+    this._doSend(text)
   },
 
-  _doSend(text) {
-    const id = ++this._msgId
-    const msgs = this.data.messages.concat({ id, role: 'user', text })
+  async _doSend(text) {
+    const userMsg = { id: ++this._msgId, role: 'user', text }
+    const msgs = [...this.data.messages, userMsg]
     this.setData({ messages: msgs, typing: true, scrollToId: 'bottom' })
-    setTimeout(() => {
-      const reply = this._mockReply(text)
-      const rid = ++this._msgId
-      const d = new Date()
-      const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-      this.setData({
-        typing: false,
-        messages: this.data.messages.concat({ id: rid, role: 'ai', text: reply, time: timeStr }),
-        scrollToId: 'bottom'
-      })
-    }, 1200)
+
+    const history = msgs.slice(-11, -1).map(m => ({
+      role:    m.role === 'user' ? 'user' : 'assistant',
+      content: m.text || ''
+    }))
+
+    try {
+      const res = await auth.request('POST', '/api/ai/chat', { message: text, history })
+      const reply = (res.code === 200 && res.data?.reply)
+        ? res.data.reply
+        : (res.msg || 'AI 服务暂时不可用，请稍后重试')
+      this._appendAI(reply)
+    } catch {
+      this._appendAI('网络异常，请检查连接后重试 🔌')
+    }
   },
 
-  _mockReply(q) {
-    if (q.includes('打药') || q.includes('施药')) return '根据今日天气预报，上午10点前风力较小、湿度适中，是打药的好时机。建议选用高效氯氟氰菊酯，避开午后高温时段。'
-    if (q.includes('播种') || q.includes('地温')) return '当前地温约14.5°C，已达棉花播种最低要求。今明两天气温稳定，建议尽快完成2号地块播种，预计三天内完成最佳。'
-    if (q.includes('棉蚜') || q.includes('病虫')) return '棉蚜防治建议：1. 黄板诱杀成虫；2. 用10%吡虫啉1500倍液喷雾；3. 保护天敌（草蛉、瓢虫）。发现点片发生时及时处理。'
-    if (q.includes('价格') || q.includes('收购') || q.includes('卖棉')) return '今日喀什地区皮棉收购参考价：手摘棉 6.8元/公斤，机采棉 6.2元/公斤。建议关注官方发布价格，有收购需求可联系合作社。'
-    if (q.includes('施肥')) return '当前棉花处于蕾期，建议追施氮磷钾复合肥，每亩15公斤。结合滴灌施肥效果更佳，注意不要过量以免徒长。'
-    if (q.includes('灌溉')) return '根据近期降水和土壤墒情，建议本周三前完成一次滴灌，每亩灌水量约30立方米。蕾期需水量较大，保持土壤相对含水量在70%以上。'
-    return '您的问题已收到！小棉正在为您查询最新的农业信息，稍后会给您详细解答。您也可以直接说「今天天气」「施肥建议」等关键词快速获取答案。'
+  // ── 发送图片并分析 ────────────────────────────
+  async _sendPhoto(photo) {
+    // 先在聊天里显示用户发的图片
+    const userMsg = {
+      id:    ++this._msgId,
+      role:  'user',
+      text:  '帮我分析这张照片',
+      image: photo.tempFilePath
+    }
+    this.setData({
+      messages:   [...this.data.messages, userMsg],
+      typing:     true,
+      scrollToId: 'bottom'
+    })
+
+    // 用 wx.uploadFile 上传到后端（multipart，绕过 JSON body 大小限制）
+    const serverUrl = auth.BASE_URL + '/api/ai/photo'
+    const token     = auth.getToken()
+
+    wx.uploadFile({
+      url:      serverUrl,
+      filePath: photo.tempFilePath,
+      name:     'photo',
+      header:   { Authorization: token ? `Bearer ${token}` : '' },
+      success:  (res) => {
+        try {
+          const data = JSON.parse(res.data)
+          this._appendAI(
+            data.code === 200 && data.data?.reply
+              ? data.data.reply
+              : (data.msg || '图片分析失败，请重试')
+          )
+        } catch {
+          this._appendAI('解析响应失败，请重试')
+        }
+      },
+      fail: () => {
+        this._appendAI('图片上传失败，请检查网络连接 🔌')
+      }
+    })
+  },
+
+  // ── 追加 AI 回复气泡 ──────────────────────────
+  _appendAI(text) {
+    const d = new Date()
+    const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+    this.setData({
+      typing:     false,
+      messages:   [...this.data.messages, { id: ++this._msgId, role: 'ai', text, time: timeStr }],
+      scrollToId: 'bottom'
+    })
   },
 
   onToggleInput() {
@@ -88,6 +144,18 @@ Page({
   },
 
   onMore() {
-    wx.showActionSheet({ itemList: ['清空对话', '联系客服', '使用帮助'] })
+    wx.showActionSheet({
+      itemList: ['清空对话', '联系客服', '使用帮助'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          wx.showModal({
+            title: '清空对话',
+            content: '确认清除所有聊天记录？',
+            confirmColor: '#DC2626',
+            success: (r) => { if (r.confirm) this.setData({ messages: [] }) }
+          })
+        }
+      }
+    })
   }
 })

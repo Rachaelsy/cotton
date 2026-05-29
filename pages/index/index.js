@@ -79,7 +79,33 @@ Page({
   },
 
   onPhotoBanner() {
-    wx.showToast({ title: '拍照识别开发中', icon: 'none' })
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['camera'],
+      success: (res) => {
+        const tempFilePath = res.tempFiles[0].tempFilePath
+        // 压缩图片（质量 50%，减小上传体积）
+        wx.compressImage({
+          src: tempFilePath,
+          quality: 50,
+          success: (compRes) => {
+            app.globalData.pendingPhoto = { tempFilePath: compRes.tempFilePath }
+            wx.switchTab({ url: '/pages/ai/index' })
+          },
+          fail: () => {
+            // 压缩失败则用原图
+            app.globalData.pendingPhoto = { tempFilePath }
+            wx.switchTab({ url: '/pages/ai/index' })
+          }
+        })
+      },
+      fail: (err) => {
+        if (err.errMsg && !err.errMsg.includes('cancel')) {
+          wx.showToast({ title: '拍照失败，请重试', icon: 'none' })
+        }
+      }
+    })
   },
 
   onLang() {

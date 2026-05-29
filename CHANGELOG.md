@@ -1,5 +1,42 @@
 # 变更日志
 
+## [2.0.0] — 2026-05-29
+
+### 新增
+
+- **AI 问答接入真实大模型**（`server/routes/ai.js`）：
+  - `POST /api/ai/chat`：后端代理，将用户消息和历史上下文转发给 AI 服务，返回回复；保留最近 10 条历史以维持对话连贯性
+  - API 优先级：`GROQ_API_KEY`（完全免费，Llama 3.3 70B，推荐）→ `SILICONFLOW_API_KEY`（DeepSeek-V3）→ `DEEPSEEK_API_KEY`（DeepSeek 直连）
+  - System Prompt 专为新疆棉花种植场景定制，覆盖病虫害防治、农事管理、市场行情等领域
+  - API Key 存在服务器 `.env`，客户端不接触
+
+- **拍照识别功能**：
+  - 首页「去拍照 ›」Banner 调起相机（`wx.chooseMedia`），自动压缩（质量 50%）后存入 `app.globalData.pendingPhoto`，跳转至 AI 问答页
+  - AI 问答页 `onShow()` 检测待分析图片，图片以气泡形式显示在聊天界面
+  - `POST /api/ai/photo`：接收 multipart 图片，读取后转 base64，调用 Siliconflow Qwen2-VL-7B 视觉模型分析，分析完立即删除临时文件
+  - 若仅有 Groq Key（不支持视觉），自动降级为文字引导提示，要求用户描述症状
+
+### 改进
+
+- **AI 问答页**：历史消息结构同步给后端，AI 能理解上下文连续对话；「清空对话」移入「···」菜单
+- **错误处理**：兼容 OpenAI 格式 `{"error":{...}}` 和 Siliconflow 格式 `{"code":xxx,"message":"..."}` 两种错误响应；余额不足返回友好提示而非技术报错
+
+### Bug 修复
+
+- 修复地图绘制页三处交互失效（详见 v1.9.1）：`bindcallouttap` 事件未绑定导致"点我闭合"无响应；`position:fixed` 表单在 Skyline 下阻断触摸事件（改为页面级状态切换）；`catchtap=""` 拦截事件无处理函数
+
+---
+
+## [1.9.1] — 2026-05-29
+
+### Bug 修复
+
+- 修复地图绘制页「点我闭合」callout 点击无响应：新增 `bindcallouttap="onCalloutTap"`；`e.markerId` 改为 `e.detail?.markerId ?? e.markerId` 兼容两种 API
+- 修复「完成绘制」后表单无法输入：原 `position:fixed` 弹层在 Skyline 渲染器下阻断子元素触摸事件；改为绘制模式/表单模式页面级互换（`wx:if="{{!showForm}}"` / `wx:if="{{showForm}}"`），彻底消除 fixed 定位
+- 修复点击遮罩无法返回绘制：移除 `catchtap=""` 遮罩，导航栏「‹」在表单模式下执行 `setData({ showForm: false })` 返回
+
+---
+
 ## [1.9.0] — 2026-05-28
 
 ### 新增
