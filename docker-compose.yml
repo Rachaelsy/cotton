@@ -2,7 +2,7 @@ services:
 
   # ── MySQL 数据库 ───────────────────────────────
   db:
-    image: registry.cn-hangzhou.aliyuncs.com/library/mysql:8.0
+    image: docker.m.daocloud.io/library/mysql:8.0
     container_name: cotton-db
     restart: always
     environment:
@@ -46,7 +46,7 @@ services:
 
   # ── Nginx 反向代理 ─────────────────────────────
   nginx:
-    image: registry.cn-hangzhou.aliyuncs.com/library/nginx:alpine
+    image: docker.m.daocloud.io/library/nginx:alpine
     container_name: cotton-nginx
     restart: always
     ports:
