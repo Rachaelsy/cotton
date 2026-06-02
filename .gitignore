@@ -1,0 +1,23 @@
+# ── 后端依赖 & 敏感配置 ──────────────────────────
+server/node_modules/
+server/.env
+server/public/uploads/*
+!server/public/uploads/.gitkeep
+
+# ── Docker 环境变量（含密码，不提交）─────────────
+.env
+
+# ── 日志 ─────────────────────────────────────────
+logs/
+*.log
+
+# ── 系统 / 编辑器 ─────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# ── 微信开发者工具 ────────────────────────────────
+project.private.config.json
+miniprogram_npm/

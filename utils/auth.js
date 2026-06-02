@@ -1,15 +1,19 @@
 // utils/auth.js — 登录态管理工具
 // 调用方式：const auth = require('../../utils/auth')
 
-// 模拟器调试用 localhost，真机调试用电脑局域网 IP
-// 查看方法：Windows 运行 ipconfig，找 IPv4 地址（如 192.168.1.5）
-// 部署上线后改为 https://your-server.com
-const IS_DEV_REAL_DEVICE = true   // 真机调试时设为 true，模拟器设为 false
-const LOCAL_IP = '192.168.0.28'   // 电脑局域网 IP
+// ── 环境切换 ──────────────────────────────────────────────────
+// ENV = 'prod'   → 生产环境，使用云服务器域名（HTTPS，需已备案）
+// ENV = 'real'   → 真机调试，使用电脑局域网 IP
+// ENV = 'sim'    → 模拟器调试，使用 localhost
+const ENV = 'real'
 
-const BASE_URL = IS_DEV_REAL_DEVICE
-  ? `http://${LOCAL_IP}:3000`
-  : 'http://localhost:3000'
+const PROD_URL   = 'https://your-domain.com'   // ← 上线后改为真实备案域名
+const LOCAL_IP   = '192.168.0.28'              // ← 真机调试时改为电脑局域网 IP (ipconfig 查询)
+
+const BASE_URL =
+  ENV === 'prod' ? PROD_URL :
+  ENV === 'real' ? `http://${LOCAL_IP}:3000` :
+                   'http://localhost:3000'
 
 const TOKEN_KEY = 'cotton_token'
 const USER_KEY  = 'cotton_user'
