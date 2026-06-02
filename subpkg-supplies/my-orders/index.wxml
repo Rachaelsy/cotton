@@ -60,7 +60,8 @@
         <!-- 商品行 -->
         <view class="goods-row">
           <view class="goods-icon-wrap">
-            <text class="goods-icon">{{item.firstItem.icon || '📦'}}</text>
+            <image wx:if="{{item.firstItem.image_url}}" class="goods-img" src="{{item.firstItem.image_url}}" mode="aspectFill"/>
+            <text wx:else class="goods-icon">{{item.firstItem.icon || '📦'}}</text>
           </view>
           <view class="goods-info">
             <text class="goods-name">{{item.firstItem.name || '商品'}}</text>

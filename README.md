@@ -117,6 +117,8 @@ http://localhost:3000/admin/
 | 商户管理 | 列表查看、新增（自动批准）、编辑（店铺名/联系人/品类/实名）、查看审批状态、启用/禁用账号、**单独设置佣金费率** |
 | 商品管理 | 全量商品列表、新增（选择所属商户）、编辑（名称/价格/库存/状态等）、删除 |
 | 订单管理 | 全量订单列表，按状态筛选，在线修改订单状态 |
+| 售后管理 | 全平台售后申请列表，按状态筛选，查看申请详情（描述+凭证图片） |
+| 财务管理 | 商户财务汇总（销售额/佣金/可提现/冻结/已提现）；提现申请列表，支持批准/拒绝操作 |
 
 **商户入驻申请（公开页面）：**
 ```
@@ -314,6 +316,10 @@ Base URL（开发）：`http://192.168.0.28:3000`
 | GET   | `/api/products/reviews?merchant_id=X` | 公开 | 获取商户评价列表（商品详情页展示） |
 | GET   | `/api/merchant/reviews` | 商户 | 获取本店全部评价 |
 | PATCH | `/api/merchant/reviews/:id/reply` | 商户 | 回复买家评价 |
+| GET   | `/api/admin/aftersales` | 管理员 | 全平台售后申请列表（可按 status 筛选） |
+| GET   | `/api/admin/finance` | 管理员 | 各商户财务汇总（销售额、佣金、可提现、冻结、已提现） |
+| GET   | `/api/admin/withdrawals` | 管理员 | 全平台提现申请列表（可按 status 筛选） |
+| PATCH | `/api/admin/withdrawals/:id/handle` | 管理员 | 审批提现申请（approve 批准 / reject 拒绝） |
 | GET   | `/api/plots` | 农户 | 获取本人全部地块 |
 | POST  | `/api/plots` | 农户 | 新建地块（含坐标、面积、基础信息） |
 | GET   | `/api/plots/:id` | 农户 | 获取单个地块详情 |

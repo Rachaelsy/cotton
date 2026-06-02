@@ -1,4 +1,4 @@
-// pages/profile/index.js — 个人资料编辑
+// pages/profile/index.js — 个人资料编辑（含头像上传）
 const app  = getApp()
 const auth = require('../../utils/auth')
 
@@ -6,6 +6,9 @@ Page({
   data: {
     statusBarHeight: 20,
     saving: false,
+    uploading: false,
+    avatarUrl: '',
+    pendingAvatarPath: '',   // 本地临时路径（待保存）
     form: {
       real_name: '',
       phone: '',
@@ -24,7 +27,11 @@ Page({
   _fillForm() {
     const user = auth.getUser() || app.globalData.user || {}
     const name = user.real_name || ''
+    const avatarUrl = user.avatar_url
+      ? (user.avatar_url.startsWith('http') ? user.avatar_url : auth.BASE_URL + user.avatar_url)
+      : ''
     this.setData({
+      avatarUrl,
       form: {
         real_name: name,
         phone:     user.phone || '',
@@ -36,41 +43,89 @@ Page({
   },
 
   onBack() {
-    wx.navigateBack()
+    if (getCurrentPages().length > 1) wx.navigateBack()
+    else wx.switchTab({ url: '/pages/my/index' })
   },
 
-  onNameInput(e) {
-    this.setData({ 'form.real_name': e.detail.value })
+  // ── 头像选择 & 上传 ───────────────────────
+  onChooseAvatar() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const path = res.tempFiles[0].tempFilePath
+        this.setData({ avatarUrl: path, pendingAvatarPath: path })
+      }
+    })
   },
 
-  onLocationInput(e) {
-    this.setData({ 'form.location': e.detail.value })
+  // 上传头像到服务器，返回存储路径
+  _uploadAvatar() {
+    const path = this.data.pendingAvatarPath
+    if (!path) return Promise.resolve(null)
+    this.setData({ uploading: true })
+    const done = (url) => { this.setData({ uploading: false }); return url }
+    return new Promise((resolve) => {
+      wx.uploadFile({
+        url:      auth.BASE_URL + '/api/upload',
+        filePath: path,
+        name:     'image',
+        header:   { Authorization: auth.getToken() ? `Bearer ${auth.getToken()}` : '' },
+        success:  (res) => {
+          try {
+            const data = JSON.parse(res.data)
+            resolve(done(data.code === 200 ? data.data.url : null))
+          } catch { resolve(done(null)) }
+        },
+        fail: () => resolve(done(null))
+      })
+    })
   },
 
-  onLandSizeInput(e) {
-    this.setData({ 'form.land_size': e.detail.value })
-  },
+  // ── 表单输入 ──────────────────────────────
+  onNameInput(e)     { this.setData({ 'form.real_name': e.detail.value }) },
+  onLocationInput(e) { this.setData({ 'form.location':  e.detail.value }) },
+  onLandSizeInput(e) { this.setData({ 'form.land_size': e.detail.value }) },
 
+  // ── 保存 ─────────────────────────────────
   async onSave() {
-    if (this.data.saving) return
+    if (this.data.saving || this.data.uploading) return
     const { real_name, location, land_size } = this.data.form
     if (!real_name.trim()) {
       wx.showToast({ title: '姓名不能为空', icon: 'none' }); return
     }
     this.setData({ saving: true })
     try {
-      const res = await auth.request('PUT', '/api/auth/profile', {
+      // 先上传头像（如果有新选择的图片）
+      const avatarPath = await this._uploadAvatar()
+
+      const body = {
         real_name: real_name.trim(),
         location:  location.trim(),
         land_size: parseFloat(land_size) || 0
-      })
+      }
+      if (avatarPath) body.avatar_url = avatarPath
+
+      const res = await auth.request('PUT', '/api/auth/profile', body)
       if (res.code === 200) {
         const user = auth.getUser() || {}
-        const updated = { ...user, real_name: real_name.trim(), location: location.trim(), land_size: parseFloat(land_size) || 0 }
+        const updated = {
+          ...user,
+          real_name:  real_name.trim(),
+          location:   location.trim(),
+          land_size:  parseFloat(land_size) || 0,
+          avatar_url: avatarPath || user.avatar_url || null
+        }
         app.globalData.user = updated
-        try { wx.setStorageSync('user', updated) } catch {}
+        auth.saveUser(updated)          // 必须用 auth.saveUser，key 是 'cotton_user'
+        this.setData({ pendingAvatarPath: '' })
         wx.showToast({ title: '保存成功', icon: 'success' })
-        setTimeout(() => wx.navigateBack(), 1200)
+        setTimeout(() => {
+          if (getCurrentPages().length > 1) wx.navigateBack()
+          else wx.switchTab({ url: '/pages/my/index' })
+        }, 1200)
       } else {
         wx.showToast({ title: res.msg || '保存失败', icon: 'none' })
       }

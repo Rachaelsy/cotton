@@ -12,12 +12,16 @@
 
   <scroll-view class="pf-scroll" scroll-y>
 
-    <!-- 头像区 -->
-    <view class="avatar-section">
+    <!-- 头像区（点击选图上传） -->
+    <view class="avatar-section" bindtap="onChooseAvatar">
       <view class="avatar-circle">
-        <text class="avatar-text">{{initial}}</text>
+        <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill"/>
+        <text wx:else class="avatar-text">{{initial}}</text>
+        <view class="avatar-edit-badge">
+          <text class="avatar-edit-icon">📷</text>
+        </view>
       </view>
-      <text class="avatar-hint">头像</text>
+      <text class="avatar-hint">{{uploading ? '上传中...' : '点击更换头像'}}</text>
     </view>
 
     <!-- 表单 -->

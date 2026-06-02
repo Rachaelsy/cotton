@@ -1,4 +1,1 @@
-{
-  "usingComponents": {},
-  "renderer": "skyline"
-}
+{"usingComponents": {}, "renderer": "skyline", "navigationStyle": "custom", "componentFramework": "glass-easel"}

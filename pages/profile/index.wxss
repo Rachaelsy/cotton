@@ -3,7 +3,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   background: #F5EEE6;
 }
 
@@ -45,6 +45,7 @@
 /* ===== 滚动区 ===== */
 .pf-scroll {
   flex: 1;
+  height: 0;
 }
 
 /* ===== 头像区 ===== */
@@ -66,6 +67,14 @@
   justify-content: center;
   margin-bottom: 16rpx;
   box-shadow: 0 8rpx 28rpx rgba(21,128,61,0.30);
+  position: relative;
+  overflow: visible;
+}
+
+.avatar-img {
+  width: 144rpx;
+  height: 144rpx;
+  border-radius: 50%;
 }
 
 .avatar-text {
@@ -74,6 +83,22 @@
   color: #ffffff;
   line-height: 1;
 }
+
+.avatar-edit-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 48rpx;
+  height: 48rpx;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.15);
+}
+
+.avatar-edit-icon { font-size: 26rpx; }
 
 .avatar-hint {
   font-size: 24rpx;

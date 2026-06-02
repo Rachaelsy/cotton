@@ -160,6 +160,7 @@
 }
 
 .goods-icon { font-size: 40rpx; }
+.goods-img  { width: 80rpx; height: 80rpx; border-radius: 16rpx; }
 
 .goods-info {
   flex: 1;

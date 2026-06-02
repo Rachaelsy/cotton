@@ -448,4 +448,115 @@ router.delete('/announcements/:id', adminAuth, async (req, res) => {
   } catch(e) { return R_FAIL(res, '服务器错误', 500) }
 })
 
+// ── GET /api/admin/aftersales — 全平台售后申请列表 ──────────
+router.get('/aftersales', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.query
+    let sql = `
+      SELECT ar.id, ar.order_no, ar.farmer_name, ar.aftersale_type,
+             ar.reason, ar.other_reason, ar.description, ar.images,
+             ar.status, ar.handle_note, ar.created_at, ar.updated_at,
+             m.company_name
+      FROM aftersale_requests ar
+      LEFT JOIN merchants m ON m.id = ar.merchant_id
+    `
+    const params = []
+    if (status && status !== 'all') { sql += ' WHERE ar.status = ?'; params.push(status) }
+    sql += ' ORDER BY ar.created_at DESC'
+    const [rows] = await db.query(sql, params)
+    return R_OK(res, rows)
+  } catch (e) {
+    console.error('[admin-aftersales]', e); return R_FAIL(res, '服务器错误', 500)
+  }
+})
+
+// ── GET /api/admin/finance — 各商户财务汇总 ─────────────────
+router.get('/finance', adminAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        m.id AS merchant_id, m.company_name, m.commission_rate, u.phone,
+        COALESCE(cs.total_sales,  0) AS total_sales,
+        COALESCE(av.available,    0) AS available_amount,
+        COALESCE(fr.frozen,       0) AS frozen_amount,
+        COALESCE(wp.withdrawn,    0) AS withdrawn_amount,
+        COALESCE(pw.pending_cnt,  0) AS pending_withdrawals
+      FROM merchants m
+      LEFT JOIN users u ON u.id = m.user_id
+      LEFT JOIN (
+        SELECT oi.merchant_id, SUM(oi.subtotal) AS total_sales
+        FROM order_items oi JOIN orders o ON o.id = oi.order_id
+        WHERE o.status = 'completed' GROUP BY oi.merchant_id
+      ) cs ON cs.merchant_id = m.id
+      LEFT JOIN (
+        SELECT oi.merchant_id, SUM(oi.subtotal) AS available
+        FROM order_items oi JOIN orders o ON o.id = oi.order_id
+        WHERE o.fund_status = 'available' GROUP BY oi.merchant_id
+      ) av ON av.merchant_id = m.id
+      LEFT JOIN (
+        SELECT oi.merchant_id, SUM(oi.subtotal) AS frozen
+        FROM order_items oi JOIN orders o ON o.id = oi.order_id
+        WHERE o.fund_status = 'frozen' GROUP BY oi.merchant_id
+      ) fr ON fr.merchant_id = m.id
+      LEFT JOIN (
+        SELECT merchant_id, SUM(amount) AS withdrawn
+        FROM withdrawals WHERE status = 'paid' GROUP BY merchant_id
+      ) wp ON wp.merchant_id = m.id
+      LEFT JOIN (
+        SELECT merchant_id, COUNT(*) AS pending_cnt
+        FROM withdrawals WHERE status = 'pending' GROUP BY merchant_id
+      ) pw ON pw.merchant_id = m.id
+      WHERE m.apply_status = 'approved'
+      ORDER BY total_sales DESC
+    `)
+    return R_OK(res, rows)
+  } catch (e) {
+    console.error('[admin-finance]', e); return R_FAIL(res, '服务器错误', 500)
+  }
+})
+
+// ── GET /api/admin/withdrawals — 全平台提现申请列表 ─────────
+router.get('/withdrawals', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.query
+    let sql = `
+      SELECT w.id, w.amount, w.status, w.note, w.created_at, w.paid_at,
+             m.company_name, u.phone
+      FROM withdrawals w
+      LEFT JOIN merchants m ON m.id = w.merchant_id
+      LEFT JOIN users u ON u.id = m.user_id
+    `
+    const params = []
+    if (status && status !== 'all') { sql += ' WHERE w.status = ?'; params.push(status) }
+    sql += ' ORDER BY w.created_at DESC'
+    const [rows] = await db.query(sql, params)
+    return R_OK(res, rows)
+  } catch (e) {
+    console.error('[admin-withdrawals]', e); return R_FAIL(res, '服务器错误', 500)
+  }
+})
+
+// ── PATCH /api/admin/withdrawals/:id/handle — 审批提现 ──────
+router.patch('/withdrawals/:id/handle', adminAuth, async (req, res) => {
+  try {
+    const { action, note } = req.body
+    if (!['approve', 'reject'].includes(action)) return R_FAIL(res, '无效操作')
+    const id = req.params.id
+    if (action === 'approve') {
+      await db.query(
+        "UPDATE withdrawals SET status='paid', note=?, paid_at=NOW() WHERE id=? AND status='pending'",
+        [note || '', id]
+      )
+    } else {
+      await db.query(
+        "UPDATE withdrawals SET status='rejected', note=? WHERE id=? AND status='pending'",
+        [note || '', id]
+      )
+    }
+    return R_OK(res, null, action === 'approve' ? '已批准提现' : '已拒绝提现')
+  } catch (e) {
+    console.error('[admin-withdrawals-handle]', e); return R_FAIL(res, '服务器错误', 500)
+  }
+})
+
 module.exports = router

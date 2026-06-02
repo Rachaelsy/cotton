@@ -1,4 +1,4 @@
-﻿// pages/my-orders/index.js — 我的订单
+﻿// subpkg-supplies/my-orders/index.js — 我的订单
 const app  = getApp()
 const auth = require('../../utils/auth')
 
@@ -52,7 +52,11 @@ Page({
             statusLabel: st.label,
             statusCls:   st.cls,
             statusIcon:  st.icon,
-            firstItem:   o.items && o.items[0] ? o.items[0] : null,
+            firstItem: (() => {
+              const it = o.items && o.items[0] ? o.items[0] : null
+              if (it && it.image_url) it.image_url = auth.BASE_URL + it.image_url
+              return it
+            })(),
             moreCount:   o.items && o.items.length > 1 ? o.items.length - 1 : 0,
             createDate:  o.created_at ? o.created_at.toString().slice(0, 16).replace('T', ' ') : ''
           }

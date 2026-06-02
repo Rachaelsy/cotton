@@ -203,11 +203,12 @@ router.get('/my', farmerAuth, async (req, res) => {
              o.receiver_name, o.receiver_phone, o.created_at, o.pay_expires_at,
              (SELECT COUNT(*) FROM reviews rv WHERE rv.order_id = o.id) AS has_reviewed,
              GROUP_CONCAT(
-               CONCAT(i.icon,'|',i.name,'|',i.spec,'|',i.price,'|',i.qty)
+               CONCAT(i.icon,'|',i.name,'|',i.spec,'|',i.price,'|',i.qty,'|',IFNULL(p.image_url,''))
                SEPARATOR ';;'
              ) AS items_raw
       FROM orders o
       LEFT JOIN order_items i ON i.order_id = o.id
+      LEFT JOIN products p ON p.id = i.product_id
       WHERE o.user_id = ?
     `
     const params = [req.user.id]
@@ -218,8 +219,8 @@ router.get('/my', farmerAuth, async (req, res) => {
     const orders = rows.map(o => ({
       ...o,
       items: (o.items_raw || '').split(';;').filter(Boolean).map(s => {
-        const [icon, name, spec, price, qty] = s.split('|')
-        return { icon, name, spec, price: parseFloat(price), qty: parseInt(qty) }
+        const [icon, name, spec, price, qty, image_url] = s.split('|')
+        return { icon, name, spec, price: parseFloat(price), qty: parseInt(qty), image_url: image_url || null }
       })
     }))
     return ok(res, orders)

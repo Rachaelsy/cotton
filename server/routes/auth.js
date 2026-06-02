@@ -114,7 +114,7 @@ router.post('/login', async (req, res) => {
   try {
     // ── 查询用户 ──────────────────────────────
     const [rows] = await db.query(
-      'SELECT id,phone,password,role,real_name,is_active FROM users WHERE phone=?',
+      'SELECT id,phone,password,role,real_name,is_active,avatar_url FROM users WHERE phone=?',
       [phone]
     )
     if (rows.length === 0) return fail(res, '手机号未注册', 404)
@@ -157,8 +157,9 @@ router.post('/login', async (req, res) => {
     const token = signToken(user)
     return ok(res, {
       token,
-      role:      user.role,
-      real_name: user.real_name,
+      role:       user.role,
+      real_name:  user.real_name,
+      avatar_url: user.avatar_url || null,
       ...profile
     }, '登录成功')
 
@@ -178,7 +179,7 @@ router.post('/login', async (req, res) => {
 router.get('/verify', authMiddleware, async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT id,phone,role,real_name,is_verified FROM users WHERE id=? AND is_active=1',
+      'SELECT id,phone,role,real_name,is_verified,avatar_url FROM users WHERE id=? AND is_active=1',
       [req.user.id]
     )
     if (rows.length === 0) return fail(res, '用户不存在或已被禁用', 404)
@@ -294,10 +295,11 @@ router.post('/wx-login', async (req, res) => {
 // PUT /api/auth/profile  更新个人资料
 // ─────────────────────────────────────────────
 router.put('/profile', authMiddleware, async (req, res) => {
-  const { real_name, location, land_size } = req.body
+  const { real_name, location, land_size, avatar_url } = req.body
   if (!real_name || !real_name.trim()) return fail(res, '姓名不能为空')
   try {
-    await db.query('UPDATE users SET real_name=? WHERE id=?', [real_name.trim(), req.user.id])
+    await db.query('UPDATE users SET real_name=?, avatar_url=? WHERE id=?',
+      [real_name.trim(), avatar_url || null, req.user.id])
     if (req.user.role === 'farmer') {
       await db.query(
         'UPDATE farmers SET location=?, land_size=? WHERE user_id=?',
