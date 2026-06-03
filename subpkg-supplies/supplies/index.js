@@ -8,6 +8,7 @@ Page({
     products: [],
     cats: CATS,
     catSel: '全部',
+    searchKeyword: '',
     displayProds: [],
     cartCount: 0
   },
@@ -56,14 +57,41 @@ Page({
     }
   },
 
+  // 统一过滤：分类 + 关键词
+  _filter(products, catSel, keyword) {
+    let list = catSel === '全部' ? products : products.filter(p => p.cat === catSel)
+    if (keyword) {
+      const kw = keyword.toLowerCase()
+      list = list.filter(p => p.name && p.name.toLowerCase().includes(kw))
+    }
+    return list
+  },
+
   // 分类筛选
   onCat(e) {
     const name = e.currentTarget.dataset.name
-    const products = this.data.products
-    const displayProds = name === '全部'
-      ? products
-      : products.filter(p => p.cat === name)
+    const displayProds = this._filter(this.data.products, name, this.data.searchKeyword)
     this.setData({ catSel: name, displayProds })
+  },
+
+  // 搜索输入（实时过滤）
+  onSearchInput(e) {
+    const keyword = e.detail.value
+    const displayProds = this._filter(this.data.products, this.data.catSel, keyword)
+    this.setData({ searchKeyword: keyword, displayProds })
+  },
+
+  // 键盘确认搜索
+  onSearchConfirm(e) {
+    const keyword = e.detail.value
+    const displayProds = this._filter(this.data.products, this.data.catSel, keyword)
+    this.setData({ searchKeyword: keyword, displayProds })
+  },
+
+  // 清除搜索
+  onSearchClear() {
+    const displayProds = this._filter(this.data.products, this.data.catSel, '')
+    this.setData({ searchKeyword: '', displayProds })
   },
 
   // 点击商品进入详情
@@ -92,11 +120,6 @@ Page({
   // 跳转购物车
   goCart() {
     wx.navigateTo({ url: '/subpkg-supplies/supplies-cart/index' })
-  },
-
-  // 搜索（待开发）
-  onSearch() {
-    wx.showToast({ title: '搜索功能开发中', icon: 'none' })
   },
 
   // 活动横幅

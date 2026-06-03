@@ -8,9 +8,20 @@
     </view>
     <!-- 搜索栏 + 购物车 -->
     <view class="search-row">
-      <view class="search-bar" bindtap="onSearch">
+      <view class="search-bar">
         <text class="search-icon">🔍</text>
-        <text class="search-placeholder">搜索农药、化肥、种子...</text>
+        <input
+          class="search-input"
+          value="{{searchKeyword}}"
+          placeholder="搜索农药、化肥、种子..."
+          placeholder-style="color:#BBBBBB;font-size:28rpx"
+          confirm-type="search"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
+        />
+        <view wx:if="{{searchKeyword}}" class="search-clear" catchtap="onSearchClear">
+          <text style="color:#BBBBBB;font-size:28rpx">✕</text>
+        </view>
       </view>
       <view class="cart-btn" bindtap="goCart">
         <text class="cart-icon">🛒</text>
@@ -98,7 +109,7 @@
     <!-- 无商品提示 -->
     <view wx:if="{{displayProds.length === 0}}" class="empty-tip">
       <text class="empty-icon">🔍</text>
-      <text class="empty-text">该分类暂无商品</text>
+      <text class="empty-text">{{searchKeyword ? '未找到"' + searchKeyword + '"相关商品' : '该分类暂无商品'}}</text>
     </view>
 
     <view class="list-bottom"></view>

@@ -84,7 +84,23 @@
   gap: 12rpx;
 }
 
-.search-icon { font-size: 28rpx; }
+.search-icon { font-size: 28rpx; flex-shrink: 0; }
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #1A1A1A;
+  height: 56rpx;
+  line-height: 56rpx;
+}
+
+.search-clear {
+  flex-shrink: 0;
+  padding: 0 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .search-placeholder {
   font-size: 24rpx;
