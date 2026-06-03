@@ -114,7 +114,7 @@ router.post('/login', async (req, res) => {
   try {
     // ── 查询用户 ──────────────────────────────
     const [rows] = await db.query(
-      'SELECT id,phone,password,role,real_name,is_active,avatar_url FROM users WHERE phone=?',
+      'SELECT id,phone,password,role,real_name,is_active FROM users WHERE phone=?',
       [phone]
     )
     if (rows.length === 0) return fail(res, '手机号未注册', 404)

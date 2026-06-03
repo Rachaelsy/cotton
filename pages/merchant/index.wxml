@@ -4,7 +4,7 @@
 
     <!-- 顶部Header -->
     <view class="header" style="padding-top: {{statusBarHeight}}px">
-      <text class="header-tag">棉管家·商户版</text>
+      <text class="header-tag">棉花智能体·商户版</text>
       <view class="store-block">
         <view class="store-avatar">
           <text class="avatar-text">{{user.real_name ? user.real_name[0] : '商'}}</text>

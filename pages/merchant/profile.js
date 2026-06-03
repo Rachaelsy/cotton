@@ -55,7 +55,7 @@ Page({
 
   onAbout() {
     wx.showModal({
-      title: '棉管家商户版 v1.0.0',
+      title: '棉花智能体商户版 v1.0.0',
       content: '专为新疆农资商户打造的智能经营管理平台\n\n联系我们：support@cotton.app',
       showCancel: false,
       confirmText: '好的'

@@ -143,7 +143,7 @@ Page({
 
   onAbout() {
     wx.showModal({
-      title: '棉管家 v1.2.0',
+      title: '棉花智能体 v1.2.0',
       content: '专为新疆棉农打造的智能农业管理平台\n\n联系我们：support@cotton.app',
       showCancel: false,
       confirmText: '好的'

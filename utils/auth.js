@@ -3,17 +3,20 @@
 
 // ── 环境切换 ──────────────────────────────────────────────────
 // ENV = 'prod'   → 生产环境，使用云服务器域名（HTTPS，需已备案）
-// ENV = 'real'   → 真机调试，使用电脑局域网 IP
+// ENV = 'server' → 连接云服务器（走 Nginx 80 端口）
+// ENV = 'real'   → 真机调试，使用电脑局域网 IP + 端口 3000
 // ENV = 'sim'    → 模拟器调试，使用 localhost
-const ENV = 'real'
+const ENV = 'server'
 
 const PROD_URL   = 'https://your-domain.com'   // ← 上线后改为真实备案域名
-const LOCAL_IP   = '192.168.0.28'              // ← 真机调试时改为电脑局域网 IP (ipconfig 查询)
+const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP
+const LOCAL_IP   = '192.168.0.28'             // 本地开发局域网 IP（ipconfig 查询）
 
 const BASE_URL =
-  ENV === 'prod' ? PROD_URL :
-  ENV === 'real' ? `http://${LOCAL_IP}:3000` :
-                   'http://localhost:3000'
+  ENV === 'prod'   ? PROD_URL :
+  ENV === 'server' ? `http://${SERVER_IP}` :
+  ENV === 'real'   ? `http://${LOCAL_IP}:3000` :
+                     'http://localhost:3000'
 
 const TOKEN_KEY = 'cotton_token'
 const USER_KEY  = 'cotton_user'

@@ -5,13 +5,15 @@ services:
     image: docker.m.daocloud.io/library/mysql:8.0
     container_name: cotton-db
     restart: always
+    command: --skip-name-resolve
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASS}
       MYSQL_DATABASE: ${DB_NAME:-cotton}
       MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./server/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASS}"]
       interval: 10s

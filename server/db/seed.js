@@ -55,8 +55,8 @@ async function seed() {
     } else {
       const p = acc.profile
       await db.query(
-        'INSERT INTO merchants (user_id,company_name,business_license,product_category) VALUES (?,?,?,?)',
-        [userId, p.company_name, p.business_license, p.product_category]
+        'INSERT INTO merchants (user_id,company_name,business_license,product_category,apply_status) VALUES (?,?,?,?,?)',
+        [userId, p.company_name, p.business_license, p.product_category, 'approved']
       )
     }
 

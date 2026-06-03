@@ -3,7 +3,7 @@
   <scroll-view class="scroll" scroll-y>
 
     <view class="header" style="padding-top: {{statusBarHeight}}px">
-      <text class="header-tag">棉管家·商户版</text>
+      <text class="header-tag">棉花智能体·商户版</text>
       <text class="header-title">订单管理</text>
     </view>
 

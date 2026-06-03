@@ -53,6 +53,6 @@ app.use((err, _req, res, _next) => {
 // ── 启动 ────────────────────────────────────
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
-  console.log(`🚀 棉管家后端启动成功 → http://localhost:${PORT}`)
+  console.log(`🚀 棉花智能体后端启动成功 → http://localhost:${PORT}`)
   require('./scheduler').startScheduler()
 })

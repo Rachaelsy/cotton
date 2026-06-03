@@ -369,6 +369,62 @@ router.post('/withdraw', merchantAuth, async (req, res) => {
 })
 
 // ─────────────────────────────────────────────────────────────
+// GET /api/merchant/customers — 下单客户列表
+// ─────────────────────────────────────────────────────────────
+router.get('/customers', merchantAuth, async (req, res) => {
+  const mid = req.merchant.merchant_id
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        u.id,
+        u.real_name  AS farmer_name,
+        u.phone,
+        f.location   AS region,
+        SUM(oi.subtotal)           AS total_spent,
+        COUNT(DISTINCT o.id)       AS order_count,
+        MAX(DATE(o.created_at))    AS last_order_date
+      FROM order_items oi
+      JOIN orders o  ON o.id  = oi.order_id
+      JOIN users  u  ON u.id  = o.user_id
+      LEFT JOIN farmers f ON f.user_id = u.id
+      WHERE oi.merchant_id = ?
+        AND o.status NOT IN ('cancelled','pending_payment')
+      GROUP BY u.id
+      ORDER BY total_spent DESC
+    `, [mid])
+    return ok(res, rows)
+  } catch(e) { console.error('[merchant-customers]', e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/merchant/customers/:userId — 删除该客户在本店的订单记录
+// ─────────────────────────────────────────────────────────────
+router.delete('/customers/:userId', merchantAuth, async (req, res) => {
+  const mid    = req.merchant.merchant_id
+  const userId = req.params.userId
+  try {
+    // 找出该客户在本店有 items 的所有订单 id
+    const [orderRows] = await db.query(`
+      SELECT DISTINCT o.id FROM orders o
+      JOIN order_items oi ON oi.order_id = o.id
+      WHERE o.user_id = ? AND oi.merchant_id = ?
+    `, [userId, mid])
+    if (!orderRows.length) return fail(res, '未找到该客户的订单', 404)
+    const ids = orderRows.map(r => r.id)
+    const ph  = ids.map(() => '?').join(',')
+    await db.query(`DELETE FROM reviews          WHERE order_id IN (${ph}) AND merchant_id = ?`, [...ids, mid])
+    await db.query(`DELETE FROM aftersale_requests WHERE order_id IN (${ph}) AND merchant_id = ?`, [...ids, mid])
+    await db.query(`DELETE FROM order_items      WHERE order_id IN (${ph}) AND merchant_id = ?`, [...ids, mid])
+    // 若订单已无任何 items，一并删除订单主记录
+    await db.query(`
+      DELETE FROM orders WHERE id IN (${ph})
+      AND (SELECT COUNT(*) FROM order_items WHERE order_id = orders.id) = 0
+    `, ids)
+    return ok(res, null, '已删除该客户的订单记录')
+  } catch(e) { console.error('[merchant-customers-delete]', e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
 // GET /api/merchant/trend?period=day|week|month — 销售趋势图表数据
 // ─────────────────────────────────────────────────────────────
 router.get('/trend', merchantAuth, async (req, res) => {
@@ -635,6 +691,19 @@ router.get('/reviews', merchantAuth, async (req, res) => {
       avg_rating: parseFloat(stats.avg).toFixed(1)
     })
   } catch(e) { console.error('[merchant-reviews]', e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/merchant/reviews/:id — 删除评价
+// ─────────────────────────────────────────────────────────────
+router.delete('/reviews/:id', merchantAuth, async (req, res) => {
+  const mid = req.merchant.merchant_id
+  try {
+    const [rows] = await db.query('SELECT id FROM reviews WHERE id=? AND merchant_id=?', [req.params.id, mid])
+    if (!rows.length) return fail(res, '评价不存在', 404)
+    await db.query('DELETE FROM reviews WHERE id=?', [req.params.id])
+    return ok(res, null, '评价已删除')
+  } catch(e) { console.error('[merchant-review-delete]', e); return fail(res, '服务器错误', 500) }
 })
 
 // ─────────────────────────────────────────────────────────────

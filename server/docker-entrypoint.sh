@@ -3,17 +3,35 @@ set -e
 
 echo "⏳ 等待 MySQL 就绪..."
 until node -e "
-const mysql = require('mysql2/promise');
-mysql.createConnection({
+const m = require('mysql2/promise');
+m.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME
-}).then(() => process.exit(0)).catch(() => process.exit(1))
+}).then(c => c.end()).then(() => process.exit(0)).catch(() => process.exit(1));
 " 2>/dev/null; do
   sleep 2
 done
 echo "✅ MySQL 已就绪"
+
+echo "📋 创建基础表结构..."
+node -e "
+const fs = require('fs');
+const m = require('mysql2/promise');
+m.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
+  multipleStatements: true
+}).then(async c => {
+  const sql = fs.readFileSync('/app/db/schema.sql', 'utf8');
+  await c.query(sql);
+  await c.end();
+  console.log('✅ 基础表结构已创建');
+}).catch(e => { console.error('schema error:', e.message); process.exit(1); });
+"
 
 echo "🗄️  运行数据库迁移..."
 node db/migrate_products.js           2>/dev/null || true

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>棉管家 · 商户后台</title>
+  <title>棉花智能体 · 商户后台</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #F5F6FA; color: #1A1A1A; }
@@ -230,7 +230,7 @@
 <aside class="sidebar">
   <div class="sidebar-logo">
     <div class="emoji">🏪</div>
-    <div class="title">棉管家商户后台</div>
+    <div class="title">棉花智能体商户后台</div>
     <div class="sub">农资管理中心</div>
   </div>
   <nav class="nav">
@@ -462,7 +462,7 @@
         <div class="card" style="margin-top:16px">
           <div class="card-head"><span class="card-title">👥 下单客户</span><span style="font-size:12px;color:#888">共 38 位</span></div>
           <table>
-            <thead><tr><th>客户</th><th>手机号</th><th>地区</th><th>累计消费(元)</th><th>订单数</th><th>最近下单</th></tr></thead>
+            <thead><tr><th>客户</th><th>手机号</th><th>地区</th><th>累计消费(元)</th><th>订单数</th><th>最近下单</th><th>操作</th></tr></thead>
             <tbody id="cust-table"></tbody>
           </table>
         </div>
@@ -1150,32 +1150,63 @@ async function doWithdraw() {
 /* ════════════════════════════════════════════
    5. 客户评价
 ════════════════════════════════════════════ */
-const MOCK_CUSTOMERS = [
-  { name:'古丽**哈尔', phone:'138****0001', region:'喀什疏附县', total:832, orders:5, last:'2026-05-25' },
-  { name:'阿迪力**',  phone:'139****0045', region:'喀什疏附县', total:1260, orders:7, last:'2026-05-25' },
-  { name:'买买提**',  phone:'135****0089', region:'喀什巴楚县', total:680, orders:4, last:'2026-05-24' },
-  { name:'热依拉**',  phone:'136****0023', region:'喀什疏附县', total:420, orders:3, last:'2026-05-22' },
-  { name:'努尔**',    phone:'158****0067', region:'喀什叶城县', total:1480, orders:9, last:'2026-05-21' },
-]
-
 function switchCustTab(el, tab) {
   document.querySelectorAll('#panel-customers .tab').forEach(t => t.classList.remove('active'))
   el.classList.add('active')
   document.getElementById('cust-panel-customers').style.display = tab === 'customers' ? 'block' : 'none'
   document.getElementById('cust-panel-reviews').style.display   = tab === 'reviews'   ? 'block' : 'none'
-  if (tab === 'reviews') loadReviews()
+  if (tab === 'customers') loadCustomers()
+  if (tab === 'reviews')   loadReviews()
 }
 
-function loadCustomers() {
-  document.getElementById('cust-table').innerHTML = MOCK_CUSTOMERS.map(c => `
-    <tr>
-      <td style="font-weight:700">${esc(c.name)}</td>
-      <td style="color:#888;font-size:12px">${c.phone}</td>
-      <td style="font-size:12px">${c.region}</td>
-      <td style="font-weight:700;color:#C8902E">¥${c.total}</td>
-      <td>${c.orders} 单</td>
-      <td style="font-size:12px;color:#888">${c.last}</td>
-    </tr>`).join('')
+async function loadCustomers() {
+  const tbody = document.getElementById('cust-table')
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:32px">加载中...</td></tr>'
+  try {
+    const r = await api('GET', '/customers')
+    if (!r || r.code !== 200) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:32px">加载失败</td></tr>'
+      return
+    }
+    const list = r.data || []
+    // 更新客户数
+    const countEl = document.querySelector('#cust-panel-customers .card-head span:last-child')
+    if (countEl) countEl.textContent = `共 ${list.length} 位`
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:32px">暂无下单客户</td></tr>'
+      return
+    }
+    tbody.innerHTML = list.map(c => {
+      const masked = c.farmer_name
+        ? (c.farmer_name.length > 1 ? c.farmer_name[0] + '**' + c.farmer_name.slice(-1) : c.farmer_name + '**')
+        : '未知'
+      const maskedPhone = c.phone
+        ? c.phone.slice(0,3) + '****' + c.phone.slice(-4)
+        : '—'
+      return `<tr>
+        <td style="font-weight:700">${esc(masked)}</td>
+        <td style="color:#888;font-size:12px">${maskedPhone}</td>
+        <td style="font-size:12px">${esc(c.region || '—')}</td>
+        <td style="font-weight:700;color:#C8902E">¥${parseFloat(c.total_spent||0).toFixed(0)}</td>
+        <td>${c.order_count} 单</td>
+        <td style="font-size:12px;color:#888">${c.last_order_date || '—'}</td>
+        <td><button onclick="deleteCustomer(${c.id},'${esc(masked)}')"
+          style="padding:3px 10px;background:#FEE2E2;color:#DC2626;border:none;border-radius:6px;font-size:12px;cursor:pointer">删除</button></td>
+      </tr>`
+    }).join('')
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#aaa;padding:32px">加载失败：${esc(e.message)}</td></tr>`
+  }
+}
+
+async function deleteCustomer(userId, name) {
+  if (!confirm(`确定删除客户「${name}」在本店的所有订单记录吗？\n此操作不可恢复，将同时删除相关评价和售后记录。`)) return
+  const r = await api('DELETE', `/customers/${userId}`)
+  if (r && r.code === 200) {
+    loadCustomers()
+  } else {
+    alert(r?.msg || '删除失败')
+  }
 }
 
 async function loadReviews() {
@@ -1210,7 +1241,10 @@ async function loadReviews() {
             </div>
             <div style="text-align:right">
               <div class="stars">${stars}</div>
-              ${!r.reply ? `<button class="btn btn-outline btn-sm" onclick="openReply(${r.id})" style="margin-top:6px">回复</button>` : ''}
+              <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
+                ${!r.reply ? `<button class="btn btn-outline btn-sm" onclick="openReply(${r.id})">回复</button>` : ''}
+                <button class="btn btn-sm" style="background:#FEE2E2;color:#DC2626;border:none" onclick="deleteReview(${r.id},'${esc(maskedName)}')">删除</button>
+              </div>
             </div>
           </div>
           <div class="review-content">${r.content ? esc(r.content) : '<span style="color:#bbb">该用户没有填写评价</span>'}</div>
@@ -1237,6 +1271,18 @@ async function submitReply() {
       loadReviews()
     } else {
       alert(r?.msg || '回复失败')
+    }
+  } catch { alert('网络错误，请重试') }
+}
+
+async function deleteReview(id, name) {
+  if (!confirm(`确定删除 ${name} 的这条评价吗？删除后不可恢复。`)) return
+  try {
+    const r = await api('DELETE', `/reviews/${id}`)
+    if (r && r.code === 200) {
+      loadReviews()
+    } else {
+      alert(r?.msg || '删除失败')
     }
   } catch { alert('网络错误，请重试') }
 }

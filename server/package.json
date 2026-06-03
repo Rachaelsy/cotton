@@ -1,7 +1,7 @@
 {
   "name": "cotton-server",
   "version": "1.0.0",
-  "description": "棉管家小程序后端API服务",
+  "description": "棉花智能体小程序后端API服务",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

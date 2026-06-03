@@ -1,4 +1,4 @@
-# 棉管家 · WeChat Mini Program
+# 棉花智能体 · WeChat Mini Program
 
 面向新疆棉农和农资商户的智能农业管理平台，微信小程序 Skyline 渲染器 + Node.js 后端。
 
