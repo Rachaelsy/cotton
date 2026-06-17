@@ -78,10 +78,10 @@ router.get('/reviews', async (req, res) => {
 router.get('/mine', authMiddleware, roleGuard('merchant'), async (req, res) => {
   try {
     const { status } = req.query
-    let sql = 'SELECT * FROM products WHERE merchant_id = ?'
+    let sql = 'SELECT p.* FROM products p JOIN merchants m ON m.id = p.merchant_id WHERE m.user_id = ?'
     const params = [req.user.id]
-    if (status === 'on' || status === 'off') { sql += ' AND status = ?'; params.push(status) }
-    sql += ' ORDER BY created_at DESC'
+    if (status === 'on' || status === 'off') { sql += ' AND p.status = ?'; params.push(status) }
+    sql += ' ORDER BY p.created_at DESC'
     const [rows] = await db.query(sql, params)
     return ok(res, rows)
   } catch (err) {
@@ -96,9 +96,11 @@ router.post('/', authMiddleware, roleGuard('merchant'), async (req, res) => {
   if (!name || !name.trim()) return fail(res, '商品名称不能为空')
   if (!price || isNaN(price) || price <= 0) return fail(res, '请填写正确的价格')
   try {
+    const [[m]] = await db.query('SELECT id FROM merchants WHERE user_id=?', [req.user.id])
+    if (!m) return fail(res, '商户信息不存在', 404)
     const [result] = await db.query(
       'INSERT INTO products (merchant_id,name,category,price,unit,stock,description,icon) VALUES (?,?,?,?,?,?,?,?)',
-      [req.user.id, name.trim(), category || '', parseFloat(price), unit || '', parseInt(stock) || 0, description || '', icon || '📦']
+      [m.id, name.trim(), category || '', parseFloat(price), unit || '', parseInt(stock) || 0, description || '', icon || '📦']
     )
     return ok(res, { id: result.insertId }, '商品已上架')
   } catch (err) {
@@ -112,7 +114,8 @@ router.put('/:id', authMiddleware, roleGuard('merchant'), async (req, res) => {
   const { name, category, price, unit, stock, description, icon } = req.body
   const { id } = req.params
   try {
-    const [rows] = await db.query('SELECT id FROM products WHERE id=? AND merchant_id=?', [id, req.user.id])
+    const [[m]] = await db.query('SELECT id FROM merchants WHERE user_id=?', [req.user.id])
+    const [rows] = await db.query('SELECT id FROM products WHERE id=? AND merchant_id=?', [id, m?.id])
     if (!rows.length) return fail(res, '商品不存在或无权限', 404)
     await db.query(
       'UPDATE products SET name=?,category=?,price=?,unit=?,stock=?,description=?,icon=? WHERE id=?',
@@ -131,7 +134,8 @@ router.patch('/:id/status', authMiddleware, roleGuard('merchant'), async (req, r
   const { status } = req.body
   if (!['on', 'off'].includes(status)) return fail(res, '状态值无效')
   try {
-    const [rows] = await db.query('SELECT id FROM products WHERE id=? AND merchant_id=?', [id, req.user.id])
+    const [[m]] = await db.query('SELECT id FROM merchants WHERE user_id=?', [req.user.id])
+    const [rows] = await db.query('SELECT id FROM products WHERE id=? AND merchant_id=?', [id, m?.id])
     if (!rows.length) return fail(res, '商品不存在或无权限', 404)
     await db.query('UPDATE products SET status=? WHERE id=?', [status, id])
     return ok(res, null, status === 'on' ? '已上架' : '已下架')
@@ -145,7 +149,8 @@ router.patch('/:id/status', authMiddleware, roleGuard('merchant'), async (req, r
 router.delete('/:id', authMiddleware, roleGuard('merchant'), async (req, res) => {
   const { id } = req.params
   try {
-    const [rows] = await db.query('SELECT id FROM products WHERE id=? AND merchant_id=?', [id, req.user.id])
+    const [[m]] = await db.query('SELECT id FROM merchants WHERE user_id=?', [req.user.id])
+    const [rows] = await db.query('SELECT id FROM products WHERE id=? AND merchant_id=?', [id, m?.id])
     if (!rows.length) return fail(res, '商品不存在或无权限', 404)
     await db.query('DELETE FROM products WHERE id=?', [id])
     return ok(res, null, '已删除')
