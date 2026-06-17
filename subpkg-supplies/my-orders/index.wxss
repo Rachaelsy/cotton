@@ -120,6 +120,7 @@
 .tag-ship     { background: #FFF7ED; }
 .tag-shipped  { background: #EFF6FF; }
 .tag-done     { background: #F0FDF4; }
+.tag-refunded { background: #F5F3FF; }
 .tag-refund   { background: #FFF1F2; }
 .tag-pending  { background: #FFFBEB; }
 .tag-cancel   { background: #F5F5F5; }
@@ -129,12 +130,13 @@
   font-weight: 700;
 }
 
-.tag-ship    .status-text { color: #D97706; }
-.tag-shipped .status-text { color: #3B82F6; }
-.tag-done    .status-text { color: #16A34A; }
-.tag-refund  .status-text { color: #E11D48; }
-.tag-pending .status-text { color: #D97706; }
-.tag-cancel  .status-text { color: #AAAAAA; }
+.tag-ship     .status-text { color: #D97706; }
+.tag-shipped  .status-text { color: #3B82F6; }
+.tag-done     .status-text { color: #16A34A; }
+.tag-refunded .status-text { color: #7C3AED; }
+.tag-refund   .status-text { color: #E11D48; }
+.tag-pending  .status-text { color: #D97706; }
+.tag-cancel   .status-text { color: #AAAAAA; }
 
 /* ===== 商品行 ===== */
 .goods-row {

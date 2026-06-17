@@ -7,6 +7,7 @@ const STATUS_MAP = {
   pending_ship:    { label: '待发货', cls: 'tag-ship',      icon: '📦' },
   shipped:         { label: '配送中', cls: 'tag-shipped',   icon: '🚚' },
   completed:       { label: '已完成', cls: 'tag-done',      icon: '✅' },
+  refunded:        { label: '售后完成', cls: 'tag-refunded', icon: '🔁' },
   refund:          { label: '售后中', cls: 'tag-refund',    icon: '🔄' },
   cancelled:       { label: '已取消', cls: 'tag-cancel',    icon: '❌' }
 }
@@ -43,7 +44,7 @@ Page({
   async _load(tab) {
     this.setData({ loading: true, empty: false })
     try {
-      const qs = tab === 'all' ? '' : `?status=${tab}`
+      const qs = tab === 'all' ? '' : tab === 'completed' ? '?status=completed&status2=refunded' : `?status=${tab}`
       const res = await auth.request('GET', '/api/orders/my' + qs)
       if (res.code === 200) {
         const orders = (res.data || []).map(o => {

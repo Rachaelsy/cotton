@@ -10,13 +10,13 @@ const ENV = 'server'
 
 const PROD_URL   = 'https://your-domain.com'   // ← 上线后改为真实备案域名
 const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP
-const LOCAL_IP   = '192.168.0.28'             // 本地开发局域网 IP（ipconfig 查询）
+const LOCAL_IP   = '192.168.0.53'             // 本地开发局域网 IP（ipconfig 查询）
 
 const BASE_URL =
   ENV === 'prod'   ? PROD_URL :
   ENV === 'server' ? `http://${SERVER_IP}` :
   ENV === 'real'   ? `http://${LOCAL_IP}:3000` :
-                     'http://localhost:3000'
+                     'http://127.0.0.1:3000'
 
 const TOKEN_KEY = 'cotton_token'
 const USER_KEY  = 'cotton_user'

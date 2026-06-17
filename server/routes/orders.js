@@ -249,7 +249,14 @@ router.get('/my', farmerAuth, async (req, res) => {
       WHERE o.user_id = ?
     `
     const params = [req.user.id]
-    if (status && status !== 'all') { sql += ' AND o.status = ?'; params.push(status) }
+    const { status2 } = req.query
+    if (status && status !== 'all') {
+      if (status2) {
+        sql += ' AND o.status IN (?,?)'; params.push(status, status2)
+      } else {
+        sql += ' AND o.status = ?'; params.push(status)
+      }
+    }
     sql += ' GROUP BY o.id ORDER BY o.created_at DESC'
 
     const [rows] = await db.query(sql, params)
@@ -317,6 +324,8 @@ router.post('/:id/aftersale', farmerAuth, async (req, res) => {
        user?.real_name || '', aftersale_type, reason, other_reason || '', description || '',
        Array.isArray(images) ? images.join(',') : (images || '')]
     )
+    // 更新订单状态为售后中
+    await db.query("UPDATE orders SET status='refund' WHERE id=?", [id])
     // 异步通知商户
     notifyAftersale(item.merchant_id, orders[0].order_no, insertResult.insertId)
       .catch(e => console.error('[notify-aftersale]', e))

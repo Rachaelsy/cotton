@@ -158,6 +158,8 @@ router.patch('/aftersale/:id/handle', merchantAuth, async (req, res) => {
       'UPDATE aftersale_requests SET status=?, handle_note=? WHERE id=?',
       [action, handle_note || '', id]
     )
+    const [[ar]] = await db.query('SELECT order_id FROM aftersale_requests WHERE id=?', [id])
+    if (ar) await db.query("UPDATE orders SET status='refunded' WHERE id=?", [ar.order_id])
     return ok(res, null, action === 'approved' ? '已同意售后' : '已拒绝申请')
   } catch(e) { console.error('[merchant-aftersale-handle]', e); return fail(res, '服务器错误', 500) }
 })
