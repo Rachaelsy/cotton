@@ -194,6 +194,12 @@ router.get('/stats', merchantAuth, async (req, res) => {
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE o.fund_status='frozen'
     `, [mid])
+    const [[um]] = await db.query(
+      "SELECT COUNT(*) AS cnt FROM messages WHERE merchant_id=? AND is_read=0", [mid]
+    )
+    const [[pa]] = await db.query(
+      "SELECT COUNT(*) AS cnt FROM aftersale_requests WHERE merchant_id=? AND status='pending'", [mid]
+    )
     const [wtRows] = await db.query(`
       SELECT DATE(o.created_at) AS day, SUM(o.total) AS amount
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
@@ -222,7 +228,8 @@ router.get('/stats', merchantAuth, async (req, res) => {
       pending_settlement: parseFloat(frozen?.amount || 0).toFixed(2),
       monthly_sales:      parseFloat(o.monthly_sales || 0).toFixed(2),
       total_customers:    tc.total_customers || 0,
-      unread_messages:    0,
+      unread_messages:    um.cnt  || 0,
+      pending_aftersale:  pa.cnt  || 0,
       weekly_trend
     })
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
@@ -625,6 +632,71 @@ router.delete('/orders/:id', merchantAuth, async (req, res) => {
 })
 
 // ─────────────────────────────────────────────────────────────
+// GET /api/merchant/orders/export?token=xxx — 导出订单 CSV
+// token 走 query 参数，供 wx.downloadFile 直接使用
+// ─────────────────────────────────────────────────────────────
+router.get('/orders/export', async (req, res) => {
+  const token = req.query.token || (req.headers.authorization || '').replace('Bearer ', '')
+  if (!token) return res.status(401).json({ code: 401, msg: '请先登录' })
+  let merchant
+  try {
+    merchant = jwt.verify(token, process.env.JWT_SECRET)
+    if (merchant.role !== 'merchant') return res.status(403).json({ code: 403, msg: '权限不足' })
+  } catch { return res.status(401).json({ code: 401, msg: '登录已过期' }) }
+
+  try {
+    const mid = merchant.merchant_id
+    const { status } = req.query
+    let sql = `
+      SELECT o.order_no, o.farmer_name, o.farmer_phone, o.receiver_name, o.receiver_phone,
+             o.address, o.subtotal, o.delivery_fee, o.total, o.pay_method, o.status,
+             o.logistics_no, o.created_at,
+             GROUP_CONCAT(CONCAT(i.name,'×',i.qty) SEPARATOR '; ') AS products
+      FROM orders o
+      JOIN order_items i ON i.order_id = o.id AND i.merchant_id = ?
+    `
+    const params = [mid]
+    if (status && status !== 'all') {
+      sql += ' WHERE o.status = ?'; params.push(status)
+    } else {
+      sql += " WHERE o.status NOT IN ('pending_payment','cancelled')"
+    }
+    sql += ' GROUP BY o.id ORDER BY o.created_at DESC'
+    const [rows] = await db.query(sql, params)
+
+    const header = ['订单编号','买家姓名','买家电话','收货人','收货电话','收货地址','商品明细','商品小计','运费','实付','支付方式','订单状态','物流单号','下单时间']
+    const statusMap = { pending_ship: '待发货', shipped: '已发货', completed: '已完成', aftersale: '售后中', refund: '退款中' }
+    const payMap   = { wechat: '微信支付', transfer: '银行转账', cod: '货到付款' }
+
+    const escCsv = v => {
+      if (v == null) return ''
+      const s = String(v)
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s
+    }
+
+    const lines = [
+      header.join(','),
+      ...rows.map(o => [
+        o.order_no, o.farmer_name, o.farmer_phone,
+        o.receiver_name, o.receiver_phone, o.address,
+        o.products,
+        o.subtotal, o.delivery_fee, o.total,
+        payMap[o.pay_method] || o.pay_method,
+        statusMap[o.status] || o.status,
+        o.logistics_no || '',
+        String(o.created_at).slice(0, 19)
+      ].map(escCsv).join(','))
+    ]
+
+    const csv = '﻿' + lines.join('\r\n')  // BOM 让 Excel 正确识别 UTF-8
+    const filename = `orders_${new Date().toISOString().slice(0,10)}.csv`
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    return res.send(csv)
+  } catch(e) { console.error('[orders-export]', e); return fail(res, '服务器错误', 500) }
+})
+
+// ─────────────────────────────────────────────────────────────
 // POST /api/merchant/upload — 图片上传
 // ─────────────────────────────────────────────────────────────
 router.post('/upload', merchantAuth, upload.single('image'), (req, res) => {
@@ -671,7 +743,8 @@ router.get('/reviews', merchantAuth, async (req, res) => {
   const mid = req.merchant.merchant_id
   try {
     const [rows] = await db.query(`
-      SELECT r.id, r.order_id, r.rating, r.content, r.reply, r.farmer_name,
+      SELECT r.id, r.order_id, r.rating, r.content, r.reply,
+             IF(r.is_anonymous, '匿名用户', r.farmer_name) AS farmer_name,
              o.order_no,
              DATE_FORMAT(r.created_at,'%Y-%m-%d') AS date,
              GROUP_CONCAT(i.name ORDER BY i.id SEPARATOR '、') AS prod_names

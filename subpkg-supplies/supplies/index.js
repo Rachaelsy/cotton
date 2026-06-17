@@ -41,7 +41,7 @@ Page({
           image_url: p.image_url ? `${auth.BASE_URL}${p.image_url}` : null,
           hot:       false,
           isNew:     false,
-          sold:      0,
+          sold:      parseInt(p.sold) || 0,
           rating:    5.0,
           store:           p.company_name || '认证商家',
           cat:             p.category || '其他',
@@ -122,9 +122,15 @@ Page({
     wx.navigateTo({ url: '/subpkg-supplies/supplies-cart/index' })
   },
 
-  // 活动横幅
+  // 活动横幅：春耕特惠，展示种子和化肥类商品
   onBanner() {
-    wx.showToast({ title: '活动详情开发中', icon: 'none' })
+    const promoCategories = ['种子', '化肥']
+    const promoProds = this.data.products.filter(p => promoCategories.includes(p.cat))
+    if (!promoProds.length) {
+      wx.showToast({ title: '暂无促销商品', icon: 'none' }); return
+    }
+    this.setData({ catSel: '全部', searchKeyword: '', displayProds: promoProds })
+    wx.showToast({ title: '🌱 春耕特惠 · 种子化肥专区', icon: 'none', duration: 2000 })
   },
 
 })

@@ -106,6 +106,34 @@
         </view>
       </view>
 
+      <!-- Bug2: 售后处理结果 -->
+      <view wx:if="{{aftersale}}" class="section-card">
+        <view class="section-head">
+          <text class="section-icon">🔄</text>
+          <text class="section-title">售后申请详情</text>
+        </view>
+        <view class="kv-row">
+          <text class="kv-k">售后类型</text>
+          <text class="kv-v">{{aftersale.aftersale_type}}</text>
+        </view>
+        <view class="kv-row">
+          <text class="kv-k">申请原因</text>
+          <text class="kv-v">{{aftersale.reason === '其他' ? aftersale.other_reason : aftersale.reason}}</text>
+        </view>
+        <view wx:if="{{aftersale.description}}" class="kv-row">
+          <text class="kv-k">问题描述</text>
+          <text class="kv-v">{{aftersale.description}}</text>
+        </view>
+        <view class="kv-row">
+          <text class="kv-k">处理状态</text>
+          <text class="kv-v {{aftersale.status === 'approved' ? 'text-green' : aftersale.status === 'rejected' ? 'text-red' : 'text-orange'}}">{{aftersale.statusLabel}}</text>
+        </view>
+        <view wx:if="{{aftersale.handle_note}}" class="kv-row">
+          <text class="kv-k">商家回复</text>
+          <text class="kv-v">{{aftersale.handle_note}}</text>
+        </view>
+      </view>
+
       <view style="height: 40rpx"></view>
     </view>
   </scroll-view>

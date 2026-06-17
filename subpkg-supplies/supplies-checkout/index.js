@@ -64,10 +64,11 @@ Page({
 
   async onPay() {
     if (this.data.submitting) return
+
     const { receiverName, receiverPhone, address } = this.data
-    if (!receiverName.trim() || !receiverPhone.trim() || !address.trim()) {
-      wx.showToast({ title: '请先填写收货信息', icon: 'none' }); return
-    }
+    if (!receiverName.trim()) { wx.showToast({ title: '请填写收货人姓名', icon: 'none' }); return }
+    if (!receiverPhone.trim()) { wx.showToast({ title: '请填写手机号', icon: 'none' }); return }
+    if (!address.trim()) { wx.showToast({ title: '请填写收货地址', icon: 'none' }); return }
     this.setData({ submitting: true })
 
     const auth = require('../../utils/auth')
@@ -106,6 +107,7 @@ Page({
         total,
         ...shippingInfo
       }
+      // Bug5: 下单失败时终止流程并提示
       try {
         const res = await auth.request('POST', '/api/orders', {
           items: orderItems,
@@ -121,10 +123,14 @@ Page({
           orderObj.orderId = res.data.orderId
           orderObj.orderNo = res.data.orderNo
         } else {
-          console.warn('订单保存失败:', res.msg)
+          this.setData({ submitting: false })
+          wx.showModal({ title: '下单失败', content: res.msg || '提交订单失败，请重试', showCancel: false })
+          return
         }
       } catch (e) {
-        console.warn('订单保存异常:', e.message)
+        this.setData({ submitting: false })
+        wx.showToast({ title: '网络异常，请重试', icon: 'none' })
+        return
       }
       createdOrders.push(orderObj)
     }

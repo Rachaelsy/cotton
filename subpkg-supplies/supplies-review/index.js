@@ -9,6 +9,7 @@ Page({
     items: [],
     rating: 0,
     content: '',
+    isAnonymous: false,
     submitting: false,
     submitted: false
   },
@@ -31,6 +32,10 @@ Page({
     this.setData({ content: e.detail.value })
   },
 
+  onAnonymousChange(e) {
+    this.setData({ isAnonymous: e.detail.value })
+  },
+
   async onSubmit() {
     if (!this.data.rating) {
       wx.showToast({ title: '请先选择星级', icon: 'none' }); return
@@ -39,8 +44,9 @@ Page({
     this.setData({ submitting: true })
     try {
       const res = await auth.request('POST', `/api/orders/${this.data.orderId}/review`, {
-        rating:  this.data.rating,
-        content: this.data.content.trim()
+        rating:       this.data.rating,
+        content:      this.data.content.trim(),
+        is_anonymous: this.data.isAnonymous
       })
       if (res.code === 200) {
         this.setData({ submitted: true })

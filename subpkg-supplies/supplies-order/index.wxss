@@ -1,4 +1,7 @@
 /* pages/supplies-order/index.wxss — 订单详情 */
+.text-green  { color: #16A34A; }
+.text-red    { color: #DC2626; }
+.text-orange { color: #D97706; }
 
 .page {
   display: flex;

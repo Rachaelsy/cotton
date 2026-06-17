@@ -10,6 +10,7 @@ Page({
     cartCount: 0,
     statusBarHeight: 20,
     showCsPopup: false,
+    showQualityPopup: false,
     reviews: [],
     reviewTotal: 0,
     avgRating: '0.0',
@@ -113,5 +114,13 @@ Page({
 
   onShowReviews() {
     wx.showToast({ title: `共 ${this.data.reviewTotal} 条评价`, icon: 'none' })
+  },
+
+  onQualityGuarantee() {
+    this.setData({ showQualityPopup: true })
+  },
+
+  onCloseQualityPopup() {
+    this.setData({ showQualityPopup: false })
   }
 })

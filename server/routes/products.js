@@ -15,7 +15,8 @@ router.get('/', async (req, res) => {
   try {
     const { category } = req.query
     let sql = `
-      SELECT p.*, m.company_name, m.wechat_id AS merchant_wechat
+      SELECT p.*, m.company_name, m.wechat_id AS merchant_wechat,
+             IFNULL((SELECT SUM(oi.qty) FROM order_items oi WHERE oi.product_id = p.id), 0) AS sold
       FROM products p
       LEFT JOIN merchants m ON m.id = p.merchant_id
       WHERE p.status = 'on'
@@ -47,7 +48,8 @@ router.get('/reviews', async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 50)
   try {
     const [rows] = await db.query(`
-      SELECT r.id, r.rating, r.content, r.reply, r.farmer_name,
+      SELECT r.id, r.rating, r.content, r.reply,
+             IF(r.is_anonymous, '匿名用户', r.farmer_name) AS farmer_name,
              DATE_FORMAT(r.created_at,'%Y-%m') AS month
       FROM reviews r
       WHERE r.merchant_id = ?

@@ -4,7 +4,13 @@
 
     <view class="header" style="padding-top: {{statusBarHeight}}px">
       <text class="header-tag">棉花智能体·商户版</text>
-      <text class="header-title">订单管理</text>
+      <view class="header-title-row">
+        <text class="header-title">订单管理</text>
+        <view class="export-btn" bindtap="onExportOrders">
+          <text class="export-icon">📥</text>
+          <text class="export-label">导出</text>
+        </view>
+      </view>
     </view>
 
     <!-- Tab 切换 -->
@@ -22,12 +28,18 @@
       </view>
     </scroll-view>
 
+    <!-- 加载中 -->
+    <view wx:if="{{loading}}" class="empty">
+      <text class="empty-icon">⏳</text>
+      <text class="empty-text">加载中...</text>
+    </view>
+
     <!-- 订单列表 -->
-    <view class="order-list">
+    <view wx:else class="order-list">
       <view class="order-card" wx:for="{{orders}}" wx:key="id">
         <view class="order-hd">
-          <text class="order-id">{{item.id}}</text>
-          <view class="status-tag {{item.status}}">
+          <text class="order-id">{{item.orderNo}}</text>
+          <view class="status-tag {{item.statusCls}}">
             <text>{{item.statusLabel}}</text>
           </view>
         </view>
@@ -48,7 +60,7 @@
             </view>
             <view
               class="action-btn ship"
-              wx:if="{{item.status==='pending'}}"
+              wx:if="{{item.status==='pending_ship'}}"
               bindtap="onShip"
               data-id="{{item.id}}"
             >
@@ -56,11 +68,11 @@
             </view>
             <view
               class="action-btn refund"
-              wx:if="{{item.status==='refund'}}"
-              bindtap="onRefundHandle"
+              wx:if="{{item.status==='aftersale' || item.status==='refund'}}"
+              bindtap="onAftersaleHandle"
               data-id="{{item.id}}"
             >
-              <text>处理退款</text>
+              <text>处理售后</text>
             </view>
           </view>
         </view>
@@ -74,6 +86,29 @@
 
     <view style="height: 30rpx"></view>
   </scroll-view>
+
+  <!-- 发货弹窗 -->
+  <view wx:if="{{showShipModal}}" class="ship-overlay" catchtap="onCancelShip">
+    <view class="ship-modal" catchtap="">
+      <text class="ship-title">确认发货</text>
+      <text class="ship-desc">请填写物流单号，农户将收到发货通知</text>
+      <input
+        class="ship-input"
+        placeholder="输入物流单号"
+        value="{{logisticsInput}}"
+        bindinput="onLogisticsInput"
+        focus="{{showShipModal}}"
+      />
+      <view class="ship-actions">
+        <view class="ship-btn ship-cancel-btn" bindtap="onCancelShip">
+          <text>取消</text>
+        </view>
+        <view class="ship-btn ship-confirm-btn" bindtap="onConfirmShip">
+          <text>确认发货</text>
+        </view>
+      </view>
+    </view>
+  </view>
 
   <merchant-tab-bar selected="{{2}}"></merchant-tab-bar>
 </view>

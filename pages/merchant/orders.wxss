@@ -1,4 +1,8 @@
 /* pages/merchant/orders.wxss */
+.header-title-row { display: flex; align-items: center; justify-content: space-between; }
+.export-btn { display: flex; align-items: center; background: rgba(255,255,255,0.25); border-radius: 20rpx; padding: 6rpx 20rpx; }
+.export-icon { font-size: 28rpx; margin-right: 6rpx; }
+.export-label { font-size: 24rpx; color: #fff; }
 
 .page { display: flex; flex-direction: column; height: 100vh; background: #F5F6FA; }
 .scroll { flex: 1; height: 0; }
@@ -100,3 +104,18 @@
 .empty { display: flex; flex-direction: column; align-items: center; padding: 80rpx 0; gap: 16rpx; }
 .empty-icon { font-size: 80rpx; }
 .empty-text { font-size: 26rpx; color: #AAAAAA; }
+
+/* 发货弹窗 */
+.ship-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 999; }
+.ship-modal { background: #fff; border-radius: 24rpx; padding: 48rpx 40rpx 36rpx; width: 600rpx; }
+.ship-title { display: block; font-size: 32rpx; font-weight: 700; color: #1A1A1A; margin-bottom: 12rpx; text-align: center; }
+.ship-desc { display: block; font-size: 24rpx; color: #888; margin-bottom: 32rpx; text-align: center; }
+.ship-input { border: 2rpx solid #E5E7EB; border-radius: 12rpx; padding: 20rpx 24rpx; font-size: 28rpx; color: #1A1A1A; margin-bottom: 36rpx; }
+.ship-actions { display: flex; flex-direction: row; gap: 20rpx; }
+.ship-btn { flex: 1; height: 80rpx; border-radius: 16rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; }
+.ship-cancel-btn { background: #F5F6FA; color: #666; }
+.ship-confirm-btn { background: #C8902E; color: #fff; font-weight: 600; }
+
+/* 已发货状态色 */
+.status-tag.shipped { background: #EFF6FF; }
+.status-tag.shipped text { color: #2563EB; }

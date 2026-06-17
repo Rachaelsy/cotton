@@ -1,25 +1,29 @@
 const auth = require('../../utils/auth')
 
-const MOCK_ORDERS = [
-  { id: 'DD202505250001', buyer: '古丽巴哈尔', goods: '复合肥料（尿素）x2袋', amount: '90.00', time: '10:32', status: 'pending', statusLabel: '待发货' },
-  { id: 'DD202505250002', buyer: '买买提·阿不都', goods: '农药杀虫剂 x3瓶', amount: '114.00', time: '09:15', status: 'done', statusLabel: '已完成' },
-  { id: 'DD202505250003', buyer: '阿依古丽', goods: '棉花催熟剂 x1升', amount: '62.00', time: '08:50', status: 'pending', statusLabel: '待发货' },
-  { id: 'DD202505240004', buyer: '热依拉', goods: '复合肥料（尿素）x5袋', amount: '225.00', time: '昨天 16:20', status: 'done', statusLabel: '已完成' },
-  { id: 'DD202505240005', buyer: '艾力·肉孜', goods: '滴灌带 x2卷', amount: '560.00', time: '昨天 14:10', status: 'done', statusLabel: '已完成' },
-  { id: 'DD202505230006', buyer: '麦尔哈巴', goods: '农药杀虫剂 x1瓶', amount: '38.00', time: '05-23 11:30', status: 'refund', statusLabel: '退款中' }
-]
+const STATUS_MAP = {
+  pending_ship: { label: '待发货', cls: 'pending' },
+  shipped:      { label: '已发货', cls: 'shipped' },
+  completed:    { label: '已完成', cls: 'done' },
+  aftersale:    { label: '售后中', cls: 'refund' },
+  refund:       { label: '售后中', cls: 'refund' }
+}
 
 Page({
   data: {
     statusBarHeight: 20,
     tab: 'all',
-    orders: [],
     tabs: [
-      { key: 'all', label: '全部' },
-      { key: 'pending', label: '待发货' },
-      { key: 'done', label: '已完成' },
-      { key: 'refund', label: '退款' }
-    ]
+      { key: 'all',          label: '全部' },
+      { key: 'pending_ship', label: '待发货' },
+      { key: 'shipped',      label: '已发货' },
+      { key: 'completed',    label: '已完成' },
+      { key: 'aftersale',    label: '售后中' }
+    ],
+    orders: [],
+    loading: false,
+    showShipModal: false,
+    pendingShipId: null,
+    logisticsInput: ''
   },
 
   onLoad() {
@@ -32,56 +36,123 @@ Page({
     this._loadOrders()
   },
 
-  _loadOrders() {
-    const { tab } = this.data
-    const list = tab === 'all' ? [...MOCK_ORDERS] : MOCK_ORDERS.filter(o => o.status === tab)
-    this.setData({ orders: list })
+  async _loadOrders() {
+    this.setData({ loading: true })
+    try {
+      const { tab } = this.data
+      const qs = tab === 'all' ? '' : `?status=${tab}`
+      const res = await auth.request('GET', '/api/merchant/orders' + qs)
+      if (res.code === 200) {
+        const orders = (res.data || []).map(o => {
+          const st = STATUS_MAP[o.status] || { label: o.status, cls: '' }
+          return {
+            id:          o.id,
+            orderNo:     o.order_no,
+            buyer:       o.farmer_name || o.receiver_name || '买家',
+            buyerPhone:  o.farmer_phone || o.receiver_phone || '',
+            address:     o.address || '',
+            goods:       (o.items || []).map(i => `${i.name}×${i.qty}`).join('、'),
+            amount:      parseFloat(o.total || 0).toFixed(2),
+            time:        String(o.created_at || '').slice(0, 16).replace('T', ' '),
+            status:      o.status,
+            statusLabel: st.label,
+            statusCls:   st.cls,
+            logisticsNo: o.logistics_no || '',
+            address:     o.address || '',
+            receiverName:  o.receiver_name || '',
+            receiverPhone: o.receiver_phone || ''
+          }
+        })
+        this.setData({ orders, loading: false })
+      } else {
+        this.setData({ loading: false })
+        wx.showToast({ title: res.msg || '加载失败', icon: 'none' })
+      }
+    } catch {
+      this.setData({ loading: false })
+      wx.showToast({ title: '网络异常', icon: 'none' })
+    }
   },
 
   switchTab(e) {
-    this.setData({ tab: e.currentTarget.dataset.key }, () => this._loadOrders())
+    const key = e.currentTarget.dataset.key
+    if (key === this.data.tab) return
+    this.setData({ tab: key }, () => this._loadOrders())
   },
 
-  onShip(e) {
-    const id = e.currentTarget.dataset.id
-    const order = MOCK_ORDERS.find(o => o.id === id)
-    if (!order) return
-    wx.showModal({
-      title: '确认发货',
-      content: `确认为买家 "${order.buyer}" 发货？`,
-      confirmText: '确认发货',
-      success: (res) => {
-        if (res.confirm) {
-          order.status = 'done'
-          order.statusLabel = '已完成'
-          this._loadOrders()
-          wx.showToast({ title: '发货成功', icon: 'success' })
-        }
-      }
-    })
-  },
-
-  onRefundHandle(e) {
-    const id = e.currentTarget.dataset.id
-    wx.showActionSheet({
-      itemList: ['同意退款', '拒绝退款'],
-      success: (res) => {
-        const order = MOCK_ORDERS.find(o => o.id === id)
-        if (!order) return
-        if (res.tapIndex === 0) {
-          order.status = 'done'
-          order.statusLabel = '已退款'
-        } else {
-          order.status = 'done'
-          order.statusLabel = '已完成'
-        }
-        this._loadOrders()
-        wx.showToast({ title: '处理成功', icon: 'success' })
-      }
-    })
-  },
-
+  // 详情：弹窗展示关键信息
   onDetail(e) {
-    wx.showToast({ title: '订单详情开发中', icon: 'none' })
+    const id = e.currentTarget.dataset.id
+    const o = this.data.orders.find(o => o.id === id)
+    if (!o) return
+    wx.showModal({
+      title: `订单 ${o.orderNo}`,
+      content: `买家：${o.buyer}${o.buyerPhone ? '（' + o.buyerPhone + '）' : ''}\n收货：${o.receiverName} ${o.receiverPhone}\n地址：${o.address}\n商品：${o.goods}\n状态：${o.statusLabel}${o.logisticsNo ? '\n物流：' + o.logisticsNo : ''}`,
+      showCancel: false,
+      confirmText: '关闭'
+    })
+  },
+
+  // 发货：打开弹窗填写物流单号
+  onShip(e) {
+    this.setData({ showShipModal: true, pendingShipId: e.currentTarget.dataset.id, logisticsInput: '' })
+  },
+
+  onLogisticsInput(e) {
+    this.setData({ logisticsInput: e.detail.value })
+  },
+
+  onCancelShip() {
+    this.setData({ showShipModal: false, pendingShipId: null, logisticsInput: '' })
+  },
+
+  async onConfirmShip() {
+    const { logisticsInput, pendingShipId } = this.data
+    if (!logisticsInput.trim()) { wx.showToast({ title: '请填写物流单号', icon: 'none' }); return }
+    try {
+      const res = await auth.request('PATCH', `/api/merchant/orders/${pendingShipId}/ship`, {
+        logistics_no: logisticsInput.trim()
+      })
+      if (res.code === 200) {
+        wx.showToast({ title: '发货成功', icon: 'success' })
+        this.setData({ showShipModal: false, pendingShipId: null, logisticsInput: '' })
+        this._loadOrders()
+      } else {
+        wx.showToast({ title: res.msg || '发货失败', icon: 'none' })
+      }
+    } catch {
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' })
+    }
+  },
+
+  // 售后：跳转售后管理 tab
+  onAftersaleHandle() {
+    wx.showToast({ title: '请前往售后管理处理', icon: 'none' })
+  },
+
+  onExportOrders() {
+    const token = wx.getStorageSync('token')
+    if (!token) { wx.showToast({ title: '请先登录', icon: 'none' }); return }
+    const { BASE_URL } = require('../../utils/auth')
+    const url = `${BASE_URL}/api/merchant/orders/export?token=${encodeURIComponent(token)}`
+    wx.showLoading({ title: '正在导出...' })
+    wx.downloadFile({
+      url,
+      success: (dl) => {
+        wx.hideLoading()
+        if (dl.statusCode !== 200) { wx.showToast({ title: '导出失败', icon: 'none' }); return }
+        wx.openDocument({
+          filePath: dl.tempFilePath,
+          showMenu: true,
+          fileType: 'doc',
+          fail: () => wx.showModal({
+            title: '导出成功',
+            content: '文件已下载，请在手机文件管理器查看',
+            showCancel: false
+          })
+        })
+      },
+      fail: () => { wx.hideLoading(); wx.showToast({ title: '导出失败，请检查网络', icon: 'none' }) }
+    })
   }
 })

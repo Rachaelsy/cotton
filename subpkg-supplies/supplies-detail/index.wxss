@@ -1,4 +1,8 @@
 /* pages/supplies-detail/index.wxss — 商品详情页样式 */
+.quality-item { display: flex; align-items: flex-start; padding: 16rpx 0; border-bottom: 1rpx solid #F5EEE6; }
+.quality-icon { font-size: 40rpx; margin-right: 20rpx; margin-top: 4rpx; }
+.quality-title { display: block; font-size: 28rpx; font-weight: 600; color: #1A1A1A; margin-bottom: 6rpx; }
+.quality-desc  { display: block; font-size: 24rpx; color: #888; }
 
 .page {
   display: flex;

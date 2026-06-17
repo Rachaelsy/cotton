@@ -80,12 +80,17 @@ Page({
     this._loadCart()
   },
 
-  // 增加数量
+  // 增加数量（不超过库存上限）
   onQtyPlus(e) {
     const id = e.currentTarget.dataset.id
     const cart = app.globalData.cart
     const item = cart.find(c => c.id === id)
     if (!item) return
+    const maxStock = item.stock != null ? item.stock : 9999
+    if (item.qty >= maxStock) {
+      wx.showToast({ title: `最多购买 ${maxStock} ${item.unit || '件'}`, icon: 'none' })
+      return
+    }
     item.qty++
     app.saveCart()
     this._loadCart()

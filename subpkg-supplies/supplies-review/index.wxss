@@ -1,4 +1,6 @@
 /* subpkg-supplies/supplies-review/index.wxss */
+.anon-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: 16rpx; padding: 24rpx 28rpx; margin: 0 24rpx 20rpx; }
+.anon-label { font-size: 24rpx; color: #888; flex: 1; padding-right: 20rpx; }
 
 .page {
   display: flex;

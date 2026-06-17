@@ -16,7 +16,8 @@ const TABS = [
   { key: 'pending_payment', label: '待付款' },
   { key: 'pending_ship',    label: '待发货' },
   { key: 'shipped',         label: '配送中' },
-  { key: 'completed',       label: '已完成' }
+  { key: 'completed',       label: '已完成' },
+  { key: 'refund',          label: '售后中' }
 ]
 
 Page({
@@ -81,19 +82,26 @@ Page({
 
   onOrderTap(e) {
     const order = e.currentTarget.dataset.order
-    if (order.status === 'pending_payment') return  // 待付款订单不进详情
+    // 待付款订单直接跳支付页
+    if (order.status === 'pending_payment') {
+      this.onPayOrder(e)
+      return
+    }
+    const firstItem = (order.items || [])[0] || {}
     app.globalData.currentOrder = {
-      orderId:       order.id,
-      orderNo:       order.order_no,
-      items:         order.items,
-      subtotal:      order.subtotal,
-      deliveryFee:   order.delivery_fee,
-      total:         order.total,
-      payMethod:     order.pay_method,
-      status:        this._dbStatusToLabel(order.status),
-      address:       order.address,
-      receiverName:  order.receiver_name,
-      receiverPhone: order.receiver_phone
+      orderId:        order.id,
+      orderNo:        order.order_no,
+      items:          order.items,
+      subtotal:       order.subtotal,
+      deliveryFee:    order.delivery_fee,
+      total:          order.total,
+      payMethod:      order.pay_method,
+      status:         this._dbStatusToLabel(order.status),
+      address:        order.address,
+      receiverName:   order.receiver_name,
+      receiverPhone:  order.receiver_phone,
+      merchantPhone:  firstItem.merchantPhone  || '',
+      merchantWechat: firstItem.merchantWechat || ''
     }
     wx.navigateTo({ url: '/subpkg-supplies/supplies-order/index' })
   },

@@ -55,7 +55,7 @@ Page({
           image_url: p.image_url ? `${auth.BASE_URL}${p.image_url}` : null,
           store:     p.company_name || '认证商家',
           cat:       p.category || '其他',
-          sold:      0,
+          sold:      parseInt(p.sold) || 0,
           rating:    5.0
         }))
         const catSet = new Set(products.map(p => p.cat).filter(Boolean))

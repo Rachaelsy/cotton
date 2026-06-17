@@ -46,7 +46,7 @@ const STEPS = ['已下单', '待发货', '已发货', '已完成']
 Page({
   data: {
     statusBarHeight: 20,
-    order: {},
+    order: { merchantPhone: '', merchantWechat: '' },
     orderNo: '',
     payMethodLabel: '微信支付',
     statusIcon: '📦',
@@ -57,7 +57,8 @@ Page({
     canConfirmReceipt: false,
     isCompleted: false,
     hasReviewed: false,
-    showSuccessPopup: false
+    showSuccessPopup: false,
+    aftersale: null
   },
 
   onLoad() {
@@ -119,6 +120,24 @@ Page({
       isCompleted:       status === '已完成',
       hasReviewed:       !!(order.has_reviewed)
     })
+
+    // 拉取售后信息（有则显示，不限订单状态——处理完后仍可查看结果）
+    if (saved.orderId) {
+      try {
+        const ar = await auth.request('GET', `/api/orders/${saved.orderId}/aftersale`)
+        if (ar.code === 200 && ar.data) {
+          const statusMap = { pending: '待处理', approved: '已同意', rejected: '已拒绝' }
+          this.setData({
+            aftersale: {
+              ...ar.data,
+              statusLabel: statusMap[ar.data.status] || ar.data.status
+            }
+          })
+        } else {
+          this.setData({ aftersale: null })
+        }
+      } catch {}
+    }
   },
 
   onBack() {
@@ -137,17 +156,20 @@ Page({
   },
 
   onContact() {
-    wx.showModal({
-      title: '联系卖家',
-      content: '即将拨打卖家电话，是否继续？',
-      confirmText: '拨打',
-      confirmColor: '#22c55e',
-      success(res) {
-        if (res.confirm) {
-          wx.showToast({ title: '拨打电话功能开发中', icon: 'none' })
-        }
-      }
-    })
+    const phone   = this.data.order.merchantPhone
+    const wechat  = this.data.order.merchantWechat
+    if (phone) {
+      wx.makePhoneCall({ phoneNumber: phone })
+      return
+    }
+    if (wechat) {
+      wx.setClipboardData({
+        data: wechat,
+        success: () => wx.showToast({ title: '商家微信已复制，请打开微信添加', icon: 'none', duration: 2500 })
+      })
+      return
+    }
+    wx.showToast({ title: '暂无商家联系方式', icon: 'none' })
   },
 
   onAfterSale() {

@@ -75,6 +75,12 @@
           <text class="content-count">{{content.length}}/300</text>
         </view>
 
+        <!-- 匿名评价 -->
+        <view class="anon-row">
+          <text class="anon-label">匿名评价（商家可见真实姓名，公开展示为"匿名用户"）</text>
+          <switch checked="{{isAnonymous}}" bindchange="onAnonymousChange" color="#C8902E" />
+        </view>
+
         <!-- 提交按钮 -->
         <view
           class="submit-btn {{!rating || submitting ? 'submit-disabled' : ''}}"

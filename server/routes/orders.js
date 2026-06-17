@@ -8,7 +8,7 @@ const router   = express.Router()
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
 
-// 农户鉴权中间件
+// 农户鉴权中间件（严格版：必须登录）
 function farmerAuth(req, res, next) {
   const auth = req.headers.authorization || ''
   if (!auth.startsWith('Bearer ')) return res.status(401).json({ code: 401, msg: '请先登录' })
@@ -19,6 +19,16 @@ function farmerAuth(req, res, next) {
   } catch {
     res.status(401).json({ code: 401, msg: '登录已过期，请重新登录' })
   }
+}
+
+// 可选鉴权：有 token 则解析，无 token 或过期则以访客身份继续
+function optionalAuth(req, res, next) {
+  const auth = req.headers.authorization || ''
+  req.user = null
+  if (auth.startsWith('Bearer ')) {
+    try { req.user = jwt.verify(auth.slice(7), process.env.JWT_SECRET) } catch {}
+  }
+  next()
 }
 
 // 生成订单号：MG + yyyyMMdd + 4位序列
@@ -35,9 +45,9 @@ async function genOrderNo() {
 }
 
 // ─────────────────────────────────────────────
-// POST /api/orders — 农户提交订单（待付款）
+// POST /api/orders — 提交订单（登录/访客均可）
 // ─────────────────────────────────────────────
-router.post('/', farmerAuth, async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
   const {
     items, subtotal, deliveryFee, total, payMethod,
     receiverName, receiverPhone, address
@@ -45,6 +55,7 @@ router.post('/', farmerAuth, async (req, res) => {
 
   if (!items || !items.length) return fail(res, '订单商品不能为空')
   if (!receiverName)           return fail(res, '请填写收货人姓名')
+  if (!receiverPhone)          return fail(res, '请填写手机号')
   if (!address)                return fail(res, '请填写收货地址')
 
   const conn = await db.getConnection()
@@ -68,10 +79,18 @@ router.post('/', farmerAuth, async (req, res) => {
       }
     }
 
-    // 查询农户信息
-    const [[user]] = await conn.query(
-      'SELECT real_name, phone FROM users WHERE id=?', [req.user.id]
-    )
+    // 已登录：用账号信息作为买家姓名/电话；访客：用收货人信息
+    let userId = null
+    let farmerName  = receiverName
+    let farmerPhone = receiverPhone || ''
+    if (req.user) {
+      userId = req.user.id
+      const [[user]] = await conn.query(
+        'SELECT real_name, phone FROM users WHERE id=?', [req.user.id]
+      )
+      farmerName  = user?.real_name || receiverName
+      farmerPhone = user?.phone     || receiverPhone || ''
+    }
 
     const orderNo = await genOrderNo()
     const [r] = await conn.query(
@@ -80,8 +99,8 @@ router.post('/', farmerAuth, async (req, res) => {
         subtotal, delivery_fee, total, pay_method, status, pay_expires_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,'pending_payment', DATE_ADD(NOW(), INTERVAL 30 MINUTE))`,
       [
-        orderNo, req.user.id,
-        user?.real_name || '', user?.phone || '',
+        orderNo, userId,
+        farmerName, farmerPhone,
         receiverName, receiverPhone || '',
         address,
         parseFloat(subtotal) || 0,
@@ -123,16 +142,23 @@ router.post('/', farmerAuth, async (req, res) => {
 })
 
 // ─────────────────────────────────────────────
-// PATCH /api/orders/:id/pay — 农户确认付款
+// PATCH /api/orders/:id/pay — 确认付款（登录/访客均可）
 // ─────────────────────────────────────────────
-router.patch('/:id/pay', farmerAuth, async (req, res) => {
+router.patch('/:id/pay', optionalAuth, async (req, res) => {
   const { id } = req.params
   try {
-    const [rows] = await db.query(
-      `SELECT id, order_no, pay_expires_at FROM orders
-       WHERE id=? AND user_id=? AND status='pending_payment'`,
-      [id, req.user.id]
-    )
+    let rows
+    if (req.user) {
+      ;[rows] = await db.query(
+        `SELECT id, order_no, pay_expires_at FROM orders WHERE id=? AND user_id=? AND status='pending_payment'`,
+        [id, req.user.id]
+      )
+    } else {
+      ;[rows] = await db.query(
+        `SELECT id, order_no, pay_expires_at FROM orders WHERE id=? AND user_id IS NULL AND status='pending_payment'`,
+        [id]
+      )
+    }
     if (!rows.length) return fail(res, '订单不存在或已超时', 404)
     const order = rows[0]
     if (order.pay_expires_at && new Date(order.pay_expires_at) < new Date()) {
@@ -157,15 +183,23 @@ router.patch('/:id/pay', farmerAuth, async (req, res) => {
 })
 
 // ─────────────────────────────────────────────
-// PATCH /api/orders/:id/cancel — 农户主动取消（仅限待付款）
+// PATCH /api/orders/:id/cancel — 主动取消（登录/访客均可）
 // ─────────────────────────────────────────────
-router.patch('/:id/cancel', farmerAuth, async (req, res) => {
+router.patch('/:id/cancel', optionalAuth, async (req, res) => {
   const { id } = req.params
   try {
-    const [rows] = await db.query(
-      `SELECT id FROM orders WHERE id=? AND user_id=? AND status='pending_payment'`,
-      [id, req.user.id]
-    )
+    let rows
+    if (req.user) {
+      ;[rows] = await db.query(
+        `SELECT id FROM orders WHERE id=? AND user_id=? AND status='pending_payment'`,
+        [id, req.user.id]
+      )
+    } else {
+      ;[rows] = await db.query(
+        `SELECT id FROM orders WHERE id=? AND user_id IS NULL AND status='pending_payment'`,
+        [id]
+      )
+    }
     if (!rows.length) return fail(res, '订单不存在或不可取消', 404)
     await _cancelAndReleaseStock(id)
     return ok(res, null, '订单已取消')
@@ -203,12 +237,15 @@ router.get('/my', farmerAuth, async (req, res) => {
              o.receiver_name, o.receiver_phone, o.created_at, o.pay_expires_at,
              (SELECT COUNT(*) FROM reviews rv WHERE rv.order_id = o.id) AS has_reviewed,
              GROUP_CONCAT(
-               CONCAT(i.icon,'|',i.name,'|',i.spec,'|',i.price,'|',i.qty,'|',IFNULL(p.image_url,''))
+               CONCAT(i.icon,'|',i.name,'|',i.spec,'|',i.price,'|',i.qty,'|',
+                      IFNULL(p.image_url,''),'|',IFNULL(mu.phone,''),'|',IFNULL(m2.wechat_id,''))
                SEPARATOR ';;'
              ) AS items_raw
       FROM orders o
       LEFT JOIN order_items i ON i.order_id = o.id
       LEFT JOIN products p ON p.id = i.product_id
+      LEFT JOIN merchants m2 ON m2.id = i.merchant_id
+      LEFT JOIN users mu ON mu.id = m2.user_id
       WHERE o.user_id = ?
     `
     const params = [req.user.id]
@@ -219,13 +256,30 @@ router.get('/my', farmerAuth, async (req, res) => {
     const orders = rows.map(o => ({
       ...o,
       items: (o.items_raw || '').split(';;').filter(Boolean).map(s => {
-        const [icon, name, spec, price, qty, image_url] = s.split('|')
-        return { icon, name, spec, price: parseFloat(price), qty: parseInt(qty), image_url: image_url || null }
+        const [icon, name, spec, price, qty, image_url, merchantPhone, merchantWechat] = s.split('|')
+        return { icon, name, spec, price: parseFloat(price), qty: parseInt(qty), image_url: image_url || null, merchantPhone: merchantPhone || '', merchantWechat: merchantWechat || '' }
       })
     }))
     return ok(res, orders)
   } catch (e) {
     console.error('[my-orders]', e)
+    return fail(res, '服务器错误', 500)
+  }
+})
+
+// ─────────────────────────────────────────────
+// GET /api/orders/:id/aftersale — 农户查看售后申请状态
+// ─────────────────────────────────────────────
+router.get('/:id/aftersale', farmerAuth, async (req, res) => {
+  const { id } = req.params
+  try {
+    const [rows] = await db.query(
+      'SELECT id, aftersale_type, reason, other_reason, description, images, status, handle_note, created_at, updated_at FROM aftersale_requests WHERE order_id=? AND user_id=? ORDER BY created_at DESC LIMIT 1',
+      [id, req.user.id]
+    )
+    return ok(res, rows[0] || null)
+  } catch (e) {
+    console.error('[aftersale-status]', e)
     return fail(res, '服务器错误', 500)
   }
 })
@@ -280,6 +334,7 @@ router.post('/:id/review', farmerAuth, async (req, res) => {
   const { id } = req.params
   const rating = parseInt(req.body.rating)
   const content = (req.body.content || '').trim()
+  const isAnonymous = req.body.is_anonymous ? 1 : 0
   if (!rating || rating < 1 || rating > 5) return fail(res, '请选择评分（1-5星）')
   try {
     const [rows] = await db.query(
@@ -293,8 +348,8 @@ router.post('/:id/review', farmerAuth, async (req, res) => {
     if (!item) return fail(res, '订单商品不存在', 404)
     const [[user]] = await db.query('SELECT real_name FROM users WHERE id=?', [req.user.id])
     await db.query(
-      'INSERT INTO reviews (order_id,merchant_id,user_id,farmer_name,rating,content) VALUES (?,?,?,?,?,?)',
-      [id, item.merchant_id, req.user.id, user?.real_name || '买家', rating, content || null]
+      'INSERT INTO reviews (order_id,merchant_id,user_id,farmer_name,rating,content,is_anonymous) VALUES (?,?,?,?,?,?,?)',
+      [id, item.merchant_id, req.user.id, user?.real_name || '买家', rating, content || null, isAnonymous]
     )
     return ok(res, null, '评价成功，感谢您的反馈')
   } catch (e) {

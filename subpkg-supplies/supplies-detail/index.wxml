@@ -30,7 +30,7 @@
       </view>
       <text class="prod-name">{{product.name}}</text>
       <view class="stats-row">
-        <text class="stat-item">月销 <text class="stat-bold">{{product.sold || 126}}</text></text>
+        <text class="stat-item">月销 <text class="stat-bold">{{product.sold}}</text></text>
         <text class="stat-item">⭐ <text class="stat-bold">{{product.rating || 5.0}}分</text></text>
         <text class="stat-item">⚡ <text class="stat-bold">48h发货</text></text>
       </view>
@@ -153,6 +153,10 @@
       <text class="ai-icon">💬</text>
       <text class="ai-label">客服</text>
     </view>
+    <view class="action-icon" bindtap="onQualityGuarantee">
+      <text class="ai-icon">🛡</text>
+      <text class="ai-label">质量保证</text>
+    </view>
     <view class="action-icon" bindtap="onFavorite">
       <text class="ai-icon {{favorited ? 'icon-fav' : ''}}">{{favorited ? '♥' : '♡'}}</text>
       <text class="ai-label">收藏</text>
@@ -163,6 +167,23 @@
     </view>
     <view class="btn-buy" bindtap="onBuyNow">
       <text class="btn-text">购买</text>
+    </view>
+  </view>
+
+  <!-- 质量保证弹窗 -->
+  <view wx:if="{{showQualityPopup}}" class="cs-overlay" bindtap="onCloseQualityPopup">
+    <view class="cs-popup" catchtap="">
+      <view class="cs-header">
+        <text class="cs-title">质量保证</text>
+        <view class="cs-close" bindtap="onCloseQualityPopup"><text class="cs-close-icon">✕</text></view>
+      </view>
+      <view class="quality-item"><text class="quality-icon">✅</text><view><text class="quality-title">正品保证</text><text class="quality-desc">所有商品均来自认证农资企业，假一赔十</text></view></view>
+      <view class="quality-item"><text class="quality-icon">🔄</text><view><text class="quality-title">7天退换</text><text class="quality-desc">收货后7天内，商品无质量问题可申请退换</text></view></view>
+      <view class="quality-item"><text class="quality-icon">🚚</text><view><text class="quality-title">运输保障</text><text class="quality-desc">运输途中损坏，凭照片全额赔偿</text></view></view>
+      <view class="quality-item"><text class="quality-icon">📋</text><view><text class="quality-title">合规认证</text><text class="quality-desc">农药、化肥等均持有合法登记证书</text></view></view>
+      <view class="cs-copy-btn" bindtap="onCloseQualityPopup">
+        <text class="cs-copy-text">我知道了</text>
+      </view>
     </view>
   </view>
 
