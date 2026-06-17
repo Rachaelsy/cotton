@@ -151,7 +151,7 @@ Page({
     const map = {
       pending_payment: '待付款', pending_ship: '待发货',
       shipped: '已发货', completed: '已完成',
-      refund: '售后中', cancelled: '已取消'
+      refund: '售后中', refunded: '售后完成', cancelled: '已取消'
     }
     return map[dbStatus] || '待发货'
   },

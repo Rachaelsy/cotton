@@ -7,7 +7,8 @@ const DB_STATUS_MAP = {
   pending_ship: '待发货',
   shipped:      '已发货',
   completed:    '已完成',
-  refund:       '售后中'
+  refund:       '售后中',
+  refunded:     '售后完成'
 }
 
 const STATUS_CONFIG = {
@@ -38,6 +39,13 @@ const STATUS_CONFIG = {
     sub: '退款/售后处理中，请耐心等待',
     stepIndex: 1,
     shipped: false
+  },
+  '售后完成': {
+    icon: '🔁',
+    label: '售后完成',
+    sub: '售后已处理完毕',
+    stepIndex: 3,
+    shipped: true
   }
 }
 
