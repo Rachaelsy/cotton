@@ -50,6 +50,7 @@ node db/migrate_pay_expires.js        # 添加 orders.pay_expires_at 字段
 node db/migrate_reviews.js            # 创建 reviews 表（买家评价）
 node db/migrate_review_anonymous.js   # reviews 表添加 is_anonymous 字段
 node db/migrate_plots.js              # 创建 plots 表（农户地块）
+node db/migrate_farm_records.js       # 创建 farm_records 表（农事记录）
 node db/seed.js                       # 插入测试用户账号
 
 # 启动服务
@@ -198,7 +199,7 @@ cotton/
 │   ├── weather/              # 地块气象
 │   ├── remote/               # 遥感监测（NDVI/旱情）
 │   ├── trade/                # 棉花交易行情
-│   ├── records/              # 农事记录（时间轴/日历）
+│   ├── records/              # 农事记录（列表/日历双视图，对接后端 API，按地块聚合）
 │   ├── machine/              # 农机租赁（列表 + 详情）
 │   ├── loans/                # 农业贷款
 │   ├── insurance/            # 农业保险
@@ -235,6 +236,7 @@ cotton/
     │   ├── products.js       # /api/products/*（商品 CRUD + 公开评价列表）
     │   ├── orders.js         # /api/orders/*（下单、查询、确认收货、售后、提交评价）
     │   ├── plots.js          # /api/plots/*（农户地块 CRUD）
+    │   ├── farm-records.js   # /api/farm-records/*（农事记录 CRUD + 批量删除）
     │   ├── ai.js             # /api/ai/*（AI 问答代理 + 图片分析，支持 Groq/Siliconflow/DeepSeek）
     │   ├── merchant.js       # /api/merchant/*（商户登录、商品、订单、售后、评价回复）
     │   ├── upload.js         # /api/upload（multer 文件上传，存至 public/uploads/）
@@ -262,6 +264,8 @@ cotton/
         ├── migrate_merchant_wechat.js    # 添加 merchants.wechat_id 字段
         ├── migrate_aftersale.js          # 建 aftersale_requests 表
         ├── migrate_aftersale_images.js   # 添加 aftersale_requests.images 字段
+        ├── migrate_plots.js              # 建 plots 表（农户地块）
+        ├── migrate_farm_records.js       # 建 farm_records 表（农事记录）
         └── seed.js                       # 测试用户账号（幂等）
 ```
 
@@ -334,6 +338,11 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | GET   | `/api/plots/:id` | 农户 | 获取单个地块详情 |
 | PUT   | `/api/plots/:id` | 农户 | 编辑地块（名称/品种/评分/状态等） |
 | DELETE | `/api/plots/:id` | 农户 | 删除地块 |
+| GET   | `/api/farm-records` | 农户 | 获取农事记录（支持 type/plot_id 筛选） |
+| POST  | `/api/farm-records` | 农户 | 新增农事记录（类型/地块/日期/用量/成本/执行人/备注） |
+| PUT   | `/api/farm-records/:id` | 农户 | 编辑农事记录 |
+| DELETE | `/api/farm-records/:id` | 农户 | 删除单条农事记录 |
+| POST  | `/api/farm-records/batch-delete` | 农户 | 批量删除（body: `{ ids:[...] }`） |
 | POST  | `/api/ai/chat` | 公开 | AI 文字问答（携带历史上下文，代理到 Groq/Siliconflow/DeepSeek） |
 | POST  | `/api/ai/photo` | 公开 | 图片分析（multipart，调用 Siliconflow Qwen2-VL 视觉模型）|
 | POST | `/api/upload` | Token | 上传图片文件，返回 `/uploads/xxx` URL |
@@ -370,6 +379,9 @@ reviews              → id, order_id(UNIQUE), merchant_id, user_id, farmer_name
 plots                → id, user_id(FK), name, variety, area(亩), perimeter(米),
                         coordinates(JSON), sow_date, irrigation, soil_type,
                         health_score(0-100), health_issue, status(normal/attention)
+farm_records         → id, user_id(FK), plot_id(关联地块,NULL=全部地块), plot_name(快照),
+                        type(灌溉/施肥/打药/无人机/播种/采收/巡田/其他), title,
+                        work_date, work_time, amount(用量), cost(成本元), worker(执行人), note
 login_logs           → user_id, ip, created_at
 ```
 
@@ -424,6 +436,7 @@ login_logs           → user_id, ip, created_at
 1. **禁止 CSS Grid** → 用 `display:flex; flex-wrap:wrap`
 2. **禁止 HTML 标签** → 只用 `view / text / image / scroll-view`
 3. **禁止 `calc()` 混合单位** → 两列网格用 `width:337rpx`
+3b. **禁止 `inset:0` 简写** → 用显式 `top/left/right/bottom:0`（否则真机遮罩不铺满，弹窗错位到左上角）
 4. 根页面：`.page { display:flex; flex-direction:column; height:100vh; overflow:hidden }`
 5. 滚动区：`<scroll-view style="flex:1;height:0;" scroll-y>`
 6. 每个**页面** JSON：`"navigationStyle":"custom","renderer":"skyline","componentFramework":"glass-easel"`
