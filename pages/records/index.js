@@ -148,7 +148,7 @@ Page({
       }
     } catch (e) {
       this.setData({ loading: false })
-      wx.showToast({ title: '网络异常，请检查网络', icon: 'none' })
+      this._showReqError(e)
     }
   },
 
@@ -296,7 +296,7 @@ Page({
             wx.showToast({ title: r.msg || '删除失败', icon: 'none' })
           }
         } catch (e) {
-          wx.showToast({ title: '网络异常', icon: 'none' })
+          this._showReqError(e)
         }
       }
     })
@@ -427,7 +427,7 @@ Page({
         wx.showToast({ title: r.msg || '保存失败', icon: 'none' })
       }
     } catch (e) {
-      wx.showToast({ title: '网络异常', icon: 'none' })
+      this._showReqError(e)
     }
   },
 
@@ -460,7 +460,7 @@ Page({
             wx.showToast({ title: r.msg || '删除失败', icon: 'none' })
           }
         } catch (e) {
-          wx.showToast({ title: '网络异常', icon: 'none' })
+          this._showReqError(e)
         }
       }
     })
@@ -591,6 +591,12 @@ Page({
   _monthLabel(ym) {
     const [year, month] = ym.split('-').map(Number)
     return `${year}年${month}月`
+  },
+
+  // 统一请求错误提示：区分登录失效与网络异常
+  _showReqError(e) {
+    const expired = e && e.message === '未登录'
+    wx.showToast({ title: expired ? '登录已过期，请重新登录' : '网络异常', icon: 'none' })
   },
 
   noop() {}
