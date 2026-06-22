@@ -69,6 +69,8 @@ Page({
       wx.navigateTo({ url: '/subpkg-supplies/supplies/index' })
     } else if (action === 'fields') {
       wx.navigateTo({ url: '/pages/fields/index' })
+    } else if (action === 'records') {
+      wx.navigateTo({ url: '/pages/records/index' })
     } else {
       wx.showToast({ title: '正在开发中，敬请期待', icon: 'none', duration: 2000 })
     }
