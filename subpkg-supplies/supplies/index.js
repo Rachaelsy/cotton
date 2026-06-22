@@ -10,7 +10,8 @@ Page({
     catSel: '全部',
     searchKeyword: '',
     displayProds: [],
-    cartCount: 0
+    cartCount: 0,
+    showQualityPopup: false
   },
 
   onLoad() {
@@ -131,6 +132,14 @@ Page({
     }
     this.setData({ catSel: '全部', searchKeyword: '', displayProds: promoProds })
     wx.showToast({ title: '🌱 春耕特惠 · 种子化肥专区', icon: 'none', duration: 2000 })
+  },
+
+  onQualityBanner() {
+    this.setData({ showQualityPopup: true })
+  },
+
+  onCloseQualityPopup() {
+    this.setData({ showQualityPopup: false })
   },
 
 })

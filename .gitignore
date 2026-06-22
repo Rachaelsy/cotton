@@ -21,3 +21,6 @@ Thumbs.db
 # ── 微信开发者工具 ────────────────────────────────
 project.private.config.json
 miniprogram_npm/
+
+# Local reference materials
+/参考要求/

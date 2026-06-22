@@ -355,3 +355,48 @@
 }
 
 .list-bottom { height: 40rpx; }
+
+/* ===== 质量保证弹窗 ===== */
+.cs-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 999;
+}
+.cs-popup {
+  background: #ffffff;
+  border-radius: 40rpx 40rpx 0 0;
+  width: 100%;
+  padding: 36rpx 36rpx 60rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+.cs-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.cs-title { font-size: 32rpx; font-weight: 800; color: #1A1A1A; }
+.cs-close {
+  width: 56rpx; height: 56rpx;
+  background: #F5EEE6;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.cs-close-icon { font-size: 28rpx; color: #888888; }
+.quality-item { display: flex; align-items: flex-start; padding: 16rpx 0; border-bottom: 1rpx solid #F5EEE6; }
+.quality-icon { font-size: 40rpx; margin-right: 20rpx; margin-top: 4rpx; }
+.quality-title { display: block; font-size: 28rpx; font-weight: 600; color: #1A1A1A; margin-bottom: 6rpx; }
+.quality-desc  { display: block; font-size: 24rpx; color: #888; }
+.cs-copy-btn {
+  background: linear-gradient(135deg, #C8902E, #D4A043);
+  border-radius: 999rpx;
+  padding: 28rpx 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.cs-copy-text { font-size: 30rpx; font-weight: 800; color: #ffffff; }

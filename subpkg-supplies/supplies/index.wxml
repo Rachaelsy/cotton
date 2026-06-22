@@ -58,7 +58,7 @@
         <text class="banner-title">种子化肥</text>
         <text class="banner-sub">全场8折起</text>
       </view>
-      <view class="banner banner-cert" bindtap="onBanner">
+      <view class="banner banner-cert" bindtap="onQualityBanner">
         <text class="banner-tag">质量保证</text>
         <text class="banner-title">认证农资</text>
         <text class="banner-sub">假一赔十</text>
@@ -114,5 +114,22 @@
 
     <view class="list-bottom"></view>
   </scroll-view>
+
+  <!-- 质量保证弹窗 -->
+  <view wx:if="{{showQualityPopup}}" class="cs-overlay" bindtap="onCloseQualityPopup">
+    <view class="cs-popup" catchtap="">
+      <view class="cs-header">
+        <text class="cs-title">质量保证</text>
+        <view class="cs-close" bindtap="onCloseQualityPopup"><text class="cs-close-icon">✕</text></view>
+      </view>
+      <view class="quality-item"><text class="quality-icon">✅</text><view><text class="quality-title">正品保证</text><text class="quality-desc">所有商品均来自认证农资企业，假一赔十</text></view></view>
+      <view class="quality-item"><text class="quality-icon">🔄</text><view><text class="quality-title">7天退换</text><text class="quality-desc">收货后7天内，商品无质量问题可申请退换</text></view></view>
+      <view class="quality-item"><text class="quality-icon">🚚</text><view><text class="quality-title">运输保障</text><text class="quality-desc">运输途中损坏，凭照片全额赔偿</text></view></view>
+      <view class="quality-item"><text class="quality-icon">📋</text><view><text class="quality-title">合规认证</text><text class="quality-desc">农药、化肥等均持有合法登记证书</text></view></view>
+      <view class="cs-copy-btn" bindtap="onCloseQualityPopup">
+        <text class="cs-copy-text">我知道了</text>
+      </view>
+    </view>
+  </view>
 
 </view>
