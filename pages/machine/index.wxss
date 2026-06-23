@@ -272,6 +272,11 @@
   color: #888888;
 }
 
+.empty-sub {
+  font-size: 24rpx;
+  color: #AAAAAA;
+}
+
 .list-bottom {
   height: 40rpx;
 }

@@ -65,27 +65,75 @@ async function seed() {
     {
       name: '雷沃 1GQN-200 旋耕机', category: '旋耕机', icon: '⚙️',
       price: 25, price_orig: null, unit: '亩', lat: 39.5000000, lng: 76.0500000,
-      loc: '疏附县布拉克苏乡',
+      loc: '疏附县布拉克苏乡', radius: 60,
       badges: ['200cm幅宽', '深翻25cm'],
       params: [{ val: '200 cm', lbl: '幅宽' }, { val: '25 cm', lbl: '耕深' }, { val: '40亩/天', lbl: '作业效率' }, { val: '拖拉机配套', lbl: '动力匹配' }]
+    },
+    {
+      name: '极飞 P100 Pro 植保无人机', category: '打药机', icon: '🚁',
+      price: 7, price_orig: 9, unit: '亩', lat: 39.4080000, lng: 76.0540000,
+      loc: '疏勒县城关镇', radius: 80,
+      badges: ['喷幅11m', '效率350亩/天'],
+      params: [{ val: '50 L', lbl: '药箱量' }, { val: '11 米', lbl: '喷幅' }, { val: '350亩/天', lbl: '作业效率' }, { val: '智能避障', lbl: '飞控' }]
+    },
+    {
+      name: '凯斯 4406 采棉机', category: '采棉机', icon: '🌾',
+      price: 115, price_orig: 135, unit: '亩', lat: 39.4900000, lng: 76.7240000,
+      loc: '伽师县巴仁镇', radius: 100,
+      badges: ['4行作业', '圆模打包'],
+      params: [{ val: '4行', lbl: '采收行数' }, { val: '4 米', lbl: '割幅' }, { val: '45亩/天', lbl: '作业效率' }, { val: '圆模', lbl: '打包方式' }]
+    },
+    {
+      name: '约翰迪尔 1745 气吸式播种机', category: '播种机', icon: '🌱',
+      price: 28, price_orig: 33, unit: '亩', lat: 39.2360000, lng: 76.7720000,
+      loc: '岳普湖县岳普湖乡', radius: 50,
+      badges: ['16行', '气吸精播'],
+      params: [{ val: '16行', lbl: '播种行数' }, { val: '4 米', lbl: '工作幅宽' }, { val: '80亩/天', lbl: '作业效率' }, { val: '气吸式', lbl: '排种' }]
+    },
+    {
+      name: '东方红 LX2204 拖拉机（旋耕）', category: '旋耕机', icon: '🚜',
+      price: 22, price_orig: null, unit: '亩', lat: 39.4677000, lng: 75.9938000,
+      loc: '喀什市', radius: 70,
+      badges: ['220马力', '四轮驱动'],
+      params: [{ val: '220 马力', lbl: '功率' }, { val: '30 cm', lbl: '耕深' }, { val: '50亩/天', lbl: '作业效率' }, { val: '四驱', lbl: '驱动' }]
+    },
+    {
+      name: '中农丰茂 3WP-2000 喷杆喷雾机', category: '打药机', icon: '🚿',
+      price: 6, price_orig: 8, unit: '亩', lat: 38.4160000, lng: 77.2400000,
+      loc: '莎车县', radius: 40,
+      badges: ['喷幅18m', '2000L药箱'],
+      params: [{ val: '2000 L', lbl: '药箱量' }, { val: '18 米', lbl: '喷幅' }, { val: '500亩/天', lbl: '作业效率' }, { val: '自走式', lbl: '类型' }]
+    },
+    {
+      name: '钵施然 6MZ-6 采棉机', category: '采棉机', icon: '🌾',
+      price: 118, price_orig: 138, unit: '亩', lat: 38.9300000, lng: 76.1750000,
+      loc: '英吉沙县', radius: 90,
+      badges: ['6行', '国产高效'],
+      params: [{ val: '6行', lbl: '采收行数' }, { val: '6 米', lbl: '割幅' }, { val: '55亩/天', lbl: '作业效率' }, { val: '11m³', lbl: '棉箱容量' }]
     }
   ]
 
-  const [had] = await db.query('SELECT COUNT(*) AS n FROM machines WHERE operator_id=?', [operatorId])
-  if (had[0].n > 0) {
-    console.log(`⏭  机具已存在（${had[0].n} 台），跳过插入`)
-  } else {
-    for (const m of machines) {
-      await db.query(
-        `INSERT INTO machines
-         (operator_id,name,category,icon,price,price_orig,unit,latitude,longitude,location_name,spec_badges,params,status)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?, 'on')`,
-        [operatorId, m.name, m.category, m.icon, m.price, m.price_orig, m.unit,
-         m.lat, m.lng, m.loc, JSON.stringify(m.badges), JSON.stringify(m.params)]
-      )
-    }
-    console.log(`✅ 已插入 ${machines.length} 台演示机具`)
+  // 按名称去重插入（已存在的不重复，可多次运行追加新机具）
+  let added = 0
+  for (const m of machines) {
+    const [ex] = await db.query('SELECT id FROM machines WHERE operator_id=? AND name=?', [operatorId, m.name])
+    if (ex.length) continue
+    await db.query(
+      `INSERT INTO machines
+       (operator_id,name,category,icon,price,price_orig,unit,latitude,longitude,location_name,service_radius,spec_badges,params,status)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'on')`,
+      [operatorId, m.name, m.category, m.icon, m.price, m.price_orig, m.unit,
+       m.lat, m.lng, m.loc, m.radius || 50, JSON.stringify(m.badges), JSON.stringify(m.params)]
+    )
+    added++
   }
+  console.log(added ? `✅ 新增 ${added} 台机具（当前共 ${machines.length} 台演示机具）` : `⏭  机具已是最新（${machines.length} 台）`)
+
+  // 给没有定位的商户设默认店铺定位（疏附县），可配送 50km —— 用于农资超范围判断
+  const [mu] = await db.query(
+    "UPDATE merchants SET latitude=39.3800000, longitude=75.8600000, location_name='疏附县托克扎克镇', delivery_radius=50 WHERE latitude IS NULL"
+  )
+  console.log(`✅ 已为 ${mu.affectedRows} 个商户设置默认店铺定位（疏附县，可配送50km）`)
 
   console.log('\n农机手测试账号：手机号 13800000003  密码 test123（网页机手后台）')
   process.exit(0)

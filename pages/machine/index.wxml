@@ -58,7 +58,9 @@
 
     <view wx:elif="{{machines.length === 0}}" class="empty-tip">
       <text class="empty-icon">🚜</text>
-      <text class="empty-text">该分类暂无农机</text>
+      <text wx:if="{{outOfService}}" class="empty-text">当前位置超出服务范围</text>
+      <text wx:if="{{outOfService}}" class="empty-sub">请点上方「切换地区」选择喀什地区</text>
+      <text wx:else class="empty-text">该范围内暂无可服务的农机</text>
     </view>
 
     <view class="machine-list">

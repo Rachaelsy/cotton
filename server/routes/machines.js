@@ -53,7 +53,9 @@ router.get('/', async (req, res) => {
       m.service_radius = Number(m.service_radius)
       m.out_of_range = m.distance_km !== null && m.distance_km > m.service_radius
     })
-    return ok(res, rows)
+    // 有定位时，只返回能服务到农户的农机（超出范围的不展示，避免距离排序失去意义）
+    const result = hasGeo ? rows.filter(m => !m.out_of_range) : rows
+    return ok(res, result)
   } catch (e) {
     console.error('[machines-list]', e)
     return fail(res, '获取农机列表失败', 500)
