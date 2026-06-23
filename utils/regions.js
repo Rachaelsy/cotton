@@ -104,6 +104,25 @@ const REGIONS = [
   { name: '塔什库尔干', lat: 37.7780, lng: 75.2300 }
 ]
 
+// 喀什地区各县市 —— 产品服务区（手动「切换地区」只在这里面选）
+const KASHGAR_REGIONS = [
+  { name: '喀什市',     lat: 39.4677, lng: 75.9938 },
+  { name: '疏附县',     lat: 39.3800, lng: 75.8600 },
+  { name: '疏勒县',     lat: 39.4080, lng: 76.0540 },
+  { name: '英吉沙县',   lat: 38.9300, lng: 76.1750 },
+  { name: '岳普湖县',   lat: 39.2360, lng: 76.7720 },
+  { name: '伽师县',     lat: 39.4900, lng: 76.7240 },
+  { name: '麦盖提县',   lat: 38.9070, lng: 77.6420 },
+  { name: '莎车县',     lat: 38.4160, lng: 77.2400 },
+  { name: '泽普县',     lat: 38.1900, lng: 77.2600 },
+  { name: '叶城县',     lat: 37.8830, lng: 77.4160 },
+  { name: '巴楚县',     lat: 39.7850, lng: 78.5490 },
+  { name: '塔什库尔干', lat: 37.7780, lng: 75.2300 }
+]
+
+// 距最近喀什县城超过此公里数，视为超出服务范围
+const SERVICE_RANGE_KM = 100
+
 function haversine(lat1, lng1, lat2, lng2) {
   const R = 6371
   const dLat = (lat2 - lat1) * Math.PI / 180
@@ -113,14 +132,29 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-// 返回 { name, lat, lng, distance }（距最近城市的公里数）
-function nearestRegion(lat, lng) {
-  let best = REGIONS[0], min = Infinity
-  REGIONS.forEach(r => {
+function nearestInList(list, lat, lng) {
+  let best = list[0], min = Infinity
+  list.forEach(r => {
     const d = haversine(lat, lng, r.lat, r.lng)
     if (d < min) { min = d; best = r }
   })
   return { ...best, distance: min }
 }
 
-module.exports = { REGIONS, haversine, nearestRegion }
+// 全国就近匹配 → { name, lat, lng, distance }
+function nearestRegion(lat, lng) {
+  return nearestInList(REGIONS, lat, lng)
+}
+
+// 喀什服务区就近匹配 + 是否超出服务范围
+// 返回 { name, distance, inService }；inService=false 时 name 用全国就近的城市名
+function locateService(lat, lng) {
+  const kn = nearestInList(KASHGAR_REGIONS, lat, lng)
+  if (kn.distance <= SERVICE_RANGE_KM) {
+    return { name: kn.name, distance: kn.distance, inService: true }
+  }
+  const overall = nearestRegion(lat, lng)
+  return { name: overall.name, distance: overall.distance, inService: false }
+}
+
+module.exports = { REGIONS, KASHGAR_REGIONS, SERVICE_RANGE_KM, haversine, nearestRegion, locateService }

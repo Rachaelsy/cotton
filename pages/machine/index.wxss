@@ -311,6 +311,7 @@
 .locate-icon { font-size: 24rpx; }
 .locate-text { font-size: 24rpx; color: #fff; font-weight: 600; }
 .locate-tag { font-size: 18rpx; color: #006064; background: #fff; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 10rpx; font-weight: 700; }
+.locate-warn { font-size: 18rpx; color: #fff; background: #DC2626; border-radius: 6rpx; padding: 2rpx 12rpx; margin-left: 10rpx; font-weight: 700; }
 .locate-action { flex: 1; text-align: right; font-size: 22rpx; color: #FFE082; font-weight: 700; }
 
 /* ===== 地区选择弹窗 ===== */

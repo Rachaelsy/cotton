@@ -10,21 +10,22 @@ const SORTS = [
   { key: 'rating',    label: '评分' }
 ]
 
-// 全国主要城市/县就近匹配（覆盖全国，喀什细化到县）
-const { REGIONS, nearestRegion } = require('../../utils/regions')
+// 手动选区只列喀什服务区；自动定位全国就近匹配 + 是否超出服务范围
+const { KASHGAR_REGIONS, locateService } = require('../../utils/regions')
 
 Page({
   data: {
     statusBarHeight: 20,
     categories: CATEGORIES,
     sorts: SORTS,
-    regions: REGIONS,
+    regions: KASHGAR_REGIONS,
     catSel: '全部',
     sortSel: 'recommend',
     machines: [],
     loading: true,
     locName: '定位中…',
     locByGps: false,      // true=当前定位 false=手动选区
+    outOfService: false,  // 超出喀什服务范围
     showRegionPicker: false,
     lat: null,
     lng: null
@@ -36,24 +37,24 @@ Page({
     this.autoLocate()
   },
 
-  // 自动定位 → 就近匹配县名
+  // 自动定位 → 就近匹配 + 服务范围判断
   autoLocate() {
     wx.getLocation({
       type: 'gcj02',
       success: (res) => {
-        const near = nearestRegion(res.latitude, res.longitude)
+        const svc = locateService(res.latitude, res.longitude)
         this.setData({
           lat: res.latitude, lng: res.longitude,
-          locByGps: true, locName: `${near.name}附近`
+          locByGps: true, locName: `${svc.name}附近`, outOfService: !svc.inService
         })
         this.loadMachines()
       },
       fail: () => {
-        // 定位失败 → 默认用喀什市，提示可手动选
-        const def = REGIONS[0]
+        // 定位失败 → 默认用喀什市
+        const def = KASHGAR_REGIONS[0]
         this.setData({
           lat: def.lat, lng: def.lng,
-          locByGps: false, locName: def.name
+          locByGps: false, locName: def.name, outOfService: false
         })
         this.loadMachines()
       }
@@ -68,10 +69,10 @@ Page({
     wx.getLocation({
       type: 'gcj02',
       success: (res) => {
-        const near = nearestRegion(res.latitude, res.longitude)
+        const svc = locateService(res.latitude, res.longitude)
         this.setData({
           lat: res.latitude, lng: res.longitude,
-          locByGps: true, locName: `${near.name}附近`,
+          locByGps: true, locName: `${svc.name}附近`, outOfService: !svc.inService,
           showRegionPicker: false
         })
         this.loadMachines()
@@ -87,13 +88,13 @@ Page({
     })
   },
 
-  // 手动选择某个地区
+  // 手动选择喀什服务区某个县（必在服务范围内）
   onPickRegion(e) {
     const idx = Number(e.currentTarget.dataset.index)
-    const r = REGIONS[idx]
+    const r = KASHGAR_REGIONS[idx]
     this.setData({
       lat: r.lat, lng: r.lng,
-      locByGps: false, locName: r.name,
+      locByGps: false, locName: r.name, outOfService: false,
       showRegionPicker: false
     })
     this.loadMachines()

@@ -16,7 +16,8 @@
     <view class="locate-bar" bindtap="onOpenRegion">
       <text class="locate-icon">📍</text>
       <text class="locate-text">{{locName}}</text>
-      <text wx:if="{{locByGps}}" class="locate-tag">当前定位</text>
+      <text wx:if="{{outOfService}}" class="locate-warn">已超出服务范围</text>
+      <text wx:elif="{{locByGps}}" class="locate-tag">当前定位</text>
       <text class="locate-action">切换地区 ›</text>
     </view>
 
