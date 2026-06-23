@@ -53,6 +53,7 @@ node db/migrate_plots.js              # 创建 plots 表（农户地块）
 node db/migrate_farm_records.js       # 创建 farm_records 表（农事记录）
 node db/migrate_machines.js           # 农机租赁建表（operators/machines/machine_orders/machine_reviews）+ operator 角色
 node db/migrate_order_delete.js       # 订单按角色软删除字段（farmer/merchant/operator_deleted）
+node db/migrate_delivery_range.js     # 可配送范围（machines.service_radius、merchants 定位+delivery_radius）
 node db/seed.js                       # 插入测试用户账号
 node db/seed_machines.js              # 农机演示数据（机主 13800000003 + 4 台机具）
 
@@ -292,6 +293,7 @@ cotton/
         ├── migrate_farm_records.js       # 建 farm_records 表（农事记录）
         ├── migrate_machines.js           # 农机租赁建表 + operator 角色
         ├── migrate_order_delete.js       # 订单按角色软删除字段
+        ├── migrate_delivery_range.js     # 可配送范围字段（机具/商户）
         ├── seed.js                       # 测试用户账号（幂等）
         └── seed_machines.js              # 农机演示数据（机主 + 机具）
 ```
@@ -402,7 +404,8 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 users                → id, phone, password(bcrypt), role(farmer/merchant/operator), real_name, is_verified, is_active, is_admin
 farmers              → user_id(FK), location, land_size
 merchants            → user_id(FK), company_name, business_license, product_category,
-                        apply_status, reject_reason, wechat_id, commission_rate(DECIMAL 默认5.00)
+                        apply_status, reject_reason, wechat_id, commission_rate(DECIMAL 默认5.00),
+                        latitude, longitude, location_name, delivery_radius(可配送范围km,默认50)
 products             → id, merchant_id(FK), name, category, price, unit, stock, status,
                         icon, image_url, description, detail
 orders               → id, order_no(UNIQUE), user_id(FK), farmer_name, farmer_phone,
@@ -431,6 +434,7 @@ operators            → id, user_id(FK), org_name(合作社), contact, phone, i
                         apply_status(pending/approved/rejected), rating_avg, response_time
 machines             → id, operator_id(FK), name, category(打药机/采棉机/播种机/旋耕机/其他),
                         icon, price, price_orig, unit(亩/天), latitude, longitude, location_name,
+                        service_radius(可配送/作业范围km,默认50),
                         spec_badges(JSON), params(JSON), status(on/off/busy), rating_avg, order_count
 machine_orders       → id, order_no, machine_id, operator_id, farmer_id, machine_name/icon,
                         plot_id, plot_name, work_address(作业地址), work_date, work_area(亩),
@@ -442,6 +446,8 @@ machine_reviews      → id, order_id(UNIQUE), machine_id, operator_id, farmer_i
 login_logs           → user_id, ip, created_at
 
 订单软删除：`orders` 加 `farmer_deleted/merchant_deleted`、`machine_orders` 加 `farmer_deleted/operator_deleted`——按角色隐藏，仅终态（已完成/已取消/售后完成）可删，不影响对方记录。
+
+可配送范围：机主给机具设 `service_radius`、商户给店铺设定位 + `delivery_radius`；农户端用 GPS 实时算距离（`ST_Distance_Sphere`），超出范围在列表/详情显示「超出配送范围」。农户定位显示用 [utils/regions.js](utils/regions.js) 全国主要城市/县就近匹配（喀什细化到县，无需地图 API key）。
 ```
 
 订单状态流转：`pending_payment`（待付款，含30分钟超时）→ `pending_ship`（待发货）→ `shipped`（已发货）→ `completed`（已完成）；已完成后可申请售后 → `refund`（售后中）→ 商家处理后 → `refunded`（售后完成）；超时/主动取消 → `cancelled`（库存自动释放）

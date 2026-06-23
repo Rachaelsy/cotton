@@ -17,7 +17,12 @@ Page({
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
-    this._loadProducts()
+    // 先尝试定位（用于判断是否超出商户配送范围），无论成败都加载
+    wx.getLocation({
+      type: 'gcj02',
+      success: (res) => { this._lat = res.latitude; this._lng = res.longitude; this._loadProducts() },
+      fail: () => { this._lat = null; this._lng = null; this._loadProducts() }
+    })
   },
 
   onShow() {
@@ -32,7 +37,8 @@ Page({
 
     try {
       const auth = require('../../utils/auth')
-      const res = await auth.request('GET', '/api/products')
+      const geoQs = (this._lat && this._lng) ? `?lat=${this._lat}&lng=${this._lng}` : ''
+      const res = await auth.request('GET', '/api/products' + geoQs)
       if (res.code === 200 && res.data && res.data.length > 0) {
         const products = res.data.map(p => ({
           ...p,
@@ -46,7 +52,9 @@ Page({
           rating:    5.0,
           store:           p.company_name || '认证商家',
           cat:             p.category || '其他',
-          merchant_wechat: p.merchant_wechat || ''
+          merchant_wechat: p.merchant_wechat || '',
+          outOfRange:      !!p.out_of_range,
+          deliveryText:    p.delivery_distance_km != null ? `${p.delivery_distance_km}km` : ''
         }))
         app.globalData.products = products
         const { catSel } = this.data

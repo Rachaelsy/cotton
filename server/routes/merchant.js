@@ -85,7 +85,8 @@ router.get('/profile', merchantAuth, async (req, res) => {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.is_verified,
              m.id AS merchant_id, m.company_name, m.business_license,
-             m.product_category, m.apply_status, m.wechat_id
+             m.product_category, m.apply_status, m.wechat_id,
+             m.latitude, m.longitude, m.location_name, m.delivery_radius
       FROM users u JOIN merchants m ON m.user_id = u.id WHERE u.id = ?
     `, [req.merchant.id])
     if (!rows.length) return fail(res, '用户不存在', 404)
@@ -94,12 +95,25 @@ router.get('/profile', merchantAuth, async (req, res) => {
 })
 
 router.put('/profile', merchantAuth, async (req, res) => {
-  const { real_name, company_name, product_category, business_license, wechat_id } = req.body
+  const {
+    real_name, company_name, product_category, business_license, wechat_id,
+    latitude, longitude, location_name, delivery_radius
+  } = req.body
+  // 经纬度合法性（防填反，中国范围）
+  if (latitude != null && latitude !== '' && longitude != null && longitude !== '') {
+    const la = parseFloat(latitude), ln = parseFloat(longitude)
+    if (isNaN(la) || isNaN(ln)) return fail(res, '经纬度格式不正确')
+    if (la < 3 || la > 54) return fail(res, '纬度应在 3~54 之间，请检查是否与经度填反了')
+    if (ln < 73 || ln > 136) return fail(res, '经度应在 73~136 之间，请检查是否与纬度填反了')
+  }
   try {
     if (real_name) await db.query('UPDATE users SET real_name=? WHERE id=?', [real_name, req.merchant.id])
     await db.query(
-      'UPDATE merchants SET company_name=?, product_category=?, business_license=?, wechat_id=? WHERE user_id=?',
-      [company_name||'', product_category||'', business_license||'', wechat_id||'', req.merchant.id]
+      `UPDATE merchants SET company_name=?, product_category=?, business_license=?, wechat_id=?,
+       latitude=?, longitude=?, location_name=?, delivery_radius=? WHERE user_id=?`,
+      [company_name||'', product_category||'', business_license||'', wechat_id||'',
+       latitude || null, longitude || null, location_name||'', parseFloat(delivery_radius) || 50,
+       req.merchant.id]
     )
     return ok(res, null, '店铺信息已更新')
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }

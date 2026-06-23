@@ -46,19 +46,22 @@
   letter-spacing: 3rpx;
 }
 
-/* ===== 筛选标签 ===== */
+/* ===== 筛选标签（横向 scroll-view 需显式高度，否则 Skyline 真机塌陷）===== */
 .filter-tabs {
-  display: flex;
-  flex-direction: row;
-  gap: 16rpx;
   margin-top: 20rpx;
+  height: 64rpx;
+  white-space: nowrap;
 }
 
 .filter-tab {
+  display: inline-block;
+  vertical-align: top;
   background: rgba(255, 255, 255, 0.18);
   border-radius: 999rpx;
   padding: 12rpx 28rpx;
   border: 2rpx solid rgba(255, 255, 255, 0.25);
+  margin-right: 16rpx;
+  box-sizing: border-box;
 }
 
 .filter-tab-on {
@@ -356,6 +359,7 @@
   justify-content: space-between;
 }
 .card-dist { font-size: 22rpx; color: #00838F; font-weight: 700; }
+.card-dist-out { color: #DC2626; }
 
 .param-badge {
   background: #F0F7F7;

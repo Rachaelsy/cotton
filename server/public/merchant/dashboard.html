@@ -505,6 +505,16 @@
             <div class="form-field"><label>营业执照号</label><input id="s-license" placeholder="请输入（选填）" style="max-width:360px"></div>
             <div class="form-field"><label>客服微信号</label><input id="s-wechat" placeholder="请输入微信号，农户联系客服时展示" style="max-width:360px"></div>
           </div>
+          <div class="settings-section">
+            <h4>配送设置（农户超出范围会提示「超出配送范围」）</h4>
+            <div class="form-field"><label>店铺地址</label><input id="s-location_name" placeholder="如：疏附县托克扎克镇" style="max-width:360px"></div>
+            <div class="form-row" style="align-items:flex-end">
+              <div class="form-field"><label>纬度</label><input id="s-latitude" placeholder="latitude"></div>
+              <div class="form-field"><label>经度</label><input id="s-longitude" placeholder="longitude"></div>
+              <button type="button" class="btn btn-outline" style="margin-bottom:2px" onclick="merchantGeo()">📍 获取定位</button>
+            </div>
+            <div class="form-field"><label>可配送范围（公里）</label><input id="s-delivery_radius" type="number" placeholder="默认 50" value="50" style="max-width:200px"></div>
+          </div>
           <button class="btn btn-primary" onclick="saveSettings()">保存修改</button>
         </div>
       </div>
@@ -1373,16 +1383,32 @@ async function loadSettings() {
   document.getElementById('s-category').value = d.product_category || ''
   document.getElementById('s-license').value  = d.business_license || ''
   document.getElementById('s-wechat').value   = d.wechat_id || ''
+  document.getElementById('s-location_name').value  = d.location_name || ''
+  document.getElementById('s-latitude').value       = d.latitude || ''
+  document.getElementById('s-longitude').value      = d.longitude || ''
+  document.getElementById('s-delivery_radius').value = d.delivery_radius || 50
   document.getElementById('s-bound-phone').textContent = d.phone || '未绑定'
 }
 
+function merchantGeo() {
+  if (!navigator.geolocation) { alert('浏览器不支持定位'); return }
+  navigator.geolocation.getCurrentPosition(
+    p => { document.getElementById('s-latitude').value = p.coords.latitude.toFixed(7); document.getElementById('s-longitude').value = p.coords.longitude.toFixed(7) },
+    e => alert('定位失败：' + e.message), { enableHighAccuracy: true, timeout: 8000 })
+}
+
 async function saveSettings() {
+  const v = id => document.getElementById(id).value.trim()
   const body = {
-    real_name:        document.getElementById('s-realname').value.trim(),
-    company_name:     document.getElementById('s-company').value.trim(),
-    product_category: document.getElementById('s-category').value.trim(),
-    business_license: document.getElementById('s-license').value.trim(),
-    wechat_id:        document.getElementById('s-wechat').value.trim()
+    real_name:        v('s-realname'),
+    company_name:     v('s-company'),
+    product_category: v('s-category'),
+    business_license: v('s-license'),
+    wechat_id:        v('s-wechat'),
+    location_name:    v('s-location_name'),
+    latitude:         v('s-latitude') || null,
+    longitude:        v('s-longitude') || null,
+    delivery_radius:  v('s-delivery_radius') || 50
   }
   if (!body.company_name) { alert('店铺名称不能为空'); return }
   const r = await api('PUT', '/profile', body)

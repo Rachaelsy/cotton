@@ -258,6 +258,7 @@
 
 .tag-new { background: #FF3B30; }
 .tag-hot { background: #FF6B00; }
+.tag-out { top: auto; bottom: 16rpx; left: 16rpx; background: rgba(220,38,38,0.92); }
 
 .prod-body {
   padding: 16rpx 20rpx 20rpx;

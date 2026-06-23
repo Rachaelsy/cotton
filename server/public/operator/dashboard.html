@@ -208,6 +208,7 @@
           <div class="form-group"><label>经度 *</label><input id="m-longitude" placeholder="longitude"></div>
           <button type="button" class="geo-btn" style="margin-bottom:0" onclick="getGeo('m-latitude','m-longitude')">📍 当前定位</button>
         </div>
+        <div class="form-group" style="margin-top:14px"><label>可配送（作业）范围（公里）—— 农户超出此范围会提示</label><input id="m-service_radius" type="number" placeholder="默认 50" value="50"></div>
         <div class="form-group" style="margin-top:14px"><label>规格标签（逗号分隔）</label><input id="m-badges" placeholder="如：喷幅9m,效率300亩/天"></div>
         <div class="form-group" style="margin-top:14px"><label>参数（格式：值:标签，逗号分隔）</label><input id="m-params" placeholder="如：40L:药箱量,9米:喷幅"></div>
         <div class="form-group" style="margin-top:14px"><label>描述</label><textarea id="m-description" rows="2" placeholder="选填"></textarea></div>
@@ -289,7 +290,7 @@
       if (r.code === 200 && r.data.length) {
         tb.innerHTML = r.data.map(m => {
           const st = m.status === 'on' ? '<span class="badge b-on">上架</span>' : m.status === 'busy' ? '<span class="badge b-busy">紧俏</span>' : '<span class="badge b-off">下架</span>'
-          const geo = (m.latitude && m.longitude) ? `${m.location_name || ''} 📍` : '<span style="color:#DC2626">未定位</span>'
+          const geo = (m.latitude && m.longitude) ? `${m.location_name || ''} 📍<br><span style="color:#00838F;font-size:12px">可配送 ${m.service_radius}km 内</span>` : '<span style="color:#DC2626">未定位</span>'
           const toggle = m.status === 'off' ? `<button class="btn btn-warn btn-sm" onclick="setStatus(${m.id},'on')">上架</button>` : `<button class="btn btn-outline btn-sm" onclick="setStatus(${m.id},'off')">下架</button>`
           return `<tr><td><span class="m-icon">${m.icon}</span> ${m.name}</td><td>${m.category}</td><td>¥${m.price}/${m.unit}</td><td>${geo}</td><td>⭐${Number(m.rating_avg).toFixed(1)} / ${m.order_count}单</td><td>${st}</td>
             <td><button class="btn btn-outline btn-sm" onclick='editMachine(${JSON.stringify(m)})'>编辑</button> ${toggle} <button class="btn btn-danger btn-sm" onclick="delMachine(${m.id})">删除</button></td></tr>`
@@ -300,6 +301,7 @@
       document.getElementById('mModalTitle').textContent = '发布机具'
       ;['m-id', 'm-name', 'm-price', 'm-price_orig', 'm-location_name', 'm-latitude', 'm-longitude', 'm-badges', 'm-params', 'm-description'].forEach(i => document.getElementById(i).value = '')
       document.getElementById('m-icon').value = '🚜'; document.getElementById('m-category').value = '打药机'; document.getElementById('m-unit').value = '亩'
+      document.getElementById('m-service_radius').value = '50'
       document.getElementById('machineMask').classList.add('show')
     }
     function editMachine(m) {
@@ -314,6 +316,7 @@
       document.getElementById('m-location_name').value = m.location_name || ''
       document.getElementById('m-latitude').value = m.latitude || ''
       document.getElementById('m-longitude').value = m.longitude || ''
+      document.getElementById('m-service_radius').value = m.service_radius || 50
       document.getElementById('m-badges').value = (m.spec_badges || []).join(',')
       document.getElementById('m-params').value = (m.params || []).map(p => p.val + ':' + p.lbl).join(',')
       document.getElementById('m-description').value = m.description || ''
@@ -328,6 +331,7 @@
         name: v('m-name'), icon: v('m-icon') || '🚜', category: v('m-category'),
         price: v('m-price'), price_orig: v('m-price_orig') || null, unit: v('m-unit'),
         location_name: v('m-location_name'), latitude: v('m-latitude') || null, longitude: v('m-longitude') || null,
+        service_radius: v('m-service_radius') || 50,
         spec_badges: badges, params: params, description: v('m-description')
       }
       if (!body.name || !body.price) { toast('请填写名称和单价'); return }

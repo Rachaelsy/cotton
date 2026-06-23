@@ -82,7 +82,7 @@
 
           <view class="card-org-row">
             <text class="card-org">🏢 {{item.org_name}}</text>
-            <text wx:if="{{item.distText}}" class="card-dist">📍 {{item.distText}}</text>
+            <text wx:if="{{item.distText}}" class="card-dist {{item.out_of_range ? 'card-dist-out' : ''}}">📍 {{item.distText}}{{item.out_of_range ? ' · 超范围' : ''}}</text>
           </view>
 
           <view class="card-params">

@@ -26,7 +26,8 @@ router.get('/', async (req, res) => {
       : `NULL`
     let sql = `
       SELECT m.id, m.operator_id, m.name, m.category, m.icon, m.price, m.price_orig,
-             m.unit, m.latitude, m.longitude, m.location_name, m.spec_badges, m.params,
+             m.unit, m.latitude, m.longitude, m.location_name, m.service_radius,
+             m.spec_badges, m.params,
              m.description, m.status, m.rating_avg, m.order_count,
              o.org_name, o.response_time, o.rating_avg AS org_rating,
              ${distExpr} AS distance_km
@@ -49,6 +50,8 @@ router.get('/', async (req, res) => {
       m.spec_badges = parseJSON(m.spec_badges, [])
       m.params = parseJSON(m.params, [])
       m.distance_km = m.distance_km !== null ? Number(m.distance_km) : null
+      m.service_radius = Number(m.service_radius)
+      m.out_of_range = m.distance_km !== null && m.distance_km > m.service_radius
     })
     return ok(res, rows)
   } catch (e) {
@@ -83,6 +86,8 @@ router.get('/:id', async (req, res) => {
     m.spec_badges = parseJSON(m.spec_badges, [])
     m.params = parseJSON(m.params, [])
     m.distance_km = m.distance_km !== null && m.distance_km !== undefined ? Number(m.distance_km) : null
+    m.service_radius = Number(m.service_radius)
+    m.out_of_range = m.distance_km !== null && m.distance_km > m.service_radius
 
     // 评价
     const [reviews] = await db.query(`

@@ -158,7 +158,7 @@ router.get('/machines', operatorAuth, async (req, res) => {
 router.post('/machines', operatorAuth, async (req, res) => {
   const {
     name, category = '其他', icon = '🚜', price, price_orig = null, unit = '亩',
-    latitude = null, longitude = null, location_name = '',
+    latitude = null, longitude = null, location_name = '', service_radius = 50,
     spec_badges = [], params = [], description = ''
   } = req.body
   if (!name || !name.trim()) return fail(res, '请填写机具名称')
@@ -168,11 +168,11 @@ router.post('/machines', operatorAuth, async (req, res) => {
   try {
     const [r] = await db.query(
       `INSERT INTO machines
-       (operator_id,name,category,icon,price,price_orig,unit,latitude,longitude,location_name,spec_badges,params,description)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       (operator_id,name,category,icon,price,price_orig,unit,latitude,longitude,location_name,service_radius,spec_badges,params,description)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [req.operator.operator_id, name.trim(), category, icon, parseFloat(price),
        price_orig ? parseFloat(price_orig) : null, unit,
-       latitude || null, longitude || null, location_name,
+       latitude || null, longitude || null, location_name, parseFloat(service_radius) || 50,
        JSON.stringify(spec_badges || []), JSON.stringify(params || []), description]
     )
     return ok(res, { id: r.insertId }, '机具已发布')
@@ -183,7 +183,7 @@ router.post('/machines', operatorAuth, async (req, res) => {
 router.put('/machines/:id', operatorAuth, async (req, res) => {
   const {
     name, category, icon, price, price_orig, unit,
-    latitude, longitude, location_name, spec_badges, params, description
+    latitude, longitude, location_name, service_radius, spec_badges, params, description
   } = req.body
   const ge = geoError(latitude, longitude)
   if (ge) return fail(res, ge)
@@ -193,10 +193,10 @@ router.put('/machines/:id', operatorAuth, async (req, res) => {
     if (!m) return fail(res, '机具不存在或无权限', 404)
     await db.query(
       `UPDATE machines SET name=?,category=?,icon=?,price=?,price_orig=?,unit=?,
-       latitude=?,longitude=?,location_name=?,spec_badges=?,params=?,description=? WHERE id=?`,
+       latitude=?,longitude=?,location_name=?,service_radius=?,spec_badges=?,params=?,description=? WHERE id=?`,
       [name, category || '其他', icon || '🚜', parseFloat(price),
        price_orig ? parseFloat(price_orig) : null, unit || '亩',
-       latitude || null, longitude || null, location_name || '',
+       latitude || null, longitude || null, location_name || '', parseFloat(service_radius) || 50,
        JSON.stringify(spec_badges || []), JSON.stringify(params || []), description || '',
        req.params.id]
     )

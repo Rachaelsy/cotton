@@ -88,6 +88,7 @@
           </block>
           <text wx:if="{{item.isNew}}" class="tag tag-new">新品</text>
           <text wx:elif="{{item.hot}}" class="tag tag-hot">🔥热销</text>
+          <text wx:if="{{item.outOfRange}}" class="tag tag-out">超出配送范围</text>
         </view>
         <view class="prod-body">
           <text class="prod-name">{{item.name}}</text>

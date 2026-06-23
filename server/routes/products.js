@@ -13,15 +13,23 @@ function fail(res, msg, code = 400) { return res.status(code).json({ code, msg, 
 // ─────────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
-    const { category } = req.query
+    const { category, lat, lng } = req.query
+    const hasGeo = lat && lng && !isNaN(lat) && !isNaN(lng)
+    const distExpr = hasGeo
+      ? `ROUND(ST_Distance_Sphere(POINT(m.longitude, m.latitude), POINT(?, ?)) / 1000, 1)`
+      : `NULL`
     let sql = `
       SELECT p.*, m.company_name, m.wechat_id AS merchant_wechat,
+             m.latitude AS merchant_lat, m.longitude AS merchant_lng,
+             m.location_name AS merchant_location, m.delivery_radius,
+             ${distExpr} AS delivery_distance_km,
              IFNULL((SELECT SUM(oi.qty) FROM order_items oi WHERE oi.product_id = p.id), 0) AS sold
       FROM products p
       LEFT JOIN merchants m ON m.id = p.merchant_id
       WHERE p.status = 'on'
     `
     const params = []
+    if (hasGeo) params.push(parseFloat(lng), parseFloat(lat))
     if (category && category !== '全部') {
       sql += ' AND p.category = ?'
       params.push(category)
@@ -32,6 +40,13 @@ router.get('/', async (req, res) => {
     }
     sql += ' ORDER BY p.created_at DESC'
     const [rows] = await db.query(sql, params)
+    rows.forEach(p => {
+      p.delivery_radius = p.delivery_radius != null ? Number(p.delivery_radius) : null
+      p.delivery_distance_km = p.delivery_distance_km != null ? Number(p.delivery_distance_km) : null
+      // 商户有定位 + 农户有定位时才判定超范围
+      p.out_of_range = p.delivery_distance_km != null && p.delivery_radius != null
+        && p.delivery_distance_km > p.delivery_radius
+    })
     return ok(res, rows)
   } catch (err) {
     console.error('[products list]', err)

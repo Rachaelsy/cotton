@@ -10,39 +10,8 @@ const SORTS = [
   { key: 'rating',    label: '评分' }
 ]
 
-// 喀什地区各县市中心坐标（用于地区筛选 + 自动定位就近匹配）
-const REGIONS = [
-  { name: '喀什市',        lat: 39.4677, lng: 75.9938 },
-  { name: '疏附县',        lat: 39.3800, lng: 75.8600 },
-  { name: '疏勒县',        lat: 39.4080, lng: 76.0540 },
-  { name: '英吉沙县',      lat: 38.9300, lng: 76.1750 },
-  { name: '岳普湖县',      lat: 39.2360, lng: 76.7720 },
-  { name: '伽师县',        lat: 39.4900, lng: 76.7240 },
-  { name: '麦盖提县',      lat: 38.9070, lng: 77.6420 },
-  { name: '莎车县',        lat: 38.4160, lng: 77.2400 },
-  { name: '泽普县',        lat: 38.1900, lng: 77.2600 },
-  { name: '叶城县',        lat: 37.8830, lng: 77.4160 },
-  { name: '巴楚县',        lat: 39.7850, lng: 78.5490 },
-  { name: '塔什库尔干',    lat: 37.7780, lng: 75.2300 }
-]
-
-function haversine(lat1, lng1, lat2, lng2) {
-  const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function nearestRegion(lat, lng) {
-  let best = REGIONS[0], min = Infinity
-  REGIONS.forEach(r => {
-    const d = haversine(lat, lng, r.lat, r.lng)
-    if (d < min) { min = d; best = r }
-  })
-  return best
-}
+// 全国主要城市/县就近匹配（覆盖全国，喀什细化到县）
+const { REGIONS, nearestRegion } = require('../../utils/regions')
 
 Page({
   data: {
