@@ -22,6 +22,11 @@
     "pages/records/index",
     "pages/machine/index",
     "pages/machine/detail",
+    "pages/machine/booking",
+    "pages/machine/pay",
+    "pages/machine/track",
+    "pages/machine/review",
+    "pages/machine/orders",
     "pages/loans/index",
     "pages/insurance/index",
     "pages/expert/index",
@@ -64,9 +69,10 @@
   },
   "permission": {
     "scope.userLocation": {
-      "desc": "用于地块定位与边界绘制，获取您的当前位置"
+      "desc": "用于按距离查找附近农机、地块定位与边界绘制，获取您的当前位置"
     }
   },
+  "requiredPrivateInfos": ["getLocation", "chooseLocation"],
   "style": "v2",
   "renderer": "skyline",
   "rendererOptions": {

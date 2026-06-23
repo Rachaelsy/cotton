@@ -1,0 +1,43 @@
+/* pages/machine/orders.wxss — 我的农机预约 */
+.page { display: flex; flex-direction: column; height: 100vh; background: #F5EEE6; }
+.header { background: linear-gradient(160deg, #006064, #00ACC1); flex-shrink: 0; padding: 0 24rpx 0; }
+.nav { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding-bottom: 8rpx; }
+.back-btn { width: 60rpx; height: 60rpx; background: rgba(255,255,255,0.18); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; }
+.back-icon { color: #fff; font-size: 44rpx; line-height: 1; }
+.nav-title { color: #fff; font-size: 32rpx; font-weight: 800; }
+
+.tabs { white-space: nowrap; padding: 8rpx 0 14rpx; }
+.tab { display: inline-block; padding: 10rpx 28rpx; border-radius: 999rpx; margin-right: 12rpx;
+  background: rgba(255,255,255,0.18); }
+.tab-on { background: #fff; }
+.tab-text { font-size: 24rpx; color: rgba(255,255,255,0.9); font-weight: 600; }
+.tab-on .tab-text { color: #006064; font-weight: 800; }
+
+.scroll { flex: 1; height: 0; }
+.order-card { background: #fff; margin: 18rpx 20rpx 0; border-radius: 20rpx; padding: 22rpx 24rpx; }
+.oc-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.oc-no { font-size: 22rpx; color: #aaa; }
+.badge { font-size: 22rpx; font-weight: 700; border-radius: 999rpx; padding: 4rpx 16rpx; }
+.b-pending { background: #FEF3C7; color: #D97706; }
+.b-progress { background: #E0F2F1; color: #00838F; }
+.b-done { background: #F0F0F0; color: #888; }
+.b-cancel { background: #FEE2E2; color: #DC2626; }
+
+.oc-body { display: flex; flex-direction: row; align-items: center; gap: 16rpx; padding: 20rpx 0;
+  border-bottom: 1rpx solid #F2F2F2; }
+.oc-icon { width: 80rpx; height: 80rpx; background: #E0F7FA; border-radius: 16rpx;
+  display: flex; align-items: center; justify-content: center; font-size: 44rpx; flex-shrink: 0; }
+.oc-mid { flex: 1; display: flex; flex-direction: column; gap: 8rpx; min-width: 0; }
+.oc-name { font-size: 28rpx; font-weight: 800; color: #1A1A1A; }
+.oc-meta { font-size: 22rpx; color: #888; }
+.oc-foot { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding-top: 16rpx; }
+.oc-total { font-size: 24rpx; color: #E65100; font-weight: 700; }
+.oc-foot-right { display: flex; flex-direction: row; align-items: center; gap: 18rpx; }
+.oc-del { border: 1rpx solid #DDD; border-radius: 999rpx; padding: 6rpx 20rpx; }
+.oc-del-text { font-size: 22rpx; color: #999; }
+.oc-arrow { font-size: 24rpx; color: #00838F; font-weight: 600; }
+
+.empty { display: flex; flex-direction: column; align-items: center; padding: 100rpx 0; gap: 16rpx; }
+.empty-icon { font-size: 72rpx; }
+.empty-text { font-size: 28rpx; color: #888; }

@@ -4,75 +4,104 @@
   <!-- ===== 青色渐变头部 ===== -->
   <view class="mach-header" style="padding-top: {{statusBarHeight}}px">
     <view class="topbar">
+      <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
       <view class="topbar-titles">
         <text class="page-title">🚜 农机租赁</text>
         <text class="page-subtitle">FARM MACHINERY</text>
       </view>
+      <view class="orders-btn" bindtap="onMyOrders"><text class="orders-btn-text">我的预约</text></view>
     </view>
 
-    <!-- 快速筛选标签 -->
-    <view class="filter-tabs">
+    <!-- 定位栏 -->
+    <view class="locate-bar" bindtap="onOpenRegion">
+      <text class="locate-icon">📍</text>
+      <text class="locate-text">{{locName}}</text>
+      <text wx:if="{{locByGps}}" class="locate-tag">当前定位</text>
+      <text class="locate-action">切换地区 ›</text>
+    </view>
+
+    <!-- 分类筛选 -->
+    <scroll-view class="filter-tabs" scroll-x enhanced show-scrollbar="{{false}}">
       <view
-        class="filter-tab {{filterSel === item ? 'filter-tab-on' : ''}}"
-        wx:for="{{filters}}"
+        class="filter-tab {{catSel === item ? 'filter-tab-on' : ''}}"
+        wx:for="{{categories}}"
         wx:key="*this"
-        bindtap="onFilter"
+        bindtap="onCategory"
         data-name="{{item}}"
       >
         <text class="filter-tab-text">{{item}}</text>
       </view>
+    </scroll-view>
+  </view>
+
+  <!-- 排序栏 -->
+  <view class="sort-bar">
+    <view
+      class="sort-item {{sortSel === item.key ? 'sort-item-on' : ''}}"
+      wx:for="{{sorts}}"
+      wx:key="key"
+      bindtap="onSort"
+      data-key="{{item.key}}"
+    >
+      <text class="sort-text">{{item.label}}</text>
     </view>
   </view>
 
-  <!-- ===== 可滚动内容区 ===== -->
+  <!-- ===== 列表 ===== -->
   <scroll-view class="scroll-content" scroll-y enable-back-to-top style="flex:1; height:0;">
+
+    <view wx:if="{{loading}}" class="empty-tip">
+      <text class="empty-icon">⏳</text>
+      <text class="empty-text">加载中…</text>
+    </view>
+
+    <view wx:elif="{{machines.length === 0}}" class="empty-tip">
+      <text class="empty-icon">🚜</text>
+      <text class="empty-text">该分类暂无农机</text>
+    </view>
 
     <view class="machine-list">
       <view
         class="machine-card"
-        wx:for="{{displayMachines}}"
+        wx:for="{{machines}}"
         wx:key="id"
         bindtap="onMachine"
         data-id="{{item.id}}"
       >
-        <!-- 卡片左侧：图标 -->
         <view class="card-icon-wrap">
           <text class="card-icon">{{item.icon}}</text>
         </view>
 
-        <!-- 卡片右侧：信息 -->
         <view class="card-body">
-          <!-- 名称行 -->
           <view class="card-name-row">
             <text class="card-name">{{item.name}}</text>
-            <view class="status-badge {{item.status === 'available' ? 'badge-green' : 'badge-orange'}}">
+            <view class="status-badge {{item.status === 'busy' ? 'badge-orange' : 'badge-green'}}">
               <text class="badge-text">{{item.statusText}}</text>
             </view>
           </view>
 
-          <!-- 机构 -->
-          <text class="card-org">🏢 {{item.org}}</text>
+          <view class="card-org-row">
+            <text class="card-org">🏢 {{item.org_name}}</text>
+            <text wx:if="{{item.distText}}" class="card-dist">📍 {{item.distText}}</text>
+          </view>
 
-          <!-- 参数行 -->
           <view class="card-params">
             <view
               class="param-item"
-              wx:for="{{item.params}}"
-              wx:key="label"
-              wx:for-item="p"
+              wx:for="{{item.spec_badges}}"
+              wx:key="*this"
+              wx:for-item="b"
             >
-              <text class="param-label">{{p.label}}</text>
-              <text class="param-value">{{p.value}}</text>
+              <text class="param-badge">{{b}}</text>
             </view>
           </view>
 
-          <!-- 底部：价格 + 评分 + 预约按钮 -->
           <view class="card-bottom">
             <view class="price-wrap">
-              <text class="price-main">¥{{item.price}}</text>
-              <text class="price-unit">/亩</text>
+              <text class="price-main">¥{{item.priceText}}</text>
+              <text class="price-unit">/{{item.unit}}</text>
             </view>
-            <text class="card-rating">⭐{{item.rating}}</text>
+            <text class="card-rating">⭐{{item.ratingText}} · {{item.order_count}}单</text>
             <view class="book-btn">
               <text class="book-btn-text">预约</text>
             </view>
@@ -81,13 +110,33 @@
       </view>
     </view>
 
-    <!-- 无结果 -->
-    <view wx:if="{{displayMachines.length === 0}}" class="empty-tip">
-      <text class="empty-icon">🔍</text>
-      <text class="empty-text">该分类暂无农机</text>
-    </view>
-
     <view class="list-bottom"></view>
   </scroll-view>
+
+  <!-- 地区选择弹窗 -->
+  <view wx:if="{{showRegionPicker}}" class="region-mask" bindtap="onCloseRegion">
+    <view class="region-sheet" catchtap="noop">
+      <view class="region-head">
+        <text class="region-title">选择地区</text>
+        <view class="region-close" bindtap="onCloseRegion"><text>✕</text></view>
+      </view>
+      <view class="region-gps" bindtap="onUseGps">
+        <text class="rg-icon">📍</text>
+        <view class="rg-info">
+          <text class="rg-text">使用当前定位</text>
+          <text class="rg-sub">自动获取您所在位置并按距离排序</text>
+        </view>
+        <text class="rg-arrow">›</text>
+      </view>
+      <view class="region-divider"><text class="region-divider-text">或选择地区</text></view>
+      <scroll-view class="region-list" scroll-y>
+        <view class="region-item {{locName === item.name ? 'on' : ''}}"
+          wx:for="{{regions}}" wx:key="name" bindtap="onPickRegion" data-index="{{index}}">
+          <text class="region-item-text">{{item.name}}</text>
+          <text wx:if="{{locName === item.name}}" class="region-check">✓</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
 
 </view>

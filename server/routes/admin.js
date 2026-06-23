@@ -268,6 +268,50 @@ router.post('/applications/:id/reject', adminAuth, async (req, res) => {
   }
 })
 
+// ── GET /api/admin/operator-applications — 待审批农机手 ──
+router.get('/operator-applications', adminAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT u.id, u.phone, u.real_name, u.created_at,
+             o.id AS operator_id, o.org_name, o.contact, o.id_card,
+             o.service_area, o.location_name, o.apply_status, o.reject_reason
+      FROM users u JOIN operators o ON o.user_id = u.id
+      WHERE u.role = 'operator' AND o.apply_status = 'pending'
+      ORDER BY u.created_at ASC
+    `)
+    res.json({ code: 200, data: rows })
+  } catch (e) {
+    console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+// ── POST /api/admin/operator-applications/:id/approve ────
+router.post('/operator-applications/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const userId = req.params.id
+    await db.query('UPDATE operators SET apply_status="approved" WHERE user_id=?', [userId])
+    await db.query('UPDATE users SET is_active=1 WHERE id=?', [userId])
+    res.json({ code: 200, msg: '已批准农机手入驻' })
+  } catch (e) {
+    console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+// ── POST /api/admin/operator-applications/:id/reject ─────
+router.post('/operator-applications/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const userId = req.params.id
+    const { reason } = req.body
+    await db.query(
+      'UPDATE operators SET apply_status="rejected", reject_reason=? WHERE user_id=?',
+      [reason || '不符合入驻条件', userId]
+    )
+    res.json({ code: 200, msg: '已拒绝农机手入驻' })
+  } catch (e) {
+    console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
 // ── POST /api/admin/products（手动新增商品）─────────────
 router.post('/products', adminAuth, async (req, res) => {
   try {

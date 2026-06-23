@@ -667,7 +667,7 @@ async function api(method, path, body) {
 function logout() {
   localStorage.removeItem(T_KEY)
   localStorage.removeItem(U_KEY)
-  location.href = '/admin/login.html'
+  location.href = '/portal/login.html'
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('show') }
@@ -694,7 +694,7 @@ function getOrderStatus(status) {
 
 /* ── 初始化 ── */
 (function init() {
-  if (!getToken()) { location.href = '/admin/login.html'; return }
+  if (!getToken()) { location.href = '/portal/login.html'; return }
   const u = getUser()
   document.getElementById('sidebar-name').textContent  = u.company_name || u.real_name || '——'
   document.getElementById('sidebar-phone').textContent = u.phone || '——'
@@ -960,12 +960,20 @@ async function loadOrders(tab) {
           <button class="btn btn-outline btn-sm" onclick="showOrderDetail(${o.id})" style="margin-right:4px">详情</button>
           ${o.status === 'pending_ship' ? `<button class="btn btn-primary btn-sm" onclick="openShip(${o.id})" style="margin-right:4px">发货</button>` : ''}
           ${o.status === 'refund' ? `<button class="btn btn-danger btn-sm" onclick="handleRefund(${o.id})">处理退款</button>` : ''}
+          ${(o.status === 'completed' || o.status === 'refunded') ? `<button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id})">删除</button>` : ''}
         </td>
       </tr>`
     }).join('')
   } catch(e) {
     tbody.innerHTML = `<tr class="empty-row"><td colspan="7">加载失败：${esc(e.message)} <button onclick="loadOrders()">重试</button></td></tr>`
   }
+}
+
+async function deleteOrder(id) {
+  if (!confirm('确定删除该订单记录吗？\n删除后仅从你的列表移除，不影响农户和资金记录。')) return
+  const r = await api('DELETE', '/orders/' + id)
+  if (r?.code === 200) { loadOrders(currentOrderTab); alert('已删除') }
+  else alert(r?.msg || '删除失败')
 }
 
 function showOrderDetail(id) {

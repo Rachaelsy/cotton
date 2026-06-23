@@ -1,0 +1,53 @@
+<!-- pages/machine/pay.wxml — 农机预约支付 -->
+<view class="page">
+  <view class="nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
+    <text class="nav-title">支付定金</text>
+    <view style="width:60rpx"></view>
+  </view>
+
+  <view class="scroll">
+    <view wx:if="{{order}}" class="pay-amount">
+      <text class="pa-label">需支付金额</text>
+      <text class="pa-num">¥{{payMode === 'deposit' ? order.deposit : order.total_price}}</text>
+      <text class="pa-order">订单号 {{order.order_no}}</text>
+    </view>
+
+    <view wx:if="{{order}}" class="order-card">
+      <view class="oc-row">
+        <view class="oc-icon"><text>{{order.machine_icon}}</text></view>
+        <text class="oc-name">{{order.machine_name}}</text>
+      </view>
+      <view class="oc-line"><text class="oc-k">作业总价</text><text class="oc-v">¥{{order.total_price}}</text></view>
+      <view class="oc-line"><text class="oc-k">定金（20%）</text><text class="oc-v">¥{{order.deposit}}</text></view>
+    </view>
+
+    <!-- 支付方式 -->
+    <view class="mode-card">
+      <view class="mode-item {{payMode === 'deposit' ? 'on' : ''}}" bindtap="onPayMode" data-mode="deposit">
+        <view class="mode-info">
+          <text class="mode-name">支付定金 <text class="mode-badge">推荐</text></text>
+          <text class="mode-sub">先付 20%，作业完成后付尾款</text>
+        </view>
+        <text class="mode-amt">¥{{order.deposit}}</text>
+        <view class="radio {{payMode === 'deposit' ? 'radio-on' : ''}}"></view>
+      </view>
+      <view class="mode-item {{payMode === 'full' ? 'on' : ''}}" bindtap="onPayMode" data-mode="full">
+        <view class="mode-info">
+          <text class="mode-name">支付全款</text>
+          <text class="mode-sub">一次性付清，省心</text>
+        </view>
+        <text class="mode-amt">¥{{order.total_price}}</text>
+        <view class="radio {{payMode === 'full' ? 'radio-on' : ''}}"></view>
+      </view>
+    </view>
+
+    <view class="trust">🛡️ 资金托管保障：款项由平台托管，作业完成后结算给机手。如机手爽约，定金原路退回并赔偿违约金。</view>
+  </view>
+
+  <view class="action-bar">
+    <view class="bar-btn {{paying ? 'disabled' : ''}}" bindtap="onPay">
+      <text class="bar-btn-text">{{paying ? '支付中…' : '确认支付 ¥' + (payMode === 'deposit' ? order.deposit : order.total_price)}}</text>
+    </view>
+  </view>
+</view>

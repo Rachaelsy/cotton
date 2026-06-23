@@ -71,6 +71,8 @@ Page({
       wx.navigateTo({ url: '/pages/fields/index' })
     } else if (action === 'records') {
       wx.navigateTo({ url: '/pages/records/index' })
+    } else if (action === 'machine') {
+      wx.navigateTo({ url: '/pages/machine/index' })
     } else {
       wx.showToast({ title: '正在开发中，敬请期待', icon: 'none', duration: 2000 })
     }

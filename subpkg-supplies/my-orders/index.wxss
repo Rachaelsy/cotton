@@ -111,6 +111,22 @@
   flex: 1;
 }
 
+/* 订单类型徽章 */
+.type-badge {
+  border-radius: 8rpx;
+  padding: 3rpx 12rpx;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+.badge-supplies { background: #FFF3E0; }
+.badge-machine  { background: #E0F7FA; }
+.type-badge-text { font-size: 20rpx; font-weight: 700; }
+.badge-supplies .type-badge-text { color: #E65100; }
+.badge-machine .type-badge-text  { color: #006064; }
+
+.machine-icon-wrap { background: #E0F7FA; }
+.goods-addr { font-size: 22rpx; color: #00838F; margin-top: 4rpx; display: block; }
+
 .status-tag {
   padding: 6rpx 16rpx;
   border-radius: 999rpx;

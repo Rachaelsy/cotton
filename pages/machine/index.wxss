@@ -272,3 +272,96 @@
 .list-bottom {
   height: 40rpx;
 }
+
+/* ===== 新增：返回/我的预约/定位/排序 ===== */
+.back-btn {
+  width: 60rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.back-icon { color: #fff; font-size: 44rpx; line-height: 1; }
+.topbar-titles { flex: 1; margin-left: 16rpx; }
+.orders-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  border-radius: 999rpx;
+  padding: 10rpx 22rpx;
+  flex-shrink: 0;
+}
+.orders-btn-text { font-size: 22rpx; color: #fff; font-weight: 600; }
+
+.locate-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12rpx;
+  padding: 12rpx 18rpx;
+  margin-top: 18rpx;
+}
+.locate-icon { font-size: 24rpx; }
+.locate-text { font-size: 24rpx; color: #fff; font-weight: 600; }
+.locate-tag { font-size: 18rpx; color: #006064; background: #fff; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 10rpx; font-weight: 700; }
+.locate-action { flex: 1; text-align: right; font-size: 22rpx; color: #FFE082; font-weight: 700; }
+
+/* ===== 地区选择弹窗 ===== */
+.region-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 200; display: flex; flex-direction: column; justify-content: flex-end; }
+.region-sheet { background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 28rpx 28rpx 40rpx; max-height: 70vh; display: flex; flex-direction: column; }
+.region-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding-bottom: 20rpx; }
+.region-title { font-size: 32rpx; font-weight: 800; color: #1A1A1A; }
+.region-close { width: 52rpx; height: 52rpx; background: #F2F2F2; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #888; font-size: 26rpx; }
+.region-gps { display: flex; flex-direction: row; align-items: center; gap: 16rpx; background: #E0F7FA; border-radius: 16rpx; padding: 22rpx 24rpx; }
+.rg-icon { font-size: 36rpx; }
+.rg-info { flex: 1; display: flex; flex-direction: column; gap: 4rpx; }
+.rg-text { font-size: 28rpx; font-weight: 700; color: #006064; }
+.rg-sub { font-size: 20rpx; color: #00838F; }
+.rg-arrow { font-size: 36rpx; color: #00838F; }
+.region-divider { display: flex; align-items: center; justify-content: center; padding: 20rpx 0 12rpx; }
+.region-divider-text { font-size: 22rpx; color: #aaa; }
+.region-list { flex: 1; height: 0; max-height: 600rpx; }
+.region-item { display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+  padding: 26rpx 16rpx; border-bottom: 1rpx solid #F2F2F2; }
+.region-item-text { font-size: 28rpx; color: #333; }
+.region-item.on .region-item-text { color: #006064; font-weight: 700; }
+.region-check { font-size: 28rpx; color: #006064; font-weight: 800; }
+
+.sort-bar {
+  display: flex;
+  flex-direction: row;
+  background: #fff;
+  flex-shrink: 0;
+  border-bottom: 1rpx solid #EEE;
+}
+.sort-item {
+  flex: 1;
+  padding: 20rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sort-text { font-size: 26rpx; color: #888; font-weight: 600; }
+.sort-item-on .sort-text { color: #006064; font-weight: 800; }
+
+.card-org-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-dist { font-size: 22rpx; color: #00838F; font-weight: 700; }
+
+.param-badge {
+  background: #F0F7F7;
+  border-radius: 8rpx;
+  padding: 5rpx 14rpx;
+  font-size: 20rpx;
+  color: #00838F;
+  font-weight: 600;
+}

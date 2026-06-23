@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>注册入驻 · 棉花智能体</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; min-height: 100vh; padding: 30px 16px; transition: background 0.3s; }
+    body.op { background: linear-gradient(135deg, #004D52, #00838F); }
+    body.mc { background: linear-gradient(135deg, #1a3c2e, #2d6a4f); }
+    .card { background: #fff; border-radius: 20px; padding: 32px 30px; width: 460px; max-width: 100%; margin: 0 auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .logo { text-align: center; margin-bottom: 20px; }
+    .logo .emoji { font-size: 38px; }
+    .logo h1 { font-size: 19px; font-weight: 800; margin-top: 6px; }
+    body.op .logo h1 { color: #006064; } body.mc .logo h1 { color: #1a3c2e; }
+    .role-toggle { display: flex; background: #F0F2F5; border-radius: 12px; padding: 4px; margin-bottom: 22px; }
+    .role-btn { flex: 1; text-align: center; padding: 11px 0; border-radius: 9px; font-size: 14px; font-weight: 700; color: #888; cursor: pointer; }
+    .role-btn.active { color: #fff; }
+    body.op .role-btn.active.op-btn { background: linear-gradient(135deg, #006064, #00838F); }
+    body.mc .role-btn.active.mc-btn { background: linear-gradient(135deg, #2d6a4f, #16A34A); }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 600; }
+    .field input { width: 100%; padding: 11px 13px; border: 1.5px solid #E0E0E0; border-radius: 10px; font-size: 14px; outline: none; }
+    body.op .field input:focus { border-color: #00838F; } body.mc .field input:focus { border-color: #2d6a4f; }
+    .row { display: flex; gap: 10px; } .row .field { flex: 1; }
+    .geo-btn { width: 100%; padding: 10px; background: #E0F2F1; color: #006064; border: 1.5px solid #00838F; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .geo-hint { font-size: 12px; color: #888; margin-top: 6px; }
+    .btn { width: 100%; padding: 13px; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+    body.op .btn { background: linear-gradient(135deg, #006064, #00838F); }
+    body.mc .btn { background: linear-gradient(135deg, #2d6a4f, #16A34A); }
+    .btn:disabled { opacity: 0.6; }
+    .msg { font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; }
+    .msg.err { color: #DC2626; } .msg.ok { color: #16A34A; }
+    .foot { text-align: center; margin-top: 16px; font-size: 13px; color: #888; }
+    .foot a { font-weight: 600; text-decoration: none; }
+    body.op .foot a { color: #00838F; } body.mc .foot a { color: #2d6a4f; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body class="op">
+  <div class="card">
+    <div class="logo">
+      <div class="emoji" id="logoEmoji">🚜</div>
+      <h1 id="logoTitle">农机手入驻申请</h1>
+    </div>
+    <div class="role-toggle">
+      <div class="role-btn op-btn active" data-role="operator" onclick="setRole('operator')">🚜 我是机主</div>
+      <div class="role-btn mc-btn" data-role="merchant" onclick="setRole('merchant')">🏪 我是商户</div>
+    </div>
+
+    <!-- 公共字段 -->
+    <div class="row">
+      <div class="field"><label>手机号 *</label><input id="phone" type="tel" maxlength="11" placeholder="登录账号"></div>
+      <div class="field"><label>登录密码 *</label><input id="password" type="password" placeholder="至少6位"></div>
+    </div>
+
+    <!-- 机主字段 -->
+    <div id="opFields">
+      <div class="field"><label>合作社 / 机队名称 *</label><input id="org_name" placeholder="如：艾力农机合作社"></div>
+      <div class="row">
+        <div class="field"><label>联系人 *</label><input id="contact" placeholder="负责人姓名"></div>
+        <div class="field"><label>资质 / 身份证号</label><input id="id_card" placeholder="选填"></div>
+      </div>
+      <div class="field"><label>服务区域</label><input id="service_area" placeholder="如：喀什·疏附县"></div>
+      <div class="field"><label>基地地址</label><input id="location_name" placeholder="如：疏附县托克扎克镇"></div>
+      <div class="field">
+        <label>基地定位（用于农户按距离查找）</label>
+        <button type="button" class="geo-btn" onclick="getGeo()">📍 获取当前定位</button>
+        <div class="row" style="margin-top:8px">
+          <div class="field" style="margin-bottom:0"><input id="latitude" placeholder="纬度"></div>
+          <div class="field" style="margin-bottom:0"><input id="longitude" placeholder="经度"></div>
+        </div>
+        <div class="geo-hint" id="geoHint">点击按钮自动获取，或手动填写</div>
+      </div>
+    </div>
+
+    <!-- 商户字段 -->
+    <div id="mcFields" class="hidden">
+      <div class="field"><label>店铺 / 企业名称 *</label><input id="company_name" placeholder="如：疏附县农资有限公司"></div>
+      <div class="row">
+        <div class="field"><label>联系人 *</label><input id="real_name" placeholder="负责人姓名"></div>
+        <div class="field"><label>营业执照号</label><input id="business_license" placeholder="选填"></div>
+      </div>
+      <div class="field"><label>经营品类</label><input id="product_category" placeholder="如：化肥、农药、种子"></div>
+    </div>
+
+    <button class="btn" id="submitBtn" onclick="submitApply()">提交入驻申请</button>
+    <div class="msg" id="msg"></div>
+    <div class="foot">已有账号？<a href="/portal/login.html">返回登录 →</a></div>
+  </div>
+  <script>
+    let role = 'operator'
+    function setRole(r) {
+      role = r
+      document.body.className = (r === 'operator' ? 'op' : 'mc')
+      document.getElementById('logoEmoji').textContent = r === 'operator' ? '🚜' : '🏪'
+      document.getElementById('logoTitle').textContent = r === 'operator' ? '农机手入驻申请' : '商户入驻申请'
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.toggle('active', b.dataset.role === r))
+      document.getElementById('opFields').classList.toggle('hidden', r !== 'operator')
+      document.getElementById('mcFields').classList.toggle('hidden', r !== 'merchant')
+      document.getElementById('msg').textContent = ''
+    }
+    function getGeo() {
+      const hint = document.getElementById('geoHint')
+      if (!navigator.geolocation) { hint.textContent = '浏览器不支持定位，请手动填写'; return }
+      hint.textContent = '定位中…'
+      navigator.geolocation.getCurrentPosition(
+        p => { document.getElementById('latitude').value = p.coords.latitude.toFixed(7); document.getElementById('longitude').value = p.coords.longitude.toFixed(7); hint.textContent = '✅ 定位成功（可手动修改）' },
+        e => hint.textContent = '定位失败：' + e.message, { enableHighAccuracy: true, timeout: 8000 })
+    }
+    async function submitApply() {
+      const v = id => (document.getElementById(id).value || '').trim()
+      const phone = v('phone'), password = document.getElementById('password').value
+      const msg = document.getElementById('msg'), btn = document.getElementById('submitBtn')
+      if (!phone || !password) { msg.className = 'msg err'; msg.textContent = '请填写手机号和密码'; return }
+      let api, body
+      if (role === 'operator') {
+        if (!v('org_name') || !v('contact')) { msg.className = 'msg err'; msg.textContent = '请填写合作社名称和联系人'; return }
+        api = '/api/operator/apply'
+        body = { phone, password, org_name: v('org_name'), contact: v('contact'), id_card: v('id_card'),
+          service_area: v('service_area'), location_name: v('location_name'),
+          latitude: v('latitude') || null, longitude: v('longitude') || null }
+      } else {
+        if (!v('company_name') || !v('real_name')) { msg.className = 'msg err'; msg.textContent = '请填写企业名称和联系人'; return }
+        api = '/api/admin/apply'
+        body = { phone, password, real_name: v('real_name'), company_name: v('company_name'),
+          business_license: v('business_license'), product_category: v('product_category') }
+      }
+      btn.disabled = true; btn.textContent = '提交中…'; msg.textContent = ''
+      try {
+        const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        const data = await r.json()
+        if (data.code === 200) {
+          msg.className = 'msg ok'; msg.textContent = '✅ ' + (data.msg || '申请已提交，请等待审核'); btn.textContent = '已提交'
+          setTimeout(() => location.replace('/portal/login.html'), 2400)
+        } else { msg.className = 'msg err'; msg.textContent = data.msg || '提交失败'; btn.disabled = false; btn.textContent = '提交入驻申请' }
+      } catch (e) { msg.className = 'msg err'; msg.textContent = '网络错误，请重试'; btn.disabled = false; btn.textContent = '提交入驻申请' }
+    }
+    const q = new URLSearchParams(location.search).get('role')
+    if (q === 'merchant') setRole('merchant')
+  </script>
+</body>
+</html>

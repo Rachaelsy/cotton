@@ -26,6 +26,8 @@ const noCache = (_req, res, next) => {
 }
 app.use('/admin',    noCache, express.static(path.join(__dirname, 'public/admin')))
 app.use('/merchant', noCache, express.static(path.join(__dirname, 'public/merchant')))
+app.use('/operator', noCache, express.static(path.join(__dirname, 'public/operator')))
+app.use('/portal',   noCache, express.static(path.join(__dirname, 'public/portal')))
 app.use('/uploads',  express.static(path.join(__dirname, 'public/uploads')))
 
 // ── 路由 ────────────────────────────────────
@@ -34,6 +36,9 @@ app.use('/api/products', require('./routes/products'))
 app.use('/api/orders',   require('./routes/orders'))
 app.use('/api/plots',    require('./routes/plots'))
 app.use('/api/farm-records', require('./routes/farm-records'))
+app.use('/api/operator',       require('./routes/operator'))
+app.use('/api/machines',       require('./routes/machines'))
+app.use('/api/machine-orders', require('./routes/machine-orders'))
 app.use('/api/ai',       require('./routes/ai'))
 app.use('/api/admin',    require('./routes/admin'))
 app.use('/api/merchant', require('./routes/merchant'))

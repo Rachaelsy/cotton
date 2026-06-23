@@ -246,7 +246,7 @@ router.get('/my', farmerAuth, async (req, res) => {
       LEFT JOIN products p ON p.id = i.product_id
       LEFT JOIN merchants m2 ON m2.id = i.merchant_id
       LEFT JOIN users mu ON mu.id = m2.user_id
-      WHERE o.user_id = ?
+      WHERE o.user_id = ? AND o.farmer_deleted = 0
     `
     const params = [req.user.id]
     const { status2 } = req.query
@@ -271,6 +271,24 @@ router.get('/my', farmerAuth, async (req, res) => {
   } catch (e) {
     console.error('[my-orders]', e)
     return fail(res, '服务器错误', 500)
+  }
+})
+
+// ─────────────────────────────────────────────
+// DELETE /api/orders/:id — 农户删除（隐藏）订单（仅已完成/已取消/售后完成）
+// ─────────────────────────────────────────────
+router.delete('/:id', farmerAuth, async (req, res) => {
+  const { id } = req.params
+  try {
+    const [[o]] = await db.query('SELECT status FROM orders WHERE id=? AND user_id=?', [id, req.user.id])
+    if (!o) return fail(res, '订单不存在', 404)
+    if (!['completed', 'cancelled', 'refunded'].includes(o.status))
+      return fail(res, '仅已完成、已取消的订单可删除')
+    await db.query('UPDATE orders SET farmer_deleted=1 WHERE id=?', [id])
+    return ok(res, null, '已删除记录')
+  } catch (e) {
+    console.error('[order-delete]', e)
+    return fail(res, '删除失败', 500)
   }
 })
 

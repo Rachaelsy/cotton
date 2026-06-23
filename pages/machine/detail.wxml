@@ -1,2 +1,106 @@
-<!--pages/machine/detail.wxml-->
-<text>pages/machine/detail.wxml</text>
+<!-- pages/machine/detail.wxml — 农机详情 -->
+<view class="page">
+  <view class="nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
+    <text class="nav-title">农机详情</text>
+    <view style="width:60rpx"></view>
+  </view>
+
+  <scroll-view wx:if="{{machine}}" class="scroll" scroll-y style="flex:1;height:0;">
+    <!-- 头部卡片 -->
+    <view class="hero">
+      <view class="hero-icon"><text>{{machine.icon}}</text></view>
+      <view class="hero-info">
+        <text class="hero-name">{{machine.name}}</text>
+        <view class="hero-tags">
+          <text class="hero-cat">{{machine.category}}</text>
+          <text wx:if="{{machine.distText}}" class="hero-dist">📍 {{machine.distText}}</text>
+        </view>
+        <view class="hero-price-row">
+          <text class="hero-price">¥{{machine.priceText}}</text>
+          <text class="hero-unit">/{{machine.unit}}</text>
+          <text wx:if="{{machine.price_orig}}" class="hero-orig">¥{{machine.price_orig}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 机手信息 -->
+    <view class="block">
+      <view class="block-row">
+        <text class="org-icon">🏢</text>
+        <view class="org-info">
+          <text class="org-name">{{machine.org_name}}</text>
+          <text class="org-sub">{{machine.org_location || machine.service_area}} · 响应 {{machine.response_time}}</text>
+        </view>
+        <view class="org-rating">
+          <text class="org-star">⭐{{machine.ratingText}}</text>
+          <text class="org-count">{{machine.order_count}}单</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 规格标签 -->
+    <view wx:if="{{machine.spec_badges.length}}" class="block">
+      <text class="block-title">规格亮点</text>
+      <view class="badge-wrap">
+        <text class="spec-badge" wx:for="{{machine.spec_badges}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+
+    <!-- 参数 -->
+    <view wx:if="{{machine.params.length}}" class="block">
+      <text class="block-title">技术参数</text>
+      <view class="param-grid">
+        <view class="param-cell" wx:for="{{machine.params}}" wx:key="lbl">
+          <text class="param-val">{{item.val}}</text>
+          <text class="param-lbl">{{item.lbl}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 描述 -->
+    <view wx:if="{{machine.description}}" class="block">
+      <text class="block-title">服务说明</text>
+      <text class="desc-text">{{machine.description}}</text>
+    </view>
+
+    <!-- 评价 -->
+    <view class="block">
+      <view class="review-head">
+        <text class="block-title">服务评价（{{machine.review_total}}）</text>
+        <text class="review-avg">综合 ⭐{{machine.review_avg}}</text>
+      </view>
+      <view wx:if="{{machine.reviews.length === 0}}" class="no-review">暂无评价</view>
+      <view class="review-item" wx:for="{{machine.reviews}}" wx:key="id">
+        <view class="review-top">
+          <text class="review-name">{{item.farmer_name || '匿名农户'}}</text>
+          <text class="review-score">⭐{{item.rating}}</text>
+        </view>
+        <text wx:if="{{item.content}}" class="review-content">{{item.content}}</text>
+        <view class="review-sub">
+          <text class="rs-tag">及时{{item.score_timely}}</text>
+          <text class="rs-tag">质量{{item.score_quality}}</text>
+          <text class="rs-tag">态度{{item.score_attitude}}</text>
+          <text class="rs-tag">价格{{item.score_price}}</text>
+          <text class="rs-date">{{item.date}}</text>
+        </view>
+        <view wx:if="{{item.reply}}" class="review-reply"><text>机手回复：{{item.reply}}</text></view>
+      </view>
+    </view>
+
+    <view style="height:160rpx"></view>
+  </scroll-view>
+
+  <view wx:elif="{{!loading}}" class="empty"><text>机具不存在或已下架</text></view>
+
+  <!-- 底部操作栏 -->
+  <view wx:if="{{machine}}" class="action-bar">
+    <view class="action-contact" bindtap="onContact">
+      <text class="ac-icon">📞</text>
+      <text class="ac-text">联系机手</text>
+    </view>
+    <view class="action-book" bindtap="onBook">
+      <text class="ab-text">立即预约</text>
+    </view>
+  </view>
+</view>

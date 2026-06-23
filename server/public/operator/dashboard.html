@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>棉花智能体 · 农机手工作台</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #F4F7F8; color: #1A1A1A; }
+    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
+      background: linear-gradient(180deg, #004D52 0%, #00838F 100%); display: flex; flex-direction: column; z-index: 100; }
+    .sidebar-logo { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sidebar-logo .emoji { font-size: 26px; }
+    .sidebar-logo .title { font-size: 15px; font-weight: 800; color: #fff; margin-top: 5px; }
+    .sidebar-logo .sub { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .nav { flex: 1; padding: 14px 0; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: rgba(255,255,255,0.65);
+      cursor: pointer; font-size: 14px; border-left: 3px solid transparent; position: relative; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(77,208,225,0.18); color: #4DD0E1; border-left-color: #26C6DA; font-weight: 600; }
+    .nav-icon { font-size: 17px; width: 20px; text-align: center; }
+    .nav-badge { position: absolute; right: 14px; background: #DC2626; color: #fff; font-size: 11px; font-weight: 700;
+      min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+    .sidebar-foot { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .op-name { font-size: 13px; font-weight: 700; color: #fff; }
+    .op-phone { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .btn-logout { margin-top: 10px; padding: 7px 14px; background: rgba(220,38,38,0.2); color: #FCA5A5; border: none;
+      border-radius: 8px; font-size: 12px; cursor: pointer; width: 100%; text-align: left; }
+    .main { margin-left: 220px; min-height: 100vh; }
+    .topbar { background: #fff; padding: 14px 28px; border-bottom: 1px solid #EBEBEB; display: flex;
+      align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .page-title { font-size: 17px; font-weight: 800; }
+    .content { padding: 24px 28px; }
+    .panel { display: none; } .panel.active { display: block; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .stat-label { font-size: 12px; color: #888; }
+    .stat-value { font-size: 30px; font-weight: 900; margin-top: 5px; line-height: 1; }
+    .stat-card.cyan .stat-value { color: #00838F; }
+    .stat-card.gold .stat-value { color: #C8902E; }
+    .stat-card.blue .stat-value { color: #2563EB; }
+    .stat-card.green .stat-value { color: #16A34A; }
+    .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 20px; overflow: hidden; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #F0F0F0; }
+    .card-title { font-size: 14px; font-weight: 800; }
+    .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; border: none; font-weight: 600; }
+    .btn-primary { background: #00838F; color: #fff; }
+    .btn-primary:hover { background: #006064; }
+    .btn-outline { background: transparent; border: 1.5px solid #E0E0E0; color: #555; }
+    .btn-danger { background: #FEE2E2; color: #DC2626; }
+    .btn-warn { background: #FEF3C7; color: #D97706; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #F8F9FA; padding: 10px 12px; text-align: left; font-size: 12px; color: #888; font-weight: 600; white-space: nowrap; }
+    tbody td { padding: 12px; border-bottom: 1px solid #F5F5F5; font-size: 13px; vertical-align: middle; }
+    tbody tr:hover { background: #FAFAFA; }
+    .m-icon { width: 38px; height: 38px; background: #E0F2F1; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
+    .empty-row td { text-align: center; color: #BBB; padding: 40px; }
+    .toolbar { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid #F0F0F0; flex-wrap: wrap; }
+    .toolbar select { padding: 7px 10px; border: 1.5px solid #E0E0E0; border-radius: 8px; font-size: 13px; outline: none; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .b-pending { background: #FEF3C7; color: #D97706; }
+    .b-accepted { background: #DBEAFE; color: #2563EB; }
+    .b-progress { background: #E0F2F1; color: #00838F; }
+    .b-done { background: #F0F0F0; color: #888; }
+    .b-cancel { background: #FEE2E2; color: #DC2626; }
+    .b-on { background: #D1FAE5; color: #059669; }
+    .b-off { background: #F0F0F0; color: #888; }
+    .b-busy { background: #FEF3C7; color: #D97706; }
+    /* modal */
+    .mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+    .mask.show { display: flex; }
+    .modal { background: #fff; border-radius: 16px; width: 520px; max-width: 94%; max-height: 90vh; overflow-y: auto; }
+    .modal-head { padding: 18px 22px; border-bottom: 1px solid #F0F0F0; display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 16px; font-weight: 800; }
+    .modal-close { cursor: pointer; font-size: 22px; color: #999; }
+    .modal-body { padding: 22px; }
+    .modal-foot { padding: 16px 22px; border-top: 1px solid #F0F0F0; display: flex; justify-content: flex-end; gap: 10px; }
+    .form-row { display: flex; gap: 12px; margin-bottom: 14px; }
+    .form-group { flex: 1; }
+    .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 600; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 9px 12px; border: 1.5px solid #E0E0E0; border-radius: 8px; font-size: 14px; outline: none; }
+    .form-group input:focus, .form-group select:focus { border-color: #00838F; }
+    .geo-btn { padding: 9px 14px; background: #E0F2F1; color: #006064; border: 1.5px solid #00838F; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1A1A1A; color: #fff;
+      padding: 12px 24px; border-radius: 10px; font-size: 14px; z-index: 500; opacity: 0; transition: opacity 0.2s; }
+    .toast.show { opacity: 0.95; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="emoji">🚜</div>
+      <div class="title">农机手工作台</div>
+      <div class="sub">棉花智能体</div>
+    </div>
+    <div class="nav">
+      <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">📊</span>工作台</div>
+      <div class="nav-item" data-panel="machines"><span class="nav-icon">🚜</span>机具管理</div>
+      <div class="nav-item" data-panel="orders"><span class="nav-icon">📋</span>接单中心<span class="nav-badge" id="navBadge" style="display:none">0</span></div>
+      <div class="nav-item" data-panel="profile"><span class="nav-icon">⚙️</span>资料设置</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="op-name" id="opName">—</div>
+      <div class="op-phone" id="opPhone">—</div>
+      <button class="btn-logout" onclick="logout()">退出登录</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="pageTitle">工作台</div>
+      <div style="font-size:13px;color:#888">农机手后台</div>
+    </div>
+    <div class="content">
+      <!-- 工作台 -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card cyan"><div class="stat-label">在架机具</div><div class="stat-value" id="s-machines">0</div></div>
+          <div class="stat-card gold"><div class="stat-label">待接单</div><div class="stat-value" id="s-pending">0</div></div>
+          <div class="stat-card blue"><div class="stat-label">进行中</div><div class="stat-value" id="s-active">0</div></div>
+          <div class="stat-card green"><div class="stat-label">累计收入(元)</div><div class="stat-value" id="s-income">0</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">📋 最新预约</div><div class="btn btn-outline btn-sm" onclick="switchPanel('orders')">查看全部 →</div></div>
+          <table><thead><tr><th>单号</th><th>机具</th><th>农户</th><th>作业</th><th>金额</th><th>状态</th></tr></thead>
+          <tbody id="recentOrders"><tr class="empty-row"><td colspan="6">加载中…</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- 机具管理 -->
+      <div class="panel" id="panel-machines">
+        <div class="card">
+          <div class="card-head"><div class="card-title">🚜 我的机具</div><button class="btn btn-primary" onclick="openMachineModal()">+ 发布机具</button></div>
+          <table><thead><tr><th>机具</th><th>类型</th><th>单价</th><th>定位</th><th>评分/接单</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="machineList"><tr class="empty-row"><td colspan="7">加载中…</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- 接单中心 -->
+      <div class="panel" id="panel-orders">
+        <div class="card">
+          <div class="toolbar">
+            <span style="font-size:13px;color:#888">状态筛选：</span>
+            <select id="orderFilter" onchange="loadOrders()">
+              <option value="all">全部</option>
+              <option value="pending">待接单</option>
+              <option value="accepted">已接单</option>
+              <option value="departed">已出发</option>
+              <option value="arrived">已到场</option>
+              <option value="working">作业中</option>
+              <option value="completed">已完成</option>
+              <option value="cancelled">已取消</option>
+            </select>
+          </div>
+          <table><thead><tr><th>单号</th><th>机具</th><th>农户/联系</th><th>作业地址/地块</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="orderList"><tr class="empty-row"><td colspan="7">加载中…</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- 资料设置 -->
+      <div class="panel" id="panel-profile">
+        <div class="card">
+          <div class="card-head"><div class="card-title">⚙️ 基地资料与定位</div></div>
+          <div style="padding:22px">
+            <div class="form-row">
+              <div class="form-group"><label>合作社/机队名称</label><input id="p-org_name"></div>
+              <div class="form-group"><label>联系人</label><input id="p-contact"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>联系电话</label><input id="p-phone"></div>
+              <div class="form-group"><label>服务区域</label><input id="p-service_area"></div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px"><label>基地地址</label><input id="p-location_name"></div>
+            <div class="form-row" style="align-items:flex-end">
+              <div class="form-group"><label>纬度</label><input id="p-latitude"></div>
+              <div class="form-group"><label>经度</label><input id="p-longitude"></div>
+              <button type="button" class="geo-btn" style="margin-bottom:0" onclick="getGeo('p-latitude','p-longitude')">📍 获取定位</button>
+            </div>
+            <button class="btn btn-primary" style="margin-top:18px" onclick="saveProfile()">保存资料</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 机具发布/编辑 弹窗 -->
+  <div class="mask" id="machineMask">
+    <div class="modal">
+      <div class="modal-head"><div class="modal-title" id="mModalTitle">发布机具</div><div class="modal-close" onclick="closeMachineModal()">×</div></div>
+      <div class="modal-body">
+        <input type="hidden" id="m-id">
+        <div class="form-row">
+          <div class="form-group" style="flex:2"><label>机具名称 *</label><input id="m-name" placeholder="如：大疆 T50 植保无人机"></div>
+          <div class="form-group"><label>图标</label><input id="m-icon" value="🚜" maxlength="2"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>类型</label><select id="m-category">
+            <option>打药机</option><option>采棉机</option><option>播种机</option><option>旋耕机</option><option>其他</option></select></div>
+          <div class="form-group"><label>单价 *</label><input id="m-price" type="number" placeholder="元"></div>
+          <div class="form-group"><label>原价</label><input id="m-price_orig" type="number" placeholder="选填"></div>
+          <div class="form-group"><label>单位</label><select id="m-unit"><option>亩</option><option>天</option></select></div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px"><label>所在地</label><input id="m-location_name" placeholder="如：疏附县托克扎克镇"></div>
+        <div class="form-row" style="align-items:flex-end">
+          <div class="form-group"><label>纬度 *</label><input id="m-latitude" placeholder="latitude"></div>
+          <div class="form-group"><label>经度 *</label><input id="m-longitude" placeholder="longitude"></div>
+          <button type="button" class="geo-btn" style="margin-bottom:0" onclick="getGeo('m-latitude','m-longitude')">📍 当前定位</button>
+        </div>
+        <div class="form-group" style="margin-top:14px"><label>规格标签（逗号分隔）</label><input id="m-badges" placeholder="如：喷幅9m,效率300亩/天"></div>
+        <div class="form-group" style="margin-top:14px"><label>参数（格式：值:标签，逗号分隔）</label><input id="m-params" placeholder="如：40L:药箱量,9米:喷幅"></div>
+        <div class="form-group" style="margin-top:14px"><label>描述</label><textarea id="m-description" rows="2" placeholder="选填"></textarea></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" onclick="closeMachineModal()">取消</button>
+        <button class="btn btn-primary" id="mSaveBtn" onclick="saveMachine()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const TOKEN = localStorage.getItem('op_token')
+    if (!TOKEN) location.replace('/operator/login.html')
+    const INFO = JSON.parse(localStorage.getItem('op_info') || '{}')
+    document.getElementById('opName').textContent = INFO.org_name || '农机手'
+    document.getElementById('opPhone').textContent = INFO.phone || ''
+
+    const CAT_LABEL = { pending: '待接单', accepted: '已接单', departed: '已出发', arrived: '已到场', working: '作业中', completed: '已完成', cancelled: '已取消' }
+    const NEXT = { accepted: { s: 'departed', t: '确认出发' }, departed: { s: 'arrived', t: '已到场' }, arrived: { s: 'working', t: '开始作业' }, working: { s: 'completed', t: '完成作业' } }
+
+    async function api(path, opts = {}) {
+      opts.headers = Object.assign({ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN }, opts.headers || {})
+      const r = await fetch('/api' + path, opts)
+      if (r.status === 401) { localStorage.clear(); location.replace('/operator/login.html'); throw new Error('登录失效') }
+      return r.json()
+    }
+    function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000) }
+    function logout() { localStorage.clear(); location.replace('/operator/login.html') }
+    function getGeo(latId, lngId) {
+      if (!navigator.geolocation) { toast('浏览器不支持定位'); return }
+      toast('定位中…')
+      navigator.geolocation.getCurrentPosition(
+        p => { document.getElementById(latId).value = p.coords.latitude.toFixed(7); document.getElementById(lngId).value = p.coords.longitude.toFixed(7); toast('定位成功') },
+        e => toast('定位失败：' + e.message), { enableHighAccuracy: true, timeout: 8000 })
+    }
+
+    // 导航
+    document.querySelectorAll('.nav-item').forEach(n => n.onclick = () => switchPanel(n.dataset.panel))
+    function switchPanel(name) {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.panel === name))
+      document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name))
+      const titles = { dashboard: '工作台', machines: '机具管理', orders: '接单中心', profile: '资料设置' }
+      document.getElementById('pageTitle').textContent = titles[name]
+      if (name === 'dashboard') loadDashboard()
+      if (name === 'machines') loadMachines()
+      if (name === 'orders') loadOrders()
+      if (name === 'profile') loadProfile()
+    }
+
+    // 工作台
+    async function loadDashboard() {
+      const s = await api('/operator/stats')
+      if (s.code === 200) {
+        document.getElementById('s-machines').textContent = s.data.machine_count
+        document.getElementById('s-pending').textContent = s.data.pending_count
+        document.getElementById('s-active').textContent = s.data.active_count
+        document.getElementById('s-income').textContent = Math.round(s.data.total_income)
+        const badge = document.getElementById('navBadge')
+        if (s.data.pending_count > 0) { badge.style.display = 'flex'; badge.textContent = s.data.pending_count } else badge.style.display = 'none'
+      }
+      const o = await api('/operator/orders')
+      const tb = document.getElementById('recentOrders')
+      if (o.code === 200 && o.data.length) {
+        tb.innerHTML = o.data.slice(0, 6).map(x => `<tr><td>${x.order_no}</td><td>${x.machine_icon} ${x.machine_name}</td><td>${x.farmer_name || '-'}</td><td>${x.work_area}亩</td><td>¥${x.total_price}</td><td>${statusBadge(x.status)}</td></tr>`).join('')
+      } else tb.innerHTML = '<tr class="empty-row"><td colspan="6">暂无预约</td></tr>'
+    }
+    function statusBadge(s) {
+      const cls = s === 'pending' ? 'b-pending' : s === 'accepted' ? 'b-accepted' : s === 'completed' ? 'b-done' : s === 'cancelled' ? 'b-cancel' : 'b-progress'
+      return `<span class="badge ${cls}">${CAT_LABEL[s] || s}</span>`
+    }
+
+    // 机具管理
+    async function loadMachines() {
+      const r = await api('/operator/machines')
+      const tb = document.getElementById('machineList')
+      if (r.code === 200 && r.data.length) {
+        tb.innerHTML = r.data.map(m => {
+          const st = m.status === 'on' ? '<span class="badge b-on">上架</span>' : m.status === 'busy' ? '<span class="badge b-busy">紧俏</span>' : '<span class="badge b-off">下架</span>'
+          const geo = (m.latitude && m.longitude) ? `${m.location_name || ''} 📍` : '<span style="color:#DC2626">未定位</span>'
+          const toggle = m.status === 'off' ? `<button class="btn btn-warn btn-sm" onclick="setStatus(${m.id},'on')">上架</button>` : `<button class="btn btn-outline btn-sm" onclick="setStatus(${m.id},'off')">下架</button>`
+          return `<tr><td><span class="m-icon">${m.icon}</span> ${m.name}</td><td>${m.category}</td><td>¥${m.price}/${m.unit}</td><td>${geo}</td><td>⭐${Number(m.rating_avg).toFixed(1)} / ${m.order_count}单</td><td>${st}</td>
+            <td><button class="btn btn-outline btn-sm" onclick='editMachine(${JSON.stringify(m)})'>编辑</button> ${toggle} <button class="btn btn-danger btn-sm" onclick="delMachine(${m.id})">删除</button></td></tr>`
+        }).join('')
+      } else tb.innerHTML = '<tr class="empty-row"><td colspan="7">还没有机具，点击右上角发布</td></tr>'
+    }
+    function openMachineModal() {
+      document.getElementById('mModalTitle').textContent = '发布机具'
+      ;['m-id', 'm-name', 'm-price', 'm-price_orig', 'm-location_name', 'm-latitude', 'm-longitude', 'm-badges', 'm-params', 'm-description'].forEach(i => document.getElementById(i).value = '')
+      document.getElementById('m-icon').value = '🚜'; document.getElementById('m-category').value = '打药机'; document.getElementById('m-unit').value = '亩'
+      document.getElementById('machineMask').classList.add('show')
+    }
+    function editMachine(m) {
+      document.getElementById('mModalTitle').textContent = '编辑机具'
+      document.getElementById('m-id').value = m.id
+      document.getElementById('m-name').value = m.name
+      document.getElementById('m-icon').value = m.icon
+      document.getElementById('m-category').value = m.category
+      document.getElementById('m-price').value = m.price
+      document.getElementById('m-price_orig').value = m.price_orig || ''
+      document.getElementById('m-unit').value = m.unit
+      document.getElementById('m-location_name').value = m.location_name || ''
+      document.getElementById('m-latitude').value = m.latitude || ''
+      document.getElementById('m-longitude').value = m.longitude || ''
+      document.getElementById('m-badges').value = (m.spec_badges || []).join(',')
+      document.getElementById('m-params').value = (m.params || []).map(p => p.val + ':' + p.lbl).join(',')
+      document.getElementById('m-description').value = m.description || ''
+      document.getElementById('machineMask').classList.add('show')
+    }
+    function closeMachineModal() { document.getElementById('machineMask').classList.remove('show') }
+    async function saveMachine() {
+      const v = id => document.getElementById(id).value.trim()
+      const badges = v('m-badges') ? v('m-badges').split(',').map(s => s.trim()).filter(Boolean) : []
+      const params = v('m-params') ? v('m-params').split(',').map(s => { const [val, lbl] = s.split(':'); return { val: (val || '').trim(), lbl: (lbl || '').trim() } }).filter(p => p.val) : []
+      const body = {
+        name: v('m-name'), icon: v('m-icon') || '🚜', category: v('m-category'),
+        price: v('m-price'), price_orig: v('m-price_orig') || null, unit: v('m-unit'),
+        location_name: v('m-location_name'), latitude: v('m-latitude') || null, longitude: v('m-longitude') || null,
+        spec_badges: badges, params: params, description: v('m-description')
+      }
+      if (!body.name || !body.price) { toast('请填写名称和单价'); return }
+      const id = v('m-id')
+      const r = id ? await api('/operator/machines/' + id, { method: 'PUT', body: JSON.stringify(body) })
+                   : await api('/operator/machines', { method: 'POST', body: JSON.stringify(body) })
+      if (r.code === 200) { toast(r.msg || '已保存'); closeMachineModal(); loadMachines() } else toast(r.msg || '保存失败')
+    }
+    async function setStatus(id, status) { const r = await api('/operator/machines/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) }); if (r.code === 200) { toast(r.msg); loadMachines() } else toast(r.msg) }
+    async function delMachine(id) { if (!confirm('确定删除该机具？')) return; const r = await api('/operator/machines/' + id, { method: 'DELETE' }); if (r.code === 200) { toast('已删除'); loadMachines() } else toast(r.msg) }
+
+    // 接单中心
+    async function loadOrders() {
+      const status = document.getElementById('orderFilter').value
+      const r = await api('/operator/orders' + (status !== 'all' ? '?status=' + status : ''))
+      const tb = document.getElementById('orderList')
+      if (r.code === 200 && r.data.length) {
+        tb.innerHTML = r.data.map(o => {
+          let actions = ''
+          if (o.status === 'pending') actions = `<button class="btn btn-primary btn-sm" onclick="acceptOrder(${o.id})">接单</button> <button class="btn btn-danger btn-sm" onclick="rejectOrder(${o.id})">拒单</button>`
+          else if (NEXT[o.status]) actions = `<button class="btn btn-primary btn-sm" onclick="advance(${o.id},'${NEXT[o.status].s}')">${NEXT[o.status].t}</button>`
+          else if (o.status === 'completed' || o.status === 'cancelled') actions = `<button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id})">删除</button>`
+          else actions = '<span style="color:#BBB">—</span>'
+          const addr = o.work_address ? `<div style="color:#00838F;font-weight:600">📍 ${o.work_address}</div>` : '<div style="color:#DC2626">⚠ 未填地址</div>'
+          return `<tr><td>${o.order_no}</td><td>${o.machine_icon} ${o.machine_name}</td><td>${o.farmer_name || '-'}<br><span style="color:#888">${o.contact_phone || ''}</span></td><td>${addr}<span style="color:#555">${o.plot_name || '不指定地块'} · ${o.work_area}亩</span><br><span style="color:#888">${o.work_date}</span></td><td>¥${o.total_price}<br><span style="color:#888">定金¥${o.deposit}</span></td><td>${statusBadge(o.status)}</td><td>${actions}</td></tr>`
+        }).join('')
+      } else tb.innerHTML = '<tr class="empty-row"><td colspan="7">暂无订单</td></tr>'
+    }
+    async function deleteOrder(id) {
+      if (!confirm('确定删除该订单记录吗？仅从你的列表移除，不影响农户记录。')) return
+      const r = await api('/operator/orders/' + id, { method: 'DELETE' })
+      if (r.code === 200) { toast('已删除'); loadOrders() } else toast(r.msg)
+    }
+    async function acceptOrder(id) { const r = await api('/operator/orders/' + id + '/accept', { method: 'PATCH' }); if (r.code === 200) { toast(r.msg); loadOrders() } else toast(r.msg) }
+    async function rejectOrder(id) { const reason = prompt('拒单理由（选填）：') ?? ''; const r = await api('/operator/orders/' + id + '/reject', { method: 'PATCH', body: JSON.stringify({ reason }) }); if (r.code === 200) { toast(r.msg); loadOrders() } else toast(r.msg) }
+    async function advance(id, status) { const r = await api('/operator/orders/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) }); if (r.code === 200) { toast(r.msg); loadOrders() } else toast(r.msg) }
+
+    // 资料
+    async function loadProfile() {
+      const r = await api('/operator/profile')
+      if (r.code === 200) {
+        const o = r.data
+        document.getElementById('p-org_name').value = o.org_name || ''
+        document.getElementById('p-contact').value = o.contact || ''
+        document.getElementById('p-phone').value = o.phone || ''
+        document.getElementById('p-service_area').value = o.service_area || ''
+        document.getElementById('p-location_name').value = o.location_name || ''
+        document.getElementById('p-latitude').value = o.latitude || ''
+        document.getElementById('p-longitude').value = o.longitude || ''
+      }
+    }
+    async function saveProfile() {
+      const v = id => document.getElementById(id).value.trim()
+      const body = { org_name: v('p-org_name'), contact: v('p-contact'), phone: v('p-phone'),
+        service_area: v('p-service_area'), location_name: v('p-location_name'),
+        latitude: v('p-latitude') || null, longitude: v('p-longitude') || null }
+      const r = await api('/operator/profile', { method: 'PUT', body: JSON.stringify(body) })
+      toast(r.code === 200 ? '资料已更新' : (r.msg || '保存失败'))
+    }
+
+    loadDashboard()
+  </script>
+</body>
+</html>

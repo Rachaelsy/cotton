@@ -50,7 +50,10 @@ node db/migrate_pay_expires.js        2>/dev/null || true
 node db/migrate_reviews.js            2>/dev/null || true
 node db/migrate_plots.js              2>/dev/null || true
 node db/migrate_farm_records.js       2>/dev/null || true
+node db/migrate_machines.js           2>/dev/null || true
+node db/migrate_order_delete.js       2>/dev/null || true
 node db/seed.js                       2>/dev/null || true
+node db/seed_machines.js              2>/dev/null || true
 echo "✅ 数据库初始化完成"
 
 echo "🚀 启动服务..."

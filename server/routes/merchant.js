@@ -568,11 +568,11 @@ router.get('/orders', merchantAuth, async (req, res) => {
       JOIN order_items i ON i.order_id = o.id AND i.merchant_id = ?
     `
     const params = [mid]
-    // 未付款和已取消的订单不向商户展示
+    // 未付款和已取消的订单不向商户展示；已删除（隐藏）的也不展示
     if (status && status !== 'all') {
-      sql += ` WHERE o.status = ?`; params.push(status)
+      sql += ` WHERE o.merchant_deleted=0 AND o.status = ?`; params.push(status)
     } else {
-      sql += ` WHERE o.status NOT IN ('pending_payment','cancelled')`
+      sql += ` WHERE o.merchant_deleted=0 AND o.status NOT IN ('pending_payment','cancelled')`
     }
     sql += ' GROUP BY o.id ORDER BY o.created_at DESC'
 
@@ -623,12 +623,15 @@ router.delete('/orders/:id', merchantAuth, async (req, res) => {
   try {
     const mid = req.merchant.merchant_id
     const [rows] = await db.query(
-      `SELECT o.id FROM orders o JOIN order_items i ON i.order_id=o.id
+      `SELECT o.id, o.status FROM orders o JOIN order_items i ON i.order_id=o.id
        WHERE o.id=? AND i.merchant_id=? LIMIT 1`,
       [req.params.id, mid]
     )
     if (!rows.length) return fail(res, '订单不存在或无权删除', 404)
-    await db.query('DELETE FROM orders WHERE id=?', [req.params.id])
+    // 软删除：只从商户视图隐藏，不影响农户记录与资金/售后数据
+    if (!['completed', 'cancelled', 'refunded'].includes(rows[0].status))
+      return fail(res, '仅已完成、已取消的订单可删除')
+    await db.query('UPDATE orders SET merchant_deleted=1 WHERE id=?', [req.params.id])
     return ok(res, null, '订单已删除')
   } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
 })

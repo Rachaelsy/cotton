@@ -1,0 +1,36 @@
+<!-- pages/machine/review.wxml — 服务评价 -->
+<view class="page">
+  <view class="nav" style="padding-top: {{statusBarHeight}}px">
+    <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
+    <text class="nav-title">服务评价</text>
+    <view style="width:60rpx"></view>
+  </view>
+
+  <scroll-view class="scroll" scroll-y style="flex:1;height:0;">
+    <view class="rev-card">
+      <view class="dim" wx:for="{{dims}}" wx:key="key" wx:for-item="d">
+        <text class="dim-label">{{d.label}}</text>
+        <view class="stars">
+          <text
+            class="star {{s <= d.score ? 'on' : ''}}"
+            wx:for="{{stars}}" wx:key="*this" wx:for-item="s"
+            bindtap="onStar" data-dim="{{d.key}}" data-val="{{s}}"
+          >★</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="content-card">
+      <text class="cc-label">评价内容</text>
+      <textarea class="cc-input" placeholder="说说这次作业的体验，帮助其他棉农参考…" value="{{content}}" bindinput="onContent" maxlength="200" />
+    </view>
+
+    <view style="height:160rpx"></view>
+  </scroll-view>
+
+  <view class="action-bar">
+    <view class="bar-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">
+      <text class="bar-btn-text">{{submitting ? '提交中…' : '提交评价'}}</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,46 @@
+<!-- pages/machine/orders.wxml — 我的农机预约 -->
+<view class="page">
+  <view class="header" style="padding-top: {{statusBarHeight}}px">
+    <view class="nav">
+      <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
+      <text class="nav-title">我的农机预约</text>
+      <view style="width:60rpx"></view>
+    </view>
+    <scroll-view class="tabs" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="tab {{activeTab === item.key ? 'tab-on' : ''}}"
+        wx:for="{{tabs}}" wx:key="key" bindtap="onTab" data-key="{{item.key}}">
+        <text class="tab-text">{{item.label}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="scroll" scroll-y style="flex:1;height:0;">
+    <view wx:if="{{loading}}" class="empty"><text class="empty-icon">⏳</text><text class="empty-text">加载中…</text></view>
+    <view wx:elif="{{orders.length === 0}}" class="empty"><text class="empty-icon">📋</text><text class="empty-text">暂无预约记录</text></view>
+
+    <view class="order-card" wx:for="{{orders}}" wx:key="id" bindtap="onOrder" data-id="{{item.id}}">
+      <view class="oc-head">
+        <text class="oc-no">{{item.order_no}}</text>
+        <text class="badge {{item.badgeCls}}">{{item.status_label}}</text>
+      </view>
+      <view class="oc-body">
+        <view class="oc-icon"><text>{{item.machine_icon}}</text></view>
+        <view class="oc-mid">
+          <text class="oc-name">{{item.machine_name}}</text>
+          <text class="oc-meta">{{item.plot_name || '不指定地块'}} · {{item.work_area}}亩 · {{item.work_date}}</text>
+        </view>
+      </view>
+      <view class="oc-foot">
+        <text class="oc-total">总价 ¥{{item.total_price}} · 定金 ¥{{item.deposit}}</text>
+        <view class="oc-foot-right">
+          <view wx:if="{{item.status === 'completed' || item.status === 'cancelled'}}" class="oc-del" catchtap="onDelete" data-id="{{item.id}}">
+            <text class="oc-del-text">删除</text>
+          </view>
+          <text class="oc-arrow">查看 ›</text>
+        </view>
+      </view>
+    </view>
+
+    <view style="height:40rpx"></view>
+  </scroll-view>
+</view>
