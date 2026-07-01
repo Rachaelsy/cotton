@@ -1,23 +1,15 @@
-<!-- pages/fields/draw.wxml — 地块边界绘制 -->
+<!-- pages/fields/draw.wxml — 地块边界绘制与信息补充 -->
 <view class="page">
-
-  <!-- 顶部导航（三种模式共用，标题随状态切换） -->
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
-    <view class="nav-back" bindtap="onBack">
-      <text class="nav-back-icon">‹</text>
-    </view>
+    <view class="nav-side" bindtap="onBack"><text>返回</text></view>
     <view class="nav-center">
-      <text class="nav-title">{{showForm ? '填写地块信息' : '绘制地块边界'}}</text>
-      <text class="nav-sub">{{showForm ? '已绘制约 ' + area + ' 亩' : tipText}}</text>
+      <text class="nav-title">{{showForm ? '地块信息补充' : '绘制地块边界'}}</text>
+      <text class="nav-sub">{{showForm ? '确认种植信息后保存' : '手动打点绘制 · 至少 3 个顶点'}}</text>
     </view>
-    <view class="nav-help">
-      <text class="nav-help-text">?</text>
-    </view>
+    <view class="nav-side nav-help" bindtap="onHelp"><text>说明</text></view>
   </view>
 
-  <!-- ══════════ 绘制模式 ══════════ -->
   <view wx:if="{{!showForm}}" class="draw-container">
-
     <map
       id="mymap"
       class="map"
@@ -37,136 +29,93 @@
       bindcallouttap="onCalloutTap"
     ></map>
 
-    <!-- 右侧工具栏 -->
     <view class="toolbar">
-      <view class="tool-btn" bindtap="onLocate">
-        <text class="tool-icon">📍</text>
-        <text class="tool-lbl">定位</text>
-      </view>
-      <view class="tool-btn {{isSatellite ? 'tool-active' : ''}}" bindtap="onToggleSatellite">
-        <text class="tool-icon">🛰</text>
-        <text class="tool-lbl">{{isSatellite ? '卫星' : '地图'}}</text>
-      </view>
-      <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onUndo">
-        <text class="tool-icon">↩</text>
-        <text class="tool-lbl">撤销</text>
-      </view>
-      <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onClear">
-        <text class="tool-icon">🗑</text>
-        <text class="tool-lbl">清空</text>
-      </view>
+      <view class="tool-btn tool-primary" bindtap="onLocate"><text class="tool-title">定位</text><text class="tool-sub">当前位置</text></view>
+      <view class="tool-btn" bindtap="onToggleSatellite"><text class="tool-title">{{isSatellite ? '标准' : '卫星'}}</text><text class="tool-sub">切换图层</text></view>
+      <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onUndo"><text class="tool-title">撤销</text><text class="tool-sub">上一步</text></view>
+      <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onClear"><text class="tool-title">清空</text><text class="tool-sub">全部顶点</text></view>
     </view>
 
-    <!-- 面积浮层 -->
+    <view wx:if="{{points.length === 0}}" class="draw-empty-tip">
+      <text class="draw-empty-title">点击地图添加顶点</text>
+      <text class="draw-empty-sub">沿着棉田边界依次打点</text>
+    </view>
+
     <view wx:if="{{points.length >= 3}}" class="area-float">
       <text class="area-label">当前面积</text>
-      <view class="area-row">
-        <text class="area-val">{{area}}</text>
-        <text class="area-unit">亩</text>
-      </view>
+      <view class="area-row"><text class="area-val">{{area}}</text><text class="area-unit">亩</text></view>
     </view>
 
-    <!-- 底部信息 + 按钮 -->
+    <view wx:if="{{points.length > 0}}" class="draw-hint {{closed ? 'draw-hint-done' : ''}}">
+      <icon type="{{closed ? 'success_no_circle' : 'info'}}" size="15" color="{{closed ? '#A9E1BD' : '#FFD275'}}"></icon>
+      <text>{{tipText}}</text>
+    </view>
+
     <view class="bottom-bar">
       <view class="stats-row">
-        <view class="stat">
-          <text class="stat-val">{{points.length}}</text>
-          <text class="stat-lbl">顶点</text>
-        </view>
+        <view class="stat"><text class="stat-val">{{points.length}}</text><text class="stat-lbl">顶点</text></view>
         <view class="stat-div"></view>
-        <view class="stat">
-          <text class="stat-val">{{area}}</text>
-          <text class="stat-lbl">亩</text>
-        </view>
+        <view class="stat"><text class="stat-val">{{area}}</text><text class="stat-lbl">面积（亩）</text></view>
         <view class="stat-div"></view>
-        <view class="stat">
-          <text class="stat-val">{{perimeter}}</text>
-          <text class="stat-lbl">米周长</text>
-        </view>
+        <view class="stat"><text class="stat-val">{{perimeter}}</text><text class="stat-lbl">周长（米）</text></view>
       </view>
       <view class="btn-row">
-        <view class="cancel-btn" bindtap="onBack">
-          <text class="cancel-text">✕ 取消</text>
-        </view>
-        <view
-          class="finish-btn {{points.length < 3 ? 'finish-disabled' : ''}}"
-          bindtap="onFinishDraw"
-        >
-          <text class="finish-text">✓ 完成绘制</text>
-        </view>
+        <view class="cancel-btn" bindtap="onBack"><text>取消</text></view>
+        <view class="finish-btn {{points.length < 3 ? 'finish-disabled' : ''}}" bindtap="onFinishDraw"><text>完成绘制</text></view>
       </view>
     </view>
+  </view>
 
-  </view><!-- /draw-container -->
-
-  <!-- ══════════ 表单模式（普通流，无 fixed，Skyline 安全）══════════ -->
   <view wx:if="{{showForm}}" class="form-container">
-
-    <scroll-view class="form-scroll" scroll-y>
-
-      <view class="field-row">
-        <text class="field-label">地块名称 <text class="req">*</text></text>
-        <input
-          class="field-input"
-          placeholder="如：3号地·主力田"
-          value="{{form.name}}"
-          bindinput="onNameInput"
-          maxlength="20"
-        />
+    <scroll-view class="form-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="draw-summary">
+        <view class="summary-icon"><icon type="success" size="28" color="#2D8B57"></icon></view>
+        <view class="summary-body">
+          <text class="summary-title">边界绘制完成</text>
+          <text class="summary-desc">{{area}} 亩 · {{points.length}} 个顶点 · 周长 {{perimeter}} 米</text>
+        </view>
       </view>
 
-      <view class="field-row">
-        <text class="field-label">种植品种</text>
-        <input
-          class="field-input"
-          placeholder="如：新陆早57号"
-          value="{{form.variety}}"
-          bindinput="onVarietyInput"
-          maxlength="30"
-        />
+      <view class="form-card">
+        <view class="field-row">
+          <text class="field-label">地块名称 <text class="req">*</text></text>
+          <input class="field-input" placeholder="如：3号地·主力田" value="{{form.name}}" bindinput="onNameInput" maxlength="20"/>
+        </view>
+        <view class="field-row">
+          <text class="field-label">棉花品种 <text class="req">*</text></text>
+          <input class="field-input" placeholder="如：新陆早57号" value="{{form.variety}}" bindinput="onVarietyInput" maxlength="30"/>
+        </view>
+        <view class="field-row">
+          <text class="field-label">播种日期</text>
+          <picker mode="date" value="{{form.sowDate}}" bindchange="onSowDateChange">
+            <view class="field-picker"><text class="{{form.sowDate ? 'picker-val' : 'picker-placeholder'}}">{{form.sowDate || '选择日期'}}</text><text class="picker-more">选择</text></view>
+          </picker>
+        </view>
+        <view class="field-row">
+          <text class="field-label">灌溉方式</text>
+          <picker mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange">
+            <view class="field-picker"><text class="picker-val">{{form.irrigation}}</text><text class="picker-more">更改</text></view>
+          </picker>
+        </view>
+        <view class="field-row">
+          <text class="field-label">土壤类型</text>
+          <picker mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange">
+            <view class="field-picker"><text class="picker-val">{{form.soilType}}</text><text class="picker-more">更改</text></view>
+          </picker>
+        </view>
+        <view class="field-row">
+          <text class="field-label">种植状态</text>
+          <picker mode="selector" range="{{plantingOptions}}" value="{{plantingIndex}}" bindchange="onPlantingChange">
+            <view class="field-picker"><text class="picker-val">{{form.plantingStatus}}</text><text class="picker-more">更改</text></view>
+          </picker>
+        </view>
+        <view class="field-row field-row-note">
+          <text class="field-label">备注</text>
+          <textarea class="field-textarea" value="{{form.note}}" bindinput="onNoteInput" placeholder="填写地块特殊情况或管理要点" maxlength="200"></textarea>
+        </view>
       </view>
-
-      <view class="field-row">
-        <text class="field-label">播种日期</text>
-        <picker mode="date" value="{{form.sowDate}}" bindchange="onSowDateChange">
-          <view class="field-picker">
-            <text class="{{form.sowDate ? 'picker-val' : 'picker-placeholder'}}">
-              {{form.sowDate || '选择日期'}}
-            </text>
-            <text class="picker-arrow">›</text>
-          </view>
-        </picker>
-      </view>
-
-      <view class="field-row">
-        <text class="field-label">灌溉方式</text>
-        <picker mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange">
-          <view class="field-picker">
-            <text class="picker-val">{{form.irrigation}}</text>
-            <text class="picker-arrow">›</text>
-          </view>
-        </picker>
-      </view>
-
-      <view class="field-row">
-        <text class="field-label">土壤类型</text>
-        <picker mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange">
-          <view class="field-picker">
-            <text class="{{form.soilType ? 'picker-val' : 'picker-placeholder'}}">
-              {{form.soilType || '选择土壤类型'}}
-            </text>
-            <text class="picker-arrow">›</text>
-          </view>
-        </picker>
-      </view>
-
-      <view style="height: 20rpx"></view>
+      <view class="form-bottom-space"></view>
     </scroll-view>
-
-    <view class="form-save-btn {{saving ? 'save-disabled' : ''}}" bindtap="onSave">
-      <text class="form-save-text">{{saving ? '保存中...' : '💾 保存地块'}}</text>
-    </view>
-
-  </view><!-- /form-container -->
-
+    <view class="form-save-btn {{saving ? 'save-disabled' : ''}}" bindtap="onSave"><text>{{saving ? '正在保存…' : '保存地块'}}</text></view>
+  </view>
 </view>

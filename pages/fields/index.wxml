@@ -1,150 +1,215 @@
 <!-- pages/fields/index.wxml — 地块管理 -->
 <view class="page">
-
-  <!-- 顶部 -->
   <view class="header" style="padding-top: {{statusBarHeight}}px">
     <view class="topbar">
-      <view class="back-btn" bindtap="onBack">
-        <text class="back-icon">‹</text>
-      </view>
+      <view class="back-btn" bindtap="onBack"><text class="back-text">返回</text></view>
       <view class="header-center">
         <text class="header-title">我的棉田</text>
-        <text class="header-sub">MYCOTTONLAND</text>
+        <text class="header-sub">MY COTTON LAND</text>
       </view>
-      <view style="width: 64rpx"></view>
+      <view class="manage-btn {{manageMode ? 'manage-btn-active' : ''}}" bindtap="onToggleManage">
+        <text>{{manageMode ? '完成' : '管理'}}</text>
+      </view>
     </view>
 
-    <!-- 统计栏 -->
     <view class="stats-bar">
       <view class="stat-item">
-        <text class="stat-val">{{totalCount}}</text>
-        <text class="stat-lbl">块</text>
+        <view class="stat-value-row"><text class="stat-val">{{totalCount}}</text><text class="stat-unit">块</text></view>
         <text class="stat-desc">承包地块</text>
       </view>
       <view class="stat-div"></view>
       <view class="stat-item">
-        <text class="stat-val">{{totalArea}}</text>
-        <text class="stat-lbl">亩</text>
+        <view class="stat-value-row"><text class="stat-val">{{totalArea}}</text><text class="stat-unit">亩</text></view>
         <text class="stat-desc">种植面积</text>
       </view>
       <view class="stat-div"></view>
-      <view class="stat-item warn-stat">
-        <text class="stat-val warn-val">{{attentionCount}}</text>
-        <text class="stat-lbl warn-lbl">块</text>
-        <text class="stat-desc warn-desc">需要关注</text>
+      <view class="stat-item attention-stat">
+        <view class="stat-value-row"><text class="stat-val">{{attentionCount}}</text><text class="stat-unit">块</text></view>
+        <text class="stat-desc">需要关注</text>
       </view>
     </view>
 
-    <!-- 标签页 -->
     <view class="tabs">
-      <view class="tab tab-active">
-        <text class="tab-text">🗺 地块列表</text>
-      </view>
-      <view class="tab" bindtap="onAddField">
-        <text class="tab-text">✏️ 新增地块</text>
-      </view>
+      <view class="tab tab-active"><text>地块列表</text></view>
+      <view class="tab" bindtap="onAddField"><text>新增地块</text></view>
     </view>
   </view>
 
-  <!-- 内容区 -->
-  <scroll-view class="scroll" scroll-y>
+  <view wx:if="{{manageMode}}" class="manage-tip">
+    <text>管理模式：选择地块后可批量删除</text>
+  </view>
 
-    <!-- 加载中 -->
+  <view class="filter-panel">
+    <view class="search-box">
+      <icon type="search" size="16" color="#8B8278"></icon>
+      <input
+        class="search-input"
+        value="{{keyword}}"
+        placeholder="搜索地块名称、品种或问题"
+        confirm-type="search"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <icon wx:if="{{keyword}}" type="clear" size="17" color="#AAA198" bindtap="onClearSearch"></icon>
+    </view>
+    <view class="filter-row">
+      <picker class="filter-picker" mode="selector" range="{{statusOptions}}" value="{{statusIndex}}" bindchange="onStatusChange">
+        <view class="filter-pill {{statusIndex ? 'filter-pill-active' : ''}}">
+          <text>{{statusOptions[statusIndex]}}</text><text class="filter-caret">⌄</text>
+        </view>
+      </picker>
+      <picker class="filter-picker" mode="selector" range="{{areaOptions}}" value="{{areaIndex}}" bindchange="onAreaChange">
+        <view class="filter-pill {{areaIndex ? 'filter-pill-active' : ''}}">
+          <text>{{areaOptions[areaIndex]}}</text><text class="filter-caret">⌄</text>
+        </view>
+      </picker>
+      <text wx:if="{{hasActiveFilter}}" class="reset-filter" bindtap="onResetFilters">重置</text>
+      <text class="result-count">{{resultCount}} 块</text>
+    </view>
+  </view>
+
+  <scroll-view
+    class="scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    refresher-enabled
+    refresher-triggered="{{refreshing}}"
+    bindrefresherrefresh="onRefresh"
+  >
     <view wx:if="{{loading}}" class="loading-wrap">
-      <text class="loading-text">加载中...</text>
+      <view class="loading-card"></view>
+      <view class="loading-card"></view>
+      <view class="loading-card"></view>
+      <text class="loading-text">正在读取棉田数据…</text>
+    </view>
+
+    <view wx:elif="{{loadError}}" class="state-wrap">
+      <icon type="warn" size="38" color="#C67C31"></icon>
+      <text class="state-title">暂时无法加载地块</text>
+      <text class="state-desc">{{loadError}}</text>
+      <view class="state-action" bindtap="onRetry"><text>重新加载</text></view>
     </view>
 
     <view wx:else>
-
-      <!-- 需要关注 -->
-      <view wx:if="{{warnFields.length > 0}}">
+      <view wx:if="{{warnFields.length}}" class="field-section">
         <view class="section-header">
-          <view class="section-dot warn-dot"></view>
+          <view class="section-mark section-mark-warn"></view>
           <text class="section-title">需要关注</text>
-          <text class="section-count">{{warnFields.length}}</text>
+          <text class="section-count">{{warnFields.length}} 块</text>
         </view>
         <view
-          class="field-card warn-card"
+          class="field-card field-card-warn {{item.selected ? 'field-card-selected' : ''}}"
           wx:for="{{warnFields}}"
           wx:key="id"
-          bindtap="onFieldDetail"
           data-id="{{item.id}}"
+          bindtap="onFieldTap"
         >
-          <view class="card-thumb warn-thumb">
-            <text class="thumb-icon">🌿</text>
+          <view class="preview-wrap">
+            <map
+              wx:if="{{item.hasBoundary}}"
+              class="preview-map"
+              latitude="{{item.mapLat}}"
+              longitude="{{item.mapLng}}"
+              scale="15"
+              polygons="{{item.previewPolygons}}"
+              enable-zoom="{{false}}"
+              enable-scroll="{{false}}"
+              enable-rotate="{{false}}"
+              show-location="{{false}}"
+              data-id="{{item.id}}"
+              catchtap="onFieldTap"
+            ></map>
+            <view wx:else class="preview-empty"><text>{{item.areaText}}</text><text>亩</text></view>
+            <view wx:if="{{manageMode}}" class="select-badge {{item.selected ? 'select-badge-active' : ''}}">
+              <icon wx:if="{{item.selected}}" type="success_no_circle" size="18" color="#FFFFFF"></icon>
+            </view>
           </view>
           <view class="card-body">
-            <view class="card-row1">
+            <view class="card-title-row">
               <text class="field-name">{{item.name}}</text>
-              <view class="score-wrap">
-                <text class="score {{item.scoreCls}}">{{item.health_score}}</text>
-                <text class="score-unit">/100</text>
-              </view>
+              <view class="score-wrap"><text class="score {{item.scoreCls}}">{{item.health_score}}</text><text class="score-unit">/100</text></view>
             </view>
-            <text class="field-meta">{{item.area}}亩 · {{item.variety || '未填品种'}} · {{item.irrigation}}</text>
-            <view class="card-row3">
-              <view class="tag warn-tag">
-                <text class="tag-text">⚠ {{item.tagText}}</text>
-              </view>
+            <text class="field-meta">{{item.areaText}}亩 · {{item.variety || '未填品种'}} · {{item.irrigation || '未填灌溉'}}</text>
+            <view class="card-foot">
+              <view class="status-tag status-tag-warn"><icon type="warn" size="12" color="#C35D2E"></icon><text>{{item.tagText}}</text></view>
               <text class="field-date">{{item.date}}</text>
             </view>
           </view>
         </view>
       </view>
 
-      <!-- 正常种植 -->
-      <view wx:if="{{okFields.length > 0}}">
+      <view wx:if="{{okFields.length}}" class="field-section">
         <view class="section-header">
-          <view class="section-dot ok-dot"></view>
+          <view class="section-mark section-mark-ok"></view>
           <text class="section-title">正常种植</text>
-          <text class="section-count">{{okFields.length}}</text>
+          <text class="section-count">{{okFields.length}} 块</text>
         </view>
         <view
-          class="field-card ok-card"
+          class="field-card field-card-ok {{item.selected ? 'field-card-selected' : ''}}"
           wx:for="{{okFields}}"
           wx:key="id"
-          bindtap="onFieldDetail"
           data-id="{{item.id}}"
+          bindtap="onFieldTap"
         >
-          <view class="card-thumb ok-thumb">
-            <text class="thumb-icon">🌱</text>
+          <view class="preview-wrap">
+            <map
+              wx:if="{{item.hasBoundary}}"
+              class="preview-map"
+              latitude="{{item.mapLat}}"
+              longitude="{{item.mapLng}}"
+              scale="15"
+              polygons="{{item.previewPolygons}}"
+              enable-zoom="{{false}}"
+              enable-scroll="{{false}}"
+              enable-rotate="{{false}}"
+              show-location="{{false}}"
+              data-id="{{item.id}}"
+              catchtap="onFieldTap"
+            ></map>
+            <view wx:else class="preview-empty"><text>{{item.areaText}}</text><text>亩</text></view>
+            <view wx:if="{{manageMode}}" class="select-badge {{item.selected ? 'select-badge-active' : ''}}">
+              <icon wx:if="{{item.selected}}" type="success_no_circle" size="18" color="#FFFFFF"></icon>
+            </view>
           </view>
           <view class="card-body">
-            <view class="card-row1">
+            <view class="card-title-row">
               <text class="field-name">{{item.name}}</text>
-              <view class="score-wrap">
-                <text class="score {{item.scoreCls}}">{{item.health_score}}</text>
-                <text class="score-unit">/100</text>
-              </view>
+              <view class="score-wrap"><text class="score {{item.scoreCls}}">{{item.health_score}}</text><text class="score-unit">/100</text></view>
             </view>
-            <text class="field-meta">{{item.area}}亩 · {{item.variety || '未填品种'}} · {{item.irrigation}}</text>
-            <view class="card-row3">
-              <view class="tag ok-tag">
-                <text class="tag-text">✓ {{item.tagText}}</text>
-              </view>
+            <text class="field-meta">{{item.areaText}}亩 · {{item.variety || '未填品种'}} · {{item.irrigation || '未填灌溉'}}</text>
+            <view class="card-foot">
+              <view class="status-tag status-tag-ok"><icon type="success_no_circle" size="12" color="#2D8B57"></icon><text>{{item.tagText}}</text></view>
               <text class="field-date">{{item.date}}</text>
             </view>
           </view>
         </view>
       </view>
 
-      <!-- 空状态 -->
-      <view wx:if="{{!loading && totalCount === 0}}" class="empty-wrap">
-        <text class="empty-icon">🗺</text>
-        <text class="empty-title">还没有地块</text>
-        <text class="empty-sub">点击下方按钮，在地图上绘制您的第一块棉田</text>
-        <view class="empty-btn" bindtap="onAddField">
-          <text class="empty-btn-text">+ 新增地块</text>
-        </view>
+      <view wx:if="{{totalCount === 0}}" class="state-wrap empty-state">
+        <text class="empty-monogram">田</text>
+        <text class="state-title">还没有地块</text>
+        <text class="state-desc">在地图上标记边界，建立第一块数字棉田</text>
+        <view class="state-action" bindtap="onAddField"><text>新增第一块地</text></view>
       </view>
 
-      <view style="height: 160rpx"></view>
+      <view wx:elif="{{resultCount === 0}}" class="state-wrap empty-state">
+        <icon type="search" size="38" color="#A59B90"></icon>
+        <text class="state-title">没有匹配的地块</text>
+        <text class="state-desc">换个关键词或筛选条件试试</text>
+        <view class="state-action state-action-light" bindtap="onResetFilters"><text>清除筛选</text></view>
+      </view>
+
+      <view class="scroll-bottom-space"></view>
     </view>
   </scroll-view>
 
-  <!-- FAB -->
-  <view wx:if="{{totalCount > 0}}" class="fab" bindtap="onAddField">
-    <text class="fab-icon">+</text>
-  </view>
+  <view wx:if="{{!manageMode && totalCount > 0}}" class="add-fab" bindtap="onAddField"><text>新增地块</text></view>
 
+  <view wx:if="{{manageMode}}" class="manage-bar">
+    <view class="select-all-btn" bindtap="onSelectAll"><text>{{allVisibleSelected ? '取消全选' : '全选'}}</text></view>
+    <view class="batch-delete-btn {{selectedIds.length ? '' : 'batch-delete-disabled'}}" bindtap="onBatchDelete">
+      <text>{{selectedIds.length ? '删除已选 ' + selectedIds.length + ' 块' : '请选择地块'}}</text>
+    </view>
+  </view>
 </view>

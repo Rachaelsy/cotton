@@ -103,11 +103,14 @@
     }
     function getGeo() {
       const hint = document.getElementById('geoHint')
+      const insecure = location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'
+      if (insecure) { hint.textContent = '⚠ 网页定位需 HTTPS，请手动填写下方经纬度（可用高德/腾讯地图搜索后复制）'; return }
       if (!navigator.geolocation) { hint.textContent = '浏览器不支持定位，请手动填写'; return }
       hint.textContent = '定位中…'
       navigator.geolocation.getCurrentPosition(
         p => { document.getElementById('latitude').value = p.coords.latitude.toFixed(7); document.getElementById('longitude').value = p.coords.longitude.toFixed(7); hint.textContent = '✅ 定位成功（可手动修改）' },
-        e => hint.textContent = '定位失败：' + e.message, { enableHighAccuracy: true, timeout: 8000 })
+        e => hint.textContent = (e.code === 1 ? '已拒绝定位权限，请手动填写经纬度' : '定位失败，请手动填写经纬度'),
+        { enableHighAccuracy: true, timeout: 8000 })
     }
     async function submitApply() {
       const v = id => (document.getElementById(id).value || '').trim()

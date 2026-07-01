@@ -16,9 +16,18 @@ Page({
       { icon:'⚠️', bg:'#FFF3E6', name:'病虫害风险', priority:'关注', priorityColor:'#FF9800', desc:'东南角区域检测到潜在蚜虫聚集特征，建议近期到田间实地查看并及时防治。' }
     ]
   },
-  onLoad() {
+  onLoad(options = {}) {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    let plotName = options.plotName || ''
+    try { plotName = decodeURIComponent(plotName) } catch (error) {}
+    const fields = plotName && !this.data.fields.includes(plotName)
+      ? [plotName, ...this.data.fields]
+      : this.data.fields
+    this.setData({
+      statusBarHeight: info.statusBarHeight || 20,
+      fields,
+      selField: plotName || this.data.selField
+    })
   },
   onBack() { wx.navigateBack() },
   onSelField(e) { this.setData({ selField: e.currentTarget.dataset.f }) },

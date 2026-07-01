@@ -1,106 +1,119 @@
-<!-- 地块气象 -->
 <view class="page">
-  <!-- 导航 -->
-  <view class="wx-nav" style="padding-top: {{statusBarHeight}}px">
-    <view class="wx-nav-inner">
-      <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
-      <view style="flex:1">
+  <view class="wx-hd" style="padding-top: {{statusBarHeight}}px">
+    <view class="wx-hd-top">
+      <view class="wx-hd-title-wrap">
         <text class="wx-title">地块气象</text>
+        <text class="wx-subtitle">{{locationLabel}}</text>
       </view>
+      <view class="wx-hd-action" bindtap="onBack"><text>返回</text></view>
     </view>
-    <!-- 地块选择器 -->
-    <scroll-view class="field-chips" scroll-x>
+
+    <scroll-view class="field-chips" scroll-x show-scrollbar="false">
       <view
-        class="fchip {{selField === item ? 'on' : ''}}"
+        class="fchip {{item.selected ? 'on' : ''}}"
         wx:for="{{fields}}"
-        wx:key="index"
+        wx:key="id"
         bindtap="onSelField"
-        data-f="{{item}}"
+        data-index="{{index}}"
       >
-        <text class="fchip-text">{{item}}</text>
+        <text class="fchip-text">{{item.label}}</text>
       </view>
     </scroll-view>
   </view>
 
-  <scroll-view class="wx-scroll" scroll-y>
-    <!-- 主天气卡 -->
-    <view class="wx-main-card">
-      <view class="wx-main-top">
-        <text class="wx-big-temp">{{weather.temp}}°</text>
-        <view style="flex:1; margin-left:24rpx">
-          <text class="wx-desc">{{weather.desc}}</text>
-          <text class="wx-hl">{{weather.low}}°~ {{weather.high}}° · {{weather.wind}}</text>
-        </view>
-        <text class="wx-icon-big">{{weather.icon}}</text>
-      </view>
-      <!-- 详情网格 -->
-      <view class="wx-detail-grid">
-        <view class="wx-di">
-          <text class="wdi-icon">🌡</text>
-          <text class="wdi-val">{{weather.groundTemp}}°C</text>
-          <text class="wdi-lbl">地表温度</text>
-        </view>
-        <view class="wx-di">
-          <text class="wdi-icon">💧</text>
-          <text class="wdi-val">{{weather.humidity}}%</text>
-          <text class="wdi-lbl">空气湿度</text>
-        </view>
-        <view class="wx-di">
-          <text class="wdi-icon">🌂</text>
-          <text class="wdi-val">{{weather.rain}}mm</text>
-          <text class="wdi-lbl">降水量</text>
-        </view>
-        <view class="wx-di">
-          <text class="wdi-icon">☀️</text>
-          <text class="wdi-val">{{weather.uv}}</text>
-          <text class="wdi-lbl">紫外线</text>
-        </view>
-      </view>
+  <scroll-view class="wx-scroll" scroll-y enhanced show-scrollbar="false">
+    <view wx:if="{{loading}}" class="wx-state">
+      <text class="wx-state-title">正在加载地块气象…</text>
+      <text class="wx-state-desc">会根据当前地块生成天气、预警和农事建议</text>
     </view>
 
-    <!-- 预警横幅 -->
-    <view class="wx-alert">
-      <text class="wx-alert-icon">⚠️</text>
-      <view style="flex:1">
-        <text class="wx-alert-title">后天大风预警</text>
-        <text class="wx-alert-sub">预计风力6-7级，做好防风准备</text>
-      </view>
-      <text class="wx-alert-arr">›</text>
+    <view wx:elif="{{loadError}}" class="wx-state">
+      <text class="wx-state-title">暂时无法加载气象</text>
+      <text class="wx-state-desc">{{loadError}}</text>
+      <view class="wx-state-btn" bindtap="onRetry"><text>重新加载</text></view>
     </view>
 
-    <!-- 5日预报 -->
-    <view class="hcard">
-      <view class="hcard-hd">
-        <view class="hcard-bar"></view>
-        <text class="hcard-title">5日预报</text>
-      </view>
-      <view class="forecast-row">
-        <view class="forecast-item" wx:for="{{forecast}}" wx:key="day">
-          <text class="fc-day">{{item.day}}</text>
-          <text class="fc-icon">{{item.icon}}</text>
-          <text class="fc-hl">{{item.high}}°/{{item.low}}°</text>
-          <text class="fc-wind">{{item.wind}}</text>
+    <view wx:else>
+      <view class="wx-main-card">
+        <view class="wx-main-top">
+          <view class="wx-main-info">
+            <view class="wx-main-chip">{{selectedFieldLabel}}</view>
+            <text class="wx-big-temp">{{weather.temp}}°</text>
+            <text class="wx-desc">{{weather.desc}}</text>
+            <text class="wx-hl">{{weather.low}}° ~ {{weather.high}}° · {{weather.wind}}</text>
+          </view>
+          <text class="wx-icon-big">{{weather.icon}}</text>
         </view>
-      </view>
-    </view>
 
-    <!-- 农事建议 -->
-    <view class="hcard" style="margin-bottom:32rpx">
-      <view class="hcard-hd">
-        <view class="hcard-bar"></view>
-        <text class="hcard-title">农事建议</text>
-      </view>
-      <view class="adv-item" wx:for="{{advices}}" wx:key="title">
-        <view class="adv-icon" style="background: {{item.bg}}">
-          <text class="adv-icon-emoji">{{item.icon}}</text>
+        <view class="wx-detail-grid">
+          <view class="wx-di">
+            <text class="wdi-icon">🌡</text>
+            <text class="wdi-val">{{weather.groundTemp}}°C</text>
+            <text class="wdi-lbl">体感温度</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">💧</text>
+            <text class="wdi-val">{{weather.humidity}}%</text>
+            <text class="wdi-lbl">空气湿度</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">🌂</text>
+            <text class="wdi-val">{{weather.rain}}mm</text>
+            <text class="wdi-lbl">降水量</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">☀️</text>
+            <text class="wdi-val">{{weather.uv}}</text>
+            <text class="wdi-lbl">紫外线</text>
+          </view>
         </view>
-        <view style="flex:1">
-          <text class="adv-title">{{item.title}}</text>
-          <text class="adv-sub">{{item.sub}}</text>
-        </view>
-      </view>
-    </view>
 
-    <view style="height:40rpx"></view>
+        <view class="wx-tip">
+          <text class="wx-tip-text">{{tipText}}</text>
+        </view>
+      </view>
+
+      <view class="wx-alert-banner {{alert ? '' : 'safe'}}">
+        <text class="wa-icon">{{alert ? alert.icon : '✅'}}</text>
+        <view class="wa-txt">
+          <text class="wa-title">{{alert ? alert.title : '今日作业提示'}}</text>
+          <text class="wa-sub">{{alert ? alert.sub : summary}}</text>
+        </view>
+        <text class="wa-arr">›</text>
+      </view>
+
+      <view class="wx-card">
+        <view class="wx-card-head">
+          <view class="wx-card-bar"></view>
+          <text class="wx-card-title">5日预报</text>
+        </view>
+        <view class="forecast-row">
+          <view class="forecast-item" wx:for="{{forecast}}" wx:key="day">
+            <text class="fc-day">{{item.day}}</text>
+            <text class="fc-icon">{{item.icon}}</text>
+            <text class="fc-hl">{{item.high}}° / {{item.low}}°</text>
+            <text class="fc-wind">{{item.wind}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="wx-advice-card">
+        <view class="wx-card-head">
+          <view class="wx-card-bar"></view>
+          <text class="wx-card-title">农事建议</text>
+        </view>
+        <view class="adv-item" wx:for="{{advices}}" wx:key="title">
+          <view class="adv-icon" style="background: {{item.bg}}">
+            <text class="adv-icon-emoji">{{item.icon}}</text>
+          </view>
+          <view class="adv-body">
+            <text class="adv-title">{{item.title}}</text>
+            <text class="adv-sub">{{item.sub}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view style="height: 40rpx"></view>
+    </view>
   </scroll-view>
 </view>

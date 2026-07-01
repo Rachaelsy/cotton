@@ -1,43 +1,14 @@
 // pages/fields/draw.js — 地块边界绘制
-const app  = getApp()
 const auth = require('../../utils/auth')
+const {
+  normalizeCoordinates,
+  calculateAreaMu,
+  calculatePerimeterMeters
+} = require('../../utils/plot-geometry')
 
 // 新疆喀什默认中心（GPS 不可用时的回退坐标）
 const DEFAULT_LAT = 39.4700
 const DEFAULT_LNG = 75.9900
-
-// ── 球面积（m²）→ 亩 ─────────────────────────────
-function geoArea(pts) {
-  if (pts.length < 3) return 0
-  const R = 6378137
-  const rad = x => x * Math.PI / 180
-  let area = 0
-  const n = pts.length
-  for (let i = 0; i < n; i++) {
-    const p1 = pts[i], p2 = pts[(i + 1) % n]
-    const dLng = rad(p2.longitude - p1.longitude)
-    area += dLng * (2 + Math.sin(rad(p1.latitude)) + Math.sin(rad(p2.latitude)))
-  }
-  return Math.abs(area * R * R / 2)
-}
-
-// ── 球面周长（m）────────────────────────────────
-function geoPerimeter(pts) {
-  if (pts.length < 2) return 0
-  const R = 6378137
-  const rad = x => x * Math.PI / 180
-  let perim = 0
-  const n = pts.length
-  for (let i = 0; i < n; i++) {
-    const p1 = pts[i], p2 = pts[(i + 1) % n]
-    const dLat = rad(p2.latitude - p1.latitude)
-    const dLng = rad(p2.longitude - p1.longitude)
-    const a = Math.sin(dLat / 2) ** 2
-      + Math.cos(rad(p1.latitude)) * Math.cos(rad(p2.latitude)) * Math.sin(dLng / 2) ** 2
-    perim += 2 * R * Math.asin(Math.sqrt(a))
-  }
-  return Math.round(perim)
-}
 
 Page({
   data: {
@@ -45,7 +16,7 @@ Page({
     // 地图中心
     mapLat: DEFAULT_LAT,
     mapLng: DEFAULT_LNG,
-    isSatellite: true,
+    isSatellite: false,
     // 打点数据
     points: [],
     closed: false,
@@ -66,12 +37,16 @@ Page({
       variety: '',
       sowDate: '',
       irrigation: '滴灌',
-      soilType: ''
+      soilType: '壤土',
+      plantingStatus: '已播种',
+      note: ''
     },
     irrigationOptions: ['滴灌', '漫灌', '喷灌', '无'],
     irrigationIndex: 0,
     soilOptions: ['壤土', '沙壤土', '粘土', '沙土', '盐碱土'],
-    soilIndex: 0
+    soilIndex: 0,
+    plantingOptions: ['已播种', '计划播种', '未播种'],
+    plantingIndex: 0
   },
 
   onLoad() {
@@ -82,6 +57,16 @@ Page({
 
   onToggleSatellite() {
     this.setData({ isSatellite: !this.data.isSatellite })
+  },
+
+  onHelp() {
+    wx.showModal({
+      title: '如何绘制地块',
+      content: '依次点击地块边界添加顶点，至少添加 3 个点。点击第 1 个点闭合边界，也可直接点击“完成绘制”自动闭合。',
+      showCancel: false,
+      confirmText: '知道了',
+      confirmColor: '#9B6738'
+    })
   },
 
   _locateUser() {
@@ -98,7 +83,7 @@ Page({
   onMapTap(e) {
     if (this.data.closed || this.data.showForm) return
     const { latitude, longitude } = e.detail
-    const pts = [...this.data.points, { latitude, longitude }]
+    const pts = normalizeCoordinates([...this.data.points, { latitude, longitude }])
     this._updateMap(pts, false)
   },
 
@@ -126,61 +111,63 @@ Page({
   },
 
   _updateMap(pts, closed) {
-    const areaSqm = geoArea(pts)
-    const areaMu  = (areaSqm / 666.667).toFixed(1)
-    const perim   = geoPerimeter(pts)
+    const normalized = normalizeCoordinates(pts)
+    const areaMuValue = calculateAreaMu(normalized)
+    const areaMu = areaMuValue.toFixed(areaMuValue >= 100 ? 0 : 1)
+    const perim = Math.round(calculatePerimeterMeters(normalized))
 
     // markers：用 label 显示序号
-    const markers = pts.map((p, i) => ({
+    const markers = normalized.map((p, i) => ({
       id: i,
-      latitude:  p.latitude,
+      latitude: p.latitude,
       longitude: p.longitude,
-      width:  20,
+      width: 20,
       height: 20,
       label: {
-        content:      String(i + 1),
-        color:        '#fff',
-        fontSize:     11,
-        bgColor:      i === 0 ? '#D97706' : '#1F2937',
-        padding:      3,
+        content: String(i + 1),
+        color: '#fff',
+        fontSize: 11,
+        bgColor: i === 0 ? '#D97706' : '#1F2937',
+        padding: 3,
         borderRadius: 4,
         anchorX: 0,
         anchorY: 0
       },
-      // 闭合后第一个 marker 显示"点我闭合"提示
-      callout: (!closed && i === 0 && pts.length >= 3) ? {
-        content:      '点我闭合',
-        color:        '#fff',
-        bgColor:      '#D97706',
-        fontSize:     11,
-        padding:      5,
-        borderRadius: 6,
-        display:      'ALWAYS'
-      } : null
+      ...((!closed && i === 0 && normalized.length >= 3) ? {
+        callout: {
+          content: '点击闭合', color: '#fff', bgColor: '#9B6738', fontSize: 11,
+          padding: 5, borderRadius: 6, display: 'ALWAYS'
+        }
+      } : {})
     }))
 
     // 绘制中：折线；闭合后：多边形
-    const polylines = closed ? [] : (pts.length >= 2 ? [{
-      points:     pts,
+    const polylines = closed ? [] : (normalized.length >= 2 ? [{
+      points:     normalized,
       color:      '#C8902E',
       width:      3,
       dottedLine: false
-    }] : [])
+    }, ...(normalized.length >= 3 ? [{
+      points: [normalized[normalized.length - 1], normalized[0]],
+      color: '#C8902E88',
+      width: 2,
+      dottedLine: true
+    }] : [])] : [])
 
     const polygons = closed ? [{
-      points:      pts,
+      points:      normalized,
       strokeWidth: 3,
       strokeColor: '#C8902EFF',
       fillColor:   '#C8902E33'
     }] : []
 
     let tipText = '点击地图添加地块顶点'
-    if (pts.length === 1) tipText = '继续添加顶点（至少3个）'
-    else if (pts.length === 2) tipText = '再添加至少 1 个顶点'
-    else if (!closed) tipText = `已打 ${pts.length} 个点，点击 ① 闭合地块`
+    if (normalized.length === 1) tipText = '继续添加顶点（至少3个）'
+    else if (normalized.length === 2) tipText = '再添加至少 1 个顶点'
+    else if (!closed) tipText = `已打 ${normalized.length} 个点，点击第 1 个点闭合`
     else tipText = `已绘制 ${areaMu} 亩，请填写地块信息`
 
-    this.setData({ points: pts, area: areaMu, perimeter: perim, markers, polylines, polygons, tipText })
+    this.setData({ points: normalized, area: areaMu, perimeter: perim, markers, polylines, polygons, tipText })
   },
 
   // ── 撤销 ──────────────────────────────────
@@ -203,8 +190,10 @@ Page({
       content: '确定清除所有已打的点？',
       confirmColor: '#DC2626',
       success: (r) => {
-        if (r.confirm) this._updateMap([], false)
-        this.setData({ closed: false })
+        if (r.confirm) {
+          this._updateMap([], false)
+          this.setData({ closed: false })
+        }
       }
     })
   },
@@ -244,11 +233,20 @@ Page({
     const idx = parseInt(e.detail.value)
     this.setData({ soilIndex: idx, 'form.soilType': this.data.soilOptions[idx] })
   },
+  onPlantingChange(e) {
+    const idx = parseInt(e.detail.value)
+    this.setData({ plantingIndex: idx, 'form.plantingStatus': this.data.plantingOptions[idx] })
+  },
+  onNoteInput(e) { this.setData({ 'form.note': e.detail.value }) },
 
   // ── 保存地块 ──────────────────────────────
   async onSave() {
-    const { name, variety, sowDate, irrigation, soilType } = this.data.form
+    const { name, variety, sowDate, irrigation, soilType, plantingStatus, note } = this.data.form
     if (!name.trim()) { wx.showToast({ title: '请填写地块名称', icon: 'none' }); return }
+    if (!variety.trim()) { wx.showToast({ title: '请填写棉花品种', icon: 'none' }); return }
+    if (this.data.points.length < 3 || Number(this.data.area) <= 0) {
+      wx.showToast({ title: '地块边界无效，请重新绘制', icon: 'none' }); return
+    }
     if (this.data.saving) return
     this.setData({ saving: true })
     try {
@@ -260,7 +258,9 @@ Page({
         coordinates: this.data.points,
         sow_date:    sowDate || null,
         irrigation,
-        soil_type:   soilType
+        soil_type:   soilType,
+        planting_status: plantingStatus,
+        note: note.trim()
       })
       if (res.code === 200) {
         wx.showToast({ title: '地块已保存', icon: 'success' })
