@@ -1,6 +1,7 @@
 // pages/index/index.js — 首页
 const app  = getApp()
 const auth = require('../../utils/auth')
+const { buildWeatherForPlot, buildWeatherFromApi } = require('../../utils/weather')
 
 Page({
   data: {
@@ -9,6 +10,12 @@ Page({
     name: '游客',
     location: '新疆 · 棉花种植管理平台',
     today: '',
+    weatherPreview: {
+      locationLabel: '喀什地区 · 全部地块',
+      weather: { temp: 0, desc: '晴转多云', icon: '🌤', high: 0, low: 0, wind: '西北风3级' },
+      tipText: '登录后会根据你的地块自动生成天气建议。'
+    },
+    plotStats: { count: 0, area: '0', attention: 0 },
     modules: [
       { id: 1,  name: '地块管理',   icon: '🗺',  bg: '#E8F5E9', action: 'fields' },
       { id: 2,  name: '遥感监测',   icon: '🛰',  bg: '#E3F2FD', newTag: true, action: 'remote' },
@@ -35,6 +42,7 @@ Page({
       this.getTabBar().setData({ selected: 0 })
     }
     this._refreshUser()
+    this._loadPlotStats()
   },
 
   _refreshUser() {
@@ -48,6 +56,87 @@ Page({
       })
     } else {
       this.setData({ isLoggedIn: false, name: '游客', location: '新疆 · 棉花种植管理平台' })
+    }
+  },
+
+  async _loadPlotStats() {
+    if (!auth.isLoggedIn()) {
+      this.setData({ plotStats: { count: 0, area: '0', attention: 0 } })
+      this.setData({ weatherPreview: this._buildWeatherPreview(null) })
+      return
+    }
+    try {
+      const res = await auth.request('GET', '/api/plots')
+      if (res.code !== 200 || !Array.isArray(res.data)) return
+      const area = res.data.reduce((sum, plot) => sum + Number(plot.area || 0), 0)
+      const weatherPreview = await this._loadWeatherPreview(res.data)
+      this.setData({
+        plotStats: {
+          count: res.data.length,
+          area: area.toFixed(area >= 100 ? 0 : 1),
+          attention: res.data.filter(plot => plot.status === 'attention').length
+        },
+        weatherPreview
+      })
+    } catch (error) {}
+  },
+
+  async _loadWeatherPreview(plots) {
+    const firstPlot = Array.isArray(plots) && plots.length ? plots[0] : null
+    if (firstPlot && auth.isLoggedIn()) {
+      try {
+        const res = await auth.request('GET', `/api/weather/plot/${firstPlot.id}`)
+        if (res.code === 200 && res.data && res.data.weather) {
+          const model = buildWeatherFromApi(res.data.plot || firstPlot, res.data.weather, {
+            fieldCount: plots.length,
+            selectedIndex: 0
+          })
+          return {
+            locationLabel: model.locationLabel,
+            weather: {
+              temp: model.weather.temp,
+              desc: model.weather.desc,
+              icon: model.weather.icon,
+              high: model.weather.high,
+              low: model.weather.low,
+              wind: model.weather.wind
+            },
+            tipText: model.tipText
+          }
+        }
+      } catch (error) {}
+    }
+
+    return this._buildWeatherPreview(plots)
+  },
+
+  _buildWeatherPreview(plots) {
+    const plot = Array.isArray(plots) && plots.length ? plots[0] : {
+      id: 0,
+      name: '全部地块',
+      area: 0,
+      coordinates: [],
+      sow_date: null,
+      irrigation: '滴灌',
+      soil_type: '壤土',
+      planting_status: '已播种',
+      note: ''
+    }
+    const model = buildWeatherForPlot(plot, {
+      fieldCount: Array.isArray(plots) ? plots.length : 0,
+      selectedIndex: 0
+    })
+    return {
+      locationLabel: model.locationLabel,
+      weather: {
+        temp: model.weather.temp,
+        desc: model.weather.desc,
+        icon: model.weather.icon,
+        high: model.weather.high,
+        low: model.weather.low,
+        wind: model.weather.wind
+      },
+      tipText: model.tipText
     }
   },
 
@@ -69,6 +158,8 @@ Page({
       wx.navigateTo({ url: '/subpkg-supplies/supplies/index' })
     } else if (action === 'fields') {
       wx.navigateTo({ url: '/pages/fields/index' })
+    } else if (action === 'weather') {
+      wx.navigateTo({ url: '/pages/weather/index' })
     } else if (action === 'records') {
       wx.navigateTo({ url: '/pages/records/index' })
     } else if (action === 'machine') {
@@ -80,6 +171,10 @@ Page({
 
   onGoFields() {
     wx.navigateTo({ url: '/pages/fields/index' })
+  },
+
+  onGoWeather() {
+    wx.navigateTo({ url: '/pages/weather/index' })
   },
 
   onPhotoBanner() {

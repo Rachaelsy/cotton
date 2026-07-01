@@ -28,23 +28,23 @@
       </view>
 
       <!-- 天气卡片 -->
-      <view class="weather-card">
+      <view class="weather-card" bindtap="onGoWeather">
         <view class="wc-top">
           <view class="wc-loc-pill">
-            <text class="wc-loc-text">📍 疏附县 · 3号地块</text>
+            <text class="wc-loc-text">📍 {{weatherPreview.locationLabel}}</text>
           </view>
           <text class="wc-date">{{today}}</text>
         </view>
         <view class="wc-main">
-          <text class="wc-icon">🌤</text>
-          <text class="wc-temp">22°</text>
+          <text class="wc-icon">{{weatherPreview.weather.icon}}</text>
+          <text class="wc-temp">{{weatherPreview.weather.temp}}°</text>
           <view class="wc-info">
-            <text class="wc-desc">晴转多云</text>
-            <text class="wc-sub">8°~ 24° · 西北风3级</text>
+            <text class="wc-desc">{{weatherPreview.weather.desc}}</text>
+            <text class="wc-sub">{{weatherPreview.weather.low}}°~ {{weatherPreview.weather.high}}° · {{weatherPreview.weather.wind}}</text>
           </view>
         </view>
         <view class="wc-tip">
-          <text class="wc-tip-text">🌿 <text class="tip-bold">地温稳定在14°C以上</text>，适合棉花播种，建议今日完成 <text class="tip-bold">2号地块</text>播种作业</text>
+          <text class="wc-tip-text">🌿 <text class="tip-bold">{{weatherPreview.tipText}}</text></text>
         </view>
       </view>
     </view>
@@ -63,12 +63,12 @@
         </view>
         <view class="stat3">
           <view class="stat3-i">
-            <text class="stat3-v">8</text>
+            <text class="stat3-v">{{plotStats.count}}</text>
             <text class="stat3-l">承包地块</text>
           </view>
           <view class="stat3-div"></view>
           <view class="stat3-i">
-            <text class="stat3-v ok">486</text>
+            <text class="stat3-v ok">{{plotStats.area}}</text>
             <view class="stat3-l-wrap">
               <text class="stat3-unit">亩</text>
               <text class="stat3-l">种植总面积</text>
@@ -76,7 +76,7 @@
           </view>
           <view class="stat3-div"></view>
           <view class="stat3-i">
-            <text class="stat3-v warn">2</text>
+            <text class="stat3-v warn">{{plotStats.attention}}</text>
             <text class="stat3-l">需关注</text>
           </view>
         </view>

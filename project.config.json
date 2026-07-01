@@ -12,17 +12,33 @@
       "outputPath": ""
     },
     "useCompilerPlugins": false,
-    "minifyWXML": true
+    "minifyWXML": true,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
   "packOptions": {
     "ignore": [
-      { "type": "folder", "value": "server" },
-      { "type": "suffix", "value": ".md" }
+      {
+        "value": "server",
+        "type": "folder"
+      },
+      {
+        "value": ".md",
+        "type": "suffix"
+      }
     ],
     "include": []
   },
-  "appid": "wx2d7fde8b873c637b",
-  "editorSetting": {}
+  "appid": "wx853f0ae42b3b3201",
+  "editorSetting": {},
+  "libVersion": "3.16.1"
 }

@@ -612,6 +612,47 @@
 
 ---
 
+## 四、地块气象模块 `/api/weather`
+
+> 地块气象不再使用本地模拟数据，后端会根据地块边界中心点代理请求 Open-Meteo 真实天气接口。
+> 该接口需要农户登录态，且地块必须存在边界坐标。
+
+### 4.1 获取指定地块天气
+
+**GET** `/api/weather/plot/:id`
+
+**请求头：** `Authorization: Bearer <token>`
+
+**成功响应 200：**
+```json
+{
+  "code": 200,
+  "msg": "天气获取成功",
+  "data": {
+    "plot": {
+      "id": 1,
+      "name": "3号地",
+      "area": 56.8
+    },
+    "center": {
+      "latitude": 39.3801,
+      "longitude": 75.8602
+    },
+    "weather": {
+      "current": { ... },
+      "daily": { ... }
+    }
+  }
+}
+```
+
+**失败 400：**
+```json
+{ "code": 400, "msg": "地块暂无边界数据", "data": null }
+```
+
+---
+
 ## 四、前端接入示例
 
 ### 小程序（`utils/auth.js` 封装）

@@ -94,8 +94,9 @@ Page({
     }
   },
 
-  onLoad() {
+  onLoad(options = {}) {
     const info = wx.getSystemInfoSync()
+    this.initialPlotId = Number(options.plotId) || null
     this.plotList = []   // [{ id, label }]
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
@@ -128,9 +129,17 @@ Page({
       this.plotList = []
     }
     const fieldOptions = ['全部地块', ...this.plotList.map(p => p.label)]
+    const initialPlot = this.initialPlotId
+      ? this.plotList.find(plot => Number(plot.id) === this.initialPlotId)
+      : null
+    const initialLabel = initialPlot ? initialPlot.label : '全部地块'
+    const initialIndex = initialPlot ? fieldOptions.indexOf(initialLabel) : 0
     this.setData({
       fieldOptions,
-      fieldFilters: fieldOptions
+      fieldFilters: fieldOptions,
+      fieldFilter: initialLabel,
+      selectedFieldLabel: initialLabel,
+      'form.fieldIndex': initialIndex
     })
   },
 
@@ -303,15 +312,17 @@ Page({
   },
 
   onOpenAddRecord() {
+    const defaultFieldIndex = this.getDefaultFieldIndex()
+    const defaultFieldLabel = this.data.fieldOptions[defaultFieldIndex] || '全部地块'
     this.setData({
       showAddModal: true,
       modalStep: 1,
       selectedTypeIndex: -1,
       selectedType: null,
-      selectedFieldLabel: this.data.fieldOptions[0] || '全部地块',
+      selectedFieldLabel: defaultFieldLabel,
       editingId: null,
       form: {
-        fieldIndex: 0,
+        fieldIndex: defaultFieldIndex,
         date: todayValue(),
         time: nowTimeValue(),
         amount: '',
@@ -389,7 +400,11 @@ Page({
       return
     }
 
-    const fieldIndex = form.fieldIndex
+    const fieldIndex = this.getSafeFieldIndex(form.fieldIndex)
+    if (this.initialPlotId && fieldIndex === 0) {
+      wx.showToast({ title: '请关联到具体地块后再保存', icon: 'none' })
+      return
+    }
     const plotLabel = this.data.fieldOptions[fieldIndex] || '全部地块'
     const plot = fieldIndex === 0 ? null : this.plotList[fieldIndex - 1]
 
@@ -591,6 +606,25 @@ Page({
   _monthLabel(ym) {
     const [year, month] = ym.split('-').map(Number)
     return `${year}年${month}月`
+  },
+
+  // 新增时默认选择当前上下文地块（例如从地块详情跳转进来）。
+  getDefaultFieldIndex() {
+    const options = this.data.fieldOptions || []
+    if (!options.length) return 0
+
+    const selectedLabel = this.data.fieldFilter || this.data.selectedFieldLabel || ''
+    const selectedIndex = options.indexOf(selectedLabel)
+    if (selectedIndex >= 0) return selectedIndex
+
+    return this.getSafeFieldIndex(this.data.form && this.data.form.fieldIndex)
+  },
+
+  getSafeFieldIndex(value) {
+    const options = this.data.fieldOptions || []
+    const index = Number(value)
+    if (!Number.isInteger(index) || index < 0 || index >= options.length) return 0
+    return index
   },
 
   // 统一请求错误提示：区分登录失效与网络异常
