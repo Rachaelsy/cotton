@@ -19,6 +19,16 @@ function dateText(value) {
   return `${Number(parts[0])}年${Number(parts[1])}月${Number(parts[2])}日`
 }
 
+function finiteNumber(value, fallback = 0) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : fallback
+}
+
+function formatArea(value) {
+  const number = finiteNumber(value)
+  return number.toFixed(number % 1 === 0 ? 0 : 1)
+}
+
 Page({
   data: {
     statusBarHeight: 20,
@@ -81,8 +91,8 @@ Page({
       ...raw,
       health_score: score,
       sowDateText: dateText(raw.sow_date),
-      areaText: Number(raw.area || 0).toFixed(Number(raw.area || 0) % 1 === 0 ? 0 : 1),
-      perimeterText: Math.round(Number(raw.perimeter || 0)),
+      areaText: formatArea(raw.area),
+      perimeterText: Math.round(finiteNumber(raw.perimeter)),
       planting_status: raw.planting_status || '已播种',
       growthLabel: raw.status === 'attention'
         ? (raw.health_issue || '需要关注')

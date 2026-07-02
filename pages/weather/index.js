@@ -24,6 +24,11 @@ Page({
     fieldCount: 0,
     selectedFieldIndex: 0,
     selectedFieldLabel: '全部地块',
+    sourceInfo: {
+      type: 'simulated',
+      label: '模拟数据',
+      desc: '天气接口不可用或未选择有效地块时，由本地模型按地块生成，仅供参考。'
+    },
     locationLabel: '喀什地区',
     regionLabel: '喀什地区',
     weather: {
@@ -33,14 +38,22 @@ Page({
       high: 0,
       low: 0,
       wind: '西北风3级',
+      windLevel: 0,
       humidity: 0,
       groundTemp: 0,
+      groundTempLabel: '地温',
       rain: 0,
-      uv: 0
+      uv: 0,
+      pressure: 0,
+      visibility: 0,
+      visibilityText: '--'
     },
+    hourly: [],
     forecast: [],
     advices: [],
     alert: null,
+    showAlertDetail: false,
+    alertDetail: null,
     summary: '',
     tipText: ''
   },
@@ -137,12 +150,20 @@ Page({
       fieldCount: plots.length,
       selectedFieldIndex: safeIndex,
       selectedFieldLabel: weatherModel.selectedFieldLabel,
+      sourceInfo: weatherModel.sourceInfo || {
+        type: 'simulated',
+        label: '模拟数据',
+        desc: '天气接口不可用或未选择有效地块时，由本地模型按地块生成，仅供参考。'
+      },
       locationLabel: weatherModel.locationLabel,
       regionLabel: weatherModel.regionLabel,
       weather: weatherModel.weather,
+      hourly: weatherModel.hourly || [],
       forecast: weatherModel.forecast,
       advices: weatherModel.advices,
       alert: weatherModel.alert,
+      showAlertDetail: false,
+      alertDetail: null,
       summary: weatherModel.summary,
       tipText: weatherModel.tipText
     })
@@ -176,6 +197,45 @@ Page({
   onRetry() {
     this.loadWeatherPage()
   },
+
+  buildSafeDetail() {
+    return {
+      icon: '✅',
+      title: '今日作业提示',
+      level: '正常',
+      sub: this.data.summary || '当前暂无灾害性天气预警。',
+      agency: '棉管家气象助手',
+      impactTime: '今日',
+      impactArea: this.data.selectedFieldLabel || '当前地块',
+      actions: [
+        '当前暂无大风、强降雨、高温等灾害性预警',
+        '可按页面农事建议安排巡田、滴灌和轻作业',
+        '喷药和无人机作业前再次确认风力与降水概率'
+      ]
+    }
+  },
+
+  onAlertTap() {
+    this.setData({
+      showAlertDetail: true,
+      alertDetail: this.data.alert || this.buildSafeDetail()
+    })
+  },
+
+  onCloseAlert() {
+    this.setData({ showAlertDetail: false, alertDetail: null })
+  },
+
+  onSourceTap() {
+    const source = this.data.sourceInfo || {}
+    wx.showToast({
+      title: source.desc || source.label || '天气数据来源',
+      icon: 'none',
+      duration: 2600
+    })
+  },
+
+  noop() {},
 
   onBack() {
     wx.navigateBack()

@@ -130,10 +130,13 @@
               <text class="field-name">{{item.name}}</text>
               <view class="score-wrap"><text class="score {{item.scoreCls}}">{{item.health_score}}</text><text class="score-unit">/100</text></view>
             </view>
-            <text class="field-meta">{{item.areaText}}亩 · {{item.variety || '未填品种'}} · {{item.irrigation || '未填灌溉'}}</text>
+            <text class="field-meta">{{item.areaText}}亩 · {{item.planting_status}} · {{item.variety || '未填品种'}} · {{item.irrigation || '未填灌溉'}}</text>
             <view class="card-foot">
               <view class="status-tag status-tag-warn"><icon type="warn" size="12" color="#C35D2E"></icon><text>{{item.tagText}}</text></view>
-              <text class="field-date">{{item.date}}</text>
+              <view class="foot-right">
+                <text class="field-date">{{item.date}}</text>
+                <view wx:if="{{!manageMode}}" class="weather-mini-btn" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="onFieldWeather"><text>气象</text></view>
+              </view>
             </view>
           </view>
         </view>
@@ -177,10 +180,13 @@
               <text class="field-name">{{item.name}}</text>
               <view class="score-wrap"><text class="score {{item.scoreCls}}">{{item.health_score}}</text><text class="score-unit">/100</text></view>
             </view>
-            <text class="field-meta">{{item.areaText}}亩 · {{item.variety || '未填品种'}} · {{item.irrigation || '未填灌溉'}}</text>
+            <text class="field-meta">{{item.areaText}}亩 · {{item.planting_status}} · {{item.variety || '未填品种'}} · {{item.irrigation || '未填灌溉'}}</text>
             <view class="card-foot">
               <view class="status-tag status-tag-ok"><icon type="success_no_circle" size="12" color="#2D8B57"></icon><text>{{item.tagText}}</text></view>
-              <text class="field-date">{{item.date}}</text>
+              <view class="foot-right">
+                <text class="field-date">{{item.date}}</text>
+                <view wx:if="{{!manageMode}}" class="weather-mini-btn" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="onFieldWeather"><text>气象</text></view>
+              </view>
             </view>
           </view>
         </view>

@@ -343,7 +343,8 @@
 .card-title-row,
 .card-foot,
 .score-wrap,
-.status-tag {
+.status-tag,
+.foot-right {
   display: flex;
   align-items: center;
 }
@@ -413,6 +414,28 @@
   color: #AAA096;
   font-size: 18rpx;
   white-space: nowrap;
+}
+
+.foot-right {
+  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 10rpx;
+}
+
+.weather-mini-btn {
+  min-width: 58rpx;
+  height: 40rpx;
+  padding: 0 12rpx;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1E6B8E;
+  background: #EAF6FF;
+  border: 1rpx solid #CFE8F8;
+  font-size: 18rpx;
+  font-weight: 800;
+  box-sizing: border-box;
 }
 
 .loading-wrap,

@@ -1,6 +1,7 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
 const db = require('../db/database')
+const { fetchCmaWeather } = require('../utils/cma-weather')
 const { normalizeCoordinates, calculateCenter } = require('../../utils/plot-geometry')
 
 const router = express.Router()
@@ -13,6 +14,7 @@ function farmerAuth(req, res, next) {
   if (!authorization.startsWith('Bearer ')) return fail(res, '请先登录', 401)
   try {
     req.user = jwt.verify(authorization.slice(7), process.env.JWT_SECRET)
+    if (req.user.role !== 'farmer') return fail(res, '仅农户可查看地块气象', 403)
     next()
   } catch (error) {
     return fail(res, '登录已过期', 401)
@@ -33,23 +35,6 @@ function parseCoordinates(value) {
   }
 }
 
-async function fetchWeather(lat, lng) {
-  const params = new URLSearchParams({
-    latitude: String(lat),
-    longitude: String(lng),
-    timezone: 'auto',
-    forecast_days: '5',
-    current: 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation,precipitation_probability,uv_index',
-    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,precipitation_sum'
-  })
-
-  const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`)
-  if (!response.ok) {
-    throw new Error(`天气服务请求失败(${response.status})`)
-  }
-  return response.json()
-}
-
 // GET /api/weather/plot/:id — 获取指定地块的真实天气
 router.get('/plot/:id', farmerAuth, async (req, res) => {
   const plotId = parsePositiveId(req.params.id)
@@ -67,7 +52,7 @@ router.get('/plot/:id', farmerAuth, async (req, res) => {
     if (!coordinates.length) return fail(res, '地块暂无边界数据', 400)
 
     const center = calculateCenter(coordinates)
-    const weather = await fetchWeather(center.latitude, center.longitude)
+    const weather = await fetchCmaWeather(center, plot)
     return ok(res, {
       plot: {
         id: plot.id,

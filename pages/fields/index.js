@@ -26,9 +26,17 @@ function parseCoordinates(value) {
 
 function formatDate(value) {
   if (!value) return ''
-  const date = new Date(value)
+  const raw = String(value)
+  const match = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
+  if (match) return `${Number(match[2])}月${Number(match[3])}日更新`
+  const date = new Date(raw.replace(/-/g, '/'))
   if (Number.isNaN(date.getTime())) return ''
   return `${date.getMonth() + 1}月${date.getDate()}日更新`
+}
+
+function finiteNumber(value, fallback = 0) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : fallback
 }
 
 Page({
@@ -95,7 +103,7 @@ Page({
 
   formatPlot(plot) {
     const score = Number.isFinite(Number(plot.health_score)) ? Number(plot.health_score) : 100
-    const areaNumber = Number(plot.area || 0)
+    const areaNumber = finiteNumber(plot.area)
     let scoreCls = 'excel'
     if (score < 75) scoreCls = 'warn'
     else if (score < 88) scoreCls = 'good'
@@ -200,6 +208,14 @@ Page({
       return
     }
     wx.navigateTo({ url: `/pages/fields/detail?id=${id}` })
+  },
+
+  onFieldWeather(event) {
+    if (this.data.manageMode) return
+    const id = Number(event.currentTarget.dataset.id)
+    const name = event.currentTarget.dataset.name || ''
+    if (!id) return
+    wx.navigateTo({ url: `/pages/weather/index?plotId=${id}&plotName=${encodeURIComponent(name)}` })
   },
 
   toggleSelection(id) {

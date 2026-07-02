@@ -8,15 +8,17 @@
       <view class="wx-hd-action" bindtap="onBack"><text>返回</text></view>
     </view>
 
-    <scroll-view class="field-chips" scroll-x show-scrollbar="false">
-      <view
-        class="fchip {{item.selected ? 'on' : ''}}"
-        wx:for="{{fields}}"
-        wx:key="id"
-        bindtap="onSelField"
-        data-index="{{index}}"
-      >
-        <text class="fchip-text">{{item.label}}</text>
+    <scroll-view class="field-chips" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="field-chip-row">
+        <view
+          class="fchip {{item.selected ? 'on' : ''}}"
+          wx:for="{{fields}}"
+          wx:key="id"
+          bindtap="onSelField"
+          data-index="{{index}}"
+        >
+          <text class="fchip-text">{{item.label}}</text>
+        </view>
       </view>
     </scroll-view>
   </view>
@@ -37,7 +39,13 @@
       <view class="wx-main-card">
         <view class="wx-main-top">
           <view class="wx-main-info">
-            <view class="wx-main-chip">{{selectedFieldLabel}}</view>
+            <view class="wx-chip-row">
+              <view class="wx-main-chip">{{selectedFieldLabel}}</view>
+              <view class="wx-source-chip {{sourceInfo.type === 'real' ? 'real' : 'mock'}}" bindtap="onSourceTap">
+                <text class="source-dot"></text>
+                <text>{{sourceInfo.label}}</text>
+              </view>
+            </view>
             <text class="wx-big-temp">{{weather.temp}}°</text>
             <text class="wx-desc">{{weather.desc}}</text>
             <text class="wx-hl">{{weather.low}}° ~ {{weather.high}}° · {{weather.wind}}</text>
@@ -47,9 +55,9 @@
 
         <view class="wx-detail-grid">
           <view class="wx-di">
-            <text class="wdi-icon">🌡</text>
-            <text class="wdi-val">{{weather.groundTemp}}°C</text>
-            <text class="wdi-lbl">体感温度</text>
+            <text class="wdi-icon">💨</text>
+            <text class="wdi-val">{{weather.windLevel}}级</text>
+            <text class="wdi-lbl">风力</text>
           </view>
           <view class="wx-di">
             <text class="wdi-icon">💧</text>
@@ -57,14 +65,24 @@
             <text class="wdi-lbl">空气湿度</text>
           </view>
           <view class="wx-di">
-            <text class="wdi-icon">🌂</text>
-            <text class="wdi-val">{{weather.rain}}mm</text>
-            <text class="wdi-lbl">降水量</text>
+            <text class="wdi-icon">🌡</text>
+            <text class="wdi-val">{{weather.groundTemp}}°C</text>
+            <text class="wdi-lbl">{{weather.groundTempLabel || '地温'}}</text>
           </view>
           <view class="wx-di">
             <text class="wdi-icon">☀️</text>
             <text class="wdi-val">{{weather.uv}}</text>
             <text class="wdi-lbl">紫外线</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">🌂</text>
+            <text class="wdi-val">{{weather.rain}}mm</text>
+            <text class="wdi-lbl">降水量</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">👁</text>
+            <text class="wdi-val">{{weather.visibilityText}}</text>
+            <text class="wdi-lbl">能见度</text>
           </view>
         </view>
 
@@ -73,34 +91,54 @@
         </view>
       </view>
 
-      <view class="wx-alert-banner {{alert ? '' : 'safe'}}">
+      <view class="wx-alert-banner {{alert ? '' : 'safe'}}" bindtap="onAlertTap">
         <text class="wa-icon">{{alert ? alert.icon : '✅'}}</text>
         <view class="wa-txt">
-          <text class="wa-title">{{alert ? alert.title : '今日作业提示'}}</text>
+          <text class="wa-title">{{alert ? alert.title + (alert.level ? ' · ' + alert.level : '') : '今日作业提示'}}</text>
           <text class="wa-sub">{{alert ? alert.sub : summary}}</text>
         </view>
         <text class="wa-arr">›</text>
       </view>
 
+      <view wx:if="{{hourly.length}}" class="wx-card wx-hourly-card">
+        <view class="wx-card-head">
+          <view class="wx-card-bar"></view>
+          <text class="wx-card-title">逐小时预报</text>
+        </view>
+        <scroll-view class="hourly-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="hourly-row">
+            <view class="hourly-item {{item.now ? 'hourly-now' : ''}}" wx:for="{{hourly}}" wx:key="time">
+              <text class="hour-time">{{item.time}}</text>
+              <text class="hour-icon">{{item.icon}}</text>
+              <text class="hour-temp">{{item.temp}}°</text>
+              <text class="hour-meta">{{item.wind}}</text>
+              <text class="hour-rain">{{item.rainText}}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
       <view class="wx-card">
         <view class="wx-card-head">
           <view class="wx-card-bar"></view>
-          <text class="wx-card-title">5日预报</text>
+          <text class="wx-card-title">7日预报</text>
         </view>
-        <view class="forecast-row">
-          <view class="forecast-item" wx:for="{{forecast}}" wx:key="day">
-            <text class="fc-day">{{item.day}}</text>
-            <text class="fc-icon">{{item.icon}}</text>
-            <text class="fc-hl">{{item.high}}° / {{item.low}}°</text>
-            <text class="fc-wind">{{item.wind}}</text>
+        <scroll-view class="forecast-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="forecast-row">
+            <view class="forecast-item" wx:for="{{forecast}}" wx:key="day">
+              <text class="fc-day">{{item.day}}</text>
+              <text class="fc-icon">{{item.icon}}</text>
+              <text class="fc-hl">{{item.high}}° / {{item.low}}°</text>
+              <text class="fc-wind">{{item.wind}}</text>
+            </view>
           </view>
-        </view>
+        </scroll-view>
       </view>
 
       <view class="wx-advice-card">
         <view class="wx-card-head">
           <view class="wx-card-bar"></view>
-          <text class="wx-card-title">农事建议</text>
+          <text class="wx-card-title">AI农事建议</text>
         </view>
         <view class="adv-item" wx:for="{{advices}}" wx:key="title">
           <view class="adv-icon" style="background: {{item.bg}}">
@@ -116,4 +154,32 @@
       <view style="height: 40rpx"></view>
     </view>
   </scroll-view>
+
+  <view wx:if="{{showAlertDetail}}" class="modal-mask" bindtap="onCloseAlert"></view>
+  <view wx:if="{{showAlertDetail}}" class="alert-sheet" catchtap="noop">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view class="sheet-title-wrap">
+        <text class="sheet-icon">{{alertDetail.icon}}</text>
+        <view class="sheet-title-main">
+          <text class="sheet-title">{{alertDetail.title}}</text>
+          <text class="sheet-sub">{{alertDetail.level}} · {{alertDetail.agency}}</text>
+        </view>
+      </view>
+      <view class="sheet-close" bindtap="onCloseAlert"><icon type="cancel" size="23" color="#81766C"></icon></view>
+    </view>
+
+    <view class="alert-info-grid">
+      <view class="alert-info-item"><text class="aii-label">影响时间</text><text class="aii-value">{{alertDetail.impactTime}}</text></view>
+      <view class="alert-info-item"><text class="aii-label">影响范围</text><text class="aii-value">{{alertDetail.impactArea}}</text></view>
+    </view>
+    <view class="alert-summary"><text>{{alertDetail.sub}}</text></view>
+    <view class="alert-action-list">
+      <text class="alert-action-title">应急农事建议</text>
+      <view class="alert-action" wx:for="{{alertDetail.actions}}" wx:key="*this">
+        <text class="alert-action-dot"></text>
+        <text class="alert-action-text">{{item}}</text>
+      </view>
+    </view>
+  </view>
 </view>
