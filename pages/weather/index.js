@@ -20,6 +20,7 @@ Page({
     statusBarHeight: 20,
     loading: true,
     loadError: '',
+    apiNotice: '',
     fields: [],
     fieldCount: 0,
     selectedFieldIndex: 0,
@@ -67,7 +68,7 @@ Page({
   },
 
   async loadWeatherPage() {
-    this.setData({ loading: true, loadError: '' })
+    this.setData({ loading: true, loadError: '', apiNotice: '' })
     try {
       const plots = await this.loadPlots()
       const selectedIndex = this.resolveSelectedIndex(plots)
@@ -137,11 +138,13 @@ Page({
   async applySelectedPlot(index, plots = this.plotList || []) {
     const safeIndex = Math.max(0, Math.min(index, Math.max(plots.length - 1, 0)))
     const plot = plots[safeIndex] || this.buildVirtualPlot()
-    const weatherModel = await this.loadWeatherModel(plot, safeIndex, plots.length)
+    const result = await this.loadWeatherModel(plot, safeIndex, plots.length)
+    const weatherModel = result.model || result
 
     this.setData({
       loading: false,
       loadError: '',
+      apiNotice: result.apiNotice || '',
       fields: plots.map((item, itemIndex) => ({
         id: item.id,
         label: this.formatFieldLabel(item),
@@ -170,22 +173,51 @@ Page({
   },
 
   async loadWeatherModel(plot, selectedIndex, fieldCount) {
-    if (auth.isLoggedIn() && plot && Number(plot.id) > 0) {
-      try {
-        const res = await auth.request('GET', `/api/weather/plot/${plot.id}`)
-        if (res.code === 200 && res.data && res.data.weather) {
-          return buildWeatherFromApi(res.data.plot || plot, res.data.weather, {
-            fieldCount,
-            selectedIndex
-          })
-        }
-      } catch (error) {}
+    if (!auth.isLoggedIn()) {
+      return {
+        model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
+        apiNotice: '未登录，未请求真实天气接口'
+      }
     }
 
-    return buildWeatherForPlot(plot, {
-      fieldCount,
-      selectedIndex
-    })
+    if (!(plot && Number(plot.id) > 0)) {
+      return {
+        model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
+        apiNotice: '当前没有可用地块编号，未请求真实天气接口'
+      }
+    }
+
+    try {
+      const res = await auth.request('GET', `/api/weather/plot/${plot.id}`)
+      if (res.code === 200 && res.data && res.data.weather) {
+        return {
+          model: buildWeatherFromApi(res.data.plot || plot, res.data.weather, { fieldCount, selectedIndex }),
+          apiNotice: ''
+        }
+      }
+
+      return {
+        model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
+        apiNotice: `真实天气接口返回异常：${res.msg || res.code || '未知错误'}`
+      }
+    } catch (error) {
+      try {
+        return {
+          model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
+          apiNotice: `真实天气接口请求失败：${error.message || '未知错误'}`
+        }
+      } catch (fallbackError) {
+        return {
+          model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
+          apiNotice: `真实天气接口请求失败：${fallbackError.message || error.message || '未知错误'}`
+        }
+      }
+    }
+
+    return {
+      model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
+      apiNotice: ''
+    }
   },
 
   onSelField(e) {
@@ -229,7 +261,7 @@ Page({
   onSourceTap() {
     const source = this.data.sourceInfo || {}
     wx.showToast({
-      title: source.desc || source.label || '天气数据来源',
+      title: this.data.apiNotice || source.desc || source.label || '天气数据来源',
       icon: 'none',
       duration: 2600
     })

@@ -1,4 +1,4 @@
-const { nearestRegion } = require('../../utils/regions')
+const { nearestRegion } = require('./regions')
 
 const CMA_API_BASE = 'https://weather.cma.cn/api'
 const REQUEST_TIMEOUT_MS = 8000

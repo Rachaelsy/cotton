@@ -2,7 +2,7 @@ const express = require('express')
 const jwt = require('jsonwebtoken')
 const db = require('../db/database')
 const { fetchCmaWeather } = require('../utils/cma-weather')
-const { normalizeCoordinates, calculateCenter } = require('../../utils/plot-geometry')
+const { normalizeCoordinates, calculateCenter } = require('../utils/plot-geometry')
 
 const router = express.Router()
 

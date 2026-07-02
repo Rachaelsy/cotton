@@ -141,6 +141,17 @@
   overflow: hidden;
 }
 
+.wx-api-notice {
+  margin-bottom: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 20rpx;
+  background: #FFF3E6;
+  color: #9A5B16;
+  font-size: 22rpx;
+  line-height: 1.5;
+  border: 1rpx solid rgba(154, 91, 22, 0.16);
+}
+
 .wx-main-top {
   display: flex;
   align-items: center;

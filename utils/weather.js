@@ -67,6 +67,53 @@ function formatVisibility(value) {
   return `${Math.round(meters)}m`
 }
 
+function normalizeWindDirection(direction, degree) {
+  const numericDegree = Number(degree)
+  if (Number.isFinite(numericDegree)) {
+    return directionFromDegrees(numericDegree)
+  }
+
+  const text = String(direction || '')
+  if (/东北/.test(text)) return '东北'
+  if (/东南/.test(text)) return '东南'
+  if (/西南/.test(text)) return '西南'
+  if (/西北/.test(text)) return '西北'
+  if (/正东|东/.test(text)) return '东'
+  if (/正西|西/.test(text)) return '西'
+  if (/正南|南/.test(text)) return '南'
+  if (/正北|北/.test(text)) return '北'
+  return '风'
+}
+
+function estimateCmaUvIndex({ temp = 0, humidity = 0, rainChance = 0, risk = 'clear', month = 7 }) {
+  let uv = month >= 5 && month <= 8 ? 8 : 5
+  if (risk === 'storm' || risk === 'rain') uv -= 4
+  else if (risk === 'snow' || risk === 'fog') uv -= 5
+  else if (risk === 'cloudy') uv -= 2
+
+  if (temp >= 35) uv += 1
+  if (humidity >= 70) uv -= 1
+  if (rainChance >= 50) uv -= 1
+
+  return clamp(Math.round(uv), 0, 11)
+}
+
+function estimateCmaVisibility({ humidity = 0, rainChance = 0, risk = 'clear' }) {
+  let visibility = 18000
+
+  if (risk === 'storm') visibility = 4000
+  else if (risk === 'rain') visibility = 8000
+  else if (risk === 'snow') visibility = 6000
+  else if (risk === 'fog') visibility = 3000
+  else if (risk === 'wind') visibility = 12000
+  else if (risk === 'cloudy') visibility = 16000
+
+  visibility -= Math.max(0, humidity - 40) * 120
+  visibility -= Math.max(0, rainChance - 10) * 60
+
+  return clamp(Math.round(visibility), 1000, 25000)
+}
+
 function pickWeatherDescriptor(temp, humidity, windLevel, rainChance, randomValue) {
   if (rainChance >= 45) return { desc: '阵雨', icon: '🌧' }
   if (rainChance >= 25) return { desc: '多云有雨', icon: '⛅' }
@@ -619,10 +666,15 @@ function formatCmaWind(direction, scale, fallbackLevel) {
   const dir = String(direction || '')
   const scaleText = String(scale || '').trim()
   if (scaleText) {
-    if (scaleText.includes('级') || scaleText === '微风') return `${dir}${scaleText}`
-    return `${dir}${scaleText}级`
+    if (scaleText === '微风') {
+      return `${dir ? `${dir}风` : '风力'}${fallbackLevel || 0}级`
+    }
+    if (scaleText.includes('级')) {
+      return `${dir ? `${dir}风` : ''}${scaleText}`
+    }
+    return `${dir ? `${dir}风` : '风力'}${scaleText}级`
   }
-  return `${dir || '风力'}${fallbackLevel || 0}级`
+  return `${dir ? `${dir}风` : '风力'}${fallbackLevel || 0}级`
 }
 
 function parseCmaDate(value) {
@@ -707,7 +759,7 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
   const temp = clampRound(now.temperature, clampRound((Number(firstDay.high) + Number(firstDay.low)) / 2, 0))
   const humidity = clampRound(now.humidity, 45)
   const windLevel = windLevelFromCma(now)
-  const windDirection = now.windDirection || firstDay.dayWindDirection || ''
+  const windDirection = normalizeWindDirection(now.windDirection || firstDay.dayWindDirection || '', now.windDirectionDegree)
   const wind = formatCmaWind(windDirection, now.windScale, windLevel)
   const rain = Number.isFinite(Number(now.precipitation)) ? Number(Number(now.precipitation).toFixed(1)) : 0
   const rainChance = cmaRainChance(meta, rain)
@@ -715,6 +767,18 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
   const low = clampRound(firstDay.low, temp - 4)
   const feelsLike = clampRound(now.feelst, temp)
   const pressure = clampRound(now.pressure, 0)
+  const uv = estimateCmaUvIndex({
+    temp,
+    humidity,
+    rainChance,
+    risk: meta.risk,
+    month: today.getMonth() + 1
+  })
+  const visibility = estimateCmaVisibility({
+    humidity,
+    rainChance,
+    risk: meta.risk
+  })
   const forecast = daily.slice(0, 7).map((day, index) => {
     const dayMeta = cmaWeatherMeta(pickFirstDefined(day.dayCode, day.nightCode), day.dayText || day.nightText)
     const dayHigh = clampRound(day.high, high)
@@ -727,7 +791,7 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
       icon: dayMeta.icon,
       high: dayHigh,
       low: dayLow,
-      wind: formatCmaWind(dayWindDirection, dayWindScale, dayWindLevel === null ? windLevel : dayWindLevel)
+      wind: formatCmaWind(normalizeWindDirection(dayWindDirection, null), dayWindScale, dayWindLevel === null ? windLevel : dayWindLevel)
     }
   })
 
@@ -779,10 +843,10 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
       groundTemp: feelsLike,
       groundTempLabel: '体感',
       rain,
-      uv: '--',
+      uv,
       pressure,
-      visibility: 0,
-      visibilityText: '--'
+      visibility,
+      visibilityText: formatVisibility(visibility)
     },
     forecast,
     hourly,

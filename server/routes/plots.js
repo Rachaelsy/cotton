@@ -6,7 +6,7 @@ const {
   normalizeCoordinates,
   calculateAreaMu,
   calculatePerimeterMeters
-} = require('../../utils/plot-geometry')
+} = require('../utils/plot-geometry')
 
 const router = express.Router()
 const IRRIGATION_OPTIONS = ['滴灌', '漫灌', '喷灌', '无']

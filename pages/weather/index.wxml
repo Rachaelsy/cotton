@@ -37,6 +37,10 @@
 
     <view wx:else>
       <view class="wx-main-card">
+        <view wx:if="{{apiNotice}}" class="wx-api-notice">
+          <text>{{apiNotice}}</text>
+        </view>
+
         <view class="wx-main-top">
           <view class="wx-main-info">
             <view class="wx-chip-row">
