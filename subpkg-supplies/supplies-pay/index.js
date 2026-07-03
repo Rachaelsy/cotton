@@ -1,10 +1,12 @@
 // subpkg-supplies/supplies-pay/index.js — 待付款页
 const app  = getApp()
 const auth = require('../../utils/auth')
+const layout = require('../../utils/layout')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     orders: [],
     grandTotal: '0',
     countdownStr: '30:00',
@@ -18,7 +20,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
 
     const raw = app.globalData.currentOrders || []
     if (!raw.length) { wx.navigateBack(); return }
@@ -88,14 +90,23 @@ Page({
     for (const o of orders) {
       if (!o.orderId) continue
       try {
-        const res = await auth.request('PATCH', `/api/orders/${o.orderId}/pay`, {})
-        if (res.code !== 200) {
-          wx.showToast({ title: res.msg || '支付失败', icon: 'none' })
+        const prepay = await auth.request('POST', '/api/pay/wechat/prepay', {
+          orderType: 'supply',
+          orderId: o.orderId
+        })
+        if (prepay.code !== 200 || !(prepay.data && prepay.data.payParams)) {
+          wx.showToast({ title: prepay.msg || '微信支付暂不可用', icon: 'none' })
           allOk = false
           break
         }
+        await this._requestPayment(prepay.data.payParams)
+        const confirm = await auth.request('POST', '/api/pay/wechat/confirm', {
+          orderType: 'supply',
+          orderId: o.orderId
+        })
+        if (confirm.code !== 200) throw new Error(confirm.msg || '支付状态同步失败')
       } catch {
-        wx.showToast({ title: '网络错误，请重试', icon: 'none' })
+        wx.showToast({ title: '支付未完成', icon: 'none' })
         allOk = false
         break
       }
@@ -106,6 +117,16 @@ Page({
       if (this._timer) clearInterval(this._timer)
       wx.redirectTo({ url: '/subpkg-supplies/supplies-pay-success/index' })
     }
+  },
+
+  _requestPayment(payParams) {
+    return new Promise((resolve, reject) => {
+      wx.requestPayment({
+        ...payParams,
+        success: resolve,
+        fail: reject
+      })
+    })
   },
 
   async onCancel() {

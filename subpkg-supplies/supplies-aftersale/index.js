@@ -1,6 +1,7 @@
 // pages/supplies-aftersale/index.js — 售后申请页
 const app  = getApp()
 const auth = require('../../utils/auth')
+const layout = require('../../utils/layout')
 
 const TYPES   = ['退货退款', '仅退款', '换货']
 const REASONS = [
@@ -11,6 +12,7 @@ const REASONS = [
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     types:   TYPES,
     reasons: REASONS,
     orderId: null,
@@ -29,6 +31,7 @@ Page({
     const info = wx.getSystemInfoSync()
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight(),
       orderId: options.order_id || null
     })
   },

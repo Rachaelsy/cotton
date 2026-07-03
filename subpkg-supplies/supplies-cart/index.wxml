@@ -2,7 +2,7 @@
 <view class="page">
 
   <!-- 顶部导航 -->
-  <view class="cart-nav" style="padding-top: {{statusBarHeight}}px">
+  <view class="cart-nav" style="padding-top: {{statusBarHeight}}px; padding-right: calc(28rpx + {{capsuleSafeRight}}px)">
     <view class="nav-back-btn" bindtap="onBack">
       <text class="back-icon">‹</text>
     </view>

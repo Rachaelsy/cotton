@@ -2,7 +2,7 @@
 
   <!-- 顶部导航栏 -->
   <view class="nav-bar" style="padding-top:{{statusBarHeight}}px;">
-    <view class="nav-inner">
+    <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
       <view class="back-btn" bindtap="onBack">
         <text class="back-icon">‹</text>
       </view>

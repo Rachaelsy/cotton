@@ -2,10 +2,12 @@
 const app  = getApp()
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     lang: 'zh',
     copy: i18n.getCopy('my'),
     common: i18n.getCopy('common'),
@@ -19,7 +21,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     this.applyLanguage()
     // 提前调用 wx.login 拿到 code，供微信登录使用
     this._refreshWxLoginCode()

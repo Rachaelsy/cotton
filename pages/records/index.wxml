@@ -1,6 +1,6 @@
 <view class="page">
   <view class="rec-hd" style="padding-top: {{statusBarHeight}}px">
-    <view class="rec-nav">
+    <view class="rec-nav" style="padding-right: {{capsuleSafeRight}}px">
       <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
       <view class="rec-title-wrap">
         <text class="rec-title">📝 农事记录</text>

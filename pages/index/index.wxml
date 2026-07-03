@@ -4,7 +4,7 @@
 
     <!-- 顶部渐变区 -->
     <view class="home-top" style="padding-top: {{statusBarHeight}}px">
-      <view class="home-topbar">
+      <view class="home-topbar" style="padding-right: {{capsuleSafeRight}}px">
         <view class="home-topbar-left" wx:if="{{isLoggedIn}}">
           <text class="home-greeting">{{name}} · {{copy.loggedGreetingSuffix}}</text>
           <text class="home-title">{{location}}</text>
@@ -30,9 +30,11 @@
       <!-- 天气卡片 -->
       <view class="weather-card" bindtap="onGoWeather">
         <view class="wc-top">
-          <view class="wc-loc-pill">
-            <text class="wc-loc-text">📍 {{weatherPreview.locationLabel}}</text>
-          </view>
+          <picker mode="selector" range="{{homePlotOptions}}" value="{{homePlotIndex}}" bindchange="onHomePlotChange" catchtap="noop">
+            <view class="wc-loc-pill">
+              <text class="wc-loc-text">📍 {{weatherPreview.locationLabel}} · {{copy.switchPlot}}</text>
+            </view>
+          </picker>
           <text class="wc-date">{{today}}</text>
         </view>
         <view class="wc-main">

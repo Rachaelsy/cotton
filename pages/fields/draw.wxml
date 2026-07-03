@@ -1,6 +1,6 @@
 <!-- pages/fields/draw.wxml — 地块边界绘制与信息补充 -->
 <view class="page">
-  <view class="nav" style="padding-top: {{statusBarHeight}}px">
+  <view class="nav" style="padding-top: {{statusBarHeight}}px; padding-right: calc(24rpx + {{capsuleSafeRight}}px)">
     <view class="nav-side" bindtap="onBack"><text>{{common.back}}</text></view>
     <view class="nav-center">
       <text class="nav-title">{{showForm ? copy.titleForm : copy.titleDraw}}</text>

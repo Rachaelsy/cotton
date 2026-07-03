@@ -1,8 +1,12 @@
+const app = getApp()
+const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     copy: i18n.getPageCopy('pest'),
     commonCountText: '',
     pests: i18n.getPageCopy('pest').pests,
@@ -14,7 +18,7 @@ Page({
   onLoad() {
     const sysInfo = wx.getSystemInfoSync();
     this.applyLanguage()
-    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 20 });
+    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() });
     this._applyFilter(this.data.filters[0]);
   },
 
@@ -77,11 +81,34 @@ Page({
 
   _doRecognize(filePath) {
     wx.showLoading({ title: this.textCopy.recognizing, mask: true });
-    // 模拟识别延迟，实际应调用后端接口
-    setTimeout(() => {
-      wx.hideLoading();
-      wx.navigateTo({ url: '/pages/pest/detail?id=1&from=recognize' });
-    }, 1500);
+    wx.uploadFile({
+      url: auth.BASE_URL + '/api/ai/photo',
+      filePath,
+      name: 'photo',
+      header: { Authorization: auth.getToken() ? `Bearer ${auth.getToken()}` : '' },
+      success: (res) => {
+        wx.hideLoading()
+        try {
+          const data = JSON.parse(res.data || '{}')
+          if (data.code !== 200 || !(data.data && data.data.reply)) {
+            wx.showToast({ title: data.msg || this.textCopy.recognizeFail || '识别失败', icon: 'none' })
+            return
+          }
+          app.globalData.pestRecognitionResult = {
+            image: filePath,
+            reply: data.data.reply,
+            time: Date.now()
+          }
+          wx.navigateTo({ url: '/pages/pest/detail?id=ai&from=recognize' })
+        } catch (error) {
+          wx.showToast({ title: this.textCopy.parseFail || '识别结果解析失败', icon: 'none' })
+        }
+      },
+      fail: () => {
+        wx.hideLoading()
+        wx.showToast({ title: this.textCopy.uploadFail || '图片上传失败', icon: 'none' })
+      }
+    })
   },
 
   onHistory() {

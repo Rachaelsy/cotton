@@ -3,7 +3,7 @@
 
   <!-- 顶部 -->
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
-    <view class="nav-inner">
+    <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
       <text class="nav-title">待付款</text>
     </view>
   </view>

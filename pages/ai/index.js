@@ -2,10 +2,12 @@
 const app  = getApp()
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     timeStr: '',
     copy: i18n.getPageCopy('ai'),
     voiceMode: false,
@@ -25,6 +27,7 @@ Page({
     this.applyLanguage()
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight(),
       timeStr: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
     })
   },

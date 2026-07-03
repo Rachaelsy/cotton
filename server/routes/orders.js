@@ -142,9 +142,11 @@ router.post('/', optionalAuth, async (req, res) => {
 })
 
 // ─────────────────────────────────────────────
-// PATCH /api/orders/:id/pay — 确认付款（登录/访客均可）
+// PATCH /api/orders/:id/pay — 已废弃：必须走微信支付接口
 // ─────────────────────────────────────────────
 router.patch('/:id/pay', optionalAuth, async (req, res) => {
+  return fail(res, '请通过微信支付接口完成付款', 410)
+
   const { id } = req.params
   try {
     let rows

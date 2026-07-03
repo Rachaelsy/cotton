@@ -1,66 +1,63 @@
-// pages/expert/detail.js
+const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
+
+function buildDetail(options = {}, lang = i18n.getLanguage()) {
+  const copy = i18n.getPageCopy('expert', lang)
+  const courses = copy.courses || []
+  const experts = copy.experts || []
+  const expertId = Number(options.expertId || 0)
+  const courseId = Number(options.id || 1)
+  const course = courses.find(item => item.id === courseId) || courses[0] || {}
+  const expert = expertId
+    ? (experts.find(item => item.id === expertId) || experts[0] || {})
+    : (experts.find(item => item.id === course.expertId) || experts[0] || {})
+  return { copy, course, expert, isExpertOnly: !!expertId }
+}
+
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    statusBarHeight: 20,
+    capsuleSafeRight: 0,
+    lang: 'zh',
+    copy: i18n.getPageCopy('expert'),
+    course: {},
+    expert: {},
+    isExpertOnly: false,
+    optionsCache: {}
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad(options) {
-
+  onLoad(options = {}) {
+    const sysInfo = wx.getSystemInfoSync()
+    this.setData({
+      statusBarHeight: sysInfo.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight(),
+      optionsCache: options
+    })
+    this.applyLanguage()
   },
 
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
   onShow() {
-
+    this.applyLanguage()
   },
 
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.setData({ lang, ...buildDetail(this.data.optionsCache, lang) })
   },
 
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
+  onAsk() {
+    wx.navigateTo({ url: '/pages/ai/index' })
   },
 
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
+  onPlay() {
+    wx.showToast({ title: this.data.copy.videoPending, icon: 'none' })
   },
 
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
+  onBack() {
+    wx.navigateBack()
   },
 
-  /**
-   * 用户点击右上角分享
-   */
   onShareAppMessage() {
-
+    return { title: this.data.isExpertOnly ? this.data.expert.name : this.data.course.title, path: '/pages/expert/index' }
   }
 })

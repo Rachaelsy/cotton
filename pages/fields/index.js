@@ -1,6 +1,7 @@
 // pages/fields/index.js — 地块管理列表
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 const { normalizeCoordinates, calculateCenter } = require('../../utils/plot-geometry')
 
 const STATUS_OPTIONS = [
@@ -49,6 +50,7 @@ function finiteNumber(value, fallback = 0) {
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     lang: 'zh',
     common: i18n.getCopy('common'),
     copy: i18n.getPageCopy('fields'),
@@ -78,7 +80,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     this.applyLanguage()
   },
 

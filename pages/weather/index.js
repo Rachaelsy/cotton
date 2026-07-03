@@ -1,5 +1,6 @@
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 const { buildWeatherFromApi } = require('../../utils/weather')
 
 function decodeText(value) {
@@ -19,6 +20,7 @@ function formatArea(area) {
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     loading: true,
     common: i18n.getPageCopy('common'),
     copy: i18n.getPageCopy('weatherPage'),
@@ -63,7 +65,7 @@ Page({
     this.queryPlotId = Number(options.plotId) || null
     this.queryPlotName = decodeText(options.plotName || '')
     this.applyLanguage()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     this.loadWeatherPage()
   },
 

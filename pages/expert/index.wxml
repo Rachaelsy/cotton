@@ -1,2 +1,69 @@
-<!--pages/expert/index.wxml-->
-<text>pages/expert/index.wxml</text>
+<view class="page">
+  <view class="exp-hero" style="padding-top: {{statusBarHeight}}px">
+    <view class="exp-topbar" style="padding-right: {{capsuleSafeRight}}px">
+      <view class="exp-back" bindtap="onBack"><text>‹</text></view>
+      <view class="exp-title-wrap">
+        <text class="exp-title">{{copy.title}}</text>
+        <text class="exp-sub">{{copy.subtitle}}</text>
+      </view>
+      <view class="exp-ask" bindtap="onAskExpert"><text>{{copy.ask}}</text></view>
+    </view>
+    <text class="exp-slogan">{{copy.slogan}}</text>
+    <view class="exp-stats">
+      <text>{{experts.length}} {{copy.statsExperts}}</text>
+      <text>{{allCourses.length}} {{copy.statsCourses}}</text>
+      <text>{{copy.statsQa}}</text>
+    </view>
+  </view>
+
+  <scroll-view class="exp-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="section">
+      <view class="section-head"><text class="section-title">{{copy.onlineExperts}}</text><text class="section-more" bindtap="onAskExpert">{{copy.askNow}}</text></view>
+      <scroll-view class="expert-row" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="expert-card" wx:for="{{experts}}" wx:key="id" bindtap="onExpertTap" data-id="{{item.id}}">
+          <text class="expert-avatar">{{item.avatar}}</text>
+          <view class="expert-info">
+            <text class="expert-name">{{item.name}}</text>
+            <text class="expert-org">{{item.org}}</text>
+            <view class="expert-tags"><text wx:for="{{item.tags}}" wx:key="*this" class="expert-tag">{{item}}</text></view>
+          </view>
+          <text class="expert-online {{item.online ? 'on' : ''}}">{{item.online ? copy.online : copy.offline}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="section">
+      <view class="section-head"><text class="section-title">{{copy.featured}}</text></view>
+      <view class="feature-card" wx:for="{{featured}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
+        <view class="feature-icon"><text>{{item.icon}}</text></view>
+        <view class="feature-main">
+          <text class="feature-title">{{item.title}}</text>
+          <text class="feature-meta">{{item.teacher}} · {{item.duration}} · {{item.students}}{{copy.learned}}</text>
+        </view>
+        <text class="feature-play">{{copy.play}}</text>
+      </view>
+    </view>
+
+    <view class="category-wrap">
+      <scroll-view class="category-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="category-chip {{activeCategoryKey === item.key ? 'on' : ''}}" wx:for="{{categories}}" wx:key="key" data-key="{{item.key}}" bindtap="onCategoryTap">
+          <text>{{item.label}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="section course-section">
+      <view class="section-head"><text class="section-title">{{copy.courseList}}</text></view>
+      <view class="course-card" wx:for="{{filteredCourses}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
+        <view class="course-icon"><text>{{item.icon}}</text></view>
+        <view class="course-main">
+          <view class="course-title-row"><text class="course-title">{{item.title}}</text><text class="course-tag">{{item.tag}}</text></view>
+          <text class="course-meta">{{item.teacher}} {{item.titleName}} · {{item.org}}</text>
+          <text class="course-desc">{{item.intro}}</text>
+          <view class="course-foot"><text>{{item.category}}</text><text>{{item.duration}}</text><text>{{item.students}}{{copy.learning}}</text></view>
+        </view>
+      </view>
+    </view>
+    <view class="bottom-gap"></view>
+  </scroll-view>
+</view>

@@ -3,7 +3,7 @@
 
   <!-- 顶部导航 -->
   <view class="ai-nav" style="padding-top: {{statusBarHeight}}px">
-    <view class="ai-nav-inner">
+    <view class="ai-nav-inner" style="padding-right: {{capsuleSafeRight}}px">
       <view class="ai-avatar-wrap">
         <view class="ai-avatar">
           <text class="ai-avatar-emoji">🤖</text>

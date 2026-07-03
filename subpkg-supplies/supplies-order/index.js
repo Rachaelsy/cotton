@@ -1,6 +1,7 @@
 ﻿// pages/supplies-order/index.js — 订单详情
 const app  = getApp()
 const auth = require('../../utils/auth')
+const layout = require('../../utils/layout')
 
 // DB status → 中文状态
 const DB_STATUS_MAP = {
@@ -54,6 +55,7 @@ const STEPS = ['已下单', '待发货', '已发货', '已完成']
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     order: { merchantPhone: '', merchantWechat: '' },
     orderNo: '',
     payMethodLabel: '微信支付',
@@ -71,7 +73,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     this._loadOrder()
   },
 

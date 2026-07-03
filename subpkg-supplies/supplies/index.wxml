@@ -3,7 +3,7 @@
 
   <!-- ===== 顶部渐变头部 ===== -->
   <view class="sup-header" style="padding-top: {{statusBarHeight}}px">
-    <view class="topbar">
+    <view class="topbar" style="padding-right: {{capsuleSafeRight}}px">
       <text class="page-title">🌾 农资供应</text>
     </view>
     <!-- 搜索栏 + 购物车 -->

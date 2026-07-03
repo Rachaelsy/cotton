@@ -1,5 +1,6 @@
 // pages/records/index.js — 农事记录（后端 API 驱动）
 const auth = require('../../utils/auth')
+const layout = require('../../utils/layout')
 
 // 农事类型 → 图标 / 背景色 / 默认标题
 const typeOptions = [
@@ -51,6 +52,7 @@ function formatCost(cost) {
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     viewMode: 'list',
     manageMode: false,
     typeFilter: '全部',
@@ -102,6 +104,7 @@ Page({
     this.plotList = []   // [{ id, label }]
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight(),
       calendarLabel: this._monthLabel(this.data.calendarMonth)
     })
     this.initPage()

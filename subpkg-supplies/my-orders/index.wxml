@@ -2,7 +2,7 @@
 <view class="page">
 
   <view class="header" style="padding-top: {{statusBarHeight}}px">
-    <view class="topbar">
+    <view class="topbar" style="padding-right: {{capsuleSafeRight}}px">
       <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
       <text class="header-title">我的订单</text>
       <view style="width: 64rpx"></view>

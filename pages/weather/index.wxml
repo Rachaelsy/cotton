@@ -1,6 +1,6 @@
 <view class="page">
   <view class="wx-hd" style="padding-top: {{statusBarHeight}}px">
-    <view class="wx-hd-top">
+    <view class="wx-hd-top" style="padding-right: {{capsuleSafeRight}}px">
       <view class="wx-hd-title-wrap">
         <text class="wx-title">{{copy.title}}</text>
         <text class="wx-subtitle">{{locationLabel}}</text>

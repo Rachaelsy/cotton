@@ -1,9 +1,11 @@
 ﻿// pages/supplies-checkout/index.js — 确认订单 & 支付
 const app = getApp()
+const layout = require('../../utils/layout')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     cartItems: [],
     cartTotal: '0',
     totalWithFee: '10',
@@ -23,6 +25,7 @@ Page({
     try { saved = wx.getStorageSync('shipping_address') || {} } catch (e) {}
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight(),
       cartItems: cart,
       cartTotal: cartTotal.toFixed(0),
       totalWithFee: (cartTotal + 10).toFixed(0),

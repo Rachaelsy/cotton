@@ -3,7 +3,7 @@
 
   <!-- 顶部（橙绿色渐变） -->
   <view class="ord-header" style="padding-top: {{statusBarHeight}}px">
-    <view class="ord-topbar">
+    <view class="ord-topbar" style="padding-right: {{capsuleSafeRight}}px">
       <view class="ord-back" bindtap="onBack">
         <text class="ord-back-icon">‹</text>
       </view>

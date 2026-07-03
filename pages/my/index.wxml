@@ -3,7 +3,7 @@
 
   <!-- 顶部区域 -->
   <view class="my-header" style="padding-top: {{statusBarHeight}}px">
-    <view class="header-topbar">
+    <view class="header-topbar" style="padding-right: {{capsuleSafeRight}}px">
       <view style="flex: 1"></view>
       <view class="settings-btn" bindtap="onSettings">
         <text class="settings-icon">⚙️</text>

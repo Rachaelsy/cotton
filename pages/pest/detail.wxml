@@ -3,7 +3,7 @@
   <!-- 顶部导航 + 病虫害头部信息 -->
   <view class="header" style="padding-top:{{statusBarHeight}}px;">
     <!-- 导航行 -->
-    <view class="nav-inner">
+    <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
       <view class="back-btn" bindtap="onBack">
         <text class="back-icon">‹</text>
       </view>
@@ -32,6 +32,15 @@
 
   <!-- 可滚动主体 -->
   <scroll-view class="scroll-body" scroll-y>
+
+    <view wx:if="{{fromRecognize && recognition}}" class="card ai-result-card">
+      <text class="card-title">{{copy.aiResultTitle}}</text>
+      <image wx:if="{{recognition.image}}" class="ai-result-image" src="{{recognition.image}}" mode="aspectFill"></image>
+      <text class="ai-result-text">{{recognition.reply}}</text>
+      <view class="ai-result-tip">
+        <text>{{copy.aiResultTip}}</text>
+      </view>
+    </view>
 
     <!-- 严重程度卡片 -->
     <view class="card severity-card">

@@ -1,10 +1,12 @@
 ﻿// pages/supplies/index.js — 农资商城首页
 const app = getApp()
+const layout = require('../../utils/layout')
 const { PRODUCTS, CATS } = require('../../utils/data')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     products: [],
     cats: CATS,
     catSel: '全部',
@@ -16,7 +18,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     // 先尝试定位（用于判断是否超出商户配送范围），无论成败都加载
     wx.getLocation({
       type: 'gcj02',

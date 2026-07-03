@@ -9,7 +9,13 @@ const app = express()
 
 // ── 中间件 ──────────────────────────────────
 app.use(cors())
-app.use(express.json())
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/api/pay/wechat/notify')) {
+      req.rawBody = Buffer.from(buf)
+    }
+  }
+}))
 app.use(express.urlencoded({ extended: true }))
 
 // 请求日志
@@ -37,6 +43,8 @@ app.use('/api/orders',   require('./routes/orders'))
 app.use('/api/plots',    require('./routes/plots'))
 app.use('/api/farm-records', require('./routes/farm-records'))
 app.use('/api/weather',  require('./routes/weather'))
+app.use('/api/pay',      require('./routes/payments'))
+app.use('/api/wechat-applyment', require('./routes/wechat-applyment'))
 app.use('/api/operator',       require('./routes/operator'))
 app.use('/api/machines',       require('./routes/machines'))
 app.use('/api/machine-orders', require('./routes/machine-orders'))

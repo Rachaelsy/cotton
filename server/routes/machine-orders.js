@@ -119,9 +119,11 @@ router.get('/:id', farmerAuth, async (req, res) => {
 })
 
 // ─────────────────────────────────────────────────────────────
-// PATCH /api/machine-orders/:id/pay — 模拟支付
+// PATCH /api/machine-orders/:id/pay — 已废弃：必须走微信支付接口
 // ─────────────────────────────────────────────────────────────
 router.patch('/:id/pay', farmerAuth, async (req, res) => {
+  return fail(res, '请通过微信支付接口完成付款', 410)
+
   try {
     const [[o]] = await db.query('SELECT * FROM machine_orders WHERE id=? AND farmer_id=?',
       [req.params.id, req.user.id])

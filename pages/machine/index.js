@@ -1,6 +1,7 @@
 // pages/machine/index.js — 农机租赁列表
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 const { KASHGAR_REGIONS, locateService } = require('../../utils/regions')
 
 const CATEGORIES = ['全部', '打药机', '采棉机', '播种机', '旋耕机', '其他']
@@ -8,19 +9,21 @@ const CATEGORIES = ['全部', '打药机', '采棉机', '播种机', '旋耕机'
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     copy: i18n.getPageCopy('machine'),
     categories: CATEGORIES.map(name => ({ value: name, label: name })),
     sorts: i18n.getPageCopy('machine').sorts,
     regions: KASHGAR_REGIONS,
+    regionNames: KASHGAR_REGIONS.map(item => item.name),
     selectedRegionIndex: 0,
     catSel: '全部',
     sortSel: 'recommend',
     machines: [],
     loading: true,
+    locating: true,
     locName: i18n.t('machine', 'locating'),
     locByGps: false,
     outOfService: false,
-    showRegionPicker: false,
     lat: null,
     lng: null
   },
@@ -28,8 +31,8 @@ Page({
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.applyLanguage()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
-    this.autoLocate()
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
+    this.locateCurrent({ showFailToast: true })
   },
 
   onShow() {
@@ -48,62 +51,30 @@ Page({
   },
 
   autoLocate() {
-    wx.getLocation({
-      type: 'gcj02',
-      success: (res) => {
-        const svc = locateService(res.latitude, res.longitude)
-        const regionIndex = KASHGAR_REGIONS.findIndex(item => item.name === svc.name)
-        this.setData({
-          lat: res.latitude,
-          lng: res.longitude,
-          locByGps: true,
-          locName: `${svc.name}附近`,
-          selectedRegionIndex: regionIndex >= 0 ? regionIndex : 0,
-          outOfService: !svc.inService
-        })
-        this.loadMachines()
-      },
-      fail: () => {
-        const def = KASHGAR_REGIONS[0]
-        this.setData({
-          lat: def.lat,
-          lng: def.lng,
-          locByGps: false,
-          locName: def.name,
-          selectedRegionIndex: 0,
-          outOfService: false
-        })
-        this.loadMachines()
-      }
+    this.locateCurrent({ showFailToast: false })
+  },
+
+  locateCurrent(options = {}) {
+    const { showFailToast = false } = options
+    this.setData({
+      locating: true,
+      locName: this.textCopy.locating,
+      locByGps: true,
+      outOfService: false
     })
-  },
 
-  onOpenRegion() {
-    this.setData({ showRegionPicker: true })
-  },
-
-  onCloseRegion() {
-    this.setData({ showRegionPicker: false })
-  },
-
-  onUseGps() {
-    wx.getLocation({
-      type: 'gcj02',
-      success: (res) => {
-        const svc = locateService(res.latitude, res.longitude)
-        const regionIndex = KASHGAR_REGIONS.findIndex(item => item.name === svc.name)
-        this.setData({
-          lat: res.latitude,
-          lng: res.longitude,
-          locByGps: true,
-          locName: `${svc.name}附近`,
-          selectedRegionIndex: regionIndex >= 0 ? regionIndex : 0,
-          outOfService: !svc.inService,
-          showRegionPicker: false
-        })
-        this.loadMachines()
-      },
-      fail: () => {
+    const onFail = (error) => {
+      this.setData({
+        locating: false,
+        locByGps: false,
+        outOfService: false,
+        locName: this.textCopy.locationFail,
+        lat: null,
+        lng: null
+      })
+      this.loadMachines()
+      if (showFailToast) wx.showToast({ title: this.textCopy.locationFailShort, icon: 'none' })
+      if (error && /auth deny|auth denied|authorize/i.test(error.errMsg || '')) {
         wx.showModal({
           title: this.textCopy.needLocation,
           content: this.textCopy.locationContent,
@@ -111,11 +82,39 @@ Page({
           success: (result) => { if (result.confirm) wx.openSetting() }
         })
       }
+    }
+
+    wx.getLocation({
+      type: 'gcj02',
+      isHighAccuracy: true,
+      highAccuracyExpireTime: 4000,
+      success: (res) => {
+        const svc = locateService(res.latitude, res.longitude)
+        const regionIndex = KASHGAR_REGIONS.findIndex(item => item.name === svc.name)
+        this.setData({
+          lat: res.latitude,
+          lng: res.longitude,
+          locating: false,
+          locByGps: true,
+          locName: `${svc.name}附近`,
+          selectedRegionIndex: regionIndex >= 0 ? regionIndex : 0,
+          outOfService: !svc.inService
+        })
+        this.loadMachines()
+      },
+      fail: onFail
     })
   },
 
-  onPickRegion(e) {
-    const index = Number(e.currentTarget.dataset.index)
+  onRegionPickerChange(e) {
+    this.pickRegion(Number(e.detail.value))
+  },
+
+  onUseGps() {
+    this.locateCurrent({ showFailToast: true })
+  },
+
+  pickRegion(index) {
     const region = KASHGAR_REGIONS[index]
     if (!region) return
     this.setData({
@@ -124,8 +123,8 @@ Page({
       locByGps: false,
       locName: region.name,
       selectedRegionIndex: index,
-      outOfService: false,
-      showRegionPicker: false
+      locating: false,
+      outOfService: false
     })
     this.loadMachines()
   },

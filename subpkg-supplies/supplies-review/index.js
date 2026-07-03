@@ -1,9 +1,11 @@
 // subpkg-supplies/supplies-review/index.js — 买家评价
 const auth = require('../../utils/auth')
+const layout = require('../../utils/layout')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     orderId: null,
     orderNo: '',
     items: [],
@@ -18,6 +20,7 @@ Page({
     const info = wx.getSystemInfoSync()
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight(),
       orderId:  options.order_id || null,
       orderNo:  options.order_no  || '',
       items:    options.items ? JSON.parse(decodeURIComponent(options.items)) : []

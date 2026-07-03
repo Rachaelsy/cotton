@@ -1,7 +1,7 @@
 <!-- pages/fields/detail.wxml — 地块详情 -->
 <view class="page">
   <view class="header" style="padding-top: {{statusBarHeight}}px">
-    <view class="topbar">
+    <view class="topbar" style="padding-right: {{capsuleSafeRight}}px">
       <view class="header-action" bindtap="onBack"><text>{{common.back}}</text></view>
       <text class="header-title">{{plot.name || copy.fallbackTitle}}</text>
       <view class="header-action header-edit" bindtap="onEdit"><text>{{common.edit}}</text></view>

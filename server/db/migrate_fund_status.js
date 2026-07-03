@@ -22,7 +22,7 @@ async function migrate() {
   await addCol('orders', 'confirmed_at',  'TIMESTAMP NULL')
   // 是否系统自动确认
   await addCol('orders', 'auto_confirmed', 'TINYINT(1) DEFAULT 0')
-  // 资金状态：pending(未完成) / frozen(冻结中) / available(可提现) / withdrawn(已提现)
+  // 资金状态：pending(未完成) / frozen(冻结中) / available(可提现) / withdrawing(提现中) / withdrawn(已提现)
   await addCol('orders', 'fund_status',   "VARCHAR(20) DEFAULT 'pending'")
 
   // 提现申请表

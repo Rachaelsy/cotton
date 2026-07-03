@@ -205,11 +205,15 @@ router.get('/stats', merchantAuth, async (req, res) => {
       SELECT COUNT(DISTINCT o.user_id) AS total_customers
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
     `, [mid])
+    const [[merchantInfo]] = await db.query(
+      'SELECT commission_rate FROM merchants WHERE id=?', [mid]
+    )
+    const keepRate = parseFloat((1 - (parseFloat(merchantInfo?.commission_rate || 5) / 100)).toFixed(4))
     const [[frozen]] = await db.query(`
-      SELECT IFNULL(SUM(o.total * 0.97), 0) AS amount
+      SELECT IFNULL(SUM(o.total * ?), 0) AS amount
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE o.fund_status='frozen'
-    `, [mid])
+    `, [keepRate, mid])
     const [[um]] = await db.query(
       "SELECT COUNT(*) AS cnt FROM messages WHERE merchant_id=? AND is_read=0", [mid]
     )
@@ -358,32 +362,40 @@ router.post('/withdraw', merchantAuth, async (req, res) => {
   const amount = parseFloat(req.body.amount)
   if (!amount || amount < 1) return fail(res, '提现金额不能少于 1 元')
   try {
+    const [[pending]] = await db.query(
+      "SELECT id FROM withdrawals WHERE merchant_id=? AND status='pending' LIMIT 1",
+      [mid]
+    )
+    if (pending) return fail(res, '已有提现申请处理中，请等待审核完成后再申请')
+
+    const [[merchantInfo]] = await db.query(
+      'SELECT commission_rate FROM merchants WHERE id=?', [mid]
+    )
+    const commissionRate = parseFloat(merchantInfo?.commission_rate || 5) / 100
+    const keepRate = parseFloat((1 - commissionRate).toFixed(4))
+
     // 查询可提现余额
     const [[avail]] = await db.query(`
-      SELECT IFNULL(SUM(o.total * 0.97), 0) AS amount
+      SELECT IFNULL(SUM(o.total * ?), 0) AS amount
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE o.fund_status='available'
-    `, [mid])
+    `, [keepRate, mid])
     const available = parseFloat(avail.amount)
     if (amount > available + 0.01) return fail(res, `可提现余额不足，当前可提现 ¥${available.toFixed(2)}`)
+    if (Math.abs(amount - available) > 0.01) return fail(res, '当前仅支持全额提现，请刷新后按可提现余额发起')
 
-    // 按金额从旧到新标记订单为已提现
+    // 提交申请后先锁定为提现中，审核通过才转为已提现；拒绝会退回可提现
     const [oRows] = await db.query(`
-      SELECT o.id, ROUND(o.total * 0.97, 2) AS net
+      SELECT o.id, ROUND(o.total * ?, 2) AS net
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE o.fund_status='available'
       GROUP BY o.id ORDER BY o.confirmed_at ASC
-    `, [mid])
-    let remaining = amount
-    const toWithdraw = []
-    for (const row of oRows) {
-      if (remaining <= 0) break
-      toWithdraw.push(row.id)
-      remaining -= parseFloat(row.net)
-    }
+    `, [keepRate, mid])
+    const toWithdraw = oRows.map(row => row.id)
+    if (!toWithdraw.length) return fail(res, '当前没有可提现订单')
     if (toWithdraw.length) {
       const ph = toWithdraw.map(() => '?').join(',')
-      await db.query(`UPDATE orders SET fund_status='withdrawn' WHERE id IN (${ph})`, toWithdraw)
+      await db.query(`UPDATE orders SET fund_status='withdrawing' WHERE id IN (${ph})`, toWithdraw)
     }
     await db.query('INSERT INTO withdrawals (merchant_id, amount) VALUES (?, ?)',
       [mid, amount.toFixed(2)])

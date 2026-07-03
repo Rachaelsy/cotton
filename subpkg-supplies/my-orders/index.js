@@ -1,6 +1,7 @@
 // subpkg-supplies/my-orders/index.js — 我的订单（农资 + 农机 统一列表）
 const app  = getApp()
 const auth = require('../../utils/auth')
+const layout = require('../../utils/layout')
 
 const STATUS_MAP = {
   pending_payment: { label: '待付款', cls: 'tag-pending',   icon: '💳' },
@@ -43,6 +44,7 @@ function fmtDate(dt) {
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     tabs: TABS,
     activeTab: 'all',
     orders: [],        // 合并后用于展示的列表
@@ -52,7 +54,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     this._all = []
     this._load()
   },

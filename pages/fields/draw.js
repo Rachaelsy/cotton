@@ -1,6 +1,7 @@
 // pages/fields/draw.js — 地块边界绘制
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 const {
   normalizeCoordinates,
   calculateAreaMu,
@@ -14,6 +15,7 @@ const DEFAULT_LNG = 75.9900
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     lang: 'zh',
     common: i18n.getCopy('common'),
     copy: i18n.getPageCopy('draw'),
@@ -62,7 +64,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     this.applyLanguage()
     this._locateUser()
   },

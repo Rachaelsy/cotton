@@ -1,10 +1,12 @@
 ﻿// pages/supplies-store/index.js — 店铺详情页
 const app = getApp()
 const auth = require('../../utils/auth')
+const layout = require('../../utils/layout')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     merchantId: null,
     storeName: '',
     products: [],
@@ -21,6 +23,7 @@ Page({
     const storeName  = options.store_name  ? decodeURIComponent(options.store_name) : ''
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight(),
       merchantId,
       storeName: storeName || '店铺',
       cartCount: app.globalData.cartCount

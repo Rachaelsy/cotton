@@ -3,7 +3,7 @@
 
   <!-- ===== 青色渐变头部 ===== -->
   <view class="mach-header" style="padding-top: {{statusBarHeight}}px">
-    <view class="topbar">
+    <view class="topbar" style="padding-right: {{capsuleSafeRight}}px">
       <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
       <view class="topbar-titles">
         <text class="page-title">{{copy.title}}</text>
@@ -13,12 +13,19 @@
     </view>
 
     <!-- 定位栏 -->
-    <view class="locate-bar" bindtap="onOpenRegion">
-      <text class="locate-icon">📍</text>
-      <text class="locate-text">{{locName}}</text>
-      <text wx:if="{{outOfService}}" class="locate-warn">{{copy.outOfService}}</text>
-      <text wx:elif="{{locByGps}}" class="locate-tag">{{copy.currentLocation}}</text>
-      <text class="locate-action">{{copy.changeRegion}}</text>
+    <view class="location-row">
+      <picker class="locate-picker" mode="selector" range="{{regionNames}}" value="{{selectedRegionIndex}}" bindchange="onRegionPickerChange">
+        <view class="locate-bar">
+          <text class="locate-icon">📍</text>
+          <text class="locate-text">{{locName}}</text>
+          <text wx:if="{{outOfService}}" class="locate-warn">{{copy.outOfService}}</text>
+          <text wx:elif="{{locByGps && !locating}}" class="locate-tag">{{copy.currentLocation}}</text>
+          <text class="locate-action">{{copy.changeRegion}}</text>
+        </view>
+      </picker>
+      <view class="gps-btn {{locating ? 'loading' : ''}}" bindtap="onUseGps">
+        <text class="gps-btn-text">{{copy.gpsRefresh}}</text>
+      </view>
     </view>
 
     <!-- 分类筛选 -->
@@ -115,31 +122,4 @@
 
     <view class="list-bottom"></view>
   </scroll-view>
-
-  <!-- 地区选择弹窗 -->
-  <view wx:if="{{showRegionPicker}}" class="region-mask" bindtap="onCloseRegion">
-    <view class="region-sheet" catchtap="noop">
-      <view class="region-head">
-        <text class="region-title">{{copy.regionTitle}}</text>
-        <view class="region-close" bindtap="onCloseRegion"><text>✕</text></view>
-      </view>
-      <view class="region-gps" bindtap="onUseGps">
-        <text class="rg-icon">📍</text>
-        <view class="rg-info">
-          <text class="rg-text">{{copy.useGps}}</text>
-          <text class="rg-sub">{{copy.useGpsSub}}</text>
-        </view>
-        <text class="rg-arrow">›</text>
-      </view>
-      <view class="region-divider"><text class="region-divider-text">{{copy.orChoose}}</text></view>
-      <scroll-view class="region-list" scroll-y>
-        <view class="region-item {{selectedRegionIndex === index ? 'on' : ''}}"
-          wx:for="{{regions}}" wx:key="name" bindtap="onPickRegion" data-index="{{index}}">
-          <text class="region-item-text">{{item.name}}</text>
-          <text wx:if="{{selectedRegionIndex === index}}" class="region-check">✓</text>
-        </view>
-      </scroll-view>
-    </view>
-  </view>
-
 </view>

@@ -1,39 +1,105 @@
 const auth = require('../../utils/auth')
 
+function money(value) {
+  return Number(value || 0).toFixed(2)
+}
+
+function settlementRecord(item) {
+  const isFrozen = item.fund_status === 'frozen'
+  const isWithdrawing = item.fund_status === 'withdrawing'
+  return {
+    id: item.id,
+    type: isFrozen ? 'pending' : isWithdrawing ? 'withdraw' : 'income',
+    typeLabel: isFrozen ? '待结算' : isWithdrawing ? '提现中订单' : item.fund_status === 'withdrawn' ? '已提现订单' : '交易收入',
+    desc: `${item.order_no} · ${item.prod || '商品'}`,
+    amount: `+${money(item.actual)}`,
+    time: item.date || '',
+    balance: money(item.actual)
+  }
+}
+
+function withdrawalRecord(item) {
+  return {
+    id: item.id,
+    type: 'withdraw',
+    typeLabel: `提现${item.status}`,
+    desc: item.note || `申请日期 ${item.apply_date}`,
+    amount: `-${money(item.amount)}`,
+    time: item.arrive_date || item.apply_date || '',
+    balance: '—'
+  }
+}
+
 Page({
   data: {
     statusBarHeight: 20,
+    loading: true,
     summary: {
-      pending: '2,340.00',
-      settled: '16,330.00',
-      frozen: '62.00'
+      pending: '0.00',
+      settled: '0.00',
+      frozen: '0.00'
     },
-    records: [
-      { id: 1, type: 'income', typeLabel: '交易收入', desc: '订单 DD202505250002 结算', amount: '+114.00', time: '05-25 09:15', balance: '16,330.00' },
-      { id: 2, type: 'income', typeLabel: '交易收入', desc: '订单 DD202505240004 结算', amount: '+225.00', time: '05-24 16:20', balance: '16,216.00' },
-      { id: 3, type: 'income', typeLabel: '交易收入', desc: '订单 DD202505240005 结算', amount: '+560.00', time: '05-24 14:10', balance: '15,991.00' },
-      { id: 4, type: 'refund', typeLabel: '退款扣除', desc: '订单 DD202505230006 退款', amount: '-38.00', time: '05-23 11:30', balance: '15,431.00' },
-      { id: 5, type: 'income', typeLabel: '交易收入', desc: '订单 DD202505220007 结算', amount: '+280.00', time: '05-22 15:45', balance: '15,469.00' },
-      { id: 6, type: 'withdraw', typeLabel: '提现转账', desc: '提现至银行卡尾号 6789', amount: '-5,000.00', time: '05-20 10:00', balance: '15,189.00' }
-    ]
+    availableAmount: 0,
+    records: []
   },
 
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.loadFinance()
   },
 
   onShow() {
     if (!auth.requireLogin()) return
+    this.loadFinance()
+  },
+
+  async loadFinance() {
+    this.setData({ loading: true })
+    try {
+      const res = await auth.request('GET', '/api/merchant/finance')
+      if (res.code !== 200 || !res.data) throw new Error(res.msg || '加载失败')
+      const data = res.data
+      const records = [
+        ...(data.settlements || []).map(settlementRecord),
+        ...(data.withdrawals || []).map(withdrawalRecord)
+      ]
+      this.setData({
+        loading: false,
+        availableAmount: Number(data.available_balance || 0),
+        summary: {
+          pending: money(data.monthly_sales),
+          settled: money(data.available_balance),
+          frozen: money(data.frozen_balance)
+        },
+        records
+      })
+    } catch (error) {
+      this.setData({ loading: false })
+      wx.showToast({ title: error.message || '加载失败', icon: 'none' })
+    }
   },
 
   onWithdraw() {
+    const amount = Number(this.data.availableAmount || 0)
+    if (amount < 1) {
+      wx.showToast({ title: '可提现余额不足', icon: 'none' })
+      return
+    }
     wx.showModal({
       title: '申请提现',
-      content: `待结算金额 ¥${this.data.summary.pending} 将在 1-3 个工作日内到账`,
+      content: `本次申请提现 ¥${money(amount)}，审核通过后预计 1-3 个工作日到账。`,
       confirmText: '确认提现',
-      success: (res) => {
-        if (res.confirm) wx.showToast({ title: '提现申请已提交', icon: 'success' })
+      success: async (res) => {
+        if (!res.confirm) return
+        try {
+          const result = await auth.request('POST', '/api/merchant/withdraw', { amount })
+          if (result.code !== 200) throw new Error(result.msg || '提现失败')
+          wx.showToast({ title: '提现申请已提交', icon: 'success' })
+          this.loadFinance()
+        } catch (error) {
+          wx.showToast({ title: error.message || '提现失败', icon: 'none' })
+        }
       }
     })
   }

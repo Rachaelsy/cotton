@@ -26,20 +26,37 @@ Page({
     if (this.data.paying) return
     this.setData({ paying: true })
     try {
-      const res = await auth.request('PATCH', `/api/machine-orders/${this.data.orderId}/pay`, {})
-      if (res.code === 200) {
-        wx.showToast({ title: '支付成功', icon: 'success' })
-        setTimeout(() => {
-          wx.redirectTo({ url: `/pages/machine/track?id=${this.data.orderId}` })
-        }, 1200)
-      } else {
-        this.setData({ paying: false })
-        wx.showToast({ title: res.msg || '支付失败', icon: 'none' })
+      const prepay = await auth.request('POST', '/api/pay/wechat/prepay', {
+        orderType: 'machine',
+        orderId: this.data.orderId
+      })
+      if (prepay.code !== 200 || !(prepay.data && prepay.data.payParams)) {
+        throw new Error(prepay.msg || '微信支付暂不可用')
       }
+      await this._requestPayment(prepay.data.payParams)
+      const confirm = await auth.request('POST', '/api/pay/wechat/confirm', {
+        orderType: 'machine',
+        orderId: this.data.orderId
+      })
+      if (confirm.code !== 200) throw new Error(confirm.msg || '支付状态同步失败')
+      wx.showToast({ title: '支付成功', icon: 'success' })
+      setTimeout(() => {
+        wx.redirectTo({ url: `/pages/machine/track?id=${this.data.orderId}` })
+      }, 1200)
     } catch (e) {
       this.setData({ paying: false })
-      wx.showToast({ title: '网络异常', icon: 'none' })
+      wx.showToast({ title: e.message || '支付未完成', icon: 'none' })
     }
+  },
+
+  _requestPayment(payParams) {
+    return new Promise((resolve, reject) => {
+      wx.requestPayment({
+        ...payParams,
+        success: resolve,
+        fail: reject
+      })
+    })
   },
 
   onBack() { wx.navigateBack() }

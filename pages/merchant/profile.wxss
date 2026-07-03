@@ -69,6 +69,38 @@
   padding: 4rpx 16rpx;
 }
 .verified-text { font-size: 22rpx; color: #16A34A; }
+.pay-section { margin-top: 0; }
+.pay-status {
+  border-radius: 20rpx;
+  padding: 4rpx 16rpx;
+}
+.pay-status.enabled { background: #ECFDF5; }
+.pay-status.disabled { background: #FEF3C7; }
+.pay-status-text { font-size: 22rpx; font-weight: 600; }
+.pay-status.enabled .pay-status-text { color: #059669; }
+.pay-status.disabled .pay-status-text { color: #B45309; }
+.info-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 16rpx;
+  padding: 20rpx 28rpx 28rpx;
+}
+.small-btn {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 12rpx;
+  background: #F5F6FA;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+.small-btn.primary {
+  background: #C8902E;
+  color: #fff;
+}
 
 .menu-card {
   background: #fff;
@@ -116,6 +148,10 @@
   padding: 40rpx 32rpx;
   z-index: 101;
 }
+.pay-modal {
+  max-height: 82vh;
+  box-sizing: border-box;
+}
 .modal-title { font-size: 32rpx; font-weight: 700; color: #1A1A1A; display: block; margin-bottom: 32rpx; }
 .form-item { margin-bottom: 24rpx; }
 .form-label { font-size: 24rpx; color: #555; display: block; margin-bottom: 10rpx; }
@@ -129,10 +165,13 @@
   box-sizing: border-box;
 }
 .modal-btns { display: flex; flex-direction: row; gap: 20rpx; margin-top: 16rpx; }
+.modal-btns.three { gap: 12rpx; }
 .modal-btn {
   flex: 1;
   height: 88rpx;
   border-radius: 16rpx;
+  background: #F5F6FA;
+  color: #444;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -141,3 +180,16 @@
 }
 .modal-btn.cancel  { background: #F5F6FA; color: #666; }
 .modal-btn.confirm { background: #C8902E; color: #fff; }
+.submit-applyment {
+  height: 88rpx;
+  margin-top: 18rpx;
+  border-radius: 16rpx;
+  background: #1F2937;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+.submit-applyment.disabled { opacity: 0.55; }

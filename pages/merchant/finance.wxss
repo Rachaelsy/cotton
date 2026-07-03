@@ -84,9 +84,11 @@
 }
 .record-icon-wrap.refund   { background: #FEF2F2; }
 .record-icon-wrap.withdraw { background: #EFF6FF; }
+.record-icon-wrap.pending  { background: #FFF7ED; }
 .record-icon { font-size: 30rpx; color: #16A34A; font-weight: 700; }
 .record-icon-wrap.refund .record-icon   { color: #DC2626; }
 .record-icon-wrap.withdraw .record-icon { color: #2563EB; }
+.record-icon-wrap.pending .record-icon  { color: #D97706; }
 
 .record-info { flex: 1; }
 .record-top {
@@ -100,6 +102,7 @@
 .record-amount { font-size: 28rpx; font-weight: 700; color: #16A34A; }
 .record-amount.refund   { color: #DC2626; }
 .record-amount.withdraw { color: #2563EB; }
+.record-amount.pending  { color: #D97706; }
 
 .record-bottom {
   display: flex;

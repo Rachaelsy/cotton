@@ -586,15 +586,34 @@ router.patch('/withdrawals/:id/handle', adminAuth, async (req, res) => {
     const { action, note } = req.body
     if (!['approve', 'reject'].includes(action)) return R_FAIL(res, '无效操作')
     const id = req.params.id
+    const [[withdrawal]] = await db.query(
+      "SELECT id, merchant_id FROM withdrawals WHERE id=? AND status='pending'",
+      [id]
+    )
+    if (!withdrawal) return R_FAIL(res, '提现申请不存在或已处理', 404)
     if (action === 'approve') {
       await db.query(
         "UPDATE withdrawals SET status='paid', note=?, paid_at=NOW() WHERE id=? AND status='pending'",
         [note || '', id]
       )
+      await db.query(
+        `UPDATE orders o
+         JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+         SET o.fund_status='withdrawn'
+         WHERE o.fund_status='withdrawing'`,
+        [withdrawal.merchant_id]
+      )
     } else {
       await db.query(
         "UPDATE withdrawals SET status='rejected', note=? WHERE id=? AND status='pending'",
         [note || '', id]
+      )
+      await db.query(
+        `UPDATE orders o
+         JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+         SET o.fund_status='available'
+         WHERE o.fund_status='withdrawing'`,
+        [withdrawal.merchant_id]
       )
     }
     return R_OK(res, null, action === 'approve' ? '已批准提现' : '已拒绝提现')

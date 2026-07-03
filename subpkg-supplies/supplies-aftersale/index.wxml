@@ -3,7 +3,7 @@
 
   <!-- 顶部导航 -->
   <view class="as-header" style="padding-top: {{statusBarHeight}}px">
-    <view class="as-topbar">
+    <view class="as-topbar" style="padding-right: {{capsuleSafeRight}}px">
       <view class="as-back" bindtap="onBack">
         <text class="as-back-icon">‹</text>
       </view>

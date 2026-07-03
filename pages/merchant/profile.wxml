@@ -36,6 +36,34 @@
       </view>
     </view>
 
+    <view class="section pay-section">
+      <view class="section-title">微信支付入驻</view>
+      <view class="info-card">
+        <view class="info-row">
+          <text class="info-lbl">支付状态</text>
+          <view class="pay-status {{applyment.payment_enabled ? 'enabled' : 'disabled'}}">
+            <text class="pay-status-text">{{applyment.payment_enabled ? '可收款' : '未开通'}}</text>
+          </view>
+        </view>
+        <view class="info-row">
+          <text class="info-lbl">子商户号</text>
+          <text class="info-val">{{applyment.sub_mchid || '未绑定'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-lbl">审核状态</text>
+          <text class="info-val">{{applyment.state_label || '未提交'}}</text>
+        </view>
+        <view class="info-row" wx:if="{{applyment.message}}">
+          <text class="info-lbl">状态说明</text>
+          <text class="info-val">{{applyment.message}}</text>
+        </view>
+        <view class="info-actions">
+          <view class="small-btn primary" bindtap="openPayModal"><text>入驻资料</text></view>
+          <view class="small-btn" bindtap="syncApplyment"><text>同步状态</text></view>
+        </view>
+      </view>
+    </view>
+
     <!-- 功能列表 -->
     <view class="section">
       <view class="section-title">账号设置</view>
@@ -87,6 +115,43 @@
     <view class="modal-btns">
       <view class="modal-btn cancel" bindtap="closePwdModal"><text>取消</text></view>
       <view class="modal-btn confirm" bindtap="onSubmitPwd"><text>确认修改</text></view>
+    </view>
+  </view>
+
+  <view class="modal-mask" wx:if="{{showPayModal}}" bindtap="closePayModal"></view>
+  <view class="modal pay-modal" wx:if="{{showPayModal}}">
+    <text class="modal-title">微信支付入驻</text>
+    <view class="form-item">
+      <text class="form-label">子商户号</text>
+      <input class="form-input" placeholder="微信审核完成后填写" value="{{payForm.sub_mchid}}" bindinput="onPayInput" data-field="sub_mchid"/>
+    </view>
+    <view class="form-item">
+      <text class="form-label">业务申请编号</text>
+      <input class="form-input" placeholder="自动生成，可留空" value="{{payForm.business_code}}" bindinput="onPayInput" data-field="business_code"/>
+    </view>
+    <view class="form-item">
+      <text class="form-label">联系人姓名</text>
+      <input class="form-input" placeholder="商户联系人姓名" value="{{payForm.contact_name}}" bindinput="onPayInput" data-field="contact_name"/>
+    </view>
+    <view class="form-item">
+      <text class="form-label">联系人手机</text>
+      <input class="form-input" type="number" maxlength="11" placeholder="商户联系人手机号" value="{{payForm.contact_mobile}}" bindinput="onPayInput" data-field="contact_mobile"/>
+    </view>
+    <view class="form-item">
+      <text class="form-label">联系人邮箱</text>
+      <input class="form-input" placeholder="选填" value="{{payForm.contact_email}}" bindinput="onPayInput" data-field="contact_email"/>
+    </view>
+    <view class="form-item">
+      <text class="form-label">客服电话</text>
+      <input class="form-input" type="number" placeholder="对外服务电话" value="{{payForm.service_phone}}" bindinput="onPayInput" data-field="service_phone"/>
+    </view>
+    <view class="modal-btns three">
+      <view class="modal-btn cancel" bindtap="closePayModal"><text>取消</text></view>
+      <view class="modal-btn" bindtap="savePayDraft"><text>保存资料</text></view>
+      <view class="modal-btn confirm" bindtap="bindSubMchid"><text>绑定号</text></view>
+    </view>
+    <view class="submit-applyment {{paySubmitting ? 'disabled' : ''}}" bindtap="submitApplyment">
+      <text>{{paySubmitting ? '处理中...' : '提交微信审核'}}</text>
     </view>
   </view>
 </view>

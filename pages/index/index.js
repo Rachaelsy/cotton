@@ -2,21 +2,22 @@
 const app = getApp()
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 const { buildWeatherFromApi } = require('../../utils/weather')
 
 const MODULES = [
   { id: 1, key: 'fields', icon: '🗺', bg: '#E8F5E9', action: 'fields' },
-  { id: 2, key: 'pest', icon: '🔬', bg: '#FCE4EC', action: 'pest' },
-  { id: 3, key: 'weather', icon: '⛅', bg: '#E3F2FD', action: 'weather' },
-  { id: 4, key: 'water', icon: '💧', bg: '#E1F5FE', newTag: true, action: 'water' },
-  { id: 5, key: 'fert', icon: '🌿', bg: '#F1F8E9', newTag: true, action: 'fert' },
-  { id: 6, key: 'records', icon: '📝', bg: '#EDE7F6', action: 'records' },
-  { id: 7, key: 'machine', icon: '🚜', bg: '#E0F7FA', action: 'machine' },
-  { id: 8, key: 'supplies', icon: '🌾', bg: '#FFF3E0', action: 'supplies' },
-  { id: 9, key: 'trade', icon: '💰', bg: '#FFEBEE', action: 'trade' },
-  { id: 10, key: 'loans', icon: '🏦', bg: '#E0F2F1', action: 'loans' },
-  { id: 11, key: 'insurance', icon: '🛡', bg: '#E8EAF6', action: 'insurance' },
-  { id: 12, key: 'expert', icon: '🎓', bg: '#EFEBE9', action: 'expert' }
+  { id: 2, key: 'weather', icon: '⛅', bg: '#E3F2FD', action: 'weather' },
+  { id: 3, key: 'water', icon: '💧', bg: '#E1F5FE', newTag: true, action: 'water' },
+  { id: 4, key: 'fert', icon: '🌿', bg: '#F1F8E9', newTag: true, action: 'fert' },
+  { id: 5, key: 'records', icon: '📝', bg: '#EDE7F6', action: 'records' },
+  { id: 6, key: 'machine', icon: '🚜', bg: '#E0F7FA', action: 'machine' },
+  { id: 7, key: 'supplies', icon: '🌾', bg: '#FFF3E0', action: 'supplies' },
+  { id: 8, key: 'expert', icon: '🎓', bg: '#EFEBE9', action: 'expert' },
+  { id: 9, key: 'pest', icon: '🔬', bg: '#FCE4EC', action: 'pest' },
+  { id: 10, key: 'trade', icon: '💰', bg: '#FFEBEE', action: 'trade' },
+  { id: 11, key: 'loans', icon: '🏦', bg: '#E0F2F1', action: 'loans' },
+  { id: 12, key: 'insurance', icon: '🛡', bg: '#E8EAF6', action: 'insurance' }
 ]
 
 function buildModules(lang = i18n.getLanguage()) {
@@ -32,6 +33,7 @@ function formatMu(value) {
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     lang: 'zh',
     common: i18n.getCopy('common'),
     copy: i18n.getCopy('home'),
@@ -55,7 +57,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     this.applyLanguage()
     this._setToday()
   },
@@ -318,5 +320,7 @@ Page({
 
   onNotification() {
     wx.showToast({ title: this.data.common.noNotification, icon: 'none' })
-  }
+  },
+
+  noop() {}
 })

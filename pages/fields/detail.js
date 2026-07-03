@@ -1,6 +1,7 @@
 // pages/fields/detail.js — 地块详情与数据聚合
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
+const layout = require('../../utils/layout')
 const { normalizeCoordinates, calculateCenter } = require('../../utils/plot-geometry')
 
 const IRRIGATION_OPTIONS = ['滴灌', '漫灌', '喷灌', '无']
@@ -34,6 +35,7 @@ function formatArea(value) {
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     common: i18n.getPageCopy('common'),
     copy: i18n.getPageCopy('fieldDetail'),
     loading: true,
@@ -68,7 +70,7 @@ Page({
     const info = wx.getSystemInfoSync()
     this.plotId = Number(options.id)
     this.applyLanguage()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
     this.loadPlot()
   },
 

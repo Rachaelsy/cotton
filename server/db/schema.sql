@@ -42,9 +42,29 @@ CREATE TABLE IF NOT EXISTS merchants (
   company_name     VARCHAR(128) DEFAULT NULL          COMMENT '企业/店铺名称',
   business_license VARCHAR(32)  DEFAULT NULL          COMMENT '营业执照号',
   product_category VARCHAR(64)  DEFAULT NULL          COMMENT '经营品类（如：化肥、农药）',
+  sub_mchid        VARCHAR(32)  DEFAULT NULL          COMMENT '微信支付子商户号',
+  wechat_applyment_id VARCHAR(64) DEFAULT NULL        COMMENT '微信支付进件申请单号',
+  wechat_business_code VARCHAR(64) DEFAULT NULL       COMMENT '平台侧微信进件业务申请编号',
+  wechat_applyment_state VARCHAR(32) DEFAULT NULL     COMMENT '微信进件状态',
+  wechat_applyment_msg VARCHAR(512) DEFAULT NULL      COMMENT '微信进件状态说明/驳回原因',
+  wechat_applyment_payload MEDIUMTEXT DEFAULT NULL    COMMENT '微信进件资料草稿 JSON',
+  wechat_applyment_updated_at DATETIME DEFAULT NULL   COMMENT '微信进件状态更新时间',
   created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_sub_mchid (sub_mchid),
+  INDEX idx_wechat_business_code (wechat_business_code),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='商户扩展信息';
+
+CREATE TABLE IF NOT EXISTS merchant_applyment_files (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  merchant_id INT UNSIGNED NOT NULL,
+  field_name  VARCHAR(64) NOT NULL DEFAULT '',
+  local_path  VARCHAR(255) NOT NULL DEFAULT '',
+  media_id    VARCHAR(128) NOT NULL DEFAULT '',
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_merchant_field (merchant_id, field_name),
+  INDEX idx_media_id (media_id)
+) ENGINE=InnoDB COMMENT='微信支付商户进件图片素材';
 
 -- -------------------------------------------------------
 -- 登录日志（可选，用于安全审计）

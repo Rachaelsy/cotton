@@ -1,9 +1,11 @@
 ﻿// pages/supplies-cart/index.js — 购物车
 const app = getApp()
+const layout = require('../../utils/layout')
 
 Page({
   data: {
     statusBarHeight: 20,
+    capsuleSafeRight: 0,
     cartItems: [],
     cartGroups: [],
     cartCount: 0,
@@ -14,7 +16,7 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
   },
 
   onShow() {
