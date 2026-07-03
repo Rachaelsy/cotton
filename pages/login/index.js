@@ -1,12 +1,14 @@
 // pages/login/index.js — 登录 / 注册页
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
 
 Page({
   data: {
     statusBarHeight: 20,
+    copy: i18n.getPageCopy('login'),
     step: 'login',
     role: 'farmer',
-    roleLabel: '🌾 农户',
+    roleLabel: i18n.t('login', 'roleLabel'),
     wxLoading: false,
 
     // 登录表单
@@ -32,9 +34,23 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
+    this.applyLanguage()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
     // 预取 wx.login code，有效期 5 分钟
     wx.login({ success: r => { this._wxLoginCode = r.code }, fail: () => {} })
+  },
+
+  onShow() {
+    this.applyLanguage()
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.textCopy = i18n.getCopy('login', lang)
+    this.setData({
+      copy: i18n.getPageCopy('login', lang),
+      roleLabel: this.textCopy.roleLabel
+    })
   },
 
   // 返回上一步（login ↔ register 之间）
@@ -63,7 +79,7 @@ Page({
 
   async onWxPhoneLogin(e) {
     if (e.detail.errMsg !== 'getPhoneNumber:ok') {
-      wx.showToast({ title: '已取消登录', icon: 'none' })
+      wx.showToast({ title: this.textCopy.cancelLogin, icon: 'none' })
       return
     }
     const phoneCode = e.detail.code
@@ -73,7 +89,7 @@ Page({
       loginCode = r.code
     }
     if (!loginCode) {
-      this._toast('微信登录失败，请重试')
+      this._toast(this.textCopy.wxFail)
       return
     }
     this.setData({ wxLoading: true })
@@ -81,17 +97,17 @@ Page({
       const res = await auth.wxLogin(loginCode, phoneCode)
       if (res.code === 200) {
         getApp().globalData.user = res.data
-        wx.showToast({ title: '登录成功', icon: 'success', duration: 1000 })
+        wx.showToast({ title: this.textCopy.loginSuccess, icon: 'success', duration: 1000 })
         setTimeout(() => wx.navigateBack(), 1000)
       } else if (res.code === 503) {
         wx.showModal({
-          title: '提示', content: '微信登录功能需配置 AppID，请使用手机号登录',
-          showCancel: false, confirmText: '好的'
+          title: i18n.getCopy('common').tip, content: this.textCopy.wxNeedConfig,
+          showCancel: false, confirmText: this.textCopy.ok
         })
       } else {
-        this._toast(res.msg || '登录失败')
+        this._toast(res.msg || this.textCopy.loginFail)
       }
-    } catch { this._toast('登录失败，请检查网络') }
+    } catch { this._toast(this.textCopy.loginNetworkFail) }
     this.setData({ wxLoading: false })
   },
 
@@ -99,8 +115,8 @@ Page({
 
   async onLogin() {
     const { loginPhone, loginPwd } = this.data
-    if (!/^1\d{10}$/.test(loginPhone)) return this._toast('请输入正确的手机号')
-    if (!loginPwd || loginPwd.length < 6)  return this._toast('密码不能少于6位')
+    if (!/^1\d{10}$/.test(loginPhone)) return this._toast(this.textCopy.phoneInvalid)
+    if (!loginPwd || loginPwd.length < 6)  return this._toast(this.textCopy.pwdInvalid)
 
     this.setData({ loginLoading: true })
     try {
@@ -110,7 +126,7 @@ Page({
         const target = res.data.role === 'merchant' ? '/pages/merchant/index' : '/pages/index/index'
         wx.reLaunch({ url: target })
       } else {
-        this._toast(res.msg || '登录失败')
+        this._toast(res.msg || this.textCopy.loginFail)
       }
     } catch { /* 已在 auth.js 弹提示 */ }
     this.setData({ loginLoading: false })
@@ -124,11 +140,11 @@ Page({
       regLocation, regLandSize, regCropType
     } = this.data
 
-    if (!/^1\d{10}$/.test(regPhone))   return this._toast('请输入正确的手机号')
-    if (!regPwd || regPwd.length < 6)  return this._toast('密码不能少于6位')
-    if (regPwd !== regPwdConfirm)      return this._toast('两次密码输入不一致')
-    if (!regRealName.trim())           return this._toast('请填写姓名')
-    if (!regLocation.trim())           return this._toast('请填写所在地区')
+    if (!/^1\d{10}$/.test(regPhone))   return this._toast(this.textCopy.phoneInvalid)
+    if (!regPwd || regPwd.length < 6)  return this._toast(this.textCopy.pwdInvalid)
+    if (regPwd !== regPwdConfirm)      return this._toast(this.textCopy.pwdNotMatch)
+    if (!regRealName.trim())           return this._toast(this.textCopy.nameRequired)
+    if (!regLocation.trim())           return this._toast(this.textCopy.locationRequired)
 
     const form = {
       role: 'farmer',
@@ -144,10 +160,10 @@ Page({
       const res = await auth.register(form)
       if (res.code === 200) {
         getApp().globalData.user = res.data
-        wx.showToast({ title: '注册成功', icon: 'success', duration: 1200 })
+        wx.showToast({ title: this.textCopy.registerSuccess, icon: 'success', duration: 1200 })
         setTimeout(() => wx.reLaunch({ url: '/pages/index/index' }), 1200)
       } else {
-        this._toast(res.msg || '注册失败')
+        this._toast(res.msg || this.textCopy.registerFail)
       }
     } catch { /* 已在 auth.js 弹提示 */ }
     this.setData({ regLoading: false })

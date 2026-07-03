@@ -1,6 +1,16 @@
+const i18n = require('../../utils/i18n')
+
 Component({
   properties: {
     selected: { type: Number, value: 0 }
+  },
+  data: {
+    copy: i18n.getCopy('tab')
+  },
+  lifetimes: {
+    attached() {
+      this.setData({ copy: i18n.getCopy('tab') })
+    }
   },
   methods: {
     onTab(e) {

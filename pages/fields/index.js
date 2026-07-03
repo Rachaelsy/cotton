@@ -1,5 +1,6 @@
 // pages/fields/index.js — 地块管理列表
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
 const { normalizeCoordinates, calculateCenter } = require('../../utils/plot-geometry')
 
 const STATUS_OPTIONS = [
@@ -24,14 +25,20 @@ function parseCoordinates(value) {
   }
 }
 
-function formatDate(value) {
+function formatDate(value, lang = i18n.getLanguage(), copy = i18n.getCopy('fields', lang)) {
   if (!value) return ''
   const raw = String(value)
   const match = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
-  if (match) return `${Number(match[2])}月${Number(match[3])}日更新`
+  if (match) {
+    const month = Number(match[2])
+    const day = Number(match[3])
+    return lang === 'ug' ? `${month}-${day} ${copy.updated}` : `${month}月${day}日更新`
+  }
   const date = new Date(raw.replace(/-/g, '/'))
   if (Number.isNaN(date.getTime())) return ''
-  return `${date.getMonth() + 1}月${date.getDate()}日更新`
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return lang === 'ug' ? `${month}-${day} ${copy.updated}` : `${month}月${day}日更新`
 }
 
 function finiteNumber(value, fallback = 0) {
@@ -42,6 +49,9 @@ function finiteNumber(value, fallback = 0) {
 Page({
   data: {
     statusBarHeight: 20,
+    lang: 'zh',
+    common: i18n.getCopy('common'),
+    copy: i18n.getPageCopy('fields'),
     loading: true,
     refreshing: false,
     loadError: '',
@@ -52,24 +62,47 @@ Page({
     warnFields: [],
     okFields: [],
     keyword: '',
-    statusOptions: STATUS_OPTIONS.map(item => item.label),
+    statusOptions: i18n.getCopy('fields').statusOptions,
     statusIndex: 0,
-    areaOptions: AREA_OPTIONS.map(item => item.label),
+    areaOptions: i18n.getCopy('fields').areaOptions,
     areaIndex: 0,
     resultCount: 0,
     hasActiveFilter: false,
     manageMode: false,
     selectedIds: [],
-    allVisibleSelected: false
+    allVisibleSelected: false,
+    batchActionText: i18n.getCopy('fields').selectPlot
   },
+
+  textCopy: i18n.getCopy('fields'),
 
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.applyLanguage()
   },
 
   onShow() {
+    this.applyLanguage()
     this.loadPlots()
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    const copy = i18n.getCopy('fields', lang)
+    this.textCopy = copy
+    this.setData({
+      lang,
+      common: i18n.getCopy('common', lang),
+      copy: i18n.getPageCopy('fields', lang),
+      statusOptions: copy.statusOptions,
+      areaOptions: copy.areaOptions,
+      batchActionText: this.buildBatchActionText(this.data.selectedIds, copy)
+    })
+  },
+
+  buildBatchActionText(ids = this.data.selectedIds, copy = this.textCopy) {
+    return ids.length ? copy.deleteSelected(ids.length) : copy.selectPlot
   },
 
   async loadPlots({ silent = false } = {}) {
@@ -77,7 +110,7 @@ Page({
     try {
       const res = await auth.request('GET', '/api/plots')
       if (res.code !== 200 || !Array.isArray(res.data)) {
-        throw new Error(res.msg || '加载失败')
+        throw new Error(res.msg || this.data.copy.loadFail)
       }
       const plots = res.data.map(plot => this.formatPlot(plot))
       const totalArea = plots.reduce((sum, plot) => sum + plot.areaNumber, 0)
@@ -89,14 +122,15 @@ Page({
         totalCount: plots.length,
         totalArea: totalArea.toFixed(totalArea >= 100 ? 0 : 1),
         attentionCount: plots.filter(plot => plot.status === 'attention').length,
-        selectedIds: []
+        selectedIds: [],
+        batchActionText: this.buildBatchActionText([])
       })
       this.applyFilters()
     } catch (error) {
       this.setData({
         loading: false,
         refreshing: false,
-        loadError: error.message || '网络异常，请稍后重试'
+        loadError: error.message || this.data.copy.loadFail
       })
     }
   },
@@ -108,10 +142,10 @@ Page({
     if (score < 75) scoreCls = 'warn'
     else if (score < 88) scoreCls = 'good'
 
-    let tagText = '长势正常'
-    if (plot.status === 'attention') tagText = plot.health_issue || '需要关注'
-    else if (score >= 90) tagText = '长势优'
-    else if (score >= 80) tagText = '长势良好'
+    let tagText = this.textCopy.growthNormal || i18n.localizeText('长势正常', this.data.lang)
+    if (plot.status === 'attention') tagText = plot.health_issue ? i18n.localizeText(plot.health_issue, this.data.lang) : this.textCopy.needAttention
+    else if (score >= 90) tagText = this.textCopy.growthExcellent || i18n.localizeText('长势优', this.data.lang)
+    else if (score >= 80) tagText = this.textCopy.growthGood || i18n.localizeText('长势良好', this.data.lang)
 
     const coordinates = parseCoordinates(plot.coordinates)
     const center = calculateCenter(coordinates)
@@ -129,12 +163,15 @@ Page({
       health_score: score,
       scoreCls,
       tagText,
-      date: formatDate(plot.updated_at),
+      date: formatDate(plot.updated_at, this.data.lang, this.textCopy),
       mapLat: center.latitude,
       mapLng: center.longitude,
       previewPolygons,
       hasBoundary: coordinates.length >= 3,
-      planting_status: plot.planting_status || '已播种'
+      planting_status: plot.planting_status || '已播种',
+      plantingStatusText: i18n.localizeText(plot.planting_status || '已播种', this.data.lang),
+      varietyText: plot.variety ? i18n.localizeText(plot.variety, this.data.lang) : this.textCopy.noVariety,
+      irrigationText: plot.irrigation ? i18n.localizeText(plot.irrigation, this.data.lang) : this.textCopy.noIrrigation
     }
   },
 
@@ -162,6 +199,7 @@ Page({
       resultCount: filtered.length,
       hasActiveFilter: Boolean(keyword || this.data.statusIndex || this.data.areaIndex),
       selectedIds,
+      batchActionText: this.buildBatchActionText(selectedIds),
       allVisibleSelected: filtered.length > 0 && selectedIds.length === filtered.length
     })
   },
@@ -198,7 +236,12 @@ Page({
   },
 
   onToggleManage() {
-    this.setData({ manageMode: !this.data.manageMode, selectedIds: [], allVisibleSelected: false })
+    this.setData({
+      manageMode: !this.data.manageMode,
+      selectedIds: [],
+      allVisibleSelected: false,
+      batchActionText: this.buildBatchActionText([])
+    })
   },
 
   onFieldTap(event) {
@@ -225,6 +268,7 @@ Page({
     const visibleCount = this.data.warnFields.length + this.data.okFields.length
     this.setData({
       selectedIds,
+      batchActionText: this.buildBatchActionText(selectedIds),
       allVisibleSelected: visibleCount > 0 && selectedIds.length === visibleCount,
       warnFields: this.data.warnFields.map(plot => ({ ...plot, selected: selectedIds.includes(plot.id) })),
       okFields: this.data.okFields.map(plot => ({ ...plot, selected: selectedIds.includes(plot.id) }))
@@ -235,6 +279,7 @@ Page({
     if (this.data.allVisibleSelected) {
       this.setData({
         selectedIds: [],
+        batchActionText: this.buildBatchActionText([]),
         allVisibleSelected: false,
         warnFields: this.data.warnFields.map(plot => ({ ...plot, selected: false })),
         okFields: this.data.okFields.map(plot => ({ ...plot, selected: false }))
@@ -244,6 +289,7 @@ Page({
     const selectedIds = [...this.data.warnFields, ...this.data.okFields].map(plot => plot.id)
     this.setData({
       selectedIds,
+      batchActionText: this.buildBatchActionText(selectedIds),
       allVisibleSelected: selectedIds.length > 0,
       warnFields: this.data.warnFields.map(plot => ({ ...plot, selected: true })),
       okFields: this.data.okFields.map(plot => ({ ...plot, selected: true }))
@@ -254,9 +300,9 @@ Page({
     const ids = this.data.selectedIds
     if (!ids.length) return
     wx.showModal({
-      title: `删除 ${ids.length} 块地？`,
-      content: '地块删除后无法恢复，已有农事记录仍会保留。',
-      confirmText: '确认删除',
+      title: this.textCopy.deleteTitle(ids.length),
+      content: this.data.copy.deleteContent,
+      confirmText: this.data.copy.deleteConfirm,
       confirmColor: '#C7473A',
       success: result => {
         if (result.confirm) this.confirmBatchDelete(ids)
@@ -265,15 +311,15 @@ Page({
   },
 
   async confirmBatchDelete(ids) {
-    wx.showLoading({ title: '正在删除', mask: true })
+    wx.showLoading({ title: this.data.copy.deleting, mask: true })
     try {
       const res = await auth.request('POST', '/api/plots/batch-delete', { ids })
-      if (res.code !== 200) throw new Error(res.msg || '删除失败')
-      wx.showToast({ title: `已删除 ${res.data.deleted} 块`, icon: 'none' })
-      this.setData({ manageMode: false, selectedIds: [], allVisibleSelected: false })
+      if (res.code !== 200) throw new Error(res.msg || this.textCopy.deleteFail)
+      wx.showToast({ title: this.textCopy.deleted(res.data.deleted), icon: 'none' })
+      this.setData({ manageMode: false, selectedIds: [], allVisibleSelected: false, batchActionText: this.buildBatchActionText([]) })
       await this.loadPlots({ silent: true })
     } catch (error) {
-      wx.showToast({ title: error.message || '删除失败', icon: 'none' })
+      wx.showToast({ title: error.message || this.textCopy.deleteFail, icon: 'none' })
     } finally {
       wx.hideLoading()
     }

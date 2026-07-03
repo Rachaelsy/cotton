@@ -1,5 +1,6 @@
 // pages/fields/detail.js — 地块详情与数据聚合
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
 const { normalizeCoordinates, calculateCenter } = require('../../utils/plot-geometry')
 
 const IRRIGATION_OPTIONS = ['滴灌', '漫灌', '喷灌', '无']
@@ -11,12 +12,13 @@ function optionIndex(options, value) {
   return index >= 0 ? index : 0
 }
 
-function dateText(value) {
-  if (!value) return '未填写'
+function dateText(value, copy, lang) {
+  if (!value) return copy.notFilled
   const raw = String(value).slice(0, 10)
+  if (lang === 'ug') return raw
   const parts = raw.split('-')
   if (parts.length !== 3) return raw
-  return `${Number(parts[0])}年${Number(parts[1])}月${Number(parts[2])}日`
+  return `${Number(parts[0])}${copy.year}${Number(parts[1])}${copy.month}${Number(parts[2])}${copy.day}`
 }
 
 function finiteNumber(value, fallback = 0) {
@@ -32,6 +34,8 @@ function formatArea(value) {
 Page({
   data: {
     statusBarHeight: 20,
+    common: i18n.getPageCopy('common'),
+    copy: i18n.getPageCopy('fieldDetail'),
     loading: true,
     loadError: '',
     plot: {},
@@ -47,37 +51,63 @@ Page({
       name: '', variety: '', sowDate: '', irrigation: '滴灌',
       soilType: '壤土', plantingStatus: '已播种', note: ''
     },
-    irrigationOptions: IRRIGATION_OPTIONS,
+    irrigationOptions: i18n.getOptionLabels('irrigation'),
     irrigationIndex: 0,
-    soilOptions: SOIL_OPTIONS,
+    soilOptions: i18n.getOptionLabels('soil'),
     soilIndex: 0,
-    plantingOptions: PLANTING_OPTIONS,
-    plantingIndex: 0
+    plantingOptions: i18n.getOptionLabels('planting'),
+    plantingIndex: 0,
+    irrigationLabel: '',
+    soilLabel: '',
+    plantingLabel: '',
+    recordsSubText: '',
+    totalRecordsText: ''
   },
 
   onLoad(options) {
     const info = wx.getSystemInfoSync()
     this.plotId = Number(options.id)
+    this.applyLanguage()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
     this.loadPlot()
   },
 
+  onShow() {
+    const prev = this.currentLang
+    this.applyLanguage()
+    if (prev && prev !== this.currentLang && this.rawPlot) this.applyPlot(this.rawPlot)
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.currentLang = lang
+    this.textCopy = i18n.getCopy('fieldDetail', lang)
+    this.setData({
+      common: i18n.getPageCopy('common', lang),
+      copy: i18n.getPageCopy('fieldDetail', lang),
+      irrigationOptions: i18n.getOptionLabels('irrigation', lang),
+      soilOptions: i18n.getOptionLabels('soil', lang),
+      plantingOptions: i18n.getOptionLabels('planting', lang)
+    })
+  },
+
   async loadPlot() {
     if (!this.plotId) {
-      this.setData({ loading: false, loadError: '地块编号无效' })
+      this.setData({ loading: false, loadError: this.textCopy.invalidId })
       return
     }
     this.setData({ loading: true, loadError: '' })
     try {
       const res = await auth.request('GET', `/api/plots/${this.plotId}`)
-      if (res.code !== 200 || !res.data) throw new Error(res.msg || '加载失败')
+      if (res.code !== 200 || !res.data) throw new Error(res.msg || this.textCopy.loadFailToast)
       this.applyPlot(res.data)
     } catch (error) {
-      this.setData({ loading: false, loadError: error.message || '网络异常，请稍后重试' })
+      this.setData({ loading: false, loadError: error.message || this.textCopy.networkFail })
     }
   },
 
   applyPlot(raw) {
+    this.rawPlot = raw
     let parsed = []
     try {
       parsed = Array.isArray(raw.coordinates)
@@ -90,26 +120,38 @@ Page({
     const plot = {
       ...raw,
       health_score: score,
-      sowDateText: dateText(raw.sow_date),
+      sowDateText: dateText(raw.sow_date, this.textCopy, this.currentLang),
       areaText: formatArea(raw.area),
       perimeterText: Math.round(finiteNumber(raw.perimeter)),
       planting_status: raw.planting_status || '已播种',
+      plantingStatusText: i18n.localizeText(raw.planting_status || '已播种', this.currentLang),
+      irrigationText: i18n.localizeText(raw.irrigation || this.textCopy.notFilled, this.currentLang),
+      soilTypeText: i18n.localizeText(raw.soil_type || this.textCopy.notFilled, this.currentLang),
       growthLabel: raw.status === 'attention'
-        ? (raw.health_issue || '需要关注')
-        : (score >= 90 ? '长势优' : score >= 80 ? '长势良好' : '长势正常')
+        ? (raw.health_issue ? i18n.localizeText(raw.health_issue, this.currentLang) : this.textCopy.needAttention)
+        : (score >= 90 ? this.textCopy.growthExcellent : score >= 80 ? this.textCopy.growthGood : this.textCopy.growthNormal)
     }
     const overview = raw.overview || {}
     const recentRecords = (overview.recent_records || []).map(record => ({
       ...record,
-      workDateText: dateText(record.work_date),
-      title: record.title || record.type
+      workDateText: dateText(record.work_date, this.textCopy, this.currentLang),
+      title: i18n.localizeText(record.title || record.type, this.currentLang),
+      typeText: i18n.localizeText(record.type, this.currentLang)
     }))
+    const irrigationIndex = optionIndex(IRRIGATION_OPTIONS, raw.irrigation)
+    const soilIndex = optionIndex(SOIL_OPTIONS, raw.soil_type || '壤土')
+    const plantingIndex = optionIndex(PLANTING_OPTIONS, raw.planting_status || '已播种')
+    const irrigationOptions = i18n.getOptionLabels('irrigation', this.currentLang)
+    const soilOptions = i18n.getOptionLabels('soil', this.currentLang)
+    const plantingOptions = i18n.getOptionLabels('planting', this.currentLang)
     this.setData({
       loading: false,
       loadError: '',
       plot,
       recentRecords,
       recordCount: Number(overview.record_count || 0),
+      recordsSubText: this.textCopy.recordsSub(Number(overview.record_count || 0)),
+      totalRecordsText: this.textCopy.totalRecords(Number(overview.record_count || 0)),
       polygons: coordinates.length >= 3 ? [{
         points: coordinates,
         strokeWidth: 3,
@@ -127,9 +169,15 @@ Page({
         plantingStatus: raw.planting_status || '已播种',
         note: raw.note || ''
       },
-      irrigationIndex: optionIndex(IRRIGATION_OPTIONS, raw.irrigation),
-      soilIndex: optionIndex(SOIL_OPTIONS, raw.soil_type || '壤土'),
-      plantingIndex: optionIndex(PLANTING_OPTIONS, raw.planting_status || '已播种')
+      irrigationIndex,
+      soilIndex,
+      plantingIndex,
+      irrigationOptions,
+      soilOptions,
+      plantingOptions,
+      irrigationLabel: irrigationOptions[irrigationIndex],
+      soilLabel: soilOptions[soilIndex],
+      plantingLabel: plantingOptions[plantingIndex]
     })
   },
 
@@ -145,21 +193,21 @@ Page({
   onNoteInput(event) { this.setData({ 'form.note': event.detail.value }) },
   onIrrChange(event) {
     const index = Number(event.detail.value)
-    this.setData({ irrigationIndex: index, 'form.irrigation': IRRIGATION_OPTIONS[index] })
+    this.setData({ irrigationIndex: index, irrigationLabel: this.data.irrigationOptions[index], 'form.irrigation': IRRIGATION_OPTIONS[index] })
   },
   onSoilChange(event) {
     const index = Number(event.detail.value)
-    this.setData({ soilIndex: index, 'form.soilType': SOIL_OPTIONS[index] })
+    this.setData({ soilIndex: index, soilLabel: this.data.soilOptions[index], 'form.soilType': SOIL_OPTIONS[index] })
   },
   onPlantingChange(event) {
     const index = Number(event.detail.value)
-    this.setData({ plantingIndex: index, 'form.plantingStatus': PLANTING_OPTIONS[index] })
+    this.setData({ plantingIndex: index, plantingLabel: this.data.plantingOptions[index], 'form.plantingStatus': PLANTING_OPTIONS[index] })
   },
 
   async onSave() {
     const { name, variety, sowDate, irrigation, soilType, plantingStatus, note } = this.data.form
-    if (!name.trim()) { wx.showToast({ title: '请填写地块名称', icon: 'none' }); return }
-    if (!variety.trim()) { wx.showToast({ title: '请填写棉花品种', icon: 'none' }); return }
+    if (!name.trim()) { wx.showToast({ title: this.textCopy.needName, icon: 'none' }); return }
+    if (!variety.trim()) { wx.showToast({ title: this.textCopy.needVariety, icon: 'none' }); return }
     if (this.data.saving) return
     this.setData({ saving: true })
     try {
@@ -172,12 +220,12 @@ Page({
         planting_status: plantingStatus,
         note: note.trim()
       })
-      if (res.code !== 200) throw new Error(res.msg || '保存失败')
-      wx.showToast({ title: '地块信息已更新', icon: 'success' })
+      if (res.code !== 200) throw new Error(res.msg || this.textCopy.saveFail)
+      wx.showToast({ title: this.textCopy.saved, icon: 'success' })
       this.setData({ showEdit: false })
       await this.loadPlot()
     } catch (error) {
-      wx.showToast({ title: error.message || '保存失败', icon: 'none' })
+      wx.showToast({ title: error.message || this.textCopy.saveFail, icon: 'none' })
     } finally {
       this.setData({ saving: false })
     }
@@ -186,7 +234,8 @@ Page({
   onOpenModule(event) {
     const moduleName = event.currentTarget.dataset.module
     const routes = {
-      remote: '/pages/remote/index',
+      water: '/pages/water/index',
+      fert: '/pages/fert/index',
       weather: '/pages/weather/index',
       records: '/pages/records/index',
       pest: '/pages/pest/index'
@@ -199,9 +248,9 @@ Page({
 
   onDelete() {
     wx.showModal({
-      title: '删除地块',
-      content: `确定删除「${this.data.plot.name}」？已有农事记录会保留，但地块无法恢复。`,
-      confirmText: '确认删除',
+      title: this.textCopy.deleteModalTitle,
+      content: this.textCopy.deleteModalContent(this.data.plot.name),
+      confirmText: this.textCopy.deleteConfirm,
       confirmColor: '#C7473A',
       success: result => {
         if (result.confirm) this.confirmDelete()
@@ -210,14 +259,14 @@ Page({
   },
 
   async confirmDelete() {
-    wx.showLoading({ title: '正在删除', mask: true })
+    wx.showLoading({ title: this.textCopy.deleting, mask: true })
     try {
       const res = await auth.request('DELETE', `/api/plots/${this.plotId}`)
-      if (res.code !== 200) throw new Error(res.msg || '删除失败')
-      wx.showToast({ title: '地块已删除', icon: 'none' })
+      if (res.code !== 200) throw new Error(res.msg || this.textCopy.deleteFail)
+      wx.showToast({ title: this.textCopy.deleted, icon: 'none' })
       setTimeout(() => wx.navigateBack(), 600)
     } catch (error) {
-      wx.showToast({ title: error.message || '删除失败', icon: 'none' })
+      wx.showToast({ title: error.message || this.textCopy.deleteFail, icon: 'none' })
     } finally {
       wx.hideLoading()
     }

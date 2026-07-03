@@ -1,10 +1,13 @@
 // pages/profile/index.js — 个人资料编辑（含头像上传）
 const app  = getApp()
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
 
 Page({
   data: {
     statusBarHeight: 20,
+    common: i18n.getPageCopy('common'),
+    copy: i18n.getPageCopy('profile'),
     saving: false,
     uploading: false,
     avatarUrl: '',
@@ -20,8 +23,22 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
+    this.applyLanguage()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
     this._fillForm()
+  },
+
+  onShow() {
+    this.applyLanguage()
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.textCopy = i18n.getCopy('profile', lang)
+    this.setData({
+      common: i18n.getPageCopy('common', lang),
+      copy: i18n.getPageCopy('profile', lang)
+    })
   },
 
   _fillForm() {
@@ -94,7 +111,7 @@ Page({
     if (this.data.saving || this.data.uploading) return
     const { real_name, location, land_size } = this.data.form
     if (!real_name.trim()) {
-      wx.showToast({ title: '姓名不能为空', icon: 'none' }); return
+      wx.showToast({ title: this.textCopy.nameRequired, icon: 'none' }); return
     }
     this.setData({ saving: true })
     try {
@@ -121,16 +138,16 @@ Page({
         app.globalData.user = updated
         auth.saveUser(updated)          // 必须用 auth.saveUser，key 是 'cotton_user'
         this.setData({ pendingAvatarPath: '' })
-        wx.showToast({ title: '保存成功', icon: 'success' })
+        wx.showToast({ title: this.textCopy.saveSuccess, icon: 'success' })
         setTimeout(() => {
           if (getCurrentPages().length > 1) wx.navigateBack()
           else wx.switchTab({ url: '/pages/my/index' })
         }, 1200)
       } else {
-        wx.showToast({ title: res.msg || '保存失败', icon: 'none' })
+        wx.showToast({ title: res.msg || this.textCopy.saveFail, icon: 'none' })
       }
     } catch {
-      wx.showToast({ title: '网络错误，请重试', icon: 'none' })
+      wx.showToast({ title: this.textCopy.networkFail, icon: 'none' })
     }
     this.setData({ saving: false })
   }

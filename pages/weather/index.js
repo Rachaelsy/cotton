@@ -1,5 +1,6 @@
 const auth = require('../../utils/auth')
-const { buildWeatherForPlot, buildWeatherFromApi } = require('../../utils/weather')
+const i18n = require('../../utils/i18n')
+const { buildWeatherFromApi } = require('../../utils/weather')
 
 function decodeText(value) {
   if (!value) return ''
@@ -19,30 +20,28 @@ Page({
   data: {
     statusBarHeight: 20,
     loading: true,
+    common: i18n.getPageCopy('common'),
+    copy: i18n.getPageCopy('weatherPage'),
     loadError: '',
     apiNotice: '',
     fields: [],
     fieldCount: 0,
     selectedFieldIndex: 0,
-    selectedFieldLabel: '全部地块',
-    sourceInfo: {
-      type: 'simulated',
-      label: '模拟数据',
-      desc: '天气接口不可用或未选择有效地块时，由本地模型按地块生成，仅供参考。'
-    },
-    locationLabel: '喀什地区',
-    regionLabel: '喀什地区',
+    selectedFieldLabel: i18n.t('weatherPage', 'allFields'),
+    sourceInfo: { type: 'real', label: '', desc: '' },
+    locationLabel: i18n.localizeText('喀什地区'),
+    regionLabel: i18n.localizeText('喀什地区'),
     weather: {
       temp: 0,
-      desc: '晴转多云',
+      desc: i18n.localizeText('晴转多云'),
       icon: '🌤',
       high: 0,
       low: 0,
-      wind: '西北风3级',
+      wind: i18n.localizeText('西北风3级'),
       windLevel: 0,
       humidity: 0,
       groundTemp: 0,
-      groundTempLabel: '地温',
+      groundTempLabel: i18n.t('weatherPage', 'groundTemp'),
       rain: 0,
       uv: 0,
       pressure: 0,
@@ -63,8 +62,33 @@ Page({
     const info = wx.getSystemInfoSync()
     this.queryPlotId = Number(options.plotId) || null
     this.queryPlotName = decodeText(options.plotName || '')
+    this.applyLanguage()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
     this.loadWeatherPage()
+  },
+
+  onShow() {
+    const previousLang = this.currentLang
+    this.applyLanguage()
+    if (previousLang && previousLang !== this.currentLang && this.plotList) {
+      this.applySelectedPlot(this.data.selectedFieldIndex, this.plotList).catch(error => {
+        this.setData({
+          loading: false,
+          loadError: error.message || this.textCopy.loadError,
+          apiNotice: ''
+        })
+      })
+    }
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.currentLang = lang
+    this.textCopy = i18n.getCopy('weatherPage', lang)
+    this.setData({
+      common: i18n.getPageCopy('common', lang),
+      copy: i18n.getPageCopy('weatherPage', lang)
+    })
   },
 
   async loadWeatherPage() {
@@ -76,7 +100,7 @@ Page({
       await this.applySelectedPlot(selectedIndex, plots)
     } catch (error) {
       this.setData({
-        loadError: error.message || '天气数据加载失败',
+        loadError: error.message || this.textCopy.loadError,
         loading: false
       })
     }
@@ -84,7 +108,7 @@ Page({
 
   async loadPlots() {
     if (!auth.isLoggedIn()) {
-      return [this.buildVirtualPlot()]
+      throw new Error(this.textCopy.noLoginNotice)
     }
 
     try {
@@ -92,17 +116,16 @@ Page({
       if (res.code === 200 && Array.isArray(res.data) && res.data.length) {
         return res.data
       }
+      throw new Error((res && res.msg) || this.textCopy.noPlotNotice)
     } catch (error) {
-      return [this.buildVirtualPlot()]
+      throw new Error(error.message || this.textCopy.loadError)
     }
-
-    return [this.buildVirtualPlot()]
   },
 
   buildVirtualPlot() {
     return {
       id: this.queryPlotId || 0,
-      name: this.queryPlotName || '全部地块',
+      name: this.queryPlotName || this.textCopy.allFields,
       area: 0,
       coordinates: [],
       sow_date: null,
@@ -114,9 +137,9 @@ Page({
   },
 
   formatFieldLabel(plot) {
-    const name = plot && plot.name ? plot.name : '未命名地块'
+    const name = plot && plot.name ? plot.name : this.textCopy.unnamedField
     const area = Number(plot && plot.area ? plot.area : 0)
-    return area > 0 ? `${name} · ${formatArea(area)}亩` : name
+    return area > 0 ? `${name} · ${formatArea(area)}${this.data.common.mu}` : name
   },
 
   resolveSelectedIndex(plots) {
@@ -137,7 +160,8 @@ Page({
 
   async applySelectedPlot(index, plots = this.plotList || []) {
     const safeIndex = Math.max(0, Math.min(index, Math.max(plots.length - 1, 0)))
-    const plot = plots[safeIndex] || this.buildVirtualPlot()
+    const plot = plots[safeIndex]
+    if (!plot) throw new Error(this.textCopy.noPlotNotice)
     const result = await this.loadWeatherModel(plot, safeIndex, plots.length)
     const weatherModel = result.model || result
 
@@ -153,11 +177,7 @@ Page({
       fieldCount: plots.length,
       selectedFieldIndex: safeIndex,
       selectedFieldLabel: weatherModel.selectedFieldLabel,
-      sourceInfo: weatherModel.sourceInfo || {
-        type: 'simulated',
-        label: '模拟数据',
-        desc: '天气接口不可用或未选择有效地块时，由本地模型按地块生成，仅供参考。'
-      },
+      sourceInfo: weatherModel.sourceInfo,
       locationLabel: weatherModel.locationLabel,
       regionLabel: weatherModel.regionLabel,
       weather: weatherModel.weather,
@@ -174,56 +194,41 @@ Page({
 
   async loadWeatherModel(plot, selectedIndex, fieldCount) {
     if (!auth.isLoggedIn()) {
-      return {
-        model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
-        apiNotice: '未登录，未请求真实天气接口'
-      }
+      throw new Error(this.textCopy.noLoginNotice)
     }
 
     if (!(plot && Number(plot.id) > 0)) {
-      return {
-        model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
-        apiNotice: '当前没有可用地块编号，未请求真实天气接口'
-      }
+      throw new Error(this.textCopy.noPlotNotice)
     }
 
+    let res
     try {
-      const res = await auth.request('GET', `/api/weather/plot/${plot.id}`)
-      if (res.code === 200 && res.data && res.data.weather) {
-        return {
-          model: buildWeatherFromApi(res.data.plot || plot, res.data.weather, { fieldCount, selectedIndex }),
-          apiNotice: ''
-        }
-      }
-
-      return {
-        model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
-        apiNotice: `真实天气接口返回异常：${res.msg || res.code || '未知错误'}`
-      }
+      res = await auth.request('GET', `/api/weather/plot/${plot.id}`)
     } catch (error) {
-      try {
-        return {
-          model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
-          apiNotice: `真实天气接口请求失败：${error.message || '未知错误'}`
-        }
-      } catch (fallbackError) {
-        return {
-          model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
-          apiNotice: `真实天气接口请求失败：${fallbackError.message || error.message || '未知错误'}`
-        }
+      throw new Error(this.textCopy.realApiFail(error.message))
+    }
+
+    if (res.code === 200 && res.data && res.data.weather) {
+      return {
+        model: buildWeatherFromApi(res.data.plot || plot, res.data.weather, { fieldCount, selectedIndex }),
+        apiNotice: ''
       }
     }
 
-    return {
-      model: buildWeatherForPlot(plot, { fieldCount, selectedIndex }),
-      apiNotice: ''
-    }
+    throw new Error(this.textCopy.realApiError(res.msg || res.code))
   },
 
   onSelField(e) {
     const index = Number(e.currentTarget.dataset.index)
     if (!Number.isInteger(index)) return
-    this.applySelectedPlot(index)
+    this.setData({ loading: true, loadError: '', apiNotice: '' })
+    this.applySelectedPlot(index).catch(error => {
+      this.setData({
+        loading: false,
+        loadError: error.message || this.textCopy.loadError,
+        apiNotice: ''
+      })
+    })
   },
 
   onRetry() {
@@ -233,17 +238,13 @@ Page({
   buildSafeDetail() {
     return {
       icon: '✅',
-      title: '今日作业提示',
-      level: '正常',
-      sub: this.data.summary || '当前暂无灾害性天气预警。',
-      agency: '棉管家气象助手',
-      impactTime: '今日',
-      impactArea: this.data.selectedFieldLabel || '当前地块',
-      actions: [
-        '当前暂无大风、强降雨、高温等灾害性预警',
-        '可按页面农事建议安排巡田、滴灌和轻作业',
-        '喷药和无人机作业前再次确认风力与降水概率'
-      ]
+      title: this.textCopy.safeTitle,
+      level: this.textCopy.normal,
+      sub: this.data.summary || this.textCopy.noAlert,
+      agency: this.textCopy.agency,
+      impactTime: this.textCopy.today,
+      impactArea: this.data.selectedFieldLabel || this.textCopy.currentField,
+      actions: this.textCopy.safeActions
     }
   },
 
@@ -261,7 +262,7 @@ Page({
   onSourceTap() {
     const source = this.data.sourceInfo || {}
     wx.showToast({
-      title: this.data.apiNotice || source.desc || source.label || '天气数据来源',
+      title: this.data.apiNotice || source.desc || source.label || this.textCopy.dataSource,
       icon: 'none',
       duration: 2600
     })

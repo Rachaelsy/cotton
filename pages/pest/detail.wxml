@@ -25,7 +25,7 @@
       </view>
       <view class="treat-days-wrap">
         <text class="treat-days-num">{{pest.treatDays}}</text>
-        <text class="treat-days-label">天防治周期</text>
+        <text class="treat-days-label">{{copy.cycle}}</text>
       </view>
     </view>
   </view>
@@ -35,7 +35,7 @@
 
     <!-- 严重程度卡片 -->
     <view class="card severity-card">
-      <text class="card-title">严重程度</text>
+      <text class="card-title">{{copy.severity}}</text>
       <view class="severity-row">
         <view
           wx:for="{{severityLevels}}"
@@ -52,19 +52,19 @@
       </view>
       <view class="severity-tip">
         <text class="severity-tip-icon">⚠️</text>
-        <text class="severity-tip-text" style="color:{{pest.severityColor}};">当前为{{pest.severity}}，需在{{pest.treatDays}}天内完成防治</text>
+        <text class="severity-tip-text" style="color:{{pest.severityColor}};">{{severityTipText}}</text>
       </view>
     </view>
 
     <!-- 描述卡片 -->
     <view class="card">
-      <text class="card-title">病虫害描述</text>
+      <text class="card-title">{{copy.descTitle}}</text>
       <text class="desc-text">{{pest.desc}}</text>
     </view>
 
     <!-- 处理方案卡片 -->
     <view class="card">
-      <text class="card-title">防治方案</text>
+      <text class="card-title">{{copy.treatmentTitle}}</text>
       <view
         wx:for="{{pest.treatments}}"
         wx:key="n"
@@ -82,7 +82,7 @@
 
     <!-- 推荐农药卡片 -->
     <view class="card">
-      <text class="card-title">推荐农药</text>
+      <text class="card-title">{{copy.productTitle}}</text>
       <view
         wx:for="{{pest.products}}"
         wx:key="name"
@@ -96,7 +96,7 @@
           <text class="product-price">¥{{item.price}}</text>
         </view>
         <view class="buy-btn" bindtap="onBuyProduct" data-name="{{item.name}}">
-          <text class="buy-btn-text">去购买</text>
+          <text class="buy-btn-text">{{copy.buy}}</text>
         </view>
       </view>
     </view>

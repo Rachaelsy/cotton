@@ -1,0 +1,71 @@
+<view class="page wf-water">
+  <view class="wf-head" style="padding-top: {{statusBarHeight}}px">
+    <view class="wf-nav">
+      <view class="wf-back" bindtap="onBack"><text>‹</text></view>
+      <text class="wf-title">💧 水管理</text>
+      <view class="wf-action" bindtap="onReminder"><text>🔔</text></view>
+    </view>
+    <view class="wf-hero">
+      <picker mode="selector" range="{{plotOptions}}" value="{{plotIndex}}" bindchange="onPlotChange">
+        <view class="wf-field-sel">📍 {{plotOptions[plotIndex] || '选择地块'}} ▼</view>
+      </picker>
+      <view class="wf-stat-row">
+        <view class="wf-stat"><text class="wf-stat-v">{{model.moisture}}%</text><text class="wf-stat-l">土壤含水率</text></view>
+        <view class="wf-stat"><text class="wf-stat-v">{{model.days}}天</text><text class="wf-stat-l">距上次灌水</text></view>
+        <view class="wf-stat"><text class="wf-stat-v {{model.stateClass}}">{{model.state}}</text><text class="wf-stat-l">墒情状态</text></view>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="wf-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{loading}}" class="wf-empty">加载中…</view>
+    <block wx:else>
+      <view class="wf-card">
+        <view class="wf-sec-hd">🤖 AI灌水建议</view>
+        <view class="wf-ai-box">
+          <text class="wf-ai-tag">🌿 AI分析 · 当前地块</text>
+          <text class="wf-ai-txt">{{model.advice}}</text>
+        </view>
+        <view class="wf-soil-row">
+          <view class="wf-soil-item"><text class="wf-soil-icon">💧</text><text class="wf-soil-val">{{model.moisture}}%</text><text class="wf-soil-lbl">当前含水率</text></view>
+          <view class="wf-soil-item"><text class="wf-soil-icon">🎯</text><text class="wf-soil-val">55~70%</text><text class="wf-soil-lbl">目标范围</text></view>
+          <view class="wf-soil-item"><text class="wf-soil-icon">⛅</text><text class="wf-soil-val">0mm</text><text class="wf-soil-lbl">近3日降水</text></view>
+        </view>
+        <text class="wf-small-title">墒情指数</text>
+        <view class="wf-progress-bar"><view class="wf-progress-fill water" style="width: {{model.moisture}}%"></view></view>
+        <view class="wf-scale"><text>干旱 0%</text><text>适宜 55~70%</text><text>饱和 100%</text></view>
+        <view class="wf-quick-row">
+          <view class="wf-quick-btn primary" bindtap="onRecord">💧 记录灌水</view>
+          <view class="wf-quick-btn sec" bindtap="onReminder">⏰ 设置提醒</view>
+        </view>
+      </view>
+
+      <view class="wf-card">
+        <view class="wf-sec-hd">📅 灌水计划</view>
+        <view class="wf-plan-item" wx:for="{{model.plans}}" wx:key="name">
+          <view class="wf-plan-dot water-dot"><text>{{item.icon}}</text></view>
+          <view class="wf-plan-main"><text class="wf-plan-name">{{item.name}}</text><text class="wf-plan-meta">{{item.meta}}</text><text class="wf-status {{item.cls}}">{{item.status}}</text></view>
+          <view class="wf-plan-val"><text>{{item.value}}</text><text class="wf-plan-sub">{{item.sub}}</text></view>
+        </view>
+      </view>
+
+      <view class="wf-card">
+        <view class="wf-sec-hd">📊 近7天用水记录</view>
+        <view class="wf-chart-bar-wrap">
+          <view class="wf-bar-col" wx:for="{{model.bars}}" wx:key="label">
+            <view class="wf-bar" style="height: {{item.height}}%"></view>
+            <text class="wf-bar-lbl">{{item.label}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="wf-card">
+        <view class="wf-sec-hd">📖 棉花滴灌要点</view>
+        <view class="wf-tip-row"><text class="wf-tip-icon">🌱</text><view><text class="wf-tip-title">苗期少灌，蕾期控水</text><text class="wf-tip-desc">苗期保持土壤相对含水量60%，蕾期适当控水促根系下扎。</text></view></view>
+        <view class="wf-tip-row"><text class="wf-tip-icon">🌸</text><view><text class="wf-tip-title">花铃期重灌，保障产量</text><text class="wf-tip-desc">花铃期需水量最大，每次灌水50~60方/亩，间隔7~10天。</text></view></view>
+        <view class="wf-tip-row"><text class="wf-tip-icon warn">⚠️</text><view><text class="wf-tip-title">打顶后控水，促早熟</text><text class="wf-tip-desc">打顶后15天逐步停水，有助棉铃集中成熟。</text></view></view>
+      </view>
+    </block>
+    <view class="wf-bottom"></view>
+  </scroll-view>
+</view>

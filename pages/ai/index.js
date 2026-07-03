@@ -1,23 +1,20 @@
 // pages/ai/index.js — AI问答（接入 DeepSeek / Siliconflow，支持图片分析）
 const app  = getApp()
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
 
 Page({
   data: {
     statusBarHeight: 20,
     timeStr: '',
+    copy: i18n.getPageCopy('ai'),
     voiceMode: false,
     inputText: '',
     typing: false,
     scrollToId: 'bottom',
     messages: [],
-    quickList: [
-      { i: '🌧', t: '今天能打药吗' },
-      { i: '🌡', t: '地温适合播种吗' },
-      { i: '🐛', t: '棉蚜怎么防治' },
-      { i: '💰', t: '今日棉花收购价' }
-    ],
-    chips: ['施肥建议', '病虫害预警', '灌溉时机', '天气查询', '卖棉咨询']
+    quickList: i18n.getPageCopy('ai').quickList,
+    chips: i18n.getPageCopy('ai').chips
   },
 
   _msgId: 0,
@@ -25,6 +22,7 @@ Page({
   onLoad() {
     const info = wx.getSystemInfoSync()
     const d = new Date()
+    this.applyLanguage()
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
       timeStr: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
@@ -32,8 +30,9 @@ Page({
   },
 
   onShow() {
+    this.applyLanguage()
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 1 })
+      this.getTabBar().setData({ selected: 1, copy: i18n.getCopy('tab') })
     }
     // 检测首页拍照传来的待分析图片
     const photo = app.globalData.pendingPhoto
@@ -41,6 +40,17 @@ Page({
       app.globalData.pendingPhoto = null
       this._sendPhoto(photo)
     }
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.currentLang = lang
+    this.textCopy = i18n.getCopy('ai', lang)
+    this.setData({
+      copy: i18n.getPageCopy('ai', lang),
+      quickList: this.textCopy.quickList,
+      chips: this.textCopy.chips
+    })
   },
 
   // ── 发送文字消息 ──────────────────────────────
@@ -72,13 +82,14 @@ Page({
     }))
 
     try {
-      const res = await auth.request('POST', '/api/ai/chat', { message: text, history })
+      const apiText = this.currentLang === 'ug' ? `请用维吾尔语回答：${text}` : text
+      const res = await auth.request('POST', '/api/ai/chat', { message: apiText, displayMessage: text, history, language: this.currentLang })
       const reply = (res.code === 200 && res.data?.reply)
         ? res.data.reply
-        : (res.msg || 'AI 服务暂时不可用，请稍后重试')
+        : (res.msg || this.textCopy.aiUnavailable)
       this._appendAI(reply)
     } catch {
-      this._appendAI('网络异常，请检查连接后重试 🔌')
+      this._appendAI(this.textCopy.networkFail)
     }
   },
 
@@ -88,7 +99,7 @@ Page({
     const userMsg = {
       id:    ++this._msgId,
       role:  'user',
-      text:  '帮我分析这张照片',
+      text:  this.textCopy.photoAsk,
       image: photo.tempFilePath
     }
     this.setData({
@@ -112,14 +123,14 @@ Page({
           this._appendAI(
             data.code === 200 && data.data?.reply
               ? data.data.reply
-              : (data.msg || '图片分析失败，请重试')
+              : (data.msg || this.textCopy.photoFail)
           )
         } catch {
-          this._appendAI('解析响应失败，请重试')
+          this._appendAI(this.textCopy.parseFail)
         }
       },
       fail: () => {
-        this._appendAI('图片上传失败，请检查网络连接 🔌')
+        this._appendAI(this.textCopy.uploadFail)
       }
     })
   },
@@ -140,17 +151,17 @@ Page({
   },
 
   onVoice() {
-    wx.showToast({ title: '语音识别功能开发中', icon: 'none' })
+    wx.showToast({ title: this.textCopy.voiceDeveloping, icon: 'none' })
   },
 
   onMore() {
     wx.showActionSheet({
-      itemList: ['清空对话', '联系客服', '使用帮助'],
+      itemList: this.textCopy.moreItems,
       success: (res) => {
         if (res.tapIndex === 0) {
           wx.showModal({
-            title: '清空对话',
-            content: '确认清除所有聊天记录？',
+            title: this.textCopy.clearTitle,
+            content: this.textCopy.clearContent,
             confirmColor: '#DC2626',
             success: (r) => { if (r.confirm) this.setData({ messages: [] }) }
           })

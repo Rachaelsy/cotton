@@ -2,41 +2,41 @@
 <view class="page">
   <view class="header" style="padding-top: {{statusBarHeight}}px">
     <view class="topbar">
-      <view class="back-btn" bindtap="onBack"><text class="back-text">返回</text></view>
+      <view class="back-btn" bindtap="onBack"><text class="back-text">{{common.back}}</text></view>
       <view class="header-center">
-        <text class="header-title">我的棉田</text>
-        <text class="header-sub">MY COTTON LAND</text>
+        <text class="header-title">{{copy.title}}</text>
+        <text class="header-sub">{{copy.subtitle}}</text>
       </view>
       <view class="manage-btn {{manageMode ? 'manage-btn-active' : ''}}" bindtap="onToggleManage">
-        <text>{{manageMode ? '完成' : '管理'}}</text>
+        <text>{{manageMode ? common.done : common.manage}}</text>
       </view>
     </view>
 
     <view class="stats-bar">
       <view class="stat-item">
-        <view class="stat-value-row"><text class="stat-val">{{totalCount}}</text><text class="stat-unit">块</text></view>
-        <text class="stat-desc">承包地块</text>
+        <view class="stat-value-row"><text class="stat-val">{{totalCount}}</text><text class="stat-unit">{{common.block}}</text></view>
+        <text class="stat-desc">{{copy.contractFields}}</text>
       </view>
       <view class="stat-div"></view>
       <view class="stat-item">
-        <view class="stat-value-row"><text class="stat-val">{{totalArea}}</text><text class="stat-unit">亩</text></view>
-        <text class="stat-desc">种植面积</text>
+        <view class="stat-value-row"><text class="stat-val">{{totalArea}}</text><text class="stat-unit">{{common.mu}}</text></view>
+        <text class="stat-desc">{{copy.area}}</text>
       </view>
       <view class="stat-div"></view>
       <view class="stat-item attention-stat">
-        <view class="stat-value-row"><text class="stat-val">{{attentionCount}}</text><text class="stat-unit">块</text></view>
-        <text class="stat-desc">需要关注</text>
+        <view class="stat-value-row"><text class="stat-val">{{attentionCount}}</text><text class="stat-unit">{{common.block}}</text></view>
+        <text class="stat-desc">{{copy.needAttention}}</text>
       </view>
     </view>
 
     <view class="tabs">
-      <view class="tab tab-active"><text>地块列表</text></view>
-      <view class="tab" bindtap="onAddField"><text>新增地块</text></view>
+      <view class="tab tab-active"><text>{{copy.list}}</text></view>
+      <view class="tab" bindtap="onAddField"><text>{{copy.add}}</text></view>
     </view>
   </view>
 
   <view wx:if="{{manageMode}}" class="manage-tip">
-    <text>管理模式：选择地块后可批量删除</text>
+    <text>{{copy.manageTip}}</text>
   </view>
 
   <view class="filter-panel">
@@ -45,7 +45,7 @@
       <input
         class="search-input"
         value="{{keyword}}"
-        placeholder="搜索地块名称、品种或问题"
+        placeholder="{{copy.searchPlaceholder}}"
         confirm-type="search"
         bindinput="onSearchInput"
         bindconfirm="onSearchConfirm"
@@ -63,8 +63,8 @@
           <text>{{areaOptions[areaIndex]}}</text><text class="filter-caret">⌄</text>
         </view>
       </picker>
-      <text wx:if="{{hasActiveFilter}}" class="reset-filter" bindtap="onResetFilters">重置</text>
-      <text class="result-count">{{resultCount}} 块</text>
+      <text wx:if="{{hasActiveFilter}}" class="reset-filter" bindtap="onResetFilters">{{common.reset}}</text>
+      <text class="result-count">{{resultCount}} {{copy.resultUnit}}</text>
     </view>
   </view>
 
@@ -81,22 +81,22 @@
       <view class="loading-card"></view>
       <view class="loading-card"></view>
       <view class="loading-card"></view>
-      <text class="loading-text">正在读取棉田数据…</text>
+      <text class="loading-text">{{copy.loading}}</text>
     </view>
 
     <view wx:elif="{{loadError}}" class="state-wrap">
       <icon type="warn" size="38" color="#C67C31"></icon>
-      <text class="state-title">暂时无法加载地块</text>
+      <text class="state-title">{{copy.loadFail}}</text>
       <text class="state-desc">{{loadError}}</text>
-      <view class="state-action" bindtap="onRetry"><text>重新加载</text></view>
+      <view class="state-action" bindtap="onRetry"><text>{{common.retry}}</text></view>
     </view>
 
     <view wx:else>
       <view wx:if="{{warnFields.length}}" class="field-section">
         <view class="section-header">
           <view class="section-mark section-mark-warn"></view>
-          <text class="section-title">需要关注</text>
-          <text class="section-count">{{warnFields.length}} 块</text>
+          <text class="section-title">{{copy.attention}}</text>
+          <text class="section-count">{{warnFields.length}} {{copy.resultUnit}}</text>
         </view>
         <view
           class="field-card field-card-warn {{item.selected ? 'field-card-selected' : ''}}"
@@ -120,7 +120,7 @@
               data-id="{{item.id}}"
               catchtap="onFieldTap"
             ></map>
-            <view wx:else class="preview-empty"><text>{{item.areaText}}</text><text>亩</text></view>
+            <view wx:else class="preview-empty"><text>{{item.areaText}}</text><text>{{common.mu}}</text></view>
             <view wx:if="{{manageMode}}" class="select-badge {{item.selected ? 'select-badge-active' : ''}}">
               <icon wx:if="{{item.selected}}" type="success_no_circle" size="18" color="#FFFFFF"></icon>
             </view>
@@ -130,12 +130,12 @@
               <text class="field-name">{{item.name}}</text>
               <view class="score-wrap"><text class="score {{item.scoreCls}}">{{item.health_score}}</text><text class="score-unit">/100</text></view>
             </view>
-            <text class="field-meta">{{item.areaText}}亩 · {{item.planting_status}} · {{item.variety || '未填品种'}} · {{item.irrigation || '未填灌溉'}}</text>
+            <text class="field-meta">{{item.areaText}}{{common.mu}} · {{item.plantingStatusText}} · {{item.varietyText}} · {{item.irrigationText}}</text>
             <view class="card-foot">
               <view class="status-tag status-tag-warn"><icon type="warn" size="12" color="#C35D2E"></icon><text>{{item.tagText}}</text></view>
               <view class="foot-right">
                 <text class="field-date">{{item.date}}</text>
-                <view wx:if="{{!manageMode}}" class="weather-mini-btn" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="onFieldWeather"><text>气象</text></view>
+                <view wx:if="{{!manageMode}}" class="weather-mini-btn" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="onFieldWeather"><text>{{copy.weather}}</text></view>
               </view>
             </view>
           </view>
@@ -145,8 +145,8 @@
       <view wx:if="{{okFields.length}}" class="field-section">
         <view class="section-header">
           <view class="section-mark section-mark-ok"></view>
-          <text class="section-title">正常种植</text>
-          <text class="section-count">{{okFields.length}} 块</text>
+          <text class="section-title">{{copy.normal}}</text>
+          <text class="section-count">{{okFields.length}} {{copy.resultUnit}}</text>
         </view>
         <view
           class="field-card field-card-ok {{item.selected ? 'field-card-selected' : ''}}"
@@ -170,7 +170,7 @@
               data-id="{{item.id}}"
               catchtap="onFieldTap"
             ></map>
-            <view wx:else class="preview-empty"><text>{{item.areaText}}</text><text>亩</text></view>
+            <view wx:else class="preview-empty"><text>{{item.areaText}}</text><text>{{common.mu}}</text></view>
             <view wx:if="{{manageMode}}" class="select-badge {{item.selected ? 'select-badge-active' : ''}}">
               <icon wx:if="{{item.selected}}" type="success_no_circle" size="18" color="#FFFFFF"></icon>
             </view>
@@ -180,12 +180,12 @@
               <text class="field-name">{{item.name}}</text>
               <view class="score-wrap"><text class="score {{item.scoreCls}}">{{item.health_score}}</text><text class="score-unit">/100</text></view>
             </view>
-            <text class="field-meta">{{item.areaText}}亩 · {{item.planting_status}} · {{item.variety || '未填品种'}} · {{item.irrigation || '未填灌溉'}}</text>
+            <text class="field-meta">{{item.areaText}}{{common.mu}} · {{item.plantingStatusText}} · {{item.varietyText}} · {{item.irrigationText}}</text>
             <view class="card-foot">
               <view class="status-tag status-tag-ok"><icon type="success_no_circle" size="12" color="#2D8B57"></icon><text>{{item.tagText}}</text></view>
               <view class="foot-right">
                 <text class="field-date">{{item.date}}</text>
-                <view wx:if="{{!manageMode}}" class="weather-mini-btn" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="onFieldWeather"><text>气象</text></view>
+                <view wx:if="{{!manageMode}}" class="weather-mini-btn" data-id="{{item.id}}" data-name="{{item.name}}" catchtap="onFieldWeather"><text>{{copy.weather}}</text></view>
               </view>
             </view>
           </view>
@@ -193,29 +193,29 @@
       </view>
 
       <view wx:if="{{totalCount === 0}}" class="state-wrap empty-state">
-        <text class="empty-monogram">田</text>
-        <text class="state-title">还没有地块</text>
-        <text class="state-desc">在地图上标记边界，建立第一块数字棉田</text>
-        <view class="state-action" bindtap="onAddField"><text>新增第一块地</text></view>
+        <text class="empty-monogram">{{copy.emptyMonogram}}</text>
+        <text class="state-title">{{copy.emptyTitle}}</text>
+        <text class="state-desc">{{copy.emptyDesc}}</text>
+        <view class="state-action" bindtap="onAddField"><text>{{copy.addFirst}}</text></view>
       </view>
 
       <view wx:elif="{{resultCount === 0}}" class="state-wrap empty-state">
         <icon type="search" size="38" color="#A59B90"></icon>
-        <text class="state-title">没有匹配的地块</text>
-        <text class="state-desc">换个关键词或筛选条件试试</text>
-        <view class="state-action state-action-light" bindtap="onResetFilters"><text>清除筛选</text></view>
+        <text class="state-title">{{copy.noMatch}}</text>
+        <text class="state-desc">{{copy.noMatchDesc}}</text>
+        <view class="state-action state-action-light" bindtap="onResetFilters"><text>{{copy.clearFilter}}</text></view>
       </view>
 
       <view class="scroll-bottom-space"></view>
     </view>
   </scroll-view>
 
-  <view wx:if="{{!manageMode && totalCount > 0}}" class="add-fab" bindtap="onAddField"><text>新增地块</text></view>
+  <view wx:if="{{!manageMode && totalCount > 0}}" class="add-fab" bindtap="onAddField"><text>{{copy.addFab}}</text></view>
 
   <view wx:if="{{manageMode}}" class="manage-bar">
-    <view class="select-all-btn" bindtap="onSelectAll"><text>{{allVisibleSelected ? '取消全选' : '全选'}}</text></view>
+    <view class="select-all-btn" bindtap="onSelectAll"><text>{{allVisibleSelected ? copy.cancelAll : copy.selectAll}}</text></view>
     <view class="batch-delete-btn {{selectedIds.length ? '' : 'batch-delete-disabled'}}" bindtap="onBatchDelete">
-      <text>{{selectedIds.length ? '删除已选 ' + selectedIds.length + ' 块' : '请选择地块'}}</text>
+      <text>{{batchActionText}}</text>
     </view>
   </view>
 </view>

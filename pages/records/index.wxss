@@ -166,6 +166,48 @@
   flex-shrink: 0;
 }
 
+.field-picker-filter {
+  margin: 0 28rpx 18rpx;
+  padding: 18rpx 22rpx;
+  border-radius: 18rpx;
+  background: #F8F3EC;
+  border: 2rpx solid #EEE5D8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.field-picker-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.field-picker-label {
+  font-size: 20rpx;
+  color: #8A7F72;
+  font-weight: 700;
+}
+
+.field-picker-value {
+  font-size: 27rpx;
+  color: #1A1A1A;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-picker-action {
+  flex-shrink: 0;
+  font-size: 23rpx;
+  color: #C8902E;
+  font-weight: 900;
+}
+
 .filter-row {
   width: 100%;
   white-space: nowrap;

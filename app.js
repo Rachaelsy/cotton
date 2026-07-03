@@ -7,9 +7,12 @@ const CLOUD_ENV = 'YOUR_CLOUD_ENV_ID'
 
 const { PRODUCTS } = require('./utils/data')
 const auth = require('./utils/auth')
+const i18n = require('./utils/i18n')
 
 App({
   onLaunch() {
+    this.globalData.language = i18n.getLanguage()
+
     // 初始化云开发
     if (wx.cloud) {
       wx.cloud.init({

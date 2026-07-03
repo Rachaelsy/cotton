@@ -11,7 +11,7 @@
     <view class="rmt-field-outline">
       <text class="rmt-field-label">{{selField}}</text>
       <view class="rmt-score-chip">
-        <text class="rmt-score-text">{{analysis.score}}分</text>
+        <text class="rmt-score-text">{{analysis.score}}{{copy.scoreUnit}}</text>
       </view>
     </view>
     <!-- 顶部导航 -->
@@ -47,8 +47,8 @@
         <view class="rmt-ai-online"></view>
       </view>
       <view style="flex:1">
-        <text class="rmt-ai-title">AI 遥感分析<text class="rmt-new">NEW</text></text>
-        <text class="rmt-ai-sub">基于多光谱+NDVI数据实时分析</text>
+        <text class="rmt-ai-title">{{copy.title}}<text class="rmt-new">NEW</text></text>
+        <text class="rmt-ai-sub">{{copy.subtitle}}</text>
       </view>
       <view class="rmt-score-ring" style="border-color:{{analysis.score >= 85 ? '#4CAF50' : '#FF9800'}}">
         <text class="rmt-ring-val">{{analysis.score}}</text>
@@ -60,17 +60,17 @@
     <view class="rmt-metrics">
       <view class="rmt-met">
         <text class="rmt-met-v" style="color:{{analysis.ndviColor}}">{{analysis.ndvi}}</text>
-        <text class="rmt-met-l">NDVI长势</text>
+        <text class="rmt-met-l">{{copy.ndvi}}</text>
       </view>
       <view class="rmt-met-div"></view>
       <view class="rmt-met">
         <text class="rmt-met-v" style="color:{{analysis.droughtColor}}">{{analysis.drought}}</text>
-        <text class="rmt-met-l">旱情风险</text>
+        <text class="rmt-met-l">{{copy.drought}}</text>
       </view>
       <view class="rmt-met-div"></view>
       <view class="rmt-met">
         <text class="rmt-met-v" style="color:{{analysis.pestColor}}">{{analysis.pest}}</text>
-        <text class="rmt-met-l">病虫风险</text>
+        <text class="rmt-met-l">{{copy.pest}}</text>
       </view>
     </view>
 
@@ -83,7 +83,7 @@
         <view style="flex:1">
           <view style="display:flex;align-items:center;gap:12rpx;margin-bottom:8rpx">
             <text class="rmt-rec-name">{{item.name}}</text>
-            <view class="rmt-prio" style="background:{{item.priority === '关注' ? '#FFF3E6' : '#E8F5E9'}}">
+            <view class="rmt-prio" style="background:{{item.isAttention ? '#FFF3E6' : '#E8F5E9'}}">
               <text class="rmt-prio-text" style="color:{{item.priorityColor}}">{{item.priority}}</text>
             </view>
           </view>
@@ -93,7 +93,7 @@
 
       <!-- 询问 AI -->
       <view class="rmt-ask-row" bindtap="onAsk">
-        <text class="rmt-ask-text">有疑问？<text class="rmt-ask-bold">问问小棉 AI ›</text></text>
+        <text class="rmt-ask-text">{{copy.ask}}<text class="rmt-ask-bold">{{copy.askAi}}</text></text>
       </view>
     </scroll-view>
   </view>

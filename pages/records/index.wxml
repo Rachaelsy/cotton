@@ -43,6 +43,15 @@
   </view>
 
   <view wx:if="{{viewMode === 'list' && !manageMode}}" class="filters">
+    <picker mode="selector" range="{{fieldOptions}}" value="{{fieldPickerIndex}}" bindchange="onFieldPickerChange">
+      <view class="field-picker-filter">
+        <view class="field-picker-main">
+          <text class="field-picker-label">查看地块</text>
+          <text class="field-picker-value">{{fieldFilter}}</text>
+        </view>
+        <text class="field-picker-action">切换 ›</text>
+      </view>
+    </picker>
     <scroll-view class="filter-row" scroll-x enhanced show-scrollbar="{{false}}">
       <view
         class="filter-chip {{typeFilter === item ? 'on' : ''}}"

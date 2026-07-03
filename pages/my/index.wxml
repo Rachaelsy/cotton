@@ -20,7 +20,7 @@
           <view class="uc-name-row">
             <text class="uc-name">{{userInfo.name}}</text>
             <view wx:if="{{userInfo.verified}}" class="verified-chip">
-              <text class="verified-text">✓ 已认证</text>
+              <text class="verified-text">{{copy.verified}}</text>
             </view>
           </view>
           <view class="uc-tags">
@@ -35,19 +35,19 @@
         <view class="uc-stat">
           <view class="uc-stat-val-row">
             <text class="uc-stat-val">{{userInfo.landSize || 0}}</text>
-            <text class="uc-stat-unit">亩</text>
+            <text class="uc-stat-unit">{{common.mu}}</text>
           </view>
-          <text class="uc-stat-label">承包面积</text>
+          <text class="uc-stat-label">{{copy.landSize}}</text>
         </view>
         <view class="uc-divider"></view>
         <view class="uc-stat">
           <text class="uc-stat-val">12</text>
-          <text class="uc-stat-label">累计订单</text>
+          <text class="uc-stat-label">{{copy.orders}}</text>
         </view>
         <view class="uc-divider"></view>
         <view class="uc-stat">
           <text class="uc-stat-val">8</text>
-          <text class="uc-stat-label">收藏农机</text>
+          <text class="uc-stat-label">{{copy.favoritesCount}}</text>
         </view>
       </view>
     </view>
@@ -59,8 +59,8 @@
           <text class="guest-avatar-icon">👤</text>
         </view>
         <view class="guest-text">
-          <text class="guest-title">您好，游客</text>
-          <text class="guest-sub">登录后享受完整农业服务</text>
+          <text class="guest-title">{{copy.guestTitle}}</text>
+          <text class="guest-sub">{{copy.guestSub}}</text>
         </view>
       </view>
 
@@ -72,12 +72,12 @@
         loading="{{wxLoading}}"
       >
         <text class="wx-btn-icon">🟢</text>
-        <text class="wx-btn-text">微信一键登录</text>
+        <text class="wx-btn-text">{{copy.wxLogin}}</text>
       </button>
 
       <!-- 手机号登录入口 -->
       <view class="phone-login-row" bindtap="onGoPhoneLogin">
-        <text class="phone-login-text">手机号登录 / 注册</text>
+        <text class="phone-login-text">{{copy.phoneLogin}}</text>
         <text class="phone-login-arr">›</text>
       </view>
     </view>
@@ -93,11 +93,11 @@
           <text class="mi-emoji">🪪</text>
         </view>
         <view class="mi-body">
-          <text class="mi-title">实名认证</text>
-          <text class="mi-sub">享受补贴、贷款等专属权益</text>
+          <text class="mi-title">{{copy.realName}}</text>
+          <text class="mi-sub">{{copy.realNameSub}}</text>
         </view>
         <view class="mi-right">
-          <text wx:if="{{isLoggedIn && userInfo.verified}}" class="mi-verified">✓已认证</text>
+          <text wx:if="{{isLoggedIn && userInfo.verified}}" class="mi-verified">{{copy.verified}}</text>
           <text class="mi-arr">›</text>
         </view>
       </view>
@@ -109,8 +109,8 @@
           <text class="mi-emoji">❤️</text>
         </view>
         <view class="mi-body">
-          <text class="mi-title">我的收藏</text>
-          <text class="mi-sub">收藏的农机、农资和服务</text>
+          <text class="mi-title">{{copy.favorites}}</text>
+          <text class="mi-sub">{{copy.favoritesSub}}</text>
         </view>
         <view class="mi-right">
           <text wx:if="{{favCount > 0}}" class="mi-count">{{favCount}}</text>
@@ -125,13 +125,29 @@
           <text class="mi-emoji">📋</text>
         </view>
         <view class="mi-body">
-          <text class="mi-title">我的订单</text>
-          <text class="mi-sub">查看预约中、进行中、已完成订单</text>
+          <text class="mi-title">{{copy.myOrders}}</text>
+          <text class="mi-sub">{{copy.myOrdersSub}}</text>
         </view>
         <view class="mi-right">
           <view wx:if="{{isLoggedIn && orderCount > 0}}" class="mi-badge-warn">
-            <text class="mi-badge-text">{{orderCount}}进行中</text>
+            <text class="mi-badge-text">{{orderCount}}{{copy.running}}</text>
           </view>
+          <text class="mi-arr">›</text>
+        </view>
+      </view>
+
+      <view class="mi-div"></view>
+
+      <view class="menu-item" bindtap="onLanguage">
+        <view class="mi-icon orange">
+          <text class="mi-emoji">🌐</text>
+        </view>
+        <view class="mi-body">
+          <text class="mi-title">{{copy.language}}</text>
+          <text class="mi-sub">{{copy.languageSub}}</text>
+        </view>
+        <view class="mi-right">
+          <text class="mi-version">{{lang === 'ug' ? 'ئۇيغۇرچە' : '中文'}}</text>
           <text class="mi-arr">›</text>
         </view>
       </view>
@@ -143,8 +159,8 @@
           <text class="mi-emoji">ℹ️</text>
         </view>
         <view class="mi-body">
-          <text class="mi-title">关于我们</text>
-          <text class="mi-sub">版本信息 · 用户协议 · 联系客服</text>
+          <text class="mi-title">{{copy.about}}</text>
+          <text class="mi-sub">{{copy.aboutSub}}</text>
         </view>
         <view class="mi-right">
           <text class="mi-version">v1.2.0</text>
@@ -156,7 +172,7 @@
 
     <!-- 退出登录（仅登录时显示） -->
     <view wx:if="{{isLoggedIn}}" class="logout-wrap" bindtap="onLogout">
-      <text class="logout-text">退出登录</text>
+      <text class="logout-text">{{copy.logout}}</text>
     </view>
 
     <view style="height: 40rpx"></view>

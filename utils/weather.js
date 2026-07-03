@@ -1,5 +1,6 @@
 const { normalizeCoordinates, calculateCenter } = require('./plot-geometry')
 const { locateService } = require('./regions')
+const i18n = require('./i18n')
 
 function parseCoordinates(value) {
   if (Array.isArray(value)) return normalizeCoordinates(value)
@@ -873,4 +874,13 @@ function buildWeatherFromApi(plot, payload, options = {}) {
   return buildWeatherModelFromCurrent(plot, current, daily, hourly, options)
 }
 
-module.exports = { buildWeatherForPlot, buildWeatherFromApi, buildWeatherModelFromCurrent, buildWeatherModelFromCma }
+function localizeWeatherModel(model) {
+  return i18n.localizeDeep(model)
+}
+
+module.exports = {
+  buildWeatherForPlot: (...args) => localizeWeatherModel(buildWeatherForPlot(...args)),
+  buildWeatherFromApi: (...args) => localizeWeatherModel(buildWeatherFromApi(...args)),
+  buildWeatherModelFromCurrent,
+  buildWeatherModelFromCma
+}

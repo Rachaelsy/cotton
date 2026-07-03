@@ -2,21 +2,21 @@
 <view class="page">
   <view class="header" style="padding-top: {{statusBarHeight}}px">
     <view class="topbar">
-      <view class="header-action" bindtap="onBack"><text>返回</text></view>
-      <text class="header-title">{{plot.name || '地块详情'}}</text>
-      <view class="header-action header-edit" bindtap="onEdit"><text>编辑</text></view>
+      <view class="header-action" bindtap="onBack"><text>{{common.back}}</text></view>
+      <text class="header-title">{{plot.name || copy.fallbackTitle}}</text>
+      <view class="header-action header-edit" bindtap="onEdit"><text>{{common.edit}}</text></view>
     </view>
   </view>
 
   <view wx:if="{{loading}}" class="state-wrap">
-    <text class="state-title">正在汇总地块数据…</text>
+    <text class="state-title">{{copy.loading}}</text>
   </view>
 
   <view wx:elif="{{loadError}}" class="state-wrap">
     <icon type="warn" size="40" color="#C67C31"></icon>
-    <text class="state-title">暂时无法加载详情</text>
+    <text class="state-title">{{copy.loadFail}}</text>
     <text class="state-desc">{{loadError}}</text>
-    <view class="state-action" bindtap="onRetry"><text>重新加载</text></view>
+    <view class="state-action" bindtap="onRetry"><text>{{common.retry}}</text></view>
   </view>
 
   <scroll-view wx:else class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
@@ -34,14 +34,14 @@
           enable-scroll
           enable-rotate="{{false}}"
         ></map>
-        <view wx:else class="no-map-tip"><text>该地块暂无边界数据</text></view>
-        <view class="map-layer-btn" bindtap="onToggleSatellite"><text>{{isSatellite ? '标准地图' : '卫星影像'}}</text></view>
+        <view wx:else class="no-map-tip"><text>{{copy.noBoundary}}</text></view>
+        <view class="map-layer-btn" bindtap="onToggleSatellite"><text>{{isSatellite ? copy.standardMap : copy.satelliteMap}}</text></view>
       </view>
 
       <view class="overview-card {{plot.status === 'attention' ? 'overview-attention' : ''}}">
         <view class="score-block">
-          <view class="score-row"><text class="score-value">{{plot.health_score}}</text><text class="score-unit">分</text></view>
-          <text class="score-label">长势健康评分</text>
+          <view class="score-row"><text class="score-value">{{plot.health_score}}</text><text class="score-unit">{{copy.scoreUnit}}</text></view>
+          <text class="score-label">{{copy.healthScore}}</text>
         </view>
         <view class="overview-divider"></view>
         <view class="overview-main">
@@ -49,51 +49,52 @@
             <icon type="{{plot.status === 'attention' ? 'warn' : 'success_no_circle'}}" size="13" color="{{plot.status === 'attention' ? '#B6542D' : '#24794A'}}"></icon>
             <text>{{plot.growthLabel}}</text>
           </view>
-          <text class="overview-line">{{plot.areaText}} 亩 · {{plot.variety || '未填品种'}}</text>
-          <text class="overview-line">{{plot.planting_status}} · {{plot.irrigation || '未填灌溉方式'}}</text>
+          <text class="overview-line">{{plot.areaText}} {{common.mu}} · {{plot.variety || copy.noVariety}}</text>
+          <text class="overview-line">{{plot.plantingStatusText}} · {{plot.irrigationText || copy.noIrrigation}}</text>
         </view>
       </view>
 
       <view class="section-card">
-        <view class="section-head"><text class="section-title">地块数据中心</text><text class="section-sub">所有服务按此地块查看</text></view>
+        <view class="section-head"><text class="section-title">{{copy.dataCenter}}</text><text class="section-sub">{{copy.dataCenterSub}}</text></view>
         <view class="module-grid">
-          <view class="module-item" data-module="remote" bindtap="onOpenModule"><text class="module-name">遥感监测</text><text class="module-desc">长势与影像</text></view>
-          <view class="module-item" data-module="weather" bindtap="onOpenModule"><text class="module-name">地块气象</text><text class="module-desc">预报与预警</text></view>
-          <view class="module-item" data-module="records" bindtap="onOpenModule"><text class="module-name">农事记录</text><text class="module-desc">{{recordCount}} 条记录</text></view>
-          <view class="module-item" data-module="pest" bindtap="onOpenModule"><text class="module-name">病虫识别</text><text class="module-desc">拍照诊断</text></view>
+          <view class="module-item" data-module="water" bindtap="onOpenModule"><text class="module-name">{{copy.water}}</text><text class="module-desc">{{copy.waterSub}}</text></view>
+          <view class="module-item" data-module="fert" bindtap="onOpenModule"><text class="module-name">{{copy.fert}}</text><text class="module-desc">{{copy.fertSub}}</text></view>
+          <view class="module-item" data-module="weather" bindtap="onOpenModule"><text class="module-name">{{copy.weather}}</text><text class="module-desc">{{copy.weatherSub}}</text></view>
+          <view class="module-item" data-module="records" bindtap="onOpenModule"><text class="module-name">{{copy.records}}</text><text class="module-desc">{{recordsSubText}}</text></view>
+          <view class="module-item" data-module="pest" bindtap="onOpenModule"><text class="module-name">{{copy.pest}}</text><text class="module-desc">{{copy.pestSub}}</text></view>
         </view>
       </view>
 
       <view class="section-card">
-        <view class="section-head"><text class="section-title">基础信息</text><text class="section-sub">录入与边界数据</text></view>
-        <view class="kv-row"><text class="kv-key">地块名称</text><text class="kv-value">{{plot.name}}</text></view>
-        <view class="kv-row"><text class="kv-key">种植面积</text><text class="kv-value">{{plot.areaText}} 亩</text></view>
-        <view class="kv-row"><text class="kv-key">地块周长</text><text class="kv-value">{{plot.perimeterText}} 米</text></view>
-        <view class="kv-row"><text class="kv-key">棉花品种</text><text class="kv-value {{!plot.variety ? 'kv-empty' : ''}}">{{plot.variety || '未填写'}}</text></view>
-        <view class="kv-row"><text class="kv-key">播种日期</text><text class="kv-value {{!plot.sow_date ? 'kv-empty' : ''}}">{{plot.sowDateText}}</text></view>
-        <view class="kv-row"><text class="kv-key">灌溉方式</text><text class="kv-value">{{plot.irrigation || '未填写'}}</text></view>
-        <view class="kv-row"><text class="kv-key">土壤类型</text><text class="kv-value {{!plot.soil_type ? 'kv-empty' : ''}}">{{plot.soil_type || '未填写'}}</text></view>
-        <view class="kv-row"><text class="kv-key">种植状态</text><text class="kv-value">{{plot.planting_status}}</text></view>
-        <view class="kv-row kv-row-note"><text class="kv-key">备注</text><text class="kv-value {{!plot.note ? 'kv-empty' : ''}}">{{plot.note || '未填写'}}</text></view>
+        <view class="section-head"><text class="section-title">{{copy.baseInfo}}</text><text class="section-sub">{{copy.baseInfoSub}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.name}}</text><text class="kv-value">{{plot.name}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.area}}</text><text class="kv-value">{{plot.areaText}} {{common.mu}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.perimeter}}</text><text class="kv-value">{{plot.perimeterText}} {{copy.meter}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.variety}}</text><text class="kv-value {{!plot.variety ? 'kv-empty' : ''}}">{{plot.variety || copy.notFilled}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.sowDate}}</text><text class="kv-value {{!plot.sow_date ? 'kv-empty' : ''}}">{{plot.sowDateText}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.irrigation}}</text><text class="kv-value">{{plot.irrigationText || copy.notFilled}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.soil}}</text><text class="kv-value {{!plot.soil_type ? 'kv-empty' : ''}}">{{plot.soilTypeText || copy.notFilled}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.planting}}</text><text class="kv-value">{{plot.plantingStatusText}}</text></view>
+        <view class="kv-row kv-row-note"><text class="kv-key">{{copy.note}}</text><text class="kv-value {{!plot.note ? 'kv-empty' : ''}}">{{plot.note || copy.notFilled}}</text></view>
       </view>
 
       <view class="section-card">
-        <view class="section-head"><text class="section-title">最近农事</text><text class="section-sub">共 {{recordCount}} 条</text></view>
+        <view class="section-head"><text class="section-title">{{copy.recentRecords}}</text><text class="section-sub">{{totalRecordsText}}</text></view>
         <view wx:if="{{recentRecords.length}}">
           <view class="record-row" wx:for="{{recentRecords}}" wx:key="id" data-module="records" bindtap="onOpenModule">
-            <view class="record-type"><text>{{item.type}}</text></view>
+            <view class="record-type"><text>{{item.typeText}}</text></view>
             <view class="record-main"><text class="record-title">{{item.title}}</text><text class="record-meta">{{item.workDateText}}{{item.work_time ? ' · ' + item.work_time : ''}}</text></view>
-            <text class="record-more">查看</text>
+            <text class="record-more">{{copy.view}}</text>
           </view>
         </view>
-        <view wx:else class="record-empty"><text>这块地还没有农事记录</text></view>
-        <view class="section-link" data-module="records" bindtap="onOpenModule"><text>{{recordCount ? '查看全部农事记录' : '去添加第一条记录'}}</text></view>
+        <view wx:else class="record-empty"><text>{{copy.noRecords}}</text></view>
+        <view class="section-link" data-module="records" bindtap="onOpenModule"><text>{{recordCount ? copy.viewAllRecords : copy.addFirstRecord}}</text></view>
       </view>
 
       <view class="danger-zone">
-        <text class="danger-title">删除地块</text>
-        <text class="danger-desc">删除后无法恢复，关联农事记录将保留为历史快照。</text>
-        <view class="delete-btn" bindtap="onDelete"><text>删除该地块</text></view>
+        <text class="danger-title">{{copy.deleteTitle}}</text>
+        <text class="danger-desc">{{copy.deleteDesc}}</text>
+        <view class="delete-btn" bindtap="onDelete"><text>{{copy.deleteThis}}</text></view>
       </view>
       <view class="bottom-space"></view>
     </view>
@@ -102,17 +103,17 @@
   <view wx:if="{{showEdit}}" class="modal-mask" bindtap="onCloseEdit"></view>
   <view wx:if="{{showEdit}}" class="modal" catchtap="noop">
     <view class="modal-handle"></view>
-    <view class="modal-head"><text class="modal-title">编辑地块信息</text><view class="modal-close" bindtap="onCloseEdit"><icon type="cancel" size="23" color="#81766C"></icon></view></view>
+    <view class="modal-head"><text class="modal-title">{{copy.editTitle}}</text><view class="modal-close" bindtap="onCloseEdit"><icon type="cancel" size="23" color="#81766C"></icon></view></view>
     <scroll-view class="modal-scroll" scroll-y enhanced show-scrollbar="{{false}}">
-      <view class="field-row"><text class="field-label">地块名称 <text class="req">*</text></text><input class="field-input" value="{{form.name}}" bindinput="onNameInput" maxlength="20"/></view>
-      <view class="field-row"><text class="field-label">棉花品种 <text class="req">*</text></text><input class="field-input" value="{{form.variety}}" bindinput="onVarietyInput" maxlength="30"/></view>
-      <view class="field-row"><text class="field-label">播种日期</text><picker mode="date" value="{{form.sowDate}}" bindchange="onSowChange"><view class="field-picker"><text class="{{form.sowDate ? 'picker-value' : 'picker-empty'}}">{{form.sowDate || '选择日期'}}</text><text class="picker-change">更改</text></view></picker></view>
-      <view class="field-row"><text class="field-label">灌溉方式</text><picker mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange"><view class="field-picker"><text class="picker-value">{{form.irrigation}}</text><text class="picker-change">更改</text></view></picker></view>
-      <view class="field-row"><text class="field-label">土壤类型</text><picker mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange"><view class="field-picker"><text class="picker-value">{{form.soilType}}</text><text class="picker-change">更改</text></view></picker></view>
-      <view class="field-row"><text class="field-label">种植状态</text><picker mode="selector" range="{{plantingOptions}}" value="{{plantingIndex}}" bindchange="onPlantingChange"><view class="field-picker"><text class="picker-value">{{form.plantingStatus}}</text><text class="picker-change">更改</text></view></picker></view>
-      <view class="field-row field-note"><text class="field-label">备注</text><textarea class="field-textarea" value="{{form.note}}" bindinput="onNoteInput" maxlength="200" placeholder="填写地块特殊情况或管理要点"></textarea></view>
+      <view class="field-row"><text class="field-label">{{copy.name}} <text class="req">*</text></text><input class="field-input" value="{{form.name}}" bindinput="onNameInput" maxlength="20"/></view>
+      <view class="field-row"><text class="field-label">{{copy.variety}} <text class="req">*</text></text><input class="field-input" value="{{form.variety}}" bindinput="onVarietyInput" maxlength="30"/></view>
+      <view class="field-row"><text class="field-label">{{copy.sowDate}}</text><picker mode="date" value="{{form.sowDate}}" bindchange="onSowChange"><view class="field-picker"><text class="{{form.sowDate ? 'picker-value' : 'picker-empty'}}">{{form.sowDate || copy.chooseDate}}</text><text class="picker-change">{{copy.change}}</text></view></picker></view>
+      <view class="field-row"><text class="field-label">{{copy.irrigation}}</text><picker mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange"><view class="field-picker"><text class="picker-value">{{irrigationLabel}}</text><text class="picker-change">{{copy.change}}</text></view></picker></view>
+      <view class="field-row"><text class="field-label">{{copy.soil}}</text><picker mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange"><view class="field-picker"><text class="picker-value">{{soilLabel}}</text><text class="picker-change">{{copy.change}}</text></view></picker></view>
+      <view class="field-row"><text class="field-label">{{copy.planting}}</text><picker mode="selector" range="{{plantingOptions}}" value="{{plantingIndex}}" bindchange="onPlantingChange"><view class="field-picker"><text class="picker-value">{{plantingLabel}}</text><text class="picker-change">{{copy.change}}</text></view></picker></view>
+      <view class="field-row field-note"><text class="field-label">{{copy.note}}</text><textarea class="field-textarea" value="{{form.note}}" bindinput="onNoteInput" maxlength="200" placeholder="{{copy.notePh}}"></textarea></view>
       <view class="modal-bottom-space"></view>
     </scroll-view>
-    <view class="modal-save {{saving ? 'modal-save-disabled' : ''}}" bindtap="onSave"><text>{{saving ? '正在保存…' : '保存修改'}}</text></view>
+    <view class="modal-save {{saving ? 'modal-save-disabled' : ''}}" bindtap="onSave"><text>{{saving ? copy.saving : copy.saveEdit}}</text></view>
   </view>
 </view>

@@ -99,6 +99,11 @@
 .tool-primary .tool-title,
 .tool-primary .tool-sub { color: #FFFFFF; }
 
+.tool-active {
+  background: #FFF2E2;
+  border: 2rpx solid #D8A15F;
+}
+
 .tool-title {
   color: #49413A;
   font-size: 22rpx;
@@ -114,6 +119,111 @@
 .tool-disabled {
   opacity: .42;
   pointer-events: none;
+}
+
+.coord-panel {
+  position: absolute;
+  top: 26rpx;
+  left: 22rpx;
+  right: 138rpx;
+  z-index: 11;
+  padding: 18rpx;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 6rpx 24rpx rgba(48, 38, 29, .18);
+}
+
+.coord-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.coord-title {
+  display: block;
+  color: #302A24;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.coord-hint {
+  display: block;
+  margin-top: 5rpx;
+  color: #8B8278;
+  font-size: 19rpx;
+  line-height: 1.45;
+}
+
+.coord-close {
+  flex-shrink: 0;
+  color: #9B6738;
+  font-size: 21rpx;
+  font-weight: 800;
+}
+
+.coord-input-row {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.coord-input-wrap {
+  flex: 1;
+  min-width: 0;
+  padding: 10rpx 12rpx;
+  border-radius: 14rpx;
+  background: #F6F1EA;
+}
+
+.coord-label {
+  display: block;
+  color: #776D64;
+  font-size: 18rpx;
+}
+
+.coord-input {
+  margin-top: 4rpx;
+  width: 100%;
+  height: 42rpx;
+  color: #2F2923;
+  font-size: 23rpx;
+}
+
+.coord-picked {
+  display: block;
+  margin-top: 12rpx;
+  color: #3C82B3;
+  font-size: 20rpx;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.coord-actions {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 14rpx;
+}
+
+.coord-btn {
+  flex: 1;
+  height: 58rpx;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.coord-btn.secondary {
+  color: #675D54;
+  background: #EFE8DF;
+}
+
+.coord-btn.primary {
+  color: #FFFFFF;
+  background: #9B6738;
 }
 
 .draw-empty-tip {

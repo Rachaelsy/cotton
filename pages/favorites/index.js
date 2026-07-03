@@ -1,22 +1,36 @@
 // pages/favorites/index.js — 我的收藏
 const app = getApp()
+const i18n = require('../../utils/i18n')
 
 Page({
   data: {
     statusBarHeight: 20,
+    copy: i18n.getPageCopy('favorites'),
     favorites: [],
+    countText: '',
     cartCount: 0
   },
 
   onLoad() {
     const info = wx.getSystemInfoSync()
+    this.applyLanguage()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
   },
 
   onShow() {
+    this.applyLanguage()
     this.setData({
       favorites: app.globalData.favorites || [],
+      countText: this.textCopy.count((app.globalData.favorites || []).length),
       cartCount: app.globalData.cartCount
+    })
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.textCopy = i18n.getCopy('favorites', lang)
+    this.setData({
+      copy: i18n.getPageCopy('favorites', lang)
     })
   },
 
@@ -36,7 +50,8 @@ Page({
     const id = e.currentTarget.dataset.id
     app.removeFromFavorites(id)
     this.setData({ favorites: [...app.globalData.favorites] })
-    wx.showToast({ title: '已取消收藏', icon: 'none', duration: 1000 })
+    this.setData({ countText: this.textCopy.count((app.globalData.favorites || []).length) })
+    wx.showToast({ title: this.textCopy.removed, icon: 'none', duration: 1000 })
   },
 
   onAddToCart(e) {
@@ -45,7 +60,7 @@ Page({
     if (!product) return
     app.addToCart(product)
     this.setData({ cartCount: app.globalData.cartCount })
-    wx.showToast({ title: '已加入购物车', icon: 'success', duration: 1200 })
+    wx.showToast({ title: this.textCopy.addedCart, icon: 'success', duration: 1200 })
   },
 
   onGoCart() {

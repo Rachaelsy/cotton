@@ -1,5 +1,6 @@
 // pages/fields/draw.js — 地块边界绘制
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
 const {
   normalizeCoordinates,
   calculateAreaMu,
@@ -13,6 +14,9 @@ const DEFAULT_LNG = 75.9900
 Page({
   data: {
     statusBarHeight: 20,
+    lang: 'zh',
+    common: i18n.getCopy('common'),
+    copy: i18n.getPageCopy('draw'),
     // 地图中心
     mapLat: DEFAULT_LAT,
     mapLng: DEFAULT_LNG,
@@ -23,10 +27,15 @@ Page({
     // 计算结果
     area: '0',
     perimeter: 0,
+    summaryText: '0 亩 · 0 个顶点 · 周长 0 米',
     // 地图元素
     markers:   [],
     polylines: [],
     polygons:  [],
+    showCoordPanel: false,
+    manualLat: '',
+    manualLng: '',
+    pickedLocationName: '',
     // 提示文字
     tipText: '点击地图添加地块顶点',
     // 表单（完成绘制后填写）
@@ -41,18 +50,43 @@ Page({
       plantingStatus: '已播种',
       note: ''
     },
-    irrigationOptions: ['滴灌', '漫灌', '喷灌', '无'],
+    irrigationOptions: i18n.getOptionLabels('irrigation'),
     irrigationIndex: 0,
-    soilOptions: ['壤土', '沙壤土', '粘土', '沙土', '盐碱土'],
+    soilOptions: i18n.getOptionLabels('soil'),
     soilIndex: 0,
-    plantingOptions: ['已播种', '计划播种', '未播种'],
+    plantingOptions: i18n.getOptionLabels('planting'),
     plantingIndex: 0
   },
+
+  textCopy: i18n.getCopy('draw'),
 
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.applyLanguage()
     this._locateUser()
+  },
+
+  onShow() {
+    this.applyLanguage()
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    const copy = i18n.getCopy('draw', lang)
+    this.textCopy = copy
+    const irrigationOptions = i18n.getOptionLabels('irrigation', lang)
+    const soilOptions = i18n.getOptionLabels('soil', lang)
+    const plantingOptions = i18n.getOptionLabels('planting', lang)
+    this.setData({
+      lang,
+      common: i18n.getCopy('common', lang),
+      copy: i18n.getPageCopy('draw', lang),
+      irrigationOptions,
+      soilOptions,
+      plantingOptions
+    })
+    this._updateMap(this.data.points, this.data.closed)
   },
 
   onToggleSatellite() {
@@ -61,10 +95,10 @@ Page({
 
   onHelp() {
     wx.showModal({
-      title: '如何绘制地块',
-      content: '依次点击地块边界添加顶点，至少添加 3 个点。点击第 1 个点闭合边界，也可直接点击“完成绘制”自动闭合。',
+      title: this.data.copy.helpTitle,
+      content: this.data.copy.helpContent,
       showCancel: false,
-      confirmText: '知道了',
+      confirmText: this.data.copy.know,
       confirmColor: '#9B6738'
     })
   },
@@ -83,7 +117,19 @@ Page({
   onMapTap(e) {
     if (this.data.closed || this.data.showForm) return
     const { latitude, longitude } = e.detail
-    const pts = normalizeCoordinates([...this.data.points, { latitude, longitude }])
+    this._addPoint({ latitude, longitude })
+  },
+
+  _addPoint(point) {
+    if (this.data.closed || this.data.showForm) {
+      wx.showToast({ title: this.data.copy.closedCannotAdd, icon: 'none' })
+      return
+    }
+    const pts = normalizeCoordinates([...this.data.points, point])
+    if (pts.length !== this.data.points.length + 1) {
+      wx.showToast({ title: this.data.copy.invalidCoord, icon: 'none' })
+      return
+    }
     this._updateMap(pts, false)
   },
 
@@ -135,7 +181,7 @@ Page({
       },
       ...((!closed && i === 0 && normalized.length >= 3) ? {
         callout: {
-          content: '点击闭合', color: '#fff', bgColor: '#9B6738', fontSize: 11,
+          content: this.data.copy.closeCallout, color: '#fff', bgColor: '#9B6738', fontSize: 11,
           padding: 5, borderRadius: 6, display: 'ALWAYS'
         }
       } : {})
@@ -161,13 +207,22 @@ Page({
       fillColor:   '#C8902E33'
     }] : []
 
-    let tipText = '点击地图添加地块顶点'
-    if (normalized.length === 1) tipText = '继续添加顶点（至少3个）'
-    else if (normalized.length === 2) tipText = '再添加至少 1 个顶点'
-    else if (!closed) tipText = `已打 ${normalized.length} 个点，点击第 1 个点闭合`
-    else tipText = `已绘制 ${areaMu} 亩，请填写地块信息`
+    let tipText = this.data.copy.tipStart
+    if (normalized.length === 1) tipText = this.data.copy.tipOne
+    else if (normalized.length === 2) tipText = this.data.copy.tipTwo
+    else if (!closed) tipText = this.textCopy.tipDrawing(normalized.length)
+    else tipText = this.textCopy.tipDone(areaMu)
 
-    this.setData({ points: normalized, area: areaMu, perimeter: perim, markers, polylines, polygons, tipText })
+    this.setData({
+      points: normalized,
+      area: areaMu,
+      perimeter: perim,
+      summaryText: this.textCopy.summaryDesc(areaMu, normalized.length, perim),
+      markers,
+      polylines,
+      polygons,
+      tipText
+    })
   },
 
   // ── 撤销 ──────────────────────────────────
@@ -186,8 +241,8 @@ Page({
   onClear() {
     if (!this.data.points.length) return
     wx.showModal({
-      title: '清空地块',
-      content: '确定清除所有已打的点？',
+      title: this.data.copy.clearTitle,
+      content: this.data.copy.clearContent,
       confirmColor: '#DC2626',
       success: (r) => {
         if (r.confirm) {
@@ -206,15 +261,96 @@ Page({
         this.setData({ mapLat: res.latitude, mapLng: res.longitude })
         wx.createMapContext('mymap').moveToLocation({ latitude: res.latitude, longitude: res.longitude })
       },
-      fail: () => wx.showToast({ title: '定位失败，请检查权限', icon: 'none' })
+      fail: () => wx.showToast({ title: this.data.copy.locateFail, icon: 'none' })
     })
+  },
+
+  onChooseLocation() {
+    if (this.data.closed || this.data.showForm) {
+      wx.showToast({ title: this.data.copy.closedCannotAdd, icon: 'none' })
+      return
+    }
+    wx.chooseLocation({
+      latitude: this.data.mapLat,
+      longitude: this.data.mapLng,
+      success: (res) => {
+        const point = { latitude: res.latitude, longitude: res.longitude }
+        this.setData({
+          mapLat: point.latitude,
+          mapLng: point.longitude,
+          manualLat: point.latitude.toFixed(6),
+          manualLng: point.longitude.toFixed(6),
+          pickedLocationName: res.name || res.address || ''
+        })
+        this._moveMap(point)
+        wx.showModal({
+          title: this.data.copy.addSearchPointTitle,
+          content: this.textCopy.addSearchPointContent(res.name || res.address),
+          cancelText: this.data.copy.onlyMove,
+          confirmText: this.data.copy.addPoint,
+          confirmColor: '#9B6738',
+          success: modal => {
+            if (modal.confirm) {
+              this._addPoint(point)
+              wx.showToast({ title: this.data.copy.pointAdded, icon: 'none' })
+            }
+          }
+        })
+      }
+    })
+  },
+
+  onToggleCoordPanel() {
+    this.setData({ showCoordPanel: !this.data.showCoordPanel })
+  },
+
+  onManualLatInput(e) {
+    this.setData({ manualLat: e.detail.value })
+  },
+
+  onManualLngInput(e) {
+    this.setData({ manualLng: e.detail.value })
+  },
+
+  _readManualPoint() {
+    const latitude = Number(this.data.manualLat)
+    const longitude = Number(this.data.manualLng)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      wx.showToast({ title: this.data.copy.invalidCoord, icon: 'none' })
+      return null
+    }
+    return { latitude, longitude }
+  },
+
+  _moveMap(point) {
+    this.setData({ mapLat: point.latitude, mapLng: point.longitude })
+    const map = wx.createMapContext('mymap')
+    if (map && map.moveToLocation) {
+      map.moveToLocation({ latitude: point.latitude, longitude: point.longitude })
+    }
+  },
+
+  onMoveToManualCoord() {
+    const point = this._readManualPoint()
+    if (!point) return
+    this._moveMap(point)
+    wx.showToast({ title: this.data.copy.mapMoved, icon: 'none' })
+  },
+
+  onAddManualPoint() {
+    const point = this._readManualPoint()
+    if (!point) return
+    this._moveMap(point)
+    this._addPoint(point)
+    wx.showToast({ title: this.data.copy.pointAdded, icon: 'none' })
   },
 
   // ── 完成绘制 → 展开表单 ───────────────────
   onFinishDraw() {
     if (!this.data.closed) {
       if (this.data.points.length < 3) {
-        wx.showToast({ title: '至少需要 3 个顶点', icon: 'none' }); return
+        wx.showToast({ title: this.data.copy.minPoints, icon: 'none' }); return
       }
       this._closePolygon()
     }
@@ -227,25 +363,25 @@ Page({
   onSowDateChange(e){ this.setData({ 'form.sowDate': e.detail.value }) },
   onIrrChange(e) {
     const idx = parseInt(e.detail.value)
-    this.setData({ irrigationIndex: idx, 'form.irrigation': this.data.irrigationOptions[idx] })
+    this.setData({ irrigationIndex: idx, 'form.irrigation': i18n.getOptionValue('irrigation', idx) })
   },
   onSoilChange(e) {
     const idx = parseInt(e.detail.value)
-    this.setData({ soilIndex: idx, 'form.soilType': this.data.soilOptions[idx] })
+    this.setData({ soilIndex: idx, 'form.soilType': i18n.getOptionValue('soil', idx) })
   },
   onPlantingChange(e) {
     const idx = parseInt(e.detail.value)
-    this.setData({ plantingIndex: idx, 'form.plantingStatus': this.data.plantingOptions[idx] })
+    this.setData({ plantingIndex: idx, 'form.plantingStatus': i18n.getOptionValue('planting', idx) })
   },
   onNoteInput(e) { this.setData({ 'form.note': e.detail.value }) },
 
   // ── 保存地块 ──────────────────────────────
   async onSave() {
     const { name, variety, sowDate, irrigation, soilType, plantingStatus, note } = this.data.form
-    if (!name.trim()) { wx.showToast({ title: '请填写地块名称', icon: 'none' }); return }
-    if (!variety.trim()) { wx.showToast({ title: '请填写棉花品种', icon: 'none' }); return }
+    if (!name.trim()) { wx.showToast({ title: this.data.copy.needName, icon: 'none' }); return }
+    if (!variety.trim()) { wx.showToast({ title: this.data.copy.needVariety, icon: 'none' }); return }
     if (this.data.points.length < 3 || Number(this.data.area) <= 0) {
-      wx.showToast({ title: '地块边界无效，请重新绘制', icon: 'none' }); return
+      wx.showToast({ title: this.data.copy.invalidBoundary, icon: 'none' }); return
     }
     if (this.data.saving) return
     this.setData({ saving: true })
@@ -263,13 +399,13 @@ Page({
         note: note.trim()
       })
       if (res.code === 200) {
-        wx.showToast({ title: '地块已保存', icon: 'success' })
+        wx.showToast({ title: this.data.copy.saved, icon: 'success' })
         setTimeout(() => wx.navigateBack(), 1200)
       } else {
-        wx.showToast({ title: res.msg || '保存失败', icon: 'none' })
+        wx.showToast({ title: res.msg || this.data.copy.saveFail, icon: 'none' })
       }
     } catch {
-      wx.showToast({ title: '网络异常，请重试', icon: 'none' })
+      wx.showToast({ title: this.data.copy.networkFail, icon: 'none' })
     }
     this.setData({ saving: false })
   },
@@ -278,8 +414,8 @@ Page({
     if (this.data.showForm) { this.setData({ showForm: false }); return }
     if (this.data.points.length) {
       wx.showModal({
-        title: '放弃绘制',
-        content: '确定放弃当前绘制？',
+        title: this.data.copy.abandonTitle,
+        content: this.data.copy.abandonContent,
         confirmColor: '#DC2626',
         success: (r) => { if (r.confirm) wx.navigateBack() }
       })

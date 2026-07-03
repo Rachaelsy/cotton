@@ -6,7 +6,7 @@
       <view class="back-btn" bindtap="onBack">
         <text class="back-icon">‹</text>
       </view>
-      <text class="nav-title">病虫害识别</text>
+      <text class="nav-title">{{copy.title}}</text>
       <view class="nav-right"></view>
     </view>
   </view>
@@ -20,8 +20,8 @@
         <text class="recognize-icon">📷</text>
       </view>
       <view class="recognize-text-wrap">
-        <text class="recognize-title">拍照识别</text>
-        <text class="recognize-sub">对准病虫害拍照，AI 秒速诊断</text>
+        <text class="recognize-title">{{copy.recognize}}</text>
+        <text class="recognize-sub">{{copy.recognizeSub}}</text>
       </view>
       <view class="ai-badge">
         <text class="ai-badge-text">AI</text>
@@ -32,18 +32,18 @@
     <view class="btn-row">
       <view class="btn-small" bindtap="onChooseAlbum">
         <text class="btn-small-icon">🖼</text>
-        <text class="btn-small-text">从相册选取</text>
+        <text class="btn-small-text">{{copy.album}}</text>
       </view>
       <view class="btn-small btn-small-secondary" bindtap="onHistory">
         <text class="btn-small-icon">🕐</text>
-        <text class="btn-small-text">历史记录</text>
+        <text class="btn-small-text">{{copy.history}}</text>
       </view>
     </view>
 
     <!-- 知识库标题 -->
     <view class="section-header">
-      <text class="section-title">病虫害知识库</text>
-      <text class="section-sub">{{pests.length}} 种常见病虫害</text>
+      <text class="section-title">{{copy.library}}</text>
+      <text class="section-sub">{{commonCountText}}</text>
     </view>
 
     <!-- 过滤标签栏 -->
@@ -81,7 +81,7 @@
         <!-- 名称 -->
         <text class="grid-name">{{item.n}}</text>
         <!-- 类型标签 -->
-        <view class="grid-type-tag {{item.type === '虫害' ? 'tag-bug' : item.type === '病害' ? 'tag-disease' : 'tag-physio'}}">
+        <view class="grid-type-tag {{item.type === filters[1] ? 'tag-bug' : item.type === filters[2] ? 'tag-disease' : 'tag-physio'}}">
           <text class="grid-type-text">{{item.type}}</text>
         </view>
       </view>

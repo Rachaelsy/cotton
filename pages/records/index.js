@@ -55,6 +55,7 @@ Page({
     manageMode: false,
     typeFilter: '全部',
     fieldFilter: '全部地块',
+    fieldPickerIndex: 0,
     typeFilters: ['全部', '灌溉', '施肥', '打药', '无人机', '播种', '采收', '巡田', '其他'],
     fieldFilters: ['全部地块'],
     typeOptions,
@@ -97,6 +98,7 @@ Page({
   onLoad(options = {}) {
     const info = wx.getSystemInfoSync()
     this.initialPlotId = Number(options.plotId) || null
+    this.initialType = options.type ? decodeURIComponent(options.type) : ''
     this.plotList = []   // [{ id, label }]
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
@@ -138,7 +140,9 @@ Page({
       fieldOptions,
       fieldFilters: fieldOptions,
       fieldFilter: initialLabel,
+      fieldPickerIndex: initialIndex >= 0 ? initialIndex : 0,
       selectedFieldLabel: initialLabel,
+      typeFilter: this.initialType || this.data.typeFilter,
       'form.fieldIndex': initialIndex
     })
   },
@@ -147,7 +151,14 @@ Page({
   async loadRecords() {
     this.setData({ loading: true })
     try {
-      const res = await auth.request('GET', '/api/farm-records')
+      const params = []
+      if (this.data.typeFilter && this.data.typeFilter !== '全部') {
+        params.push(`type=${encodeURIComponent(this.data.typeFilter)}`)
+      }
+      const plot = this._currentFilterPlot()
+      if (plot && plot.id) params.push(`plot_id=${encodeURIComponent(plot.id)}`)
+      const query = params.length ? `?${params.join('&')}` : ''
+      const res = await auth.request('GET', `/api/farm-records${query}`)
       if (res.code === 200 && Array.isArray(res.data)) {
         this.setData({ records: res.data, loading: false })
         this.refreshView()
@@ -191,15 +202,31 @@ Page({
       typeFilter: e.currentTarget.dataset.type,
       selectedIds: []
     })
-    this.refreshView()
+    this.loadRecords()
   },
 
   onFieldFilter(e) {
+    const field = e.currentTarget.dataset.field
+    const index = this.data.fieldOptions.indexOf(field)
     this.setData({
-      fieldFilter: e.currentTarget.dataset.field,
+      fieldFilter: field,
+      fieldPickerIndex: index >= 0 ? index : 0,
+      selectedFieldLabel: field,
       selectedIds: []
     })
-    this.refreshView()
+    this.loadRecords()
+  },
+
+  onFieldPickerChange(e) {
+    const index = Number(e.detail.value)
+    const field = this.data.fieldOptions[index] || '全部地块'
+    this.setData({
+      fieldFilter: field,
+      fieldPickerIndex: index,
+      selectedFieldLabel: field,
+      selectedIds: []
+    })
+    this.loadRecords()
   },
 
   onCalendarPrev() {
@@ -492,6 +519,7 @@ Page({
 
   refreshView() {
     const selectedSet = new Set(this.data.selectedIds)
+    const filterPlot = this._currentFilterPlot()
     const records = this.data.records
       .map(item => this.buildRecordView(item))
       .sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`))
@@ -499,7 +527,7 @@ Page({
     const displayRecords = records
       .filter(item => {
         const typeMatched = this.data.typeFilter === '全部' || item.type === this.data.typeFilter
-        const fieldMatched = this.data.fieldFilter === '全部地块' || item.fieldFull === this.data.fieldFilter
+        const fieldMatched = !filterPlot || Number(item.plot_id) === Number(filterPlot.id) || item.fieldFull === this.data.fieldFilter
         return typeMatched && fieldMatched
       })
       .map(item => ({
@@ -518,6 +546,12 @@ Page({
       calendarLabel: calendar.label,
       calendarListTitle: calendar.listTitle
     })
+  },
+
+  _currentFilterPlot() {
+    const index = Number(this.data.fieldPickerIndex || 0)
+    if (index <= 0) return null
+    return this.plotList[index - 1] || null
   },
 
   buildRecordView(record) {

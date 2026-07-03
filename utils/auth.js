@@ -6,7 +6,7 @@
 // ENV = 'server' → 连接云服务器（走 Nginx 80 端口）
 // ENV = 'real'   → 真机调试，使用电脑局域网 IP + 端口 3000
 // ENV = 'sim'    → 模拟器调试，使用 localhost
-const ENV = 'server'
+const ENV = 'real'
 
 const PROD_URL   = 'https://your-domain.com'   // ← 上线后改为真实备案域名
 const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP

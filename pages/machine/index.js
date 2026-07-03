@@ -1,31 +1,25 @@
-// pages/machine/index.js — 农机租赁列表（后端 API + 真实定位 + 地区筛选）
-const app  = getApp()
+// pages/machine/index.js — 农机租赁列表
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
+const { KASHGAR_REGIONS, locateService } = require('../../utils/regions')
 
 const CATEGORIES = ['全部', '打药机', '采棉机', '播种机', '旋耕机', '其他']
-const SORTS = [
-  { key: 'recommend', label: '推荐' },
-  { key: 'distance',  label: '距离' },
-  { key: 'price',     label: '价格' },
-  { key: 'rating',    label: '评分' }
-]
-
-// 手动选区只列喀什服务区；自动定位全国就近匹配 + 是否超出服务范围
-const { KASHGAR_REGIONS, locateService } = require('../../utils/regions')
 
 Page({
   data: {
     statusBarHeight: 20,
-    categories: CATEGORIES,
-    sorts: SORTS,
+    copy: i18n.getPageCopy('machine'),
+    categories: CATEGORIES.map(name => ({ value: name, label: name })),
+    sorts: i18n.getPageCopy('machine').sorts,
     regions: KASHGAR_REGIONS,
+    selectedRegionIndex: 0,
     catSel: '全部',
     sortSel: 'recommend',
     machines: [],
     loading: true,
-    locName: '定位中…',
-    locByGps: false,      // true=当前定位 false=手动选区
-    outOfService: false,  // 超出喀什服务范围
+    locName: i18n.t('machine', 'locating'),
+    locByGps: false,
+    outOfService: false,
     showRegionPicker: false,
     lat: null,
     lng: null
@@ -33,68 +27,104 @@ Page({
 
   onLoad() {
     const info = wx.getSystemInfoSync()
+    this.applyLanguage()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
     this.autoLocate()
   },
 
-  // 自动定位 → 就近匹配 + 服务范围判断
+  onShow() {
+    this.applyLanguage()
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.currentLang = lang
+    this.textCopy = i18n.getCopy('machine', lang)
+    this.setData({
+      copy: i18n.getPageCopy('machine', lang),
+      categories: CATEGORIES.map((name, index) => ({ value: name, label: this.textCopy.categories[index] || name })),
+      sorts: this.textCopy.sorts
+    })
+  },
+
   autoLocate() {
     wx.getLocation({
       type: 'gcj02',
       success: (res) => {
         const svc = locateService(res.latitude, res.longitude)
+        const regionIndex = KASHGAR_REGIONS.findIndex(item => item.name === svc.name)
         this.setData({
-          lat: res.latitude, lng: res.longitude,
-          locByGps: true, locName: `${svc.name}附近`, outOfService: !svc.inService
+          lat: res.latitude,
+          lng: res.longitude,
+          locByGps: true,
+          locName: `${svc.name}附近`,
+          selectedRegionIndex: regionIndex >= 0 ? regionIndex : 0,
+          outOfService: !svc.inService
         })
         this.loadMachines()
       },
       fail: () => {
-        // 定位失败 → 默认用喀什市
         const def = KASHGAR_REGIONS[0]
         this.setData({
-          lat: def.lat, lng: def.lng,
-          locByGps: false, locName: def.name, outOfService: false
+          lat: def.lat,
+          lng: def.lng,
+          locByGps: false,
+          locName: def.name,
+          selectedRegionIndex: 0,
+          outOfService: false
         })
         this.loadMachines()
       }
     })
   },
 
-  onOpenRegion() { this.setData({ showRegionPicker: true }) },
-  onCloseRegion() { this.setData({ showRegionPicker: false }) },
+  onOpenRegion() {
+    this.setData({ showRegionPicker: true })
+  },
 
-  // 选择「使用当前定位」
+  onCloseRegion() {
+    this.setData({ showRegionPicker: false })
+  },
+
   onUseGps() {
     wx.getLocation({
       type: 'gcj02',
       success: (res) => {
         const svc = locateService(res.latitude, res.longitude)
+        const regionIndex = KASHGAR_REGIONS.findIndex(item => item.name === svc.name)
         this.setData({
-          lat: res.latitude, lng: res.longitude,
-          locByGps: true, locName: `${svc.name}附近`, outOfService: !svc.inService,
+          lat: res.latitude,
+          lng: res.longitude,
+          locByGps: true,
+          locName: `${svc.name}附近`,
+          selectedRegionIndex: regionIndex >= 0 ? regionIndex : 0,
+          outOfService: !svc.inService,
           showRegionPicker: false
         })
         this.loadMachines()
       },
       fail: () => {
         wx.showModal({
-          title: '需要定位权限',
-          content: '开启定位后可显示您的当前位置并按距离查找。请在设置中允许位置权限。',
-          confirmText: '去设置',
-          success: (r) => { if (r.confirm) wx.openSetting() }
+          title: this.textCopy.needLocation,
+          content: this.textCopy.locationContent,
+          confirmText: this.textCopy.openSetting,
+          success: (result) => { if (result.confirm) wx.openSetting() }
         })
       }
     })
   },
 
-  // 手动选择喀什服务区某个县（必在服务范围内）
   onPickRegion(e) {
-    const idx = Number(e.currentTarget.dataset.index)
-    const r = KASHGAR_REGIONS[idx]
+    const index = Number(e.currentTarget.dataset.index)
+    const region = KASHGAR_REGIONS[index]
+    if (!region) return
     this.setData({
-      lat: r.lat, lng: r.lng,
-      locByGps: false, locName: r.name, outOfService: false,
+      lat: region.lat,
+      lng: region.lng,
+      locByGps: false,
+      locName: region.name,
+      selectedRegionIndex: index,
+      outOfService: false,
       showRegionPicker: false
     })
     this.loadMachines()
@@ -109,21 +139,21 @@ Page({
     try {
       const res = await auth.request('GET', '/api/machines' + qs)
       if (res.code === 200) {
-        const machines = (res.data || []).map(m => ({
-          ...m,
-          priceText: Number(m.price).toFixed(m.price % 1 === 0 ? 0 : 1),
-          statusText: m.status === 'busy' ? '紧俏' : '可预约',
-          distText: m.distance_km != null ? `${m.distance_km}km` : '',
-          ratingText: Number(m.rating_avg).toFixed(1)
+        const machines = (res.data || []).map(machine => ({
+          ...machine,
+          priceText: Number(machine.price || 0).toFixed(Number(machine.price || 0) % 1 === 0 ? 0 : 1),
+          statusText: machine.status === 'busy' ? this.textCopy.busy : this.textCopy.available,
+          distText: machine.distance_km != null ? `${machine.distance_km}km` : '',
+          ratingText: Number(machine.rating_avg || 0).toFixed(1)
         }))
         this.setData({ machines, loading: false })
       } else {
         this.setData({ machines: [], loading: false })
-        wx.showToast({ title: res.msg || '加载失败', icon: 'none' })
+        wx.showToast({ title: res.msg || this.textCopy.loadFail, icon: 'none' })
       }
-    } catch (e) {
+    } catch (error) {
       this.setData({ machines: [], loading: false })
-      wx.showToast({ title: '网络异常，请检查网络', icon: 'none' })
+      wx.showToast({ title: this.textCopy.networkFail, icon: 'none' })
     }
   },
 
@@ -150,7 +180,7 @@ Page({
   },
 
   onMyOrders() {
-    wx.navigateTo({ url: '/subpkg-supplies/my-orders/index' })
+    wx.navigateTo({ url: '/pages/machine/orders' })
   },
 
   onBack() {

@@ -6,19 +6,19 @@
     <view class="home-top" style="padding-top: {{statusBarHeight}}px">
       <view class="home-topbar">
         <view class="home-topbar-left" wx:if="{{isLoggedIn}}">
-          <text class="home-greeting">{{name}} · 早上好 👋</text>
+          <text class="home-greeting">{{name}} · {{copy.loggedGreetingSuffix}}</text>
           <text class="home-title">{{location}}</text>
         </view>
         <view class="home-topbar-left guest-left" wx:else bindtap="onGoLogin">
-          <text class="home-greeting">您好，游客 👋</text>
+          <text class="home-greeting">{{copy.guestGreeting}}</text>
           <view class="login-hint-row">
-            <text class="login-hint-text">登录后解锁全部功能</text>
+            <text class="login-hint-text">{{copy.loginHint}}</text>
             <text class="login-hint-arr">›</text>
           </view>
         </view>
         <view class="home-actions">
           <view class="lang-pill" bindtap="onLang">
-            <text class="lang-pill-text">🌐 中 | ئۇ ▾</text>
+            <text class="lang-pill-text">{{copy.langPill}}</text>
           </view>
           <view class="notif-btn" bindtap="onNotification">
             <text class="notif-icon">🔔</text>
@@ -37,7 +37,7 @@
         </view>
         <view class="wc-main">
           <text class="wc-icon">{{weatherPreview.weather.icon}}</text>
-          <text class="wc-temp">{{weatherPreview.weather.temp}}°</text>
+          <text class="wc-temp">{{weatherPreview.weather.temp}}{{weatherPreview.weather.temp === '--' ? '' : '°'}}</text>
           <view class="wc-info">
             <text class="wc-desc">{{weatherPreview.weather.desc}}</text>
             <text class="wc-sub">{{weatherPreview.weather.low}}°~ {{weatherPreview.weather.high}}° · {{weatherPreview.weather.wind}}</text>
@@ -57,27 +57,36 @@
         <view class="hcard-hd">
           <view class="hcard-title-wrap">
             <view class="hcard-bar"></view>
-            <text class="hcard-title">我的地块</text>
+            <text class="hcard-title">{{copy.myFields}}</text>
           </view>
-          <text class="hcard-more" bindtap="onGoFields">查看全部 ›</text>
+          <text class="hcard-more" bindtap="onGoFields">{{copy.viewAll}}</text>
         </view>
+        <picker mode="selector" range="{{homePlotOptions}}" value="{{homePlotIndex}}" bindchange="onHomePlotChange">
+          <view class="home-plot-picker">
+            <view class="home-plot-main">
+              <text class="home-plot-k">{{copy.currentDisplay}}</text>
+              <text class="home-plot-v">{{homePlotLabel}}</text>
+            </view>
+            <text class="home-plot-arr">{{copy.switchPlot}}</text>
+          </view>
+        </picker>
         <view class="stat3">
           <view class="stat3-i">
             <text class="stat3-v">{{plotStats.count}}</text>
-            <text class="stat3-l">承包地块</text>
+            <text class="stat3-l">{{copy.contractFields}}</text>
           </view>
           <view class="stat3-div"></view>
           <view class="stat3-i">
             <text class="stat3-v ok">{{plotStats.area}}</text>
             <view class="stat3-l-wrap">
-              <text class="stat3-unit">亩</text>
-              <text class="stat3-l">种植总面积</text>
+              <text class="stat3-unit">{{common.mu}}</text>
+              <text class="stat3-l">{{copy.totalArea}}</text>
             </view>
           </view>
           <view class="stat3-div"></view>
           <view class="stat3-i">
             <text class="stat3-v warn">{{plotStats.attention}}</text>
-            <text class="stat3-l">需关注</text>
+            <text class="stat3-l">{{copy.needAttention}}</text>
           </view>
         </view>
       </view>
@@ -91,13 +100,13 @@
           </view>
           <view class="pb-txt">
             <view class="pb-title-row">
-              <text class="pb-title">拍照识别</text>
+              <text class="pb-title">{{copy.photoTitle}}</text>
               <view class="pb-ai"><text class="pb-ai-text">AI</text></view>
             </view>
-            <text class="pb-sub">识病虫害 · 测元素缺失</text>
+            <text class="pb-sub">{{copy.photoSub}}</text>
           </view>
           <view class="pb-btn">
-            <text class="pb-btn-text">去拍照 ›</text>
+            <text class="pb-btn-text">{{copy.photoAction}}</text>
           </view>
         </view>
       </view>
@@ -107,7 +116,7 @@
         <view class="hcard-hd">
           <view class="hcard-title-wrap">
             <view class="hcard-bar"></view>
-            <text class="hcard-title">农事管家</text>
+            <text class="hcard-title">{{copy.steward}}</text>
           </view>
         </view>
         <view class="mod-grid">

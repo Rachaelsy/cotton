@@ -1,10 +1,14 @@
 // pages/my/index.js — 我的
 const app  = getApp()
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
 
 Page({
   data: {
     statusBarHeight: 20,
+    lang: 'zh',
+    copy: i18n.getCopy('my'),
+    common: i18n.getCopy('common'),
     isLoggedIn: false,
     wxLoading: false,
     userInfo: { name: '--', tags: [], verified: false, landSize: 0 },
@@ -16,16 +20,27 @@ Page({
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.applyLanguage()
     // 提前调用 wx.login 拿到 code，供微信登录使用
     this._refreshWxLoginCode()
   },
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
-      this.getTabBar().setData({ selected: 2 })
+      this.getTabBar().setData({ selected: 2, copy: i18n.getCopy('tab') })
     }
+    this.applyLanguage()
     this._refreshUser()
     this.setData({ favCount: (app.globalData.favorites || []).length })
+  },
+
+  applyLanguage() {
+    const lang = i18n.getLanguage()
+    this.setData({
+      lang,
+      copy: i18n.getCopy('my', lang),
+      common: i18n.getCopy('common', lang)
+    })
   },
 
   // 刷新登录状态
@@ -34,7 +49,7 @@ Page({
     const loggedIn = auth.isLoggedIn() && !!user
     if (loggedIn && user) {
       const name = user.real_name || user.phone || '--'
-      const tags = ['🌾 农户', user.location ? `📍 ${user.location}` : '📍 新疆']
+      const tags = [this.data.copy.farmer, user.location ? `📍 ${user.location}` : this.data.copy.xinjiang]
       this.setData({
         isLoggedIn: true,
         userInfo: {
@@ -72,7 +87,7 @@ Page({
   // 微信一键登录（getPhoneNumber 返回 code）
   async onWxPhoneLogin(e) {
     if (e.detail.errMsg !== 'getPhoneNumber:ok') {
-      wx.showToast({ title: '已取消登录', icon: 'none' })
+      wx.showToast({ title: this.data.copy.cancelledLogin, icon: 'none' })
       return
     }
     const phoneCode = e.detail.code
@@ -84,7 +99,7 @@ Page({
       loginCode = loginRes.code
     }
     if (!loginCode) {
-      wx.showToast({ title: '微信登录失败，请重试', icon: 'none' })
+      wx.showToast({ title: this.data.copy.loginFail, icon: 'none' })
       return
     }
 
@@ -92,23 +107,23 @@ Page({
     try {
       const res = await auth.wxLogin(loginCode, phoneCode)
       if (res.code === 200) {
-        wx.showToast({ title: '登录成功', icon: 'success' })
+        wx.showToast({ title: this.data.copy.loginSuccess, icon: 'success' })
         this._refreshUser()
         this._refreshWxLoginCode()
       } else if (res.code === 503) {
         // 微信登录未配置，引导手机号登录
         wx.showModal({
-          title: '提示',
-          content: '微信登录功能需配置 AppID，请使用手机号登录',
+          title: this.data.common.tip,
+          content: this.data.copy.wxNotConfigured,
           showCancel: false,
-          confirmText: '手机号登录',
+          confirmText: this.data.copy.phoneLoginText,
           success: () => wx.navigateTo({ url: '/pages/login/index' })
         })
       } else {
-        wx.showToast({ title: res.msg || '登录失败', icon: 'none' })
+        wx.showToast({ title: res.msg || this.data.copy.loginFail, icon: 'none' })
       }
     } catch {
-      wx.showToast({ title: '登录失败，请检查网络', icon: 'none' })
+      wx.showToast({ title: this.data.copy.loginFail, icon: 'none' })
     }
     this.setData({ wxLoading: false })
   },
@@ -124,12 +139,12 @@ Page({
   },
 
   onSettings() {
-    wx.showToast({ title: '设置功能开发中', icon: 'none' })
+    this.onLanguage()
   },
 
   onRealName() {
     if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
-    wx.showToast({ title: '已实名认证', icon: 'success' })
+    wx.showToast({ title: this.data.copy.realNameDone, icon: 'success' })
   },
 
   onFavorites() {
@@ -143,18 +158,33 @@ Page({
 
   onAbout() {
     wx.showModal({
-      title: '棉花智能体 v1.2.0',
-      content: '专为新疆棉农打造的智能农业管理平台\n\n联系我们：support@cotton.app',
+      title: this.data.copy.aboutTitle,
+      content: this.data.copy.aboutContent,
       showCancel: false,
-      confirmText: '好的'
+      confirmText: this.data.copy.ok
+    })
+  },
+
+  onLanguage() {
+    wx.showActionSheet({
+      itemList: ['中文', 'ئۇيغۇرچە'],
+      success: (res) => {
+        i18n.setLanguage(res.tapIndex === 0 ? 'zh' : 'ug')
+        this.applyLanguage()
+        this._refreshUser()
+        if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+          this.getTabBar().setData({ copy: i18n.getCopy('tab') })
+        }
+        wx.showToast({ title: i18n.getCopy('common').languageChanged, icon: 'none' })
+      }
     })
   },
 
   onLogout() {
     wx.showModal({
-      title: '退出登录',
-      content: '确定要退出当前账号吗？',
-      confirmText: '退出',
+      title: this.data.copy.logoutTitle,
+      content: this.data.copy.logoutContent,
+      confirmText: this.data.copy.logoutConfirm,
       confirmColor: '#F5222D',
       success: res => {
         if (res.confirm) auth.logout()

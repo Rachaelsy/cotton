@@ -3,24 +3,24 @@
   <view class="trade-hd" style="padding-top: {{statusBarHeight}}px">
     <view class="trade-nav">
       <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
-      <text class="trade-nav-title">棉花交易</text>
+      <text class="trade-nav-title">{{copy.title}}</text>
       <view style="width:64rpx"></view>
     </view>
     <!-- 价格显示 -->
     <view class="price-tabs">
       <view class="ptab {{priceTab === 0 ? 'on' : ''}}" bindtap="onPriceTab" data-i="0">
-        <text class="ptab-text">籽棉</text>
+        <text class="ptab-text">{{copy.seedCotton}}</text>
       </view>
       <view class="ptab {{priceTab === 1 ? 'on' : ''}}" bindtap="onPriceTab" data-i="1">
-        <text class="ptab-text">皮棉</text>
+        <text class="ptab-text">{{copy.lintCotton}}</text>
       </view>
     </view>
     <view class="price-main">
       <text class="price-big">{{priceTab === 0 ? '6.85' : '14.20'}}</text>
-      <text class="price-unit">元/公斤</text>
+      <text class="price-unit">{{copy.priceUnit}}</text>
     </view>
     <view class="price-change up">
-      <text class="price-change-text">▲ {{priceTab === 0 ? '+0.05' : '+0.10'}} 较昨日</text>
+      <text class="price-change-text">▲ {{priceTab === 0 ? '+0.05' : '+0.10'}} {{copy.vsYesterday}}</text>
     </view>
   </view>
 
@@ -28,7 +28,7 @@
     <!-- 快捷操作 -->
     <view class="trade-quick-card">
       <view class="trade-quick-grid">
-        <view class="trade-quick-item" wx:for="{{quickActions}}" wx:key="name" bindtap="onQuickAction" data-name="{{item.name}}">
+        <view class="trade-quick-item" wx:for="{{quickActions}}" wx:key="name" bindtap="onQuickAction" data-key="{{item.key}}" data-name="{{item.name}}">
           <view class="tqi-ico" style="background:{{item.bg}}">
             <text class="tqi-emoji">{{item.icon}}</text>
           </view>
@@ -40,13 +40,13 @@
     <!-- 分类标签 -->
     <view class="trade-tabs">
       <view class="ttab {{tradeTab === 0 ? 'on' : ''}}" bindtap="onTradeTab" data-i="0">
-        <text class="ttab-text">今日行情</text>
+        <text class="ttab-text">{{copy.tabs[0]}}</text>
       </view>
       <view class="ttab {{tradeTab === 1 ? 'on' : ''}}" bindtap="onTradeTab" data-i="1">
-        <text class="ttab-text">地区报价</text>
+        <text class="ttab-text">{{copy.tabs[1]}}</text>
       </view>
       <view class="ttab {{tradeTab === 2 ? 'on' : ''}}" bindtap="onTradeTab" data-i="2">
-        <text class="ttab-text">我的交易</text>
+        <text class="ttab-text">{{copy.tabs[2]}}</text>
       </view>
     </view>
 
@@ -57,41 +57,35 @@
           <text class="rank-text">{{item.rank}}</text>
         </view>
         <text class="region-name">{{item.name}}</text>
-        <text class="region-price">{{item.price}}元</text>
+        <text class="region-price">{{item.price}}{{copy.yuan}}</text>
         <text class="region-change {{item.up ? 'up' : 'dn'}}">{{item.change}}</text>
       </view>
     </view>
 
     <!-- 今日行情 -->
     <view wx:if="{{tradeTab === 0}}" class="hcard">
-      <text class="chart-placeholder">📊 价格走势图（7日）</text>
+      <text class="chart-placeholder">{{copy.chart}}</text>
       <view class="chart-mock">
         <view class="chart-bar" wx:for="{{[68,72,70,75,73,78,80]}}" wx:key="index" style="height:{{item}}rpx"></view>
       </view>
       <view class="chart-labels">
-        <text class="chart-lbl" wx:for="{{['4/15','4/16','4/17','4/18','4/19','4/20','今日']}}" wx:key="index">{{item}}</text>
+        <text class="chart-lbl" wx:for="{{['4/15','4/16','4/17','4/18','4/19','4/20',copy.today]}}" wx:key="index">{{item}}</text>
       </view>
     </view>
 
     <!-- 我的交易 -->
     <view wx:if="{{tradeTab === 2}}" class="hcard">
-      <view class="my-trade-item">
-        <view class="mti-status done"><text class="mti-status-text">已完成</text></view>
-        <view style="flex:1">
-          <text class="mti-name">5号地·籽棉销售</text>
-          <text class="mti-meta">疏附县棉农合作社 · 68吨 · 一级</text>
+      <block wx:for="{{myTrades}}" wx:key="name">
+        <view class="my-trade-item">
+          <view class="mti-status {{item.statusClass}}"><text class="mti-status-text">{{item.statusText}}</text></view>
+          <view style="flex:1">
+            <text class="mti-name">{{item.name}}</text>
+            <text class="mti-meta">{{item.meta}}</text>
+          </view>
+          <text class="mti-price">{{item.price}}</text>
         </view>
-        <text class="mti-price">¥23,800</text>
-      </view>
-      <view class="mi-div"></view>
-      <view class="my-trade-item">
-        <view class="mti-status prog"><text class="mti-status-text">进行中</text></view>
-        <view style="flex:1">
-          <text class="mti-name">3号地·籽棉销售</text>
-          <text class="mti-meta">疏附县第二轧花厂 · 预计120吨</text>
-        </view>
-        <text class="mti-price">待结算</text>
-      </view>
+        <view wx:if="{{index < myTrades.length - 1}}" class="mi-div"></view>
+      </block>
     </view>
 
     <view style="height:40rpx"></view>

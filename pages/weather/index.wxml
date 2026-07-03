@@ -2,10 +2,10 @@
   <view class="wx-hd" style="padding-top: {{statusBarHeight}}px">
     <view class="wx-hd-top">
       <view class="wx-hd-title-wrap">
-        <text class="wx-title">地块气象</text>
+        <text class="wx-title">{{copy.title}}</text>
         <text class="wx-subtitle">{{locationLabel}}</text>
       </view>
-      <view class="wx-hd-action" bindtap="onBack"><text>返回</text></view>
+      <view class="wx-hd-action" bindtap="onBack"><text>{{common.back}}</text></view>
     </view>
 
     <scroll-view class="field-chips" scroll-x enhanced show-scrollbar="{{false}}">
@@ -25,14 +25,14 @@
 
   <scroll-view class="wx-scroll" scroll-y enhanced show-scrollbar="false">
     <view wx:if="{{loading}}" class="wx-state">
-      <text class="wx-state-title">正在加载地块气象…</text>
-      <text class="wx-state-desc">会根据当前地块生成天气、预警和农事建议</text>
+      <text class="wx-state-title">{{copy.loadingTitle}}</text>
+      <text class="wx-state-desc">{{copy.loadingDesc}}</text>
     </view>
 
     <view wx:elif="{{loadError}}" class="wx-state">
-      <text class="wx-state-title">暂时无法加载气象</text>
+      <text class="wx-state-title">{{copy.loadFailTitle}}</text>
       <text class="wx-state-desc">{{loadError}}</text>
-      <view class="wx-state-btn" bindtap="onRetry"><text>重新加载</text></view>
+      <view class="wx-state-btn" bindtap="onRetry"><text>{{common.retry}}</text></view>
     </view>
 
     <view wx:else>
@@ -60,33 +60,33 @@
         <view class="wx-detail-grid">
           <view class="wx-di">
             <text class="wdi-icon">💨</text>
-            <text class="wdi-val">{{weather.windLevel}}级</text>
-            <text class="wdi-lbl">风力</text>
+            <text class="wdi-val">{{weather.windLevel}}{{copy.levelUnit}}</text>
+            <text class="wdi-lbl">{{copy.wind}}</text>
           </view>
           <view class="wx-di">
             <text class="wdi-icon">💧</text>
             <text class="wdi-val">{{weather.humidity}}%</text>
-            <text class="wdi-lbl">空气湿度</text>
+            <text class="wdi-lbl">{{copy.humidity}}</text>
           </view>
           <view class="wx-di">
             <text class="wdi-icon">🌡</text>
             <text class="wdi-val">{{weather.groundTemp}}°C</text>
-            <text class="wdi-lbl">{{weather.groundTempLabel || '地温'}}</text>
+            <text class="wdi-lbl">{{weather.groundTempLabel || copy.groundTemp}}</text>
           </view>
           <view class="wx-di">
             <text class="wdi-icon">☀️</text>
             <text class="wdi-val">{{weather.uv}}</text>
-            <text class="wdi-lbl">紫外线</text>
+            <text class="wdi-lbl">{{copy.uv}}</text>
           </view>
           <view class="wx-di">
             <text class="wdi-icon">🌂</text>
             <text class="wdi-val">{{weather.rain}}mm</text>
-            <text class="wdi-lbl">降水量</text>
+            <text class="wdi-lbl">{{copy.rain}}</text>
           </view>
           <view class="wx-di">
             <text class="wdi-icon">👁</text>
             <text class="wdi-val">{{weather.visibilityText}}</text>
-            <text class="wdi-lbl">能见度</text>
+            <text class="wdi-lbl">{{copy.visibility}}</text>
           </view>
         </view>
 
@@ -98,7 +98,7 @@
       <view class="wx-alert-banner {{alert ? '' : 'safe'}}" bindtap="onAlertTap">
         <text class="wa-icon">{{alert ? alert.icon : '✅'}}</text>
         <view class="wa-txt">
-          <text class="wa-title">{{alert ? alert.title + (alert.level ? ' · ' + alert.level : '') : '今日作业提示'}}</text>
+          <text class="wa-title">{{alert ? alert.title + (alert.level ? ' · ' + alert.level : '') : copy.todayTip}}</text>
           <text class="wa-sub">{{alert ? alert.sub : summary}}</text>
         </view>
         <text class="wa-arr">›</text>
@@ -107,7 +107,7 @@
       <view wx:if="{{hourly.length}}" class="wx-card wx-hourly-card">
         <view class="wx-card-head">
           <view class="wx-card-bar"></view>
-          <text class="wx-card-title">逐小时预报</text>
+          <text class="wx-card-title">{{copy.hourly}}</text>
         </view>
         <scroll-view class="hourly-scroll" scroll-x enhanced show-scrollbar="{{false}}">
           <view class="hourly-row">
@@ -125,7 +125,7 @@
       <view class="wx-card">
         <view class="wx-card-head">
           <view class="wx-card-bar"></view>
-          <text class="wx-card-title">7日预报</text>
+          <text class="wx-card-title">{{copy.forecast7}}</text>
         </view>
         <scroll-view class="forecast-scroll" scroll-x enhanced show-scrollbar="{{false}}">
           <view class="forecast-row">
@@ -142,7 +142,7 @@
       <view class="wx-advice-card">
         <view class="wx-card-head">
           <view class="wx-card-bar"></view>
-          <text class="wx-card-title">AI农事建议</text>
+          <text class="wx-card-title">{{copy.aiAdvice}}</text>
         </view>
         <view class="adv-item" wx:for="{{advices}}" wx:key="title">
           <view class="adv-icon" style="background: {{item.bg}}">
@@ -174,12 +174,12 @@
     </view>
 
     <view class="alert-info-grid">
-      <view class="alert-info-item"><text class="aii-label">影响时间</text><text class="aii-value">{{alertDetail.impactTime}}</text></view>
-      <view class="alert-info-item"><text class="aii-label">影响范围</text><text class="aii-value">{{alertDetail.impactArea}}</text></view>
+      <view class="alert-info-item"><text class="aii-label">{{copy.impactTime}}</text><text class="aii-value">{{alertDetail.impactTime}}</text></view>
+      <view class="alert-info-item"><text class="aii-label">{{copy.impactArea}}</text><text class="aii-value">{{alertDetail.impactArea}}</text></view>
     </view>
     <view class="alert-summary"><text>{{alertDetail.sub}}</text></view>
     <view class="alert-action-list">
-      <text class="alert-action-title">应急农事建议</text>
+      <text class="alert-action-title">{{copy.emergencyAdvice}}</text>
       <view class="alert-action" wx:for="{{alertDetail.actions}}" wx:key="*this">
         <text class="alert-action-dot"></text>
         <text class="alert-action-text">{{item}}</text>

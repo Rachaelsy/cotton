@@ -255,6 +255,49 @@
 }
 
 /* ===== 地块统计 ===== */
+.home-plot-picker {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  background: #F8F3EC;
+  border: 2rpx solid #EEE5D8;
+  border-radius: 18rpx;
+  padding: 18rpx 22rpx;
+  margin-bottom: 22rpx;
+}
+
+.home-plot-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.home-plot-k {
+  font-size: 20rpx;
+  color: #8A7F72;
+  font-weight: 600;
+}
+
+.home-plot-v {
+  font-size: 28rpx;
+  color: #1A1A1A;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-plot-arr {
+  flex-shrink: 0;
+  font-size: 23rpx;
+  color: #C8902E;
+  font-weight: 800;
+}
+
 .stat3 {
   display: flex;
   flex-direction: row;
