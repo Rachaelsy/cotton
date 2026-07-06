@@ -62,6 +62,10 @@ node db/seed_machines.js              # 农机演示数据（机主 13800000003 
 node index.js
 ```
 
+### Docker 部署更新
+
+云服务器使用 Docker Compose 部署时，拉取新代码后的完整更新命令见：[docs/docker-update-commands.md](docs/docker-update-commands.md)。
+
 ### 环境变量说明
 
 仓库只提交 `server/.env.example` 作为模板，不提交真实 `server/.env`。其他人拉取项目后，需要自己在 `server/` 目录创建 `.env`：
