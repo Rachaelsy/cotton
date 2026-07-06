@@ -677,7 +677,7 @@ async function api(method, path, body) {
 function logout() {
   localStorage.removeItem(T_KEY)
   localStorage.removeItem(U_KEY)
-  location.href = '/portal/login.html'
+  location.href = '/admin/login.html?role=merchant'
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('show') }
@@ -704,7 +704,7 @@ function getOrderStatus(status) {
 
 /* ── 初始化 ── */
 (function init() {
-  if (!getToken()) { location.href = '/portal/login.html'; return }
+  if (!getToken()) { location.href = '/admin/login.html?role=merchant'; return }
   const u = getUser()
   document.getElementById('sidebar-name').textContent  = u.company_name || u.real_name || '——'
   document.getElementById('sidebar-phone').textContent = u.phone || '——'

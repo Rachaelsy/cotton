@@ -3,143 +3,671 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>注册入驻 · 棉花智能体</title>
+  <title>入驻申请 · Cotton 棉花平台</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; min-height: 100vh; padding: 30px 16px; transition: background 0.3s; }
-    body.op { background: linear-gradient(135deg, #004D52, #00838F); }
-    body.mc { background: linear-gradient(135deg, #1a3c2e, #2d6a4f); }
-    .card { background: #fff; border-radius: 20px; padding: 32px 30px; width: 460px; max-width: 100%; margin: 0 auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    .logo { text-align: center; margin-bottom: 20px; }
-    .logo .emoji { font-size: 38px; }
-    .logo h1 { font-size: 19px; font-weight: 800; margin-top: 6px; }
-    body.op .logo h1 { color: #006064; } body.mc .logo h1 { color: #1a3c2e; }
-    .role-toggle { display: flex; background: #F0F2F5; border-radius: 12px; padding: 4px; margin-bottom: 22px; }
-    .role-btn { flex: 1; text-align: center; padding: 11px 0; border-radius: 9px; font-size: 14px; font-weight: 700; color: #888; cursor: pointer; }
-    .role-btn.active { color: #fff; }
-    body.op .role-btn.active.op-btn { background: linear-gradient(135deg, #006064, #00838F); }
-    body.mc .role-btn.active.mc-btn { background: linear-gradient(135deg, #2d6a4f, #16A34A); }
-    .field { margin-bottom: 14px; }
-    .field label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 600; }
-    .field input { width: 100%; padding: 11px 13px; border: 1.5px solid #E0E0E0; border-radius: 10px; font-size: 14px; outline: none; }
-    body.op .field input:focus { border-color: #00838F; } body.mc .field input:focus { border-color: #2d6a4f; }
-    .row { display: flex; gap: 10px; } .row .field { flex: 1; }
-    .geo-btn { width: 100%; padding: 10px; background: #E0F2F1; color: #006064; border: 1.5px solid #00838F; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .geo-hint { font-size: 12px; color: #888; margin-top: 6px; }
-    .btn { width: 100%; padding: 13px; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; }
-    body.op .btn { background: linear-gradient(135deg, #006064, #00838F); }
-    body.mc .btn { background: linear-gradient(135deg, #2d6a4f, #16A34A); }
-    .btn:disabled { opacity: 0.6; }
-    .msg { font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; }
-    .msg.err { color: #DC2626; } .msg.ok { color: #16A34A; }
-    .foot { text-align: center; margin-top: 16px; font-size: 13px; color: #888; }
-    .foot a { font-weight: 600; text-decoration: none; }
-    body.op .foot a { color: #00838F; } body.mc .foot a { color: #2d6a4f; }
+
+    :root {
+      --green: #237a48;
+      --green-dark: #155a34;
+      --green-soft: #eef8ef;
+      --blue: #217fc6;
+      --blue-soft: #eef7ff;
+      --earth: #7a542d;
+      --ink: #253126;
+      --muted: #667566;
+      --line: #dfe8dc;
+      --paper: rgba(255, 255, 255, 0.94);
+      --danger: #b53b30;
+    }
+
+    body {
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.76) 44%, rgba(255,255,255,0.36) 100%),
+        url("/admin/assets/cotton-field-sky.png") center center / cover no-repeat fixed;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(420px, 520px);
+      gap: 42px;
+      align-items: center;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 38px 28px;
+    }
+
+    .intro {
+      max-width: 560px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 58px;
+      margin-bottom: 24px;
+      padding: 8px 18px 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(255,255,255,0.82);
+      box-shadow: 0 16px 42px rgba(29, 90, 52, 0.14);
+      backdrop-filter: blur(8px);
+    }
+
+    .cotton-mark {
+      position: relative;
+      width: 48px;
+      height: 40px;
+      flex: 0 0 48px;
+    }
+
+    .cotton-mark::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow:
+        -14px 12px 0 #fffaf1,
+        14px 12px 0 #fff,
+        0 20px 0 #fffdf7;
+      filter: drop-shadow(0 6px 8px rgba(43, 82, 50, 0.16));
+    }
+
+    .cotton-mark::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      bottom: 1px;
+      width: 30px;
+      height: 12px;
+      border-radius: 100% 0 100% 0;
+      background: linear-gradient(135deg, #4fa866, var(--green-dark));
+      transform: rotate(-14deg);
+    }
+
+    .brand-title {
+      display: block;
+      color: var(--green-dark);
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .brand-sub {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    h1 {
+      max-width: 560px;
+      margin-bottom: 18px;
+      color: #163f28;
+      font-size: 44px;
+      line-height: 1.18;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-shadow: 0 2px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .lead {
+      max-width: 520px;
+      color: #405344;
+      font-size: 18px;
+      line-height: 1.85;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      color: #255537;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.78);
+      box-shadow: 0 8px 22px rgba(35, 122, 72, 0.08);
+      font-size: 14px;
+      font-weight: 850;
+      backdrop-filter: blur(8px);
+    }
+
+    .card {
+      width: 100%;
+      border-radius: 8px;
+      padding: 30px;
+      background: var(--paper);
+      border: 1px solid rgba(255,255,255,0.86);
+      box-shadow: 0 26px 70px rgba(27, 79, 48, 0.22);
+      backdrop-filter: blur(14px);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .title-wrap { min-width: 0; }
+
+    .role-kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      margin-bottom: 8px;
+      padding: 0 10px;
+      border-radius: 999px;
+      color: var(--green-dark);
+      background: var(--green-soft);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    body.op .role-kicker { color: #0f6289; background: var(--blue-soft); }
+
+    .card-title {
+      color: #173d27;
+      font-size: 26px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .card-subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .role-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 5px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      background: #eef4ee;
+      border: 1px solid var(--line);
+    }
+
+    .role-btn {
+      min-height: 44px;
+      border: 0;
+      border-radius: 6px;
+      color: #5d6d5f;
+      background: transparent;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 900;
+      transition: background .18s, color .18s, box-shadow .18s;
+    }
+
+    .role-btn.active {
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(35, 122, 72, 0.2);
+    }
+
+    body.op .role-btn.active.op-btn {
+      background: linear-gradient(135deg, #2a8fc4, #176b9c);
+      box-shadow: 0 8px 20px rgba(33, 127, 198, 0.22);
+    }
+
+    body.mc .role-btn.active.mc-btn {
+      background: linear-gradient(135deg, #2f9657, #1b6a3e);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 12px;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: #344d38;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    input {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfefb;
+      color: var(--ink);
+      padding: 0 13px;
+      outline: none;
+      font-size: 15px;
+      transition: border-color .18s, box-shadow .18s, background .18s;
+    }
+
+    input::placeholder { color: #9aab9c; }
+
+    input:focus {
+      border-color: rgba(35, 122, 72, 0.72);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(35, 122, 72, 0.1);
+    }
+
+    body.op input:focus {
+      border-color: rgba(33, 127, 198, 0.72);
+      box-shadow: 0 0 0 4px rgba(33, 127, 198, 0.1);
+    }
+
+    .geo-box {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 180px 1fr 1fr;
+      gap: 10px;
+      align-items: end;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f7fbf7;
+      border: 1px solid var(--line);
+    }
+
+    body.op .geo-box { background: #f4faff; }
+
+    .geo-btn {
+      width: 100%;
+      height: 48px;
+      border: 1px solid rgba(35, 122, 72, 0.32);
+      border-radius: 8px;
+      color: var(--green-dark);
+      background: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 900;
+      transition: border-color .18s, background .18s, transform .18s;
+    }
+
+    body.op .geo-btn {
+      color: #176b9c;
+      border-color: rgba(33, 127, 198, 0.32);
+    }
+
+    .geo-btn:hover {
+      transform: translateY(-1px);
+      background: #f4faf5;
+      border-color: rgba(35, 122, 72, 0.54);
+    }
+
+    .geo-hint {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .submit-btn {
+      width: 100%;
+      height: 52px;
+      margin-top: 18px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 17px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #2f9657, #1b6a3e);
+      box-shadow: 0 14px 30px rgba(35, 122, 72, 0.28);
+      transition: transform .18s, filter .18s, opacity .18s;
+    }
+
+    body.op .submit-btn {
+      background: linear-gradient(135deg, #2a8fc4, #176b9c);
+      box-shadow: 0 14px 30px rgba(33, 127, 198, 0.26);
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+
+    .submit-btn:disabled {
+      cursor: not-allowed;
+      opacity: .58;
+      transform: none;
+    }
+
+    .msg {
+      min-height: 20px;
+      margin-top: 13px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .msg.err { color: var(--danger); }
+    .msg.ok { color: var(--green-dark); }
+
+    .foot {
+      margin-top: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .foot a {
+      color: var(--blue);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
     .hidden { display: none; }
+
+    @media (max-width: 980px) {
+      body {
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.74)),
+          url("/admin/assets/cotton-field-sky.png") center center / cover no-repeat fixed;
+      }
+
+      .page {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding: 30px 18px 38px;
+      }
+
+      .intro {
+        max-width: 720px;
+      }
+
+      h1 { font-size: 36px; }
+      .lead { font-size: 16px; }
+      .card {
+        max-width: 620px;
+        margin: 0 auto;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .page { padding: 22px 12px 28px; }
+      .brand {
+        align-items: flex-start;
+        border-radius: 8px;
+      }
+      h1 { font-size: 30px; }
+      .card { padding: 24px 16px 20px; }
+      .card-head {
+        display: block;
+        margin-bottom: 18px;
+      }
+      .form-grid { grid-template-columns: 1fr; }
+      .geo-box { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body class="op">
-  <div class="card">
-    <div class="logo">
-      <div class="emoji" id="logoEmoji">🚜</div>
-      <h1 id="logoTitle">农机手入驻申请</h1>
-    </div>
-    <div class="role-toggle">
-      <div class="role-btn op-btn active" data-role="operator" onclick="setRole('operator')">🚜 我是机主</div>
-      <div class="role-btn mc-btn" data-role="merchant" onclick="setRole('merchant')">🏪 我是商户</div>
-    </div>
-
-    <!-- 公共字段 -->
-    <div class="row">
-      <div class="field"><label>手机号 *</label><input id="phone" type="tel" maxlength="11" placeholder="登录账号"></div>
-      <div class="field"><label>登录密码 *</label><input id="password" type="password" placeholder="至少6位"></div>
-    </div>
-
-    <!-- 机主字段 -->
-    <div id="opFields">
-      <div class="field"><label>合作社 / 机队名称 *</label><input id="org_name" placeholder="如：艾力农机合作社"></div>
-      <div class="row">
-        <div class="field"><label>联系人 *</label><input id="contact" placeholder="负责人姓名"></div>
-        <div class="field"><label>资质 / 身份证号</label><input id="id_card" placeholder="选填"></div>
+  <main class="page">
+    <section class="intro" aria-label="入驻说明">
+      <div class="brand">
+        <span class="cotton-mark" aria-hidden="true"></span>
+        <span>
+          <span class="brand-title">Cotton 棉花平台</span>
+          <span class="brand-sub">服务新疆棉农、商户和农机手</span>
+        </span>
       </div>
-      <div class="field"><label>服务区域</label><input id="service_area" placeholder="如：喀什·疏附县"></div>
-      <div class="field"><label>基地地址</label><input id="location_name" placeholder="如：疏附县托克扎克镇"></div>
-      <div class="field">
-        <label>基地定位（用于农户按距离查找）</label>
-        <button type="button" class="geo-btn" onclick="getGeo()">📍 获取当前定位</button>
-        <div class="row" style="margin-top:8px">
-          <div class="field" style="margin-bottom:0"><input id="latitude" placeholder="纬度"></div>
-          <div class="field" style="margin-bottom:0"><input id="longitude" placeholder="经度"></div>
+
+      <h1>申请加入棉花平台</h1>
+      <p class="lead">商户可以入驻销售农资，农机手可以发布农机服务。提交资料后，平台管理员会进行审核。</p>
+
+      <div class="badges" aria-label="入驻类型">
+        <span class="badge">商户入驻</span>
+        <span class="badge">农机手入驻</span>
+        <span class="badge">管理员审核后开通</span>
+      </div>
+    </section>
+
+    <section class="card" aria-label="入驻申请表单">
+      <div class="card-head">
+        <div class="title-wrap">
+          <span class="role-kicker" id="roleKicker">农机手入驻</span>
+          <h2 class="card-title" id="logoTitle">农机手入驻申请</h2>
+          <p class="card-subtitle" id="logoSub">填写机队和服务位置，审核通过后即可接单。</p>
         </div>
-        <div class="geo-hint" id="geoHint">点击按钮自动获取，或手动填写</div>
       </div>
-    </div>
 
-    <!-- 商户字段 -->
-    <div id="mcFields" class="hidden">
-      <div class="field"><label>店铺 / 企业名称 *</label><input id="company_name" placeholder="如：疏附县农资有限公司"></div>
-      <div class="row">
-        <div class="field"><label>联系人 *</label><input id="real_name" placeholder="负责人姓名"></div>
-        <div class="field"><label>营业执照号</label><input id="business_license" placeholder="选填"></div>
+      <div class="role-toggle" role="tablist" aria-label="选择入驻身份">
+        <button type="button" class="role-btn op-btn active" data-role="operator" onclick="setRole('operator')">我是农机手</button>
+        <button type="button" class="role-btn mc-btn" data-role="merchant" onclick="setRole('merchant')">我是商户</button>
       </div>
-      <div class="field"><label>经营品类</label><input id="product_category" placeholder="如：化肥、农药、种子"></div>
-    </div>
 
-    <button class="btn" id="submitBtn" onclick="submitApply()">提交入驻申请</button>
-    <div class="msg" id="msg"></div>
-    <div class="foot">已有账号？<a href="/portal/login.html">返回登录 →</a></div>
-  </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="phone">手机号 *</label>
+          <input id="phone" type="tel" maxlength="11" placeholder="作为登录账号">
+        </div>
+        <div class="field">
+          <label for="password">登录密码 *</label>
+          <input id="password" type="password" placeholder="至少6位">
+        </div>
+
+        <div id="opFields" class="form-grid field full">
+          <div class="field full">
+            <label for="org_name">合作社 / 机队名称 *</label>
+            <input id="org_name" placeholder="如：艾力农机合作社">
+          </div>
+          <div class="field">
+            <label for="contact">联系人 *</label>
+            <input id="contact" placeholder="负责人姓名">
+          </div>
+          <div class="field">
+            <label for="id_card">资质 / 身份证号</label>
+            <input id="id_card" placeholder="选填">
+          </div>
+          <div class="field">
+            <label for="service_area">服务区域</label>
+            <input id="service_area" placeholder="如：喀什·疏附县">
+          </div>
+          <div class="field">
+            <label for="location_name">基地地址</label>
+            <input id="location_name" placeholder="如：托克扎克镇">
+          </div>
+          <div class="geo-box">
+            <button type="button" class="geo-btn" onclick="getGeo()">获取当前定位</button>
+            <div class="field">
+              <label for="latitude">纬度</label>
+              <input id="latitude" placeholder="可手动填写">
+            </div>
+            <div class="field">
+              <label for="longitude">经度</label>
+              <input id="longitude" placeholder="可手动填写">
+            </div>
+            <div class="geo-hint" id="geoHint">定位用于农户按距离查找农机服务，也可以手动填写。</div>
+          </div>
+        </div>
+
+        <div id="mcFields" class="form-grid field full hidden">
+          <div class="field full">
+            <label for="company_name">店铺 / 企业名称 *</label>
+            <input id="company_name" placeholder="如：疏附县农资有限公司">
+          </div>
+          <div class="field">
+            <label for="real_name">联系人 *</label>
+            <input id="real_name" placeholder="负责人姓名">
+          </div>
+          <div class="field">
+            <label for="business_license">营业执照号</label>
+            <input id="business_license" placeholder="选填">
+          </div>
+          <div class="field full">
+            <label for="product_category">经营品类</label>
+            <input id="product_category" placeholder="如：化肥、农药、种子">
+          </div>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="submitBtn" onclick="submitApply()">提交入驻申请</button>
+      <div class="msg" id="msg"></div>
+      <div class="foot">已有账号？<a href="/">返回登录</a></div>
+    </section>
+  </main>
+
   <script>
     let role = 'operator'
+    const roleText = {
+      operator: {
+        cls: 'op',
+        kicker: '农机手入驻',
+        title: '农机手入驻申请',
+        sub: '填写机队和服务位置，审核通过后即可接单。'
+      },
+      merchant: {
+        cls: 'mc',
+        kicker: '商户入驻',
+        title: '商户入驻申请',
+        sub: '填写店铺和经营信息，审核通过后即可进入商户工作台。'
+      }
+    }
+
     function setRole(r) {
       role = r
-      document.body.className = (r === 'operator' ? 'op' : 'mc')
-      document.getElementById('logoEmoji').textContent = r === 'operator' ? '🚜' : '🏪'
-      document.getElementById('logoTitle').textContent = r === 'operator' ? '农机手入驻申请' : '商户入驻申请'
+      const cfg = roleText[r]
+      document.body.className = cfg.cls
+      document.getElementById('roleKicker').textContent = cfg.kicker
+      document.getElementById('logoTitle').textContent = cfg.title
+      document.getElementById('logoSub').textContent = cfg.sub
       document.querySelectorAll('.role-btn').forEach(b => b.classList.toggle('active', b.dataset.role === r))
       document.getElementById('opFields').classList.toggle('hidden', r !== 'operator')
       document.getElementById('mcFields').classList.toggle('hidden', r !== 'merchant')
       document.getElementById('msg').textContent = ''
     }
+
     function getGeo() {
       const hint = document.getElementById('geoHint')
       const insecure = location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'
-      if (insecure) { hint.textContent = '⚠ 网页定位需 HTTPS，请手动填写下方经纬度（可用高德/腾讯地图搜索后复制）'; return }
-      if (!navigator.geolocation) { hint.textContent = '浏览器不支持定位，请手动填写'; return }
-      hint.textContent = '定位中…'
+      if (insecure) {
+        hint.textContent = '网页定位需要 HTTPS，请手动填写经纬度，或使用 HTTPS 地址打开。'
+        return
+      }
+      if (!navigator.geolocation) {
+        hint.textContent = '当前浏览器不支持定位，请手动填写经纬度。'
+        return
+      }
+      hint.textContent = '定位中...'
       navigator.geolocation.getCurrentPosition(
-        p => { document.getElementById('latitude').value = p.coords.latitude.toFixed(7); document.getElementById('longitude').value = p.coords.longitude.toFixed(7); hint.textContent = '✅ 定位成功（可手动修改）' },
-        e => hint.textContent = (e.code === 1 ? '已拒绝定位权限，请手动填写经纬度' : '定位失败，请手动填写经纬度'),
-        { enableHighAccuracy: true, timeout: 8000 })
+        p => {
+          document.getElementById('latitude').value = p.coords.latitude.toFixed(7)
+          document.getElementById('longitude').value = p.coords.longitude.toFixed(7)
+          hint.textContent = '定位成功，可手动修改。'
+        },
+        e => {
+          hint.textContent = e.code === 1 ? '已拒绝定位权限，请手动填写经纬度。' : '定位失败，请手动填写经纬度。'
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      )
     }
+
     async function submitApply() {
       const v = id => (document.getElementById(id).value || '').trim()
-      const phone = v('phone'), password = document.getElementById('password').value
-      const msg = document.getElementById('msg'), btn = document.getElementById('submitBtn')
-      if (!phone || !password) { msg.className = 'msg err'; msg.textContent = '请填写手机号和密码'; return }
-      let api, body
-      if (role === 'operator') {
-        if (!v('org_name') || !v('contact')) { msg.className = 'msg err'; msg.textContent = '请填写合作社名称和联系人'; return }
-        api = '/api/operator/apply'
-        body = { phone, password, org_name: v('org_name'), contact: v('contact'), id_card: v('id_card'),
-          service_area: v('service_area'), location_name: v('location_name'),
-          latitude: v('latitude') || null, longitude: v('longitude') || null }
-      } else {
-        if (!v('company_name') || !v('real_name')) { msg.className = 'msg err'; msg.textContent = '请填写企业名称和联系人'; return }
-        api = '/api/admin/apply'
-        body = { phone, password, real_name: v('real_name'), company_name: v('company_name'),
-          business_license: v('business_license'), product_category: v('product_category') }
+      const phone = v('phone')
+      const password = document.getElementById('password').value
+      const msg = document.getElementById('msg')
+      const btn = document.getElementById('submitBtn')
+
+      if (!phone || !password) {
+        msg.className = 'msg err'
+        msg.textContent = '请填写手机号和密码'
+        return
       }
-      btn.disabled = true; btn.textContent = '提交中…'; msg.textContent = ''
+
+      let api
+      let body
+      if (role === 'operator') {
+        if (!v('org_name') || !v('contact')) {
+          msg.className = 'msg err'
+          msg.textContent = '请填写合作社名称和联系人'
+          return
+        }
+        api = '/api/operator/apply'
+        body = {
+          phone,
+          password,
+          org_name: v('org_name'),
+          contact: v('contact'),
+          id_card: v('id_card'),
+          service_area: v('service_area'),
+          location_name: v('location_name'),
+          latitude: v('latitude') || null,
+          longitude: v('longitude') || null
+        }
+      } else {
+        if (!v('company_name') || !v('real_name')) {
+          msg.className = 'msg err'
+          msg.textContent = '请填写店铺名称和联系人'
+          return
+        }
+        api = '/api/admin/apply'
+        body = {
+          phone,
+          password,
+          real_name: v('real_name'),
+          company_name: v('company_name'),
+          business_license: v('business_license'),
+          product_category: v('product_category')
+        }
+      }
+
+      btn.disabled = true
+      btn.textContent = '正在提交...'
+      msg.textContent = ''
+
       try {
-        const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        const r = await fetch(api, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
         const data = await r.json()
         if (data.code === 200) {
-          msg.className = 'msg ok'; msg.textContent = '✅ ' + (data.msg || '申请已提交，请等待审核'); btn.textContent = '已提交'
-          setTimeout(() => location.replace('/portal/login.html'), 2400)
-        } else { msg.className = 'msg err'; msg.textContent = data.msg || '提交失败'; btn.disabled = false; btn.textContent = '提交入驻申请' }
-      } catch (e) { msg.className = 'msg err'; msg.textContent = '网络错误，请重试'; btn.disabled = false; btn.textContent = '提交入驻申请' }
+          msg.className = 'msg ok'
+          msg.textContent = data.msg || '申请已提交，请等待审核'
+          btn.textContent = '已提交'
+          setTimeout(() => location.replace('/'), 2400)
+        } else {
+          msg.className = 'msg err'
+          msg.textContent = data.msg || '提交失败'
+          btn.disabled = false
+          btn.textContent = '提交入驻申请'
+        }
+      } catch (e) {
+        msg.className = 'msg err'
+        msg.textContent = '网络错误，请重试'
+        btn.disabled = false
+        btn.textContent = '提交入驻申请'
+      }
     }
+
     const q = new URLSearchParams(location.search).get('role')
     if (q === 'merchant') setRole('merchant')
   </script>

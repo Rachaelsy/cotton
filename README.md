@@ -152,20 +152,23 @@ netsh advfirewall firewall add rule name="Cotton 3000" dir=in action=allow proto
 | 角色 | 登录入口 | 注册 / 入驻 | 工作台 |
 |------|----------|-------------|--------|
 | 农户 | 微信小程序 | 小程序内注册 | 小程序首页 |
-| 机主 / 商户 | `/portal/login.html`（选身份） | `/portal/register.html`（选身份） | `/operator/dashboard.html` / `/merchant/dashboard.html` |
-| 管理员 | `/admin/login.html` | — | `/admin/dashboard.html` |
+| 商户 | `/` 或 `/admin/login.html?role=merchant` | `/portal/register.html?role=merchant` | `/merchant/dashboard.html` |
+| 农机手 | `/` 或 `/admin/login.html?role=operator` | `/portal/register.html?role=operator` | `/operator/dashboard.html` |
+| 管理员 | `/` 或 `/admin/login.html?role=admin` | — | `/admin/dashboard.html` |
 
-新机主 / 商户在统一门户 `/portal/register.html` 注册 → 管理员在后台「机主审批」/「商户审批」面板审核 → 通过后即可登录各自工作台。
+访问根路径（例如 `https://cyaia.cn/` 或本地 `http://localhost:3000/`）会进入统一身份选择登录页，页面提供管理员、商户、农机手三个身份入口。网页后台登录目前只保留手机号 + 密码登录，不再提供手机号验证码登录。
+
+新农机手 / 商户在统一入驻页 `/portal/register.html` 提交资料 → 管理员在后台「机主审批」/「商户审批」面板审核 → 通过后即可登录各自工作台。
 
 ## 管理后台
 
 启动后端服务后，访问：
 
 ```
-http://localhost:3000/admin/
+http://localhost:3000/
 ```
 
-使用管理员账号登录，功能包含：
+选择管理员身份并使用管理员账号登录，功能包含：
 
 | 面板 | 功能 |
 |------|------|
@@ -179,17 +182,19 @@ http://localhost:3000/admin/
 | 售后管理 | 全平台售后申请列表，按状态筛选，查看申请详情（描述+凭证图片） |
 | 财务管理 | 商户财务汇总（销售额/佣金/可提现/冻结/已提现）；提现申请列表，支持批准/拒绝操作 |
 
-**商户入驻申请（公开页面）：**
+**商户 / 农机手入驻申请（公开页面）：**
 ```
-http://localhost:3000/admin/merchant-apply.html
+http://localhost:3000/portal/register.html?role=merchant
+http://localhost:3000/portal/register.html?role=operator
 ```
-商户通过此页面提交入驻申请，管理员在"商户审批"面板审核。
+商户和农机手通过此页面提交入驻申请，管理员分别在"商户审批"和"机主审批"面板审核。
 
-**商户管理后台（统一登录入口）：**
+**网页后台（统一登录入口）：**
 ```
+http://localhost:3000/
 http://localhost:3000/admin/login.html
 ```
-管理员和商户共用此登录页，系统根据角色自动跳转不同后台。商户功能包含：
+管理员、商户和农机手共用此登录页，系统根据所选身份自动调用对应登录接口并跳转不同后台。商户功能包含：
 
 | 面板 | 功能 |
 |------|------|
@@ -210,11 +215,13 @@ http://localhost:3000/admin/login.html
   └─ 有 Token → verify() → 有效 → /pages/index/index（农户首页）
   └─ 无 Token → /pages/login/index（农户登录/注册）
 
-网页管理后台（管理员 + 商户统一登录）：
-http://localhost:3000/admin/login.html
+网页管理后台（管理员 + 商户 + 农机手统一登录）：
+http://localhost:3000/
+  └─ 自动跳转 /admin/login.html
   └─ 管理员账号登录 → /admin/dashboard.html
   └─ 商户账号登录  → /merchant/dashboard.html
-  └─ /merchant/login.html 自动重定向至此入口
+  └─ 农机手账号登录 → /operator/dashboard.html
+  └─ /portal/login.html、/merchant/login.html、/operator/login.html 自动重定向至此入口
 ```
 
 ---

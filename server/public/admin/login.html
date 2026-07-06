@@ -3,168 +3,712 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>棉花智能体 · 管理后台</title>
+  <title>Cotton 棉花平台登录</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #237a48;
+      --green-dark: #155a34;
+      --green-soft: #edf7ef;
+      --blue: #217fc6;
+      --blue-dark: #176b9c;
+      --blue-soft: #eef7ff;
+      --gold: #b67824;
+      --gold-dark: #80511b;
+      --gold-soft: #fff7e8;
+      --ink: #253126;
+      --muted: #687668;
+      --line: #dfe8dc;
+      --danger: #b53b30;
+    }
+
     body {
       min-height: 100vh;
-      background: linear-gradient(135deg, #1a3c2e 0%, #2d6a4f 50%, #C8902E 100%);
+      overflow-x: hidden;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.76) 42%, rgba(255,255,255,0.34) 100%),
+        linear-gradient(180deg, rgba(20, 103, 165, 0.08), rgba(21, 90, 52, 0.08)),
+        url("./assets/cotton-field-sky.png") center center / cover no-repeat;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 440px;
+      gap: 46px;
+      align-items: center;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 40px 32px;
+    }
+
+    .intro {
+      max-width: 600px;
+      padding: 18px 0;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 58px;
+      margin-bottom: 24px;
+      padding: 8px 18px 8px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.82);
+      box-shadow: 0 16px 42px rgba(29, 90, 52, 0.14);
+      backdrop-filter: blur(8px);
+    }
+
+    .cotton-mark {
+      position: relative;
+      width: 48px;
+      height: 40px;
+      flex: 0 0 48px;
+    }
+
+    .cotton-mark::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow:
+        -14px 12px 0 #fffaf1,
+        14px 12px 0 #fff,
+        0 20px 0 #fffdf7;
+      filter: drop-shadow(0 6px 8px rgba(43, 82, 50, 0.16));
+    }
+
+    .cotton-mark::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      bottom: 1px;
+      width: 30px;
+      height: 12px;
+      border-radius: 100% 0 100% 0;
+      background: linear-gradient(135deg, #4fa866, var(--green-dark));
+      transform: rotate(-14deg);
+    }
+
+    .brand-title {
+      display: block;
+      color: var(--green-dark);
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .brand-sub {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    h1 {
+      max-width: 580px;
+      margin-bottom: 18px;
+      color: #163f28;
+      font-size: 46px;
+      line-height: 1.18;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-shadow: 0 2px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .lead {
+      max-width: 540px;
+      color: #405344;
+      font-size: 18px;
+      line-height: 1.85;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+    }
+
+    .points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .point {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: #255537;
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      box-shadow: 0 8px 22px rgba(35, 122, 72, 0.08);
+      font-size: 14px;
+      font-weight: 850;
+      backdrop-filter: blur(8px);
+    }
+
+    .login-panel {
+      width: 100%;
+      border-radius: 8px;
+      padding: 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.86);
+      box-shadow: 0 26px 70px rgba(27, 79, 48, 0.22);
+      backdrop-filter: blur(14px);
+    }
+
+    .panel-title {
+      color: #173d27;
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .panel-desc {
+      margin-top: 6px;
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .role-card {
+      position: relative;
+      min-height: 112px;
+      padding: 13px 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: #fbfefb;
+      cursor: pointer;
+      text-align: left;
+      transition: transform .18s, border-color .18s, box-shadow .18s, background .18s;
+    }
+
+    .role-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(35, 122, 72, 0.12);
+    }
+
+    .role-card.active {
+      border-color: rgba(35, 122, 72, 0.58);
+      background: var(--green-soft);
+      box-shadow: 0 12px 26px rgba(35, 122, 72, 0.16);
+    }
+
+    .role-card[data-role="merchant"].active {
+      border-color: rgba(35, 122, 72, 0.58);
+      background: var(--green-soft);
+    }
+
+    .role-card[data-role="operator"].active {
+      border-color: rgba(33, 127, 198, 0.58);
+      background: var(--blue-soft);
+      box-shadow: 0 12px 26px rgba(33, 127, 198, 0.14);
+    }
+
+    .role-card[data-role="admin"].active {
+      border-color: rgba(182, 120, 36, 0.58);
+      background: var(--gold-soft);
+      box-shadow: 0 12px 26px rgba(182, 120, 36, 0.14);
+    }
+
+    .role-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 9px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--green);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .role-card[data-role="operator"] .role-icon { background: var(--blue); }
+    .role-card[data-role="admin"] .role-icon { background: var(--gold); }
+
+    .role-name {
+      display: block;
+      color: #173d27;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.3;
+      margin-bottom: 5px;
+    }
+
+    .role-desc {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      color: #344d38;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      width: 42px;
+      height: 26px;
+      transform: translateY(-50%);
+      border-radius: 999px;
+      color: #fff;
+      background: var(--green);
+      font-size: 13px;
+      line-height: 26px;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    body.role-operator .input-icon { background: var(--blue); }
+    body.role-admin .input-icon { background: var(--gold); }
+
+    input {
+      width: 100%;
+      height: 50px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfefb;
+      color: var(--ink);
+      padding: 0 14px 0 66px;
+      outline: none;
+      font-size: 16px;
+      transition: border-color .18s, box-shadow .18s, background .18s;
+    }
+
+    input::placeholder { color: #9aab9c; }
+
+    input:focus {
+      border-color: rgba(35, 122, 72, 0.72);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(35, 122, 72, 0.12);
+    }
+
+    body.role-operator input:focus {
+      border-color: rgba(33, 127, 198, 0.72);
+      box-shadow: 0 0 0 4px rgba(33, 127, 198, 0.12);
+    }
+
+    body.role-admin input:focus {
+      border-color: rgba(182, 120, 36, 0.72);
+      box-shadow: 0 0 0 4px rgba(182, 120, 36, 0.12);
+    }
+
+    .login-note {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 4px 0 20px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .login-note strong {
+      color: var(--green-dark);
+      white-space: nowrap;
+    }
+
+    body.role-operator .login-note strong { color: var(--blue-dark); }
+    body.role-admin .login-note strong { color: var(--gold-dark); }
+
+    .login-btn {
+      width: 100%;
+      height: 52px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 17px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #2f9657, #1b6a3e);
+      box-shadow: 0 14px 30px rgba(35, 122, 72, 0.28);
+      transition: transform .18s, filter .18s, opacity .18s;
+    }
+
+    body.role-operator .login-btn {
+      background: linear-gradient(135deg, #2a8fc4, #176b9c);
+      box-shadow: 0 14px 30px rgba(33, 127, 198, 0.24);
+    }
+
+    body.role-admin .login-btn {
+      background: linear-gradient(135deg, #c58932, #8a5a20);
+      box-shadow: 0 14px 30px rgba(182, 120, 36, 0.24);
+    }
+
+    .login-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+
+    .login-btn:disabled {
+      cursor: not-allowed;
+      opacity: .58;
+      transform: none;
+    }
+
+    .err {
+      min-height: 20px;
+      margin-top: 13px;
+      color: var(--danger);
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .role-hint {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(35, 122, 72, 0.24);
+      border-radius: 8px;
+      color: var(--green-dark);
+      background: var(--green-soft);
+      text-align: center;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .join-area {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .join-title {
+      margin-bottom: 12px;
+      color: #344d38;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .join-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .join-link {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    }
-    .card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 48px 40px;
-      width: 400px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.18);
-    }
-    .logo { text-align: center; margin-bottom: 32px; }
-    .logo-icon { font-size: 48px; }
-    .logo-title { font-size: 24px; font-weight: 800; color: #1A1A1A; margin-top: 8px; }
-    .logo-sub { font-size: 13px; color: #888; margin-top: 4px; }
-    .field { margin-bottom: 20px; }
-    .field label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
-    .field input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1.5px solid #E0E0E0;
-      border-radius: 10px;
-      font-size: 15px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .field input:focus { border-color: #C8902E; }
-    .btn {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #C8902E, #D4A043);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: opacity 0.2s;
-    }
-    .btn:hover { opacity: 0.88; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .err { color: #DC2626; font-size: 13px; margin-top: 12px; text-align: center; min-height: 20px; }
-    .role-hint {
-      display: none;
-      text-align: center;
-      margin-top: 14px;
-      padding: 10px 14px;
-      background: #F0FDF4;
+      min-height: 44px;
+      border: 1px solid rgba(35, 122, 72, 0.22);
       border-radius: 8px;
-      font-size: 13px;
-      color: #16A34A;
-      font-weight: 600;
+      color: var(--green-dark);
+      background: #f7fbf7;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 900;
+      transition: border-color .18s, background .18s, transform .18s;
     }
-    .footer-link {
+
+    .join-link:hover {
+      transform: translateY(-1px);
+      border-color: rgba(35, 122, 72, 0.52);
+      background: #eef8ef;
+    }
+
+    .copyright {
+      margin-top: 22px;
+      color: #829080;
       text-align: center;
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid #F0F0F0;
-      font-size: 13px;
-      color: #888;
+      font-size: 12px;
     }
-    .footer-link a { color: #C8902E; text-decoration: none; font-weight: 600; }
-    .footer-link a:hover { text-decoration: underline; }
+
+    .hidden { display: none; }
+
+    @media (max-width: 980px) {
+      body {
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.72)),
+          url("./assets/cotton-field-sky.png") center center / cover no-repeat;
+      }
+
+      .page {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        padding: 30px 18px 36px;
+      }
+
+      .intro {
+        max-width: 720px;
+        padding: 0;
+      }
+
+      h1 { font-size: 36px; }
+      .lead { font-size: 16px; }
+
+      .login-panel {
+        max-width: 520px;
+        margin: 0 auto;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page { padding: 22px 12px 28px; }
+      .brand {
+        align-items: flex-start;
+        border-radius: 8px;
+      }
+      h1 { font-size: 30px; }
+      .points { gap: 8px; }
+      .point {
+        height: auto;
+        min-height: 32px;
+        padding: 7px 11px;
+      }
+      .login-panel { padding: 24px 16px 20px; }
+      .role-grid { grid-template-columns: 1fr; }
+      .role-card {
+        min-height: 84px;
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        column-gap: 10px;
+        align-items: center;
+      }
+      .role-icon { margin-bottom: 0; }
+      .role-name { margin-bottom: 3px; }
+      .login-note {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .join-actions { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
-<body>
-  <div class="card">
-    <div class="logo">
-      <div class="logo-icon">🌾</div>
-      <div class="logo-title">棉花智能体后台</div>
-      <div class="logo-sub">管理员 · 商户统一登录入口</div>
-    </div>
-    <div class="field">
-      <label>账号</label>
-      <input id="phone" type="text" placeholder="请输入手机号" autocomplete="username">
-    </div>
-    <div class="field">
-      <label>密码</label>
-      <input id="pwd" type="password" placeholder="请输入密码" autocomplete="current-password">
-    </div>
-    <button class="btn" id="loginBtn" onclick="doLogin()">登 录</button>
-    <div class="err" id="err"></div>
-    <div class="role-hint" id="role-hint"></div>
-    <div class="footer-link">还没有账号？<a href="/admin/merchant-apply.html">申请商户入驻</a></div>
-  </div>
+<body class="role-merchant">
+  <main class="page">
+    <section class="intro" aria-label="Cotton 平台介绍">
+      <div class="brand">
+        <span class="cotton-mark" aria-hidden="true"></span>
+        <span>
+          <span class="brand-title">Cotton 棉花平台</span>
+          <span class="brand-sub">服务新疆棉农、商户和农机手</span>
+        </span>
+      </div>
+
+      <h1>请选择身份登录</h1>
+      <p class="lead">管理员、商户、农机手都从这里进入。新商户和新农机手可以先提交入驻申请，审核通过后再登录工作台。</p>
+
+      <div class="points" aria-label="平台入口">
+        <span class="point">管理员审核入驻</span>
+        <span class="point">商户管理订单</span>
+        <span class="point">农机手接单作业</span>
+      </div>
+    </section>
+
+    <section class="login-panel" aria-label="身份选择和账号登录">
+      <h2 class="panel-title">登录入口</h2>
+      <p class="panel-desc">先选择身份，再输入手机号和密码登录。</p>
+
+      <div class="role-grid" aria-label="选择登录身份">
+        <button type="button" class="role-card" data-role="admin" onclick="selectRole('admin')">
+          <span class="role-icon">管</span>
+          <span>
+            <span class="role-name">管理员</span>
+            <span class="role-desc">审核入驻，管理平台</span>
+          </span>
+        </button>
+        <button type="button" class="role-card active" data-role="merchant" onclick="selectRole('merchant')">
+          <span class="role-icon">商</span>
+          <span>
+            <span class="role-name">商户</span>
+            <span class="role-desc">商品、订单、结算</span>
+          </span>
+        </button>
+        <button type="button" class="role-card" data-role="operator" onclick="selectRole('operator')">
+          <span class="role-icon">机</span>
+          <span>
+            <span class="role-name">农机手</span>
+            <span class="role-desc">机具、接单、作业</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="field">
+        <label for="phone" id="phoneLabel">商户手机号</label>
+        <div class="input-wrap">
+          <span class="input-icon">账号</span>
+          <input id="phone" type="text" placeholder="请输入手机号" autocomplete="username">
+        </div>
+      </div>
+
+      <div class="field" id="passwordField">
+        <label for="pwd">登录密码</label>
+        <div class="input-wrap">
+          <span class="input-icon">密码</span>
+          <input id="pwd" type="password" placeholder="请输入密码" autocomplete="current-password">
+        </div>
+      </div>
+
+      <div class="login-note">
+        <strong id="roleNoteTitle">商户登录</strong>
+        <span id="roleNoteDesc">进入商户工作台，管理商品、订单和结算。</span>
+      </div>
+
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">进入商户工作台</button>
+      <div class="err" id="err"></div>
+      <div class="role-hint" id="role-hint"></div>
+
+      <div class="join-area">
+        <div class="join-title">还没有账号？先申请入驻</div>
+        <div class="join-actions">
+          <a class="join-link" href="/portal/register.html?role=merchant">商户入驻</a>
+          <a class="join-link" href="/portal/register.html?role=operator">农机手入驻</a>
+        </div>
+      </div>
+
+      <div class="copyright">© 2026 Cotton 棉花平台</div>
+    </section>
+  </main>
 
   <script>
-    // 已登录则直接跳转
-    if (localStorage.getItem('admin_token')) {
-      window.location.href = '/admin/dashboard.html'
-    } else if (localStorage.getItem('merchant_token')) {
-      window.location.href = '/merchant/dashboard.html'
+    let role = 'merchant'
+    const ROLE_CONFIG = {
+      admin: {
+        bodyClass: 'role-admin',
+        phoneLabel: '管理员手机号',
+        noteTitle: '管理员登录',
+        noteDesc: '进入管理后台，审核入驻申请并管理平台。',
+        btnText: '进入管理后台',
+        loadingText: '正在登录...',
+        api: '/api/admin/login',
+        tokenKey: 'admin_token',
+        infoKey: 'admin_name',
+        dashboard: '/admin/dashboard.html',
+        save(data) {
+          localStorage.setItem(this.tokenKey, data.token)
+          localStorage.setItem(this.infoKey, data.real_name || '管理员')
+        }
+      },
+      merchant: {
+        bodyClass: 'role-merchant',
+        phoneLabel: '商户手机号',
+        noteTitle: '商户登录',
+        noteDesc: '进入商户工作台，管理商品、订单和结算。',
+        btnText: '进入商户工作台',
+        loadingText: '正在登录...',
+        api: '/api/merchant/login',
+        tokenKey: 'merchant_token',
+        infoKey: 'merchant_user',
+        dashboard: '/merchant/dashboard.html',
+        save(data) {
+          localStorage.setItem(this.tokenKey, data.token)
+          localStorage.setItem(this.infoKey, JSON.stringify(data))
+        }
+      },
+      operator: {
+        bodyClass: 'role-operator',
+        phoneLabel: '农机手手机号',
+        noteTitle: '农机手登录',
+        noteDesc: '进入农机手工作台，发布机具并处理作业订单。',
+        btnText: '进入农机手工作台',
+        loadingText: '正在登录...',
+        api: '/api/operator/login',
+        tokenKey: 'op_token',
+        infoKey: 'op_info',
+        dashboard: '/operator/dashboard.html',
+        save(data) {
+          localStorage.setItem(this.tokenKey, data.token)
+          localStorage.setItem(this.infoKey, JSON.stringify(data))
+        }
+      }
     }
 
     document.getElementById('pwd').addEventListener('keydown', e => {
       if (e.key === 'Enter') doLogin()
     })
 
-    async function postJSON(url, body) {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+    function selectRole(nextRole) {
+      role = ROLE_CONFIG[nextRole] ? nextRole : 'merchant'
+      const cfg = ROLE_CONFIG[role]
+      document.body.className = cfg.bodyClass
+      document.querySelectorAll('.role-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.role === role)
       })
-      return { status: res.status, data: await res.json() }
+      document.getElementById('phoneLabel').textContent = cfg.phoneLabel
+      document.getElementById('roleNoteTitle').textContent = cfg.noteTitle
+      document.getElementById('roleNoteDesc').textContent = cfg.noteDesc
+      document.getElementById('loginBtn').textContent = cfg.btnText
+      document.getElementById('err').textContent = ''
+      document.getElementById('role-hint').style.display = 'none'
     }
 
     async function doLogin() {
-      const phone    = document.getElementById('phone').value.trim()
+      const phone = document.getElementById('phone').value.trim()
       const password = document.getElementById('pwd').value
-      const btn      = document.getElementById('loginBtn')
-      const err      = document.getElementById('err')
-      const hint     = document.getElementById('role-hint')
+      const btn = document.getElementById('loginBtn')
+      const err = document.getElementById('err')
+      const hint = document.getElementById('role-hint')
+      const cfg = ROLE_CONFIG[role]
 
-      if (!phone || !password) { err.textContent = '请填写账号和密码'; return }
+      if (!phone || !password) {
+        err.textContent = '请填写手机号和密码'
+        return
+      }
+
       btn.disabled = true
-      btn.textContent = '登录中...'
+      btn.textContent = cfg.loadingText
       err.textContent = ''
       hint.style.display = 'none'
 
       try {
-        // ① 尝试管理员登录
-        const admin = await postJSON('/api/admin/login', { phone, password })
-        if (admin.data.code === 200) {
-          localStorage.setItem('admin_token', admin.data.data.token)
-          localStorage.setItem('admin_name',  admin.data.data.real_name || '管理员')
-          hint.textContent = '✅ 管理员身份，正在跳转…'
+        const res = await fetch(cfg.api, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        })
+        const data = await res.json()
+        if (data.code === 200) {
+          cfg.save(data.data)
+          hint.textContent = '登录成功，正在进入工作台...'
           hint.style.display = 'block'
-          window.location.href = '/admin/dashboard.html'
+          window.location.href = cfg.dashboard
           return
         }
-
-        // ② 账号不存在(404)或非管理员账号(403)时，尝试商户登录
-        if (admin.status === 404 || admin.status === 403) {
-          const merchant = await postJSON('/api/merchant/login', { phone, password })
-          if (merchant.data.code === 200) {
-            localStorage.setItem('merchant_token', merchant.data.data.token)
-            localStorage.setItem('merchant_user',  JSON.stringify(merchant.data.data))
-            hint.textContent = '✅ 商户身份，正在跳转…'
-            hint.style.display = 'block'
-            window.location.href = '/merchant/dashboard.html'
-            return
-          }
-          err.textContent = merchant.data.msg || '账号或密码错误'
-          return
-        }
-
-        err.textContent = admin.data.msg || '登录失败'
+        err.textContent = data.msg || '手机号或密码错误'
       } catch {
         err.textContent = '网络错误，请检查服务器连接'
       } finally {
         btn.disabled = false
-        btn.textContent = '登 录'
+        btn.textContent = cfg.btnText
       }
+    }
+
+    const q = new URLSearchParams(location.search).get('role')
+    if (q === 'admin' || q === 'operator' || q === 'merchant') {
+      selectRole(q)
     }
   </script>
 </body>

@@ -36,8 +36,8 @@ app.use('/operator', noCache, express.static(path.join(__dirname, 'public/operat
 app.use('/portal',   noCache, express.static(path.join(__dirname, 'public/portal')))
 app.use('/uploads',  express.static(path.join(__dirname, 'public/uploads')))
 
-// Root URL opens the shared portal login page.
-app.get('/', (_req, res) => res.redirect('/portal/login.html'))
+// 访问 cyaia.cn 或首页文件时，进入统一身份登录页。
+app.get(['/', '/index.html'], (_req, res) => res.redirect('/admin/login.html'))
 
 // ── 路由 ────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'))
