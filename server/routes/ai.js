@@ -7,7 +7,7 @@ const multer  = require('multer')
 const path    = require('path')
 const fs      = require('fs')
 const router  = express.Router()
-const { detectAiIntent, buildIntentReply } = require('../../utils/ai-intent')
+const { detectAiIntent, buildIntentReply } = require('../utils/ai-intent')
 
 // 临时目录（分析后立即删除）
 const aiTempDir = path.join(__dirname, '../public/uploads/ai_temp')

@@ -2,7 +2,14 @@ const assert = require('assert')
 const express = require('express')
 const { EventEmitter } = require('events')
 const https = require('https')
-const { detectAiIntent } = require('../../utils/ai-intent')
+const fs = require('fs')
+const path = require('path')
+const { detectAiIntent } = require('../utils/ai-intent')
+
+const serverDir = path.join(__dirname, '..')
+const routeSource = fs.readFileSync(path.join(serverDir, 'routes', 'ai.js'), 'utf8')
+assert.ok(fs.existsSync(path.join(serverDir, 'utils', 'ai-intent.js')))
+assert.ok(routeSource.includes("require('../utils/ai-intent')"))
 
 process.env.GROQ_API_KEY = ''
 process.env.SILICONFLOW_API_KEY = ''
