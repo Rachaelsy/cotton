@@ -614,8 +614,8 @@
 
 ## 四、地块气象模块 `/api/weather`
 
-> 地块气象不再使用本地模拟数据，后端会根据地块边界中心点匹配中国气象局气象站，并代理请求 `weather.cma.cn`。
-> 后端会请求中国气象局实况、预警和 7 日预报；前端会转换为农事建议和预警展示模型。中国气象局当前 JSON 接口不直接提供地温和逐小时数组，因此 CMA 数据下页面展示“体感”，逐小时趋势由前端按实况和日预报估算。
+> 地块气象不再使用本地模拟数据，也不再把区域气象站作为地块天气主数据。
+> 后端会根据地块边界中心点经纬度请求 Open-Meteo CMA GRAPES 坐标预报，提供实时天气、7 日预报、逐小时预报、地温、紫外线和能见度。前端每 2 小时展示一条逐小时预报；灾害预警为基于地块中心坐标预报字段生成的模型风险提示，并明确标注来源；如果真实坐标预报失败，接口直接返回失败，不再使用本地估算或模拟数据。
 > 该接口需要农户登录态，且地块必须存在边界坐标。
 
 ### 4.1 获取指定地块天气
@@ -640,14 +640,11 @@
       "longitude": 75.8602
     },
     "weather": {
-      "provider": "cma",
-      "source": "weather.cma.cn",
-      "station": {
-        "id": "Y9199",
-        "name": "喀什",
-        "path": "中国, 新疆, 喀什"
-      },
+      "provider": "open-meteo-cma",
+      "source": "api.open-meteo.com/v1/cma",
+      "model": "CMA GFS GRAPES",
       "current": { ... },
+      "hourly": { ... },
       "forecast": {
         "daily": [ ... ]
       }
@@ -663,7 +660,57 @@
 
 ---
 
-## 四、前端接入示例
+## 五、AI 问答模块 `/api/ai`
+
+### 5.1 文字问答 / 指令识别
+
+**POST** `/api/ai/chat`
+
+**请求体：**
+```json
+{
+  "message": "我要卖棉花",
+  "displayMessage": "我要卖棉花",
+  "language": "zh",
+  "history": [
+    { "role": "user", "content": "今天能打药吗" },
+    { "role": "assistant", "content": "需要先看风力和降水。" }
+  ]
+}
+```
+
+**成功响应 200：**
+```json
+{
+  "code": 200,
+  "data": {
+    "reply": "我这就打开「棉花交易」。如果没有自动进入，点下面的入口也能进。",
+    "intent": { "key": "trade", "jump": { "...": "..." } },
+    "jump": {
+      "key": "trade",
+      "icon": "💰",
+      "title": "棉花交易",
+      "desc": "查看收购价并发布卖棉需求",
+      "url": "/pages/trade/index",
+      "method": "navigateTo",
+      "autoOpen": true
+    },
+    "provider": "local-intent"
+  }
+}
+```
+
+> 如果已配置 `DEEPSEEK_API_KEY`、`GROQ_API_KEY` 或 `SILICONFLOW_API_KEY`，普通农技问题会代理到真实 AI 服务；文字问答优先使用 DeepSeek，图片视觉分析仍需要 Siliconflow。如果未配置 Key，确定性的功能指令仍会返回本地 `jump` 卡片，普通问答会提示未配置 AI Key，不会伪装成真实 AI。
+
+### 5.2 图片分析
+
+**POST** `/api/ai/photo`
+
+`multipart/form-data`，字段名：`photo`。图片视觉分析需要 `SILICONFLOW_API_KEY`。
+
+---
+
+## 六、前端接入示例
 
 ### 小程序（`utils/auth.js` 封装）
 
@@ -709,7 +756,7 @@ const r = await fetch('/api/admin/merchants', {
 
 ---
 
-## 五、测试账号
+## 七、测试账号
 
 | 角色 | 手机号 | 密码 | 用途 |
 |------|--------|------|------|

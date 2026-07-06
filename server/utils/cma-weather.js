@@ -1,6 +1,7 @@
 const { nearestRegion } = require('./regions')
 
 const CMA_API_BASE = 'https://weather.cma.cn/api'
+const OPEN_METEO_CMA_API = 'https://api.open-meteo.com/v1/cma'
 const REQUEST_TIMEOUT_MS = 8000
 
 const CMA_STATIONS = [
@@ -113,6 +114,36 @@ async function requestCmaJson(url, stationId) {
   }
 }
 
+async function requestJson(url, headers = {}) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'cotton-miniapp-weather/1.0',
+        Accept: 'application/json',
+        ...headers
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`真实小时预报接口请求失败(${response.status})`)
+    }
+
+    const payload = await response.json()
+    if (payload && payload.error) {
+      throw new Error(payload.reason || '真实小时预报接口返回异常')
+    }
+    return payload
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('真实小时预报接口响应超时')
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 function parseAutocompleteItem(item) {
   if (typeof item !== 'string') return null
   const [id, name, , country] = item.split('|')
@@ -166,33 +197,97 @@ function mergeStation(station, currentData, forecastData) {
   }
 }
 
-async function fetchCmaWeather(center, plot = {}) {
-  const station = await resolveCmaStation(center, plot)
-  if (!station) throw new Error('未匹配到可用的中国气象局气象站')
+async function fetchCmaGrapesForecast(center) {
+  const lat = toNumber(center && center.latitude)
+  const lng = toNumber(center && center.longitude)
+  if (lat === null || lng === null) {
+    throw new Error('地块中心点无效，无法获取真实小时预报')
+  }
 
-  const nowUrl = `${CMA_API_BASE}/now/${encodeURIComponent(station.id)}`
-  const forecastUrl = `${CMA_API_BASE}/weather/view?stationid=${encodeURIComponent(station.id)}`
-  const [currentPayload, forecastPayload] = await Promise.all([
-    requestCmaJson(nowUrl, station.id),
-    requestCmaJson(forecastUrl, station.id)
-  ])
-
-  const current = currentPayload && currentPayload.data ? currentPayload.data : {}
-  const forecast = forecastPayload && forecastPayload.data ? forecastPayload.data : {}
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lng),
+    hourly: [
+      'temperature_2m',
+      'relative_humidity_2m',
+      'precipitation',
+      'weather_code',
+      'wind_speed_10m',
+      'wind_direction_10m',
+      'visibility',
+      'surface_pressure',
+      'soil_temperature_0_to_10cm'
+    ].join(','),
+    daily: [
+      'weather_code',
+      'temperature_2m_max',
+      'temperature_2m_min',
+      'uv_index_max',
+      'precipitation_sum',
+      'wind_speed_10m_max',
+      'wind_direction_10m_dominant'
+    ].join(','),
+    forecast_hours: '48',
+    forecast_days: '7',
+    timezone: 'Asia/Shanghai',
+    wind_speed_unit: 'kmh',
+    precipitation_unit: 'mm'
+  })
+  const payload = await requestJson(`${OPEN_METEO_CMA_API}?${params}`)
+  const hourly = payload && payload.hourly
+  if (!(hourly && Array.isArray(hourly.time) && hourly.time.length)) {
+    throw new Error('真实小时预报接口未返回逐小时数据')
+  }
 
   return {
-    provider: 'cma',
-    source: 'weather.cma.cn',
-    station: mergeStation(station, current, forecast),
-    current,
-    forecast,
+    provider: 'open-meteo-cma',
+    source: 'api.open-meteo.com/v1/cma',
+    model: 'CMA GFS GRAPES',
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    timezone: payload.timezone,
+    hourlyUnits: payload.hourly_units || {},
+    hourly,
+    dailyUnits: payload.daily_units || {},
+    daily: payload.daily || {},
     fetchedAt: new Date().toISOString()
   }
+}
+
+function buildCmaModelWeather(center, plot, station, forecast, stationError) {
+  return {
+    provider: 'open-meteo-cma',
+    source: forecast.source,
+    model: forecast.model,
+    station: station
+      ? {
+          id: station.id,
+          name: station.name,
+          distance: station.distance,
+          matchType: station.matchType,
+          unavailable: true,
+          error: stationError ? stationError.message : ''
+        }
+      : null,
+    center,
+    current: {},
+    daily: forecast.daily || {},
+    hourly: forecast.hourly || {},
+    hourlyUnits: forecast.hourlyUnits || {},
+    dailyUnits: forecast.dailyUnits || {},
+    fetchedAt: forecast.fetchedAt || new Date().toISOString()
+  }
+}
+
+async function fetchCmaWeather(center, plot = {}) {
+  const coordinateForecast = await fetchCmaGrapesForecast(center)
+  return buildCmaModelWeather(center, plot, null, coordinateForecast, null)
 }
 
 module.exports = {
   CMA_STATIONS,
   nearestCmaStation,
   resolveCmaStation,
+  fetchCmaGrapesForecast,
   fetchCmaWeather
 }

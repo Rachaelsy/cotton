@@ -1,5 +1,5 @@
 <!-- pages/ai/index.wxml — AI问答 -->
-<view class="page">
+<view class="page" bindtouchend="onVoiceGlobalEnd" bindtouchcancel="onVoiceGlobalCancel">
 
   <!-- 顶部导航 -->
   <view class="ai-nav" style="padding-top: {{statusBarHeight}}px">
@@ -16,8 +16,8 @@
           <view class="ai-badge"><text class="ai-badge-text">AI</text></view>
         </view>
         <view class="ai-status-row">
-          <view class="ai-status-dot"></view>
-          <text class="ai-status-text">{{copy.status}}</text>
+          <view class="ai-status-dot {{(recording || recordingStarting) ? 'recording' : ((recognizing || speaking) ? 'speaking' : '')}}"></view>
+          <text class="ai-status-text">{{recordingStarting ? copy.voicePreparing : (recording ? copy.voiceListening : (recognizing ? copy.voiceRecognizing : (speaking ? copy.speaking : copy.status)))}}</text>
         </view>
       </view>
       <view class="ai-more-btn" bindtap="onMore">
@@ -79,7 +79,35 @@
         <view class="cac-avatar sm"><text class="cac-avatar-emoji">🤖</text></view>
         <view class="msg-body">
           <text class="msg-nm-left">{{copy.assistantName}} · {{item.time}}</text>
-          <view class="bubble ai-bubble"><text class="bubble-text">{{item.text}}</text></view>
+          <view class="bubble ai-bubble">
+            <rich-text wx:if="{{item.richTextNodes}}" class="bubble-text" nodes="{{item.richTextNodes}}"></rich-text>
+            <text wx:else class="bubble-text">{{item.text}}</text>
+          </view>
+          <view wx:if="{{item.speakable}}" class="message-actions">
+            <view
+              class="replay-answer {{speaking && speakingMessageId === item.id ? 'active' : ''}}"
+              bindtap="onReplayAnswer"
+              data-id="{{item.id}}"
+            >
+              <text class="replay-answer-icon">{{speaking && speakingMessageId === item.id ? '■' : '🔊'}}</text>
+              <text class="replay-answer-text">{{copy.replayAnswer}}</text>
+            </view>
+          </view>
+          <view
+            wx:if="{{item.jump}}"
+            class="jump-card"
+            bindtap="onJump"
+            data-url="{{item.jump.url}}"
+            data-method="{{item.jump.method}}"
+          >
+            <view class="jump-icon"><text>{{item.jump.icon}}</text></view>
+            <view class="jump-main">
+              <text class="jump-kicker">{{copy.jumpForYou}}</text>
+              <text class="jump-title">{{item.jump.title}}</text>
+              <text class="jump-desc">{{item.jump.desc}}</text>
+            </view>
+            <view class="jump-enter"><text>{{copy.jumpEnter}}</text></view>
+          </view>
         </view>
       </view>
     </view>
@@ -110,13 +138,34 @@
         </view>
       </view>
     </scroll-view>
+    <view class="answer-mode-row">
+      <view class="voice-answer-toggle {{voiceAnswerEnabled ? 'on' : ''}}" bindtap="onToggleVoiceAnswer">
+        <view class="voice-answer-switch">
+          <view class="voice-answer-knob"></view>
+        </view>
+        <text class="voice-answer-label">{{copy.voiceAnswer}}</text>
+        <text class="voice-answer-state">{{voiceAnswerEnabled ? copy.voiceAnswerOn : copy.voiceAnswerOff}}</text>
+      </view>
+    </view>
     <view class="input-row">
       <view class="kbd-btn" bindtap="onToggleInput">
         <text class="kbd-icon">{{voiceMode ? '⌨️' : '🎤'}}</text>
       </view>
-      <view wx:if="{{voiceMode}}" class="voice-btn" bindtap="onVoice">
-        <text class="voice-btn-icon">🎤</text>
-        <text class="voice-btn-text">{{copy.voiceHold}}</text>
+      <view
+        wx:if="{{voiceMode}}"
+        class="voice-wrap"
+      >
+        <view
+          class="voice-btn {{(recording || recordingStarting) ? 'recording' : ''}}"
+          bindtouchstart="onVoiceStart"
+          bindtouchend="onVoiceEnd"
+          bindtouchcancel="onVoiceCancel"
+          bindtap="onVoiceTapFallback"
+        >
+          <text class="voice-btn-icon">🎤</text>
+          <text class="voice-btn-text">{{recognizing ? copy.voiceRecognizing : ((recording || recordingStarting) ? copy.voiceRelease : copy.voiceHold)}}</text>
+        </view>
+        <text wx:if="{{(recording || recordingStarting || recognizing) && voiceLiveText}}" class="voice-live-text">{{voiceLiveText}}</text>
       </view>
       <input
         wx:else
@@ -127,7 +176,7 @@
         confirm-type="send"
         bindconfirm="onSend"
       />
-      <view class="send-btn {{inputText ? '' : 'off'}}" bindtap="onSend">
+      <view wx:if="{{!voiceMode}}" class="send-btn {{inputText ? '' : 'off'}}" bindtap="onSend">
         <text class="send-icon">▲</text>
       </view>
     </view>

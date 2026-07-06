@@ -71,9 +71,18 @@
   "permission": {
     "scope.userLocation": {
       "desc": "用于按距离查找附近农机、地块定位与边界绘制，获取您的当前位置"
+    },
+    "scope.record": {
+      "desc": "用于 AI 问答语音提问，将您的语音转成文字后获取回答"
     }
   },
   "requiredPrivateInfos": ["getLocation", "chooseLocation"],
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.7",
+      "provider": "wx069ba97219f66d99"
+    }
+  },
   "style": "v2",
   "renderer": "skyline",
   "rendererOptions": {

@@ -93,6 +93,14 @@
   border-radius: 50%;
 }
 
+.ai-status-dot.speaking {
+  background: #1890FF;
+}
+
+.ai-status-dot.recording {
+  background: #D64545;
+}
+
 .ai-status-text {
   font-size: 22rpx;
   color: #4CAF50;
@@ -303,6 +311,10 @@
   line-height: 1.65;
 }
 
+rich-text.bubble-text {
+  display: block;
+}
+
 .ai-bubble {
   background: #ffffff;
   border-top-left-radius: 8rpx;
@@ -310,6 +322,100 @@
 }
 
 .ai-bubble .bubble-text { color: #1A1A1A; }
+
+.message-actions {
+  display: flex;
+  flex-direction: row;
+  margin-top: 10rpx;
+}
+
+.replay-answer {
+  min-height: 48rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #F5EEE6;
+  border: 1rpx solid #E7D8C5;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.replay-answer.active {
+  background: #E8F2FF;
+  border-color: #A9D0FF;
+}
+
+.replay-answer-icon {
+  font-size: 22rpx;
+}
+
+.replay-answer-text {
+  font-size: 21rpx;
+  color: #7A5020;
+  font-weight: 700;
+}
+
+.jump-card {
+  margin-top: 12rpx;
+  background: #FBF5EA;
+  border: 1rpx solid #E8D9C2;
+  border-radius: 20rpx;
+  padding: 18rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+  box-shadow: 0 4rpx 14rpx rgba(139, 92, 36, 0.08);
+}
+
+.jump-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34rpx;
+  flex-shrink: 0;
+}
+
+.jump-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3rpx;
+}
+
+.jump-kicker {
+  font-size: 19rpx;
+  color: #A16E25;
+  font-weight: 700;
+}
+
+.jump-title {
+  font-size: 27rpx;
+  color: #1A1A1A;
+  font-weight: 900;
+}
+
+.jump-desc {
+  font-size: 21rpx;
+  color: #777777;
+  line-height: 1.35;
+}
+
+.jump-enter {
+  background: #C8902E;
+  color: #ffffff;
+  border-radius: 999rpx;
+  padding: 10rpx 18rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  flex-shrink: 0;
+}
 
 .user-bubble {
   background: #C8902E;
@@ -375,6 +481,64 @@
   white-space: nowrap;
 }
 
+.answer-mode-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  padding: 12rpx 28rpx 0;
+}
+
+.voice-answer-toggle {
+  min-height: 52rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #F5EEE6;
+  border: 1rpx solid #EEE5D8;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.voice-answer-switch {
+  width: 52rpx;
+  height: 30rpx;
+  border-radius: 999rpx;
+  background: #C9BFB4;
+  padding: 3rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.voice-answer-knob {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.voice-answer-toggle.on {
+  background: #FFF7E8;
+  border-color: #E3BE72;
+}
+
+.voice-answer-toggle.on .voice-answer-switch {
+  justify-content: flex-end;
+  background: #C8902E;
+}
+
+.voice-answer-label {
+  font-size: 22rpx;
+  color: #3B342D;
+  font-weight: 800;
+}
+
+.voice-answer-state {
+  font-size: 20rpx;
+  color: #8A7B6D;
+}
+
 .input-row {
   display: flex;
   flex-direction: row;
@@ -396,11 +560,20 @@
 
 .kbd-icon { font-size: 36rpx; }
 
-.voice-btn {
+.voice-wrap {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.voice-btn {
+  width: 100%;
+  min-height: 76rpx;
   background: linear-gradient(135deg, #C8902E, #D4A043);
   border-radius: 999rpx;
-  padding: 22rpx;
+  padding: 18rpx 22rpx;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -409,12 +582,28 @@
   box-shadow: 0 6rpx 24rpx rgba(200, 144, 46, 0.4);
 }
 
+.voice-btn.recording {
+  background: linear-gradient(135deg, #D64545, #E76F51);
+  box-shadow: 0 6rpx 28rpx rgba(214, 69, 69, 0.35);
+}
+
 .voice-btn-icon { font-size: 36rpx; }
 
 .voice-btn-text {
   font-size: 28rpx;
   font-weight: 700;
   color: #ffffff;
+}
+
+.voice-live-text {
+  max-width: 100%;
+  font-size: 22rpx;
+  color: #7A5020;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 12rpx;
 }
 
 .txt-input {

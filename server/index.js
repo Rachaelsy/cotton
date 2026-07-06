@@ -36,6 +36,9 @@ app.use('/operator', noCache, express.static(path.join(__dirname, 'public/operat
 app.use('/portal',   noCache, express.static(path.join(__dirname, 'public/portal')))
 app.use('/uploads',  express.static(path.join(__dirname, 'public/uploads')))
 
+// Root URL opens the shared portal login page.
+app.get('/', (_req, res) => res.redirect('/portal/login.html'))
+
 // ── 路由 ────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'))
 app.use('/api/products', require('./routes/products'))

@@ -1,11 +1,13 @@
 // server/routes/ai.js — AI 问答 + 图片分析代理
-// 优先级：GROQ_API_KEY（免费）→ SILICONFLOW_API_KEY → DEEPSEEK_API_KEY
+// 文字优先级：DEEPSEEK_API_KEY → GROQ_API_KEY → SILICONFLOW_API_KEY
+// 视觉优先级：SILICONFLOW_API_KEY
 const express = require('express')
 const https   = require('https')
 const multer  = require('multer')
 const path    = require('path')
 const fs      = require('fs')
 const router  = express.Router()
+const { detectAiIntent, buildIntentReply } = require('../../utils/ai-intent')
 
 // 临时目录（分析后立即删除）
 const aiTempDir = path.join(__dirname, '../public/uploads/ai_temp')
@@ -27,28 +29,40 @@ const VISION_QUESTION = `请分析这张棉花作物照片，告诉我：
 
 // ── 获取当前可用的 API 配置 ────────────────────
 function getApiConfig(needVision = false) {
+  if (needVision && process.env.SILICONFLOW_API_KEY) {
+    return {
+      host:   'api.siliconflow.cn',
+      path:   '/v1/chat/completions',
+      apiKey: process.env.SILICONFLOW_API_KEY,
+      provider: 'siliconflow',
+      model:  'Qwen/Qwen2-VL-7B-Instruct'
+    }
+  }
+  if (!needVision && process.env.DEEPSEEK_API_KEY) {
+    return {
+      host:   'api.deepseek.com',
+      path:   '/v1/chat/completions',
+      apiKey: process.env.DEEPSEEK_API_KEY,
+      provider: 'deepseek',
+      model:  'deepseek-chat'
+    }
+  }
   if (process.env.GROQ_API_KEY && !needVision) {
     return {
       host:   'api.groq.com',
       path:   '/openai/v1/chat/completions',
       apiKey: process.env.GROQ_API_KEY,
+      provider: 'groq',
       model:  'llama-3.3-70b-versatile'
     }
   }
-  if (process.env.SILICONFLOW_API_KEY) {
+  if (process.env.SILICONFLOW_API_KEY && !needVision) {
     return {
       host:   'api.siliconflow.cn',
       path:   '/v1/chat/completions',
       apiKey: process.env.SILICONFLOW_API_KEY,
-      model:  needVision ? 'Qwen/Qwen2-VL-7B-Instruct' : 'deepseek-ai/DeepSeek-V3'
-    }
-  }
-  if (process.env.DEEPSEEK_API_KEY) {
-    return {
-      host:   'api.deepseek.com',
-      path:   '/v1/chat/completions',
-      apiKey: process.env.DEEPSEEK_API_KEY,
-      model:  'deepseek-chat'
+      provider: 'siliconflow',
+      model:  'deepseek-ai/DeepSeek-V3'
     }
   }
   return null
@@ -98,25 +112,42 @@ function httpsPost(cfg, bodyObj, timeoutMs = 30000) {
 router.post('/chat', async (req, res) => {
   const message = (req.body.message || '').trim()
   if (!message) return res.json({ code: 400, msg: '消息不能为空', data: null })
+  const lang = req.body.language === 'ug' ? 'ug' : 'zh'
+  const displayMessage = (req.body.displayMessage || message).trim()
+  const intent = detectAiIntent(displayMessage || message, lang)
+  const jump = intent ? intent.jump : null
 
   const cfg = getApiConfig(false)
   if (!cfg) {
-    return res.json({ code: 200, data: { reply: '⚠️ 未配置任何 AI API Key，请在 server/.env 中填写 GROQ_API_KEY。' } })
+    const reply = intent
+      ? buildIntentReply(intent, lang)
+      : '⚠️ 未配置任何 AI API Key，请在 server/.env 中填写 GROQ_API_KEY、SILICONFLOW_API_KEY 或 DEEPSEEK_API_KEY。'
+    return res.json({ code: 200, data: { reply, intent, jump, provider: intent ? 'local-intent' : 'none' } })
   }
 
   const history  = Array.isArray(req.body.history) ? req.body.history.slice(-10) : []
-  const messages = [{ role: 'system', content: CHAT_SYSTEM }, ...history, { role: 'user', content: message }]
+  const intentHint = intent
+    ? `\n用户意图：${intent.key}。如回答涉及打开功能，请提醒用户点击下方入口卡片。`
+    : ''
+  const languageHint = lang === 'ug'
+    ? '\n请尽量使用维吾尔语回答；如果专业词难以表达，可以保留少量中文农业术语。'
+    : '\n请使用简洁中文回答。'
+  const messages = [
+    { role: 'system', content: `${CHAT_SYSTEM}${languageHint}${intentHint}` },
+    ...history,
+    { role: 'user', content: message }
+  ]
 
   try {
     const result = await httpsPost(cfg, { model: cfg.model, messages, max_tokens: 600, temperature: 0.7 })
     const reply  = result.choices[0].message.content.trim()
-    return res.json({ code: 200, data: { reply } })
+    return res.json({ code: 200, data: { reply, intent, jump, provider: cfg.provider, model: cfg.model } })
   } catch (e) {
     console.error('[ai-chat]', e.message)
     const reply = e.message.includes('超时') ? '⏱ 响应超时，请稍后重试。'
       : e.message.includes('balance') || e.message.includes('insufficient') ? '⚠️ API 余额不足，请联系管理员更换免费 Key。'
       : `小棉暂时无法回答（${e.message}）`
-    return res.json({ code: 200, data: { reply } })
+    return res.json({ code: 200, data: { reply, intent, jump, provider: cfg.provider, model: cfg.model } })
   }
 })
 
@@ -147,6 +178,7 @@ router.post('/photo', photoUpload.single('photo'), async (req, res) => {
           host:   'api.siliconflow.cn',
           path:   '/v1/chat/completions',
           apiKey: process.env.SILICONFLOW_API_KEY,
+          provider: 'siliconflow',
           model:  'Qwen/Qwen2-VL-7B-Instruct'
         }
       } else {

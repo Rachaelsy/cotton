@@ -111,7 +111,7 @@ SILICONFLOW_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-API 优先级：**Groq（文字）> Siliconflow（文字+视觉）> DeepSeek（文字）**
+API 优先级：**DeepSeek（文字）> Groq（文字）> Siliconflow（文字+视觉）**。图片视觉分析仍需要 `SILICONFLOW_API_KEY`。
 
 ### 前端配置
 
@@ -241,14 +241,15 @@ cotton/
 │   ├── login/                # 登录注册（身份选择 → 表单）
 │   │
 │   ├── ── 农户主包页面 ───────────────────────────────
-│   ├── index/                # 农户首页（功能网格，仅农资供应可跳转，其余提示开发中）
-│   ├── ai/                   # AI 问答（接入 Groq/DeepSeek，支持拍照识别）
+│   ├── index/                # 农户首页（地块天气、AI 核心入口、农事功能网格）
+│   ├── ai/                   # AI 问答（DeepSeek 优先，支持中文语音问答、指令自动跳转、拍照识别）
 │   ├── my/                   # 我的（用户卡片、实名、退出，含进行中订单徽章）
 │   ├── favorites/            # 我的收藏（卡片网格，取消收藏，加购）
 │   ├── fields/               # 地块管理（列表 + 绘制 draw + 详情 detail）
 │   ├── pest/                 # 病虫害识别（拍照 + 识别结果 detail）
 │   ├── weather/              # 地块气象
-│   ├── remote/               # 遥感监测（NDVI/旱情）
+│   ├── water/                # 水管理（按地块查看灌溉与墒情建议）
+│   ├── fert/                 # 肥管理（按地块查看施肥与营养建议）
 │   ├── trade/                # 棉花交易行情
 │   ├── records/              # 农事记录（列表/日历双视图，对接后端 API，按地块聚合）
 │   ├── machine/              # 农机租赁（列表 + 详情）
@@ -424,7 +425,7 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | DELETE | `/api/machine-orders/:id` | 农户 | 删除（隐藏）订单 |
 | GET   | `/api/admin/operator-applications` | 管理员 | 待审批机主列表 |
 | POST  | `/api/admin/operator-applications/:id/approve` `.../reject` | 管理员 | 批准 / 拒绝机主入驻 |
-| POST  | `/api/ai/chat` | 公开 | AI 文字问答（携带历史上下文，代理到 Groq/Siliconflow/DeepSeek） |
+| POST  | `/api/ai/chat` | 公开 | AI 文字问答 + 本地指令识别（返回 `reply/intent/jump/provider`，`jump.autoOpen` 用于小程序自动打开功能，文字优先代理 DeepSeek） |
 | POST  | `/api/ai/photo` | 公开 | 图片分析（multipart，调用 Siliconflow Qwen2-VL 视觉模型）|
 | POST | `/api/upload` | Token | 上传图片文件，返回 `/uploads/xxx` URL |
 | GET  | `/api/admin/announcements` | 管理员 | 公告列表 |

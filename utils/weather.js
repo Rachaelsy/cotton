@@ -12,25 +12,6 @@ function parseCoordinates(value) {
   }
 }
 
-function hashString(input) {
-  let hash = 2166136261
-  const text = String(input || '')
-  for (let i = 0; i < text.length; i += 1) {
-    hash ^= text.charCodeAt(i)
-    hash = Math.imul(hash, 16777619)
-  }
-  return hash >>> 0
-}
-
-function createRandom(seed) {
-  let state = seed >>> 0
-  return () => {
-    state = Math.imul(state ^ (state >>> 15), state | 1)
-    state ^= state + Math.imul(state ^ (state >>> 7), state | 61)
-    return ((state ^ (state >>> 14)) >>> 0) / 4294967296
-  }
-}
-
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
 }
@@ -86,307 +67,158 @@ function normalizeWindDirection(direction, degree) {
   return '风'
 }
 
-function estimateCmaUvIndex({ temp = 0, humidity = 0, rainChance = 0, risk = 'clear', month = 7 }) {
-  let uv = month >= 5 && month <= 8 ? 8 : 5
-  if (risk === 'storm' || risk === 'rain') uv -= 4
-  else if (risk === 'snow' || risk === 'fog') uv -= 5
-  else if (risk === 'cloudy') uv -= 2
-
-  if (temp >= 35) uv += 1
-  if (humidity >= 70) uv -= 1
-  if (rainChance >= 50) uv -= 1
-
-  return clamp(Math.round(uv), 0, 11)
-}
-
-function estimateCmaVisibility({ humidity = 0, rainChance = 0, risk = 'clear' }) {
-  let visibility = 18000
-
-  if (risk === 'storm') visibility = 4000
-  else if (risk === 'rain') visibility = 8000
-  else if (risk === 'snow') visibility = 6000
-  else if (risk === 'fog') visibility = 3000
-  else if (risk === 'wind') visibility = 12000
-  else if (risk === 'cloudy') visibility = 16000
-
-  visibility -= Math.max(0, humidity - 40) * 120
-  visibility -= Math.max(0, rainChance - 10) * 60
-
-  return clamp(Math.round(visibility), 1000, 25000)
-}
-
-function pickWeatherDescriptor(temp, humidity, windLevel, rainChance, randomValue) {
-  if (rainChance >= 45) return { desc: '阵雨', icon: '🌧' }
-  if (rainChance >= 25) return { desc: '多云有雨', icon: '⛅' }
-  if (windLevel >= 5) return { desc: '大风', icon: '🌬' }
-  if (temp >= 36) return { desc: '高温晴热', icon: '☀️' }
-  if (humidity <= 28) return { desc: '晴热干燥', icon: '🌤' }
-  if (humidity >= 62 || randomValue > 0.7) return { desc: '多云', icon: '⛅' }
-  return { desc: '晴转多云', icon: '🌤' }
-}
-
 function stageAdvice(plot, weather) {
   const area = Number(plot.area || 0)
   const baseIrrigation = Math.max(20, Math.round(area * 30))
   const sowDate = plot.sow_date ? new Date(`${String(plot.sow_date).slice(0, 10)}T00:00:00`) : null
+  const today = weather.today instanceof Date ? weather.today : new Date()
   const daysSinceSow = sowDate && !Number.isNaN(sowDate.getTime())
-    ? Math.max(0, Math.floor((Date.now() - sowDate.getTime()) / 86400000))
+    ? Math.max(0, Math.floor((today.getTime() - sowDate.getTime()) / 86400000))
     : null
+  const temp = Number(weather.temp)
+  const high = Number.isFinite(Number(weather.high)) ? Number(weather.high) : temp
+  const humidity = Number(weather.humidity)
+  const windLevel = Number(weather.windLevel || 0)
+  const rain = Number(weather.rain || 0)
+  const groundTemp = Number(weather.groundTemp)
+  const uv = Number(weather.uv)
+  const alertTitle = weather.alert && weather.alert.title ? String(weather.alert.title) : ''
+  const isHot = temp >= 35 || high >= 35 || uv >= 8
+  const isDry = humidity <= 32 || groundTemp >= 33
+  const isWet = humidity >= 75 || rain >= 5
+  const isStrongRain = rain >= 8 || /强降水|雷暴/.test(alertTitle)
+  const isWindy = windLevel >= 4 || /大风/.test(alertTitle)
+  const isDangerous = isStrongRain || windLevel >= 5 || /雷暴|强降水|大风/.test(alertTitle)
+  const growthStage = daysSinceSow === null
+    ? { key: 'unknown', title: '生育期巡查' }
+    : daysSinceSow < 20
+      ? { key: 'emergence', title: '播种出苗' }
+      : daysSinceSow < 45
+        ? { key: 'seedling', title: '苗期稳苗' }
+        : daysSinceSow < 65
+          ? { key: 'bud', title: '蕾期管理' }
+          : daysSinceSow < 105
+            ? { key: 'flowerboll', title: '花铃期管理' }
+            : { key: 'bollopen', title: '吐絮期管理' }
 
-  const advice = []
+  const candidates = []
+  let order = 0
+  const addAdvice = (priority, item) => {
+    candidates.push({ priority, order: order += 1, ...item })
+  }
 
-  if (weather.rain >= 6 || weather.windLevel >= 5) {
-    advice.push({
+  if (isDangerous) {
+    addAdvice(110, {
       icon: '🚫',
       bg: '#FFF3E6',
-      title: '打药预警',
-      sub: weather.rain >= 6
-        ? '未来两天有降雨迹象，喷药尽量安排在今天上午，雨前作业要留出安全窗口。'
-        : '风力偏大，不适合喷药和无人机作业，建议等待风力减弱后再安排。'
+      title: '暂停露天高风险作业',
+      sub: isStrongRain
+        ? '地块中心预报存在雷暴或较强降水风险，暂停喷药、无人机、金属高架和露天强体力作业。'
+        : '风力偏大时喷药易漂移、无人机飞防风险高，等待风力减弱后再安排。'
+    })
+  }
+
+  if (isHot) {
+    addAdvice(100, {
+      icon: '🌡',
+      bg: '#FFF3E6',
+      title: '高温错峰作业',
+      sub: '高温或强紫外线时段尽量避开正午作业，巡田、打药和追肥安排在清晨或傍晚。'
+    })
+  }
+
+  if (isStrongRain) {
+    addAdvice(95, {
+      icon: '🌧',
+      bg: '#E3F2FD',
+      title: '排水巡田',
+      sub: '降水偏强时先检查低洼地、排水沟和田埂，雨后再评估补肥、补苗和病害风险。'
+    })
+  } else if (isHot || isDry) {
+    addAdvice(90, {
+      icon: '💧',
+      bg: '#E3F2FD',
+      title: '滴灌保墒',
+      sub: `温度偏高或空气偏干，建议分次滴灌保墒，参考用水约 ${formatArea(baseIrrigation)} 立方米，并观察棉苗萎蔫。`
     })
   } else {
-    advice.push({
-      icon: '🧴',
-      bg: '#E8F5E9',
-      title: weather.windLevel <= 3 && weather.rain <= 0 ? '适合打药' : '谨慎打药',
-      sub: weather.windLevel <= 3 && weather.rain <= 0
-        ? '未来数小时风力和降水条件较稳，可优先安排病虫害防治作业。'
-        : '当前天气尚可，但需避开午后高温和阵风时段，喷药前再次查看风力。'
+    addAdvice(70, {
+      icon: '💧',
+      bg: '#E3F2FD',
+      title: '墒情巡查',
+      sub: '当前蒸散压力不高，保持既有滴灌节奏，巡田时重点查看膜下湿度和沟边积水。'
     })
   }
 
-  advice.push({
-    icon: '💧',
-    bg: '#E3F2FD',
-    title: '灌溉建议',
-    sub: weather.temp >= 34 || weather.humidity <= 30
-      ? `当前地表温度偏高，建议分次滴灌保墒，参考用水约 ${formatArea(baseIrrigation)} 立方米。`
-      : `土壤蒸散压力适中，保持轻量滴灌即可，参考每亩 25-30 立方米。`
-  })
+  if (isHot && isDry) {
+    addAdvice(80, {
+      icon: '🔍',
+      bg: '#FFF9C4',
+      title: '红蜘蛛巡查',
+      sub: '高温干燥容易加重红蜘蛛和蚜虫发生，巡田时翻看叶背，重点查田边、路边和弱苗区域。'
+    })
+  } else if (isWet) {
+    addAdvice(80, {
+      icon: '🦠',
+      bg: '#E8F5E9',
+      title: '病害巡查',
+      sub: '湿度或降水偏高时注意枯黄萎蔫、叶斑和烂铃迹象，雨后优先查看通风差和低洼地块。'
+    })
+  } else {
+    addAdvice(50, {
+      icon: '🔍',
+      bg: '#E8F5E9',
+      title: '病虫害巡查',
+      sub: '天气条件总体平稳，按常规巡查蚜虫、红蜘蛛和棉铃虫，发现中心株后及时处理。'
+    })
+  }
 
-  advice.push({
-    icon: '🌿',
+  if (growthStage.key === 'bud' || growthStage.key === 'flowerboll') {
+    addAdvice(75, {
+      icon: '🌿',
+      bg: '#E8F5E9',
+      title: growthStage.key === 'flowerboll' ? '花铃期追肥窗口' : '蕾期追肥窗口',
+      sub: isDangerous
+        ? '当前有高风险天气，追肥和化控暂缓，待降水、风力或雷暴风险结束后再随水少量多次追施。'
+        : '处于需肥关键期，可在清晨或傍晚随水少量多次追施氮钾肥，避免正午高温集中作业。'
+    })
+  } else {
+    addAdvice(60, {
+      icon: '🌿',
+      bg: '#E8F5E9',
+      title: growthStage.title,
+      sub: growthStage.key === 'unknown'
+        ? '请补充播种日期，系统可按生育期给出更精确的水肥和植保窗口。'
+        : growthStage.key === 'emergence'
+          ? '重点关注出苗整齐度、缺苗断垄和低温地温变化，地温稳定后再安排补苗。'
+          : growthStage.key === 'seedling'
+            ? '苗期以稳苗促根为主，避免大水漫灌和过早重追肥。'
+            : '吐絮期以控水、防烂铃和采收窗口为主，降雨前后加强通风和排水。'
+    })
+  }
+
+  addAdvice(isWindy || rain > 0.5 ? 45 : 65, {
+    icon: '🧴',
     bg: '#E8F5E9',
-    title: daysSinceSow === null || daysSinceSow < 20 ? '播种出苗' : '棉苗管理',
-    sub: daysSinceSow === null
-      ? '请结合地块生育期安排管理，地温稳定时优先关注出苗和补苗。'
-      : daysSinceSow < 35
-        ? '当前处于苗期/返青阶段，优先稳苗促根，后续再安排追肥。'
-        : '进入追肥窗口，可在清晨或傍晚少量多次补充氮磷钾复合肥。'
+    title: isWindy || rain > 0.5 ? '植保作业暂缓' : '植保作业窗口',
+    sub: isWindy || rain > 0.5
+      ? '喷药前需再次确认风力和降水，避免药液漂移、雨水冲刷和药效下降。'
+      : '风力和降水条件较稳，可优先安排病虫害防治，但仍需避开正午高温。'
   })
 
-  advice.push({
+  addAdvice(isWindy ? 35 : 55, {
     icon: '🚁',
     bg: '#FFF9C4',
-    title: '无人机作业',
-    sub: weather.windLevel >= 4
+    title: isWindy ? '无人机飞防暂缓' : '无人机巡田窗口',
+    sub: isWindy
       ? '风力偏大时不建议飞防和航拍，先安排人工巡田或地面机械作业。'
-      : '风力适中，可安排无人机巡田或飞防，但仍需避开正午高温。'
+      : '风力适中，可安排无人机巡田或飞防，作业前仍需确认地块周边障碍物。'
   })
 
-  return advice.slice(0, 4)
-}
-
-function buildForecast(baseDate, seed, baseTemp, season, humidity, windLevel, rainChance, days = 7) {
-  return Array.from({ length: days }, (_, offset) => {
-    const rand = createRandom(seed + offset * 97)
-    const tempShift = Math.round((rand() - 0.5) * 6)
-    const high = baseTemp + tempShift + (season === 'summer' ? 1 : 0) + Math.round(rand() * 2)
-    const low = high - (7 + Math.round(rand() * 5))
-    const nextHumidity = clamp(Math.round(humidity + (rand() - 0.5) * 18), 18, 82)
-    const nextWind = clamp(Math.round(windLevel + (rand() - 0.5) * 2), 1, 7)
-    const nextRain = clamp(Math.round(rainChance + (rand() - 0.5) * 12), 0, 100)
-    const descriptor = pickWeatherDescriptor(high, nextHumidity, nextWind, nextRain, rand())
-    const windNames = ['无风', '1级', '2级', '3级', '4级', '5级', '6级', '7级']
-
-    return {
-      day: formatDayLabel(baseDate, offset),
-      icon: descriptor.icon,
-      high,
-      low,
-      wind: nextWind >= 7 ? '西北风7级' : `西北风${windNames[nextWind] || `${nextWind}级`}`
-    }
-  })
-}
-
-function buildHourlyForecast(baseDate, seed, baseTemp, humidity, windLevel, rainChance) {
-  const now = new Date(baseDate)
-  return Array.from({ length: 24 }, (_, offset) => {
-    const rand = createRandom(seed + 3000 + offset * 31)
-    const hourDate = new Date(now)
-    hourDate.setHours(now.getHours() + offset)
-    const hour = hourDate.getHours()
-    const diurnal = Math.sin(((hour - 6) / 24) * Math.PI * 2)
-    const temp = clamp(Math.round(baseTemp + diurnal * 4 + (rand() - 0.5) * 3), -10, 45)
-    const nextHumidity = clamp(Math.round(humidity + (rand() - 0.5) * 14), 10, 95)
-    const nextWind = clamp(Math.round(windLevel + (rand() - 0.5) * 2), 0, 7)
-    const nextRain = clamp(Math.round(rainChance + (rand() - 0.5) * 18), 0, 100)
-    const descriptor = pickWeatherDescriptor(temp, nextHumidity, nextWind, nextRain, rand())
-
-    return {
-      time: formatHourLabel(null, now, offset),
-      icon: descriptor.icon,
-      temp,
-      wind: `${nextWind}级`,
-      rainChance: nextRain,
-      rainText: `${nextRain}%`,
-      now: offset === 0
-    }
-  })
-}
-
-function buildWeatherForPlot(plot, { today = new Date(), fieldCount = 0, selectedIndex = 0 } = {}) {
-  const coordinates = parseCoordinates(plot && plot.coordinates)
-  const center = coordinates.length ? calculateCenter(coordinates) : null
-  const location = center ? locateService(center.latitude, center.longitude) : null
-  const dateKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
-  const seed = hashString(`${plot && plot.id ? plot.id : plot && plot.name ? plot.name : 'plot'}|${dateKey}`)
-  const rand = createRandom(seed)
-  const month = today.getMonth() + 1
-  const season = month >= 6 && month <= 8 ? 'summer' : month >= 3 && month <= 5 ? 'spring' : month >= 9 && month <= 10 ? 'autumn' : 'winter'
-
-  const baseTemp = {
-    spring: 24,
-    summer: 33,
-    autumn: 22,
-    winter: 9
-  }[season]
-
-  const temp = clamp(Math.round(baseTemp + (rand() - 0.5) * 6), -10, 45)
-  const humidity = clamp(Math.round((season === 'summer' ? 28 : 40) + (rand() - 0.5) * 20), 10, 95)
-  const windLevel = clamp(Math.round((season === 'summer' ? 3 : 2) + rand() * 4), 1, 7)
-  const rainChance = clamp(Math.round((season === 'summer' ? 20 : 12) + rand() * 45), 0, 100)
-  const descriptor = pickWeatherDescriptor(temp, humidity, windLevel, rainChance, rand())
-  const low = temp - (6 + Math.round(rand() * 4))
-  const high = temp + (4 + Math.round(rand() * 4))
-  const groundTemp = clamp(temp + (season === 'summer' ? 5 : 3) + Math.round((rand() - 0.5) * 2), -10, 55)
-  const uv = clamp(Math.round((season === 'summer' ? 7 : 5) + (rand() - 0.5) * 4), 1, 11)
-  const rain = rainChance >= 35 ? Number((rand() * 4 + 1).toFixed(1)) : 0
-  const windNames = ['无风', '1级', '2级', '3级', '4级', '5级', '6级', '7级']
-  const alert = weatherAlert({ temp, humidity, windLevel, rainChance })
-  const forecast = buildForecast(today, seed, temp, season, humidity, windLevel, rainChance)
-  const hourly = buildHourlyForecast(today, seed, temp, humidity, windLevel, rainChance)
-  const fieldName = plot && plot.name ? plot.name : '全部地块'
-  const areaText = plot ? formatArea(plot.area) : '0'
-  const locationLabel = location && location.inService
-    ? `${location.name} · ${fieldName}`
-    : `${location ? location.name : '喀什地区'} · ${fieldName}`
-
-  const summary = alert
-    ? alert.summary
-    : `当前地表温度 ${groundTemp}°C，适合在上午完成巡田和滴灌。`
-
-  return {
-    fieldCount,
-    selectedIndex,
-    selectedFieldLabel: fieldName,
-    locationLabel,
-    regionLabel: location ? (location.inService ? `${location.name}` : `${location.name}附近`) : '喀什地区',
-    sourceInfo: {
-      type: 'simulated',
-      label: '模拟数据',
-      desc: '天气接口不可用或未选择有效地块时，由本地模型按地块生成，仅供参考。'
-    },
-    weather: {
-      temp,
-      desc: descriptor.desc,
-      icon: descriptor.icon,
-      high,
-      low,
-      wind: `西北风${windNames[windLevel] || `${windLevel}级`}`,
-      windLevel,
-      humidity,
-      groundTemp,
-      groundTempLabel: '地温',
-      rain,
-      uv,
-      pressure: 0,
-      visibility: 0,
-      visibilityText: '--'
-    },
-    forecast,
-    hourly,
-    alert,
-    advices: stageAdvice(plot || {}, {
-      temp,
-      humidity,
-      windLevel,
-      rain
-    }),
-    summary,
-    tipText: alert
-      ? alert.sub
-      : `地表温度稳定，建议优先处理 ${fieldName}${plot && plot.area ? `（${areaText}亩）` : ''} 的巡田和滴灌。`
-  }
-}
-
-function weatherAlert({ temp, humidity, windLevel, rainChance, risk }) {
-  if (risk === 'storm') {
-    return {
-      icon: '⛈',
-      title: '雷暴预警',
-      level: '黄色',
-      sub: '当前或未来预报存在雷暴天气，暂停喷药、无人机和金属高架作业。',
-      summary: '雷暴风险较高，建议避开露天作业。',
-      agency: '棉管家气象助手',
-      impactTime: '未来 24 小时',
-      impactArea: '当前地块及周边棉田',
-      actions: ['暂停无人机飞防和高杆作业', '检查排水沟渠，避免短时强降雨积水', '雷暴结束后再补做喷药和施肥']
-    }
-  }
-  if (windLevel >= 5) {
-    return {
-      icon: '⚠️',
-      title: '大风预警',
-      level: windLevel >= 7 ? '橙色' : '黄色',
-      sub: '预计风力 5-6 级，喷药、无人机和高杆作业需避开强风时段。',
-      summary: '今天风力偏大，优先安排巡田和低风险作业。',
-      agency: '棉管家气象助手',
-      impactTime: '未来 24 小时',
-      impactArea: '当前地块及周边棉田',
-      actions: ['停止无人机飞防和航拍', '暂缓喷药，避免药液漂移', '加固棚膜、滴灌首部和临时设施']
-    }
-  }
-  if (rainChance >= 45 || risk === 'rain' || risk === 'snow') {
-    return {
-      icon: '🌧',
-      title: '降雨提醒',
-      level: rainChance >= 70 ? '橙色' : '蓝色',
-      sub: '未来 48 小时内有降雨概率，露天喷药和施肥建议提前完成。',
-      summary: '天气转湿，建议把喷药作业安排在降雨前。',
-      agency: '棉管家气象助手',
-      impactTime: '未来 48 小时',
-      impactArea: '当前地块及周边棉田',
-      actions: ['雨前完成必要喷药，留出药效吸收时间', '检查低洼地块排水', '雨后再评估补肥和病害风险']
-    }
-  }
-  if (temp >= 36) {
-    return {
-      icon: '🌡',
-      title: '高温预警',
-      level: temp >= 40 ? '橙色' : '黄色',
-      sub: '午后高温明显，注意滴灌保墒并避开正午长时间作业。',
-      summary: '高温持续，建议分次滴灌并减少中午田间作业。',
-      agency: '棉管家气象助手',
-      impactTime: '今日 12:00-18:00',
-      impactArea: '当前地块及周边棉田',
-      actions: ['将巡田和打药安排在清晨或傍晚', '采用小水勤灌保持墒情', '关注棉苗萎蔫和落蕾迹象']
-    }
-  }
-  if (humidity <= 24) {
-    return {
-      icon: '💧',
-      title: '干旱提醒',
-      level: '提示',
-      sub: '空气湿度偏低，棉田蒸散较快，建议适当提前灌溉。',
-      summary: '当前空气偏干，优先查看墒情并安排保墒。',
-      agency: '棉管家气象助手',
-      impactTime: '未来 24 小时',
-      impactArea: '当前地块及周边棉田',
-      actions: ['优先查看墒情较差地块', '适当提前滴灌并减少单次水量', '覆盖或中耕保墒，降低蒸发']
-    }
-  }
-  return null
+  return candidates
+    .sort((a, b) => b.priority - a.priority || a.order - b.order)
+    .slice(0, 4)
+    .map(({ priority, order: itemOrder, ...item }) => item)
 }
 
 function clampRound(value, fallback = 0) {
@@ -433,10 +265,9 @@ function weatherCodeMeta(code) {
   return { desc: '天气', icon: '🌤', risk: 'clear' }
 }
 
-function forecastIcon(code, temp, humidity, rainChance) {
+function forecastIcon(code) {
   const meta = weatherCodeMeta(code)
-  if (meta.icon) return meta.icon
-  return pickWeatherDescriptor(temp, humidity, 2, rainChance, 0.5).icon
+  return meta.icon
 }
 
 function pickArrayValue(list, index, fallback) {
@@ -446,14 +277,7 @@ function pickArrayValue(list, index, fallback) {
 function buildHourlyFromApi(hourly, current, fallback) {
   const times = Array.isArray(hourly && hourly.time) ? hourly.time : []
   if (!times.length) {
-    return buildHourlyForecast(
-      fallback.today || new Date(),
-      fallback.seed || 1,
-      fallback.temp || 0,
-      fallback.humidity || 45,
-      fallback.windLevel || 2,
-      fallback.rainChance || 0
-    )
+    return []
   }
 
   const currentTime = current && current.time ? new Date(current.time).getTime() : Date.now()
@@ -476,7 +300,7 @@ function buildHourlyFromApi(hourly, current, fallback) {
 
     return {
       time: formatHourLabel(time, fallback.today || new Date(), offset),
-      icon: meta.icon || pickWeatherDescriptor(temp, humidity, windLevel, rainChance, 0.5).icon,
+      icon: meta.icon,
       temp,
       wind: `${windDirection}${windLevel}级`,
       rainChance,
@@ -533,14 +357,13 @@ function buildWeatherModelFromCurrent(plot, current, daily, hourly = {}, options
   }) : []
   const hourlyForecast = buildHourlyFromApi(hourly || {}, current || {}, {
     today,
-    seed: hashString(`${plot && plot.id ? plot.id : plot && plot.name ? plot.name : 'plot'}|api-hourly`),
     temp,
     humidity,
     windLevel,
     rainChance
   })
 
-  const alert = weatherAlert({ temp, humidity, windLevel, rainChance, risk: meta.risk })
+  const alert = null
 
   const fieldName = plot && plot.name ? plot.name : '全部地块'
   const areaText = plot ? formatArea(plot.area) : '0'
@@ -581,9 +404,15 @@ function buildWeatherModelFromCurrent(plot, current, daily, hourly = {}, options
     alert,
     advices: stageAdvice(plot || {}, {
       temp,
+      high,
+      low,
       humidity,
       windLevel,
-      rain
+      rain,
+      groundTemp: clampRound(soilTemperature, temp),
+      uv,
+      alert,
+      today
     }),
     summary: alert ? alert.summary : `当前地温 ${clampRound(soilTemperature, temp)}°C，适合在上午完成巡田和滴灌。`,
     tipText: alert
@@ -679,16 +508,350 @@ function formatCmaWind(direction, scale, fallbackLevel) {
 }
 
 function parseCmaDate(value) {
-  const text = String(value || '').replace(/\//g, '-')
-  const date = text ? new Date(`${text}T00:00:00`) : null
-  return date && !Number.isNaN(date.getTime()) ? date : null
+  const matched = String(value || '').match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
+  if (!matched) return null
+  const date = new Date(Number(matched[1]), Number(matched[2]) - 1, Number(matched[3]))
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function localDateStart(value) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function cmaDateOffset(baseDate, targetDate) {
+  const base = localDateStart(baseDate)
+  const target = localDateStart(targetDate)
+  if (!base || !target) return null
+  return Math.round((target.getTime() - base.getTime()) / 86400000)
+}
+
+function alignCmaDailyForecast(daily, today) {
+  if (!Array.isArray(daily) || !daily.length) return []
+  const entries = daily.map(day => ({
+    day,
+    offset: cmaDateOffset(today, parseCmaDate(day && day.date))
+  }))
+  const firstTodayOrFuture = entries.findIndex(entry => entry.offset !== null && entry.offset >= 0)
+  if (firstTodayOrFuture === -1) return daily
+  return entries.slice(firstTodayOrFuture).map(entry => entry.day)
 }
 
 function formatCmaDayLabel(value, index, today) {
-  if (index <= 2) return formatDayLabel(today, index)
   const date = parseCmaDate(value)
   if (!date) return formatDayLabel(today, index)
+  const offset = cmaDateOffset(today, date)
+  if (offset !== null && offset >= 0 && offset <= 2) return formatDayLabel(today, offset)
+  if (offset !== null && offset < 0) return formatDayLabel(today, index)
   return `${date.getMonth() + 1}月${date.getDate()}日`
+}
+
+function parseLocalDateTime(value) {
+  const matched = String(value || '').match(/(\d{4})-(\d{1,2})-(\d{1,2})T(\d{1,2})(?::(\d{1,2}))?/)
+  if (matched) {
+    return new Date(
+      Number(matched[1]),
+      Number(matched[2]) - 1,
+      Number(matched[3]),
+      Number(matched[4]),
+      Number(matched[5] || 0)
+    )
+  }
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function finiteNumber(value) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function roundRealValue(value, digits = 0) {
+  const number = finiteNumber(value)
+  if (number === null) return '--'
+  const fixed = Number(number.toFixed(digits))
+  return digits === 0 ? Math.round(fixed) : fixed
+}
+
+function formatRainAmount(value) {
+  const number = finiteNumber(value)
+  if (number === null) return '--'
+  return `${Number(number.toFixed(number >= 10 ? 0 : 1))}mm`
+}
+
+function cmaModelHourlyData(modelForecast) {
+  return modelForecast && modelForecast.hourly && Array.isArray(modelForecast.hourly.time)
+    ? modelForecast.hourly
+    : null
+}
+
+function findHourlyStartIndex(times, today) {
+  const currentTime = today instanceof Date ? today.getTime() : new Date(today).getTime()
+  const threshold = Number.isFinite(currentTime) ? currentTime - 30 * 60 * 1000 : Date.now() - 30 * 60 * 1000
+  const startIndex = times.findIndex(time => {
+    const date = parseLocalDateTime(time)
+    return date && date.getTime() >= threshold
+  })
+  return startIndex >= 0 ? startIndex : 0
+}
+
+function readCmaModelHour(modelForecast, index) {
+  const hourly = cmaModelHourlyData(modelForecast)
+  if (!hourly || index < 0 || index >= hourly.time.length) return null
+  return {
+    time: hourly.time[index],
+    temp: finiteNumber(pickArrayValue(hourly.temperature_2m, index, null)),
+    humidity: finiteNumber(pickArrayValue(hourly.relative_humidity_2m, index, null)),
+    precipitation: finiteNumber(pickArrayValue(hourly.precipitation, index, null)),
+    weatherCode: finiteNumber(pickArrayValue(hourly.weather_code, index, null)),
+    windSpeed: finiteNumber(pickArrayValue(hourly.wind_speed_10m, index, null)),
+    windDirection: finiteNumber(pickArrayValue(hourly.wind_direction_10m, index, null)),
+    visibility: finiteNumber(pickArrayValue(hourly.visibility, index, null)),
+    pressure: finiteNumber(pickArrayValue(hourly.surface_pressure, index, null)),
+    soilTemperature: finiteNumber(
+      pickArrayValue(hourly.soil_temperature_0_to_10cm, index,
+        pickArrayValue(hourly.soil_temperature_0cm, index, null))
+    )
+  }
+}
+
+function buildCmaModelHourlyForecast(modelForecast, today) {
+  const hourly = cmaModelHourlyData(modelForecast)
+  if (!hourly) return []
+  const startIndex = findHourlyStartIndex(hourly.time, today)
+  const forecast = []
+
+  for (let index = startIndex; index < hourly.time.length && forecast.length < 12; index += 2) {
+    const item = readCmaModelHour(modelForecast, index)
+    if (!item) continue
+    const meta = item.weatherCode === null ? { icon: '--' } : weatherCodeMeta(item.weatherCode)
+    const windLevel = item.windSpeed === null ? null : windLevelFromSpeed(item.windSpeed)
+    const wind = windLevel === null
+      ? '--'
+      : `${item.windDirection === null ? '' : directionFromDegrees(item.windDirection)}${windLevel}级`
+
+    forecast.push({
+      time: forecast.length === 0 ? formatHourLabel(item.time, today, 0) : formatHourLabel(item.time, today, forecast.length * 2),
+      icon: meta.icon || '--',
+      temp: roundRealValue(item.temp),
+      wind,
+      rainChance: null,
+      rainText: formatRainAmount(item.precipitation),
+      now: forecast.length === 0
+    })
+  }
+
+  return forecast
+}
+
+function cmaModelDailyUv(modelForecast, today) {
+  const daily = modelForecast && modelForecast.daily
+  const times = Array.isArray(daily && daily.time) ? daily.time : []
+  const values = Array.isArray(daily && daily.uv_index_max) ? daily.uv_index_max : []
+  if (!times.length || !values.length) return '--'
+  const todayKey = localDateStart(today)
+  const index = times.findIndex(time => {
+    const date = parseCmaDate(time)
+    return date && todayKey && date.getTime() === todayKey.getTime()
+  })
+  const value = values[index >= 0 ? index : 0]
+  return roundRealValue(value)
+}
+
+function dailyValue(daily, field, index = 0) {
+  return finiteNumber(Array.isArray(daily && daily[field]) ? daily[field][index] : null)
+}
+
+function hourlyValuesForDate(modelForecast, today, field) {
+  const hourly = cmaModelHourlyData(modelForecast)
+  const todayStart = localDateStart(today)
+  if (!hourly || !todayStart || !Array.isArray(hourly[field])) return []
+  return hourly.time
+    .map((time, index) => {
+      const date = parseLocalDateTime(time)
+      const value = finiteNumber(hourly[field][index])
+      return date && cmaDateOffset(todayStart, date) === 0 && value !== null ? value : null
+    })
+    .filter(value => value !== null)
+}
+
+function buildOpenMeteoCmaForecast(modelForecast, today, high, low, windLevel) {
+  const daily = modelForecast && modelForecast.daily
+  const times = Array.isArray(daily && daily.time) ? daily.time : []
+  return times.slice(0, 7).map((day, index) => {
+    const code = dailyValue(daily, 'weather_code', index)
+    const meta = weatherCodeMeta(code)
+    const dayHigh = roundRealValue(dailyValue(daily, 'temperature_2m_max', index))
+    const dayLow = roundRealValue(dailyValue(daily, 'temperature_2m_min', index))
+    const windSpeed = dailyValue(daily, 'wind_speed_10m_max', index)
+    const windDirection = dailyValue(daily, 'wind_direction_10m_dominant', index)
+    const dayWindLevel = windSpeed === null ? windLevel : windLevelFromSpeed(windSpeed)
+    return {
+      day: formatCmaDayLabel(day, index, today),
+      icon: meta.icon,
+      high: dayHigh === '--' ? high : dayHigh,
+      low: dayLow === '--' ? low : dayLow,
+      wind: `${windDirection === null ? '' : directionFromDegrees(windDirection)}${dayWindLevel}级`
+    }
+  })
+}
+
+function maxFinite(values) {
+  const nums = (values || []).map(finiteNumber).filter(value => value !== null)
+  return nums.length ? Math.max(...nums) : null
+}
+
+function cmaModelRiskAlert(modelForecast, today, fieldName) {
+  const hourly = cmaModelHourlyData(modelForecast)
+  if (!hourly) return null
+  const startIndex = findHourlyStartIndex(hourly.time, today)
+  const endIndex = Math.min(startIndex + 24, hourly.time.length)
+  const slice = (field) => Array.isArray(hourly[field]) ? hourly[field].slice(startIndex, endIndex) : []
+  const codes = slice('weather_code').map(Number).filter(Number.isFinite)
+  const maxPrecip = maxFinite(slice('precipitation'))
+  const maxWind = maxFinite(slice('wind_speed_10m'))
+  const maxTemp = maxFinite(slice('temperature_2m'))
+  const dailyPrecip = maxFinite(modelForecast && modelForecast.daily && modelForecast.daily.precipitation_sum)
+  const area = `${fieldName}地块中心周边`
+
+  if (codes.some(code => [95, 96, 99].includes(code))) {
+    return {
+      icon: '⛈',
+      title: '雷暴风险',
+      level: '模型风险',
+      sub: '地块中心坐标预报出现雷暴天气码，暂停喷药、无人机和金属高架作业。',
+      summary: '未来 24 小时存在雷暴风险，建议避开露天高风险作业。',
+      agency: 'CMA GRAPES模型风险提示',
+      impactTime: '未来 24 小时',
+      impactArea: area,
+      actions: ['暂停无人机飞防和高杆作业', '检查排水沟渠和低洼地块', '雷暴结束后再安排喷药和施肥']
+    }
+  }
+
+  if ((maxPrecip !== null && maxPrecip >= 10) || (dailyPrecip !== null && dailyPrecip >= 20)) {
+    return {
+      icon: '🌧',
+      title: '强降水风险',
+      level: '模型风险',
+      sub: '地块中心坐标预报显示降水偏强，露天喷药和追肥需避开降雨窗口。',
+      summary: '未来 24 小时存在较强降水风险，注意排水和作业窗口。',
+      agency: 'CMA GRAPES模型风险提示',
+      impactTime: '未来 24 小时',
+      impactArea: area,
+      actions: ['雨前暂停喷药', '检查低洼地块排水', '雨后再评估补肥和病害风险']
+    }
+  }
+
+  if (maxWind !== null && maxWind >= 29) {
+    return {
+      icon: '⚠️',
+      title: '大风风险',
+      level: '模型风险',
+      sub: '地块中心坐标预报显示风力偏大，喷药、无人机和覆膜作业需调整。',
+      summary: '未来 24 小时风力偏大，优先安排低风险作业。',
+      agency: 'CMA GRAPES模型风险提示',
+      impactTime: '未来 24 小时',
+      impactArea: area,
+      actions: ['暂停飞防和喷药作业', '加固棚膜和临时设施', '风力减弱后再安排植保']
+    }
+  }
+
+  if (maxTemp !== null && maxTemp >= 35) {
+    return {
+      icon: '🌡',
+      title: '高温风险',
+      level: '模型风险',
+      sub: '地块中心坐标预报显示高温，注意滴灌保墒并避开正午长时间作业。',
+      summary: '未来 24 小时高温明显，建议分次滴灌并减少中午田间作业。',
+      agency: 'CMA GRAPES模型风险提示',
+      impactTime: '未来 24 小时',
+      impactArea: area,
+      actions: ['将巡田和打药安排在清晨或傍晚', '采用小水勤灌保持墒情', '关注棉苗萎蔫和落蕾迹象']
+    }
+  }
+
+  return null
+}
+
+function buildWeatherModelFromOpenMeteoCma(plot, payload, options = {}) {
+  const today = options.today || new Date()
+  const modelForecast = payload || {}
+  const hourly = cmaModelHourlyData(modelForecast)
+  if (!hourly) throw new Error('真实小时预报数据缺失')
+
+  const currentIndex = findHourlyStartIndex(hourly.time, today)
+  const current = readCmaModelHour(modelForecast, currentIndex)
+  if (!(current && current.temp !== null)) throw new Error('真实小时预报缺少气温数据')
+
+  const temp = roundRealValue(current.temp)
+  const humidity = roundRealValue(current.humidity)
+  const meta = weatherCodeMeta(current.weatherCode)
+  const windLevel = current.windSpeed === null ? 0 : windLevelFromSpeed(current.windSpeed)
+  const wind = current.windSpeed === null
+    ? '--'
+    : `${current.windDirection === null ? '' : directionFromDegrees(current.windDirection)}${windLevel}级`
+  const todayHighValues = hourlyValuesForDate(modelForecast, today, 'temperature_2m')
+  const high = roundRealValue(dailyValue(payload.daily, 'temperature_2m_max', 0) ?? Math.max(...todayHighValues))
+  const low = roundRealValue(dailyValue(payload.daily, 'temperature_2m_min', 0) ?? Math.min(...todayHighValues))
+  const rain = current.precipitation === null ? 0 : Number(current.precipitation.toFixed(current.precipitation >= 10 ? 0 : 1))
+  const groundTemp = current.soilTemperature === null ? '--' : roundRealValue(current.soilTemperature)
+  const pressure = current.pressure === null ? '--' : roundRealValue(current.pressure)
+  const visibility = current.visibility === null ? null : Math.round(current.visibility)
+  const uv = cmaModelDailyUv(modelForecast, today)
+  const forecast = buildOpenMeteoCmaForecast(modelForecast, today, high, low, windLevel)
+  const hourlyForecast = buildCmaModelHourlyForecast(modelForecast, today)
+
+  const fieldName = plot && plot.name ? plot.name : '全部地块'
+  const areaText = plot ? formatArea(plot.area) : '0'
+  const alert = cmaModelRiskAlert(modelForecast, today, fieldName)
+
+  return {
+    fieldCount: options.fieldCount || 0,
+    selectedIndex: options.selectedIndex || 0,
+    selectedFieldLabel: fieldName,
+    locationLabel: `${payload.model || 'CMA GRAPES'} · ${fieldName}`,
+    regionLabel: payload.model || 'CMA GRAPES',
+    sourceInfo: {
+      type: 'real',
+      label: 'CMA GRAPES',
+      desc: '中国气象局 CMA GRAPES 模型预报，经 Open-Meteo 坐标接口获取；无本地估算。'
+    },
+    weather: {
+      temp,
+      desc: meta.desc,
+      icon: meta.icon,
+      high,
+      low,
+      wind,
+      windLevel,
+      humidity,
+      groundTemp,
+      groundTempLabel: '地温',
+      rain,
+      uv,
+      pressure,
+      visibility,
+      visibilityText: formatVisibility(visibility)
+    },
+    forecast,
+    hourly: hourlyForecast,
+    alert,
+    advices: stageAdvice(plot || {}, {
+      temp,
+      high,
+      low,
+      humidity: humidity === '--' ? 45 : humidity,
+      windLevel,
+      rain,
+      groundTemp,
+      uv,
+      alert,
+      today
+    }),
+    summary: `当前地温 ${groundTemp}°C，逐小时预报来自真实 CMA GRAPES 模型。`,
+    tipText: `天气预报来自真实模型数据，建议结合 ${fieldName}${plot && plot.area ? `（${areaText}亩）` : ''} 当前墒情安排作业。`
+  }
 }
 
 function cmaRainChance(meta, rain) {
@@ -753,7 +916,7 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
   const currentData = payload.current || {}
   const forecastData = payload.forecast || {}
   const now = currentData.now || forecastData.now || {}
-  const daily = Array.isArray(forecastData.daily) ? forecastData.daily : []
+  const daily = alignCmaDailyForecast(forecastData.daily, today)
   const firstDay = daily[0] || {}
   const station = payload.station || {}
   const meta = cmaWeatherMeta(pickFirstDefined(firstDay.dayCode, firstDay.nightCode), firstDay.dayText || firstDay.nightText)
@@ -768,18 +931,14 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
   const low = clampRound(firstDay.low, temp - 4)
   const feelsLike = clampRound(now.feelst, temp)
   const pressure = clampRound(now.pressure, 0)
-  const uv = estimateCmaUvIndex({
-    temp,
-    humidity,
-    rainChance,
-    risk: meta.risk,
-    month: today.getMonth() + 1
-  })
-  const visibility = estimateCmaVisibility({
-    humidity,
-    rainChance,
-    risk: meta.risk
-  })
+  const modelForecast = payload.hourly || payload.modelForecast || {}
+  const modelHourly = cmaModelHourlyData(modelForecast)
+  const modelCurrent = modelHourly
+    ? readCmaModelHour(modelForecast, findHourlyStartIndex(modelHourly.time, today))
+    : null
+  const uv = cmaModelDailyUv(modelForecast, today)
+  const visibility = modelCurrent && modelCurrent.visibility !== null ? Math.round(modelCurrent.visibility) : null
+  const soilTemperature = modelCurrent && modelCurrent.soilTemperature !== null ? clampRound(modelCurrent.soilTemperature, feelsLike) : feelsLike
   const forecast = daily.slice(0, 7).map((day, index) => {
     const dayMeta = cmaWeatherMeta(pickFirstDefined(day.dayCode, day.nightCode), day.dayText || day.nightText)
     const dayHigh = clampRound(day.high, high)
@@ -796,25 +955,13 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
     }
   })
 
-  const seed = hashString(`${plot && plot.id ? plot.id : plot && plot.name ? plot.name : 'plot'}|cma-hourly|${station.id || ''}`)
-  const hourly = buildHourlyForecast(today, seed, temp, humidity, windLevel, rainChance)
-  if (hourly.length) {
-    hourly[0] = {
-      ...hourly[0],
-      icon: meta.icon,
-      temp,
-      wind,
-      rainChance,
-      rainText: `${rainChance}%`
-    }
-  }
+  const hourly = buildCmaModelHourlyForecast(modelForecast, today)
 
   const officialAlarms = [
     ...(Array.isArray(currentData.alarm) ? currentData.alarm : []),
     ...(Array.isArray(forecastData.alarm) ? forecastData.alarm : [])
   ]
-  const alert = buildCmaOfficialAlert(officialAlarms[0], station) ||
-    weatherAlert({ temp, humidity, windLevel, rainChance, risk: meta.risk })
+  const alert = buildCmaOfficialAlert(officialAlarms[0], station)
 
   const fieldName = plot && plot.name ? plot.name : '全部地块'
   const areaText = plot ? formatArea(plot.area) : '0'
@@ -830,7 +977,7 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
     sourceInfo: {
       type: 'real',
       label: '中国气象局',
-      desc: `实况、预警和7日预报来自中国气象局${station.name ? ` ${station.name}站` : ''}；逐小时趋势为本地估算。`
+      desc: `实况、预警和7日预报来自中国气象局${station.name ? ` ${station.name}站` : ''}；逐小时、地温、紫外线和能见度来自 CMA GRAPES 模型预报。`
     },
     weather: {
       temp,
@@ -841,8 +988,8 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
       wind,
       windLevel,
       humidity,
-      groundTemp: feelsLike,
-      groundTempLabel: '体感',
+      groundTemp: soilTemperature,
+      groundTempLabel: modelCurrent && modelCurrent.soilTemperature !== null ? '地温' : '体感',
       rain,
       uv,
       pressure,
@@ -854,9 +1001,15 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
     alert,
     advices: stageAdvice(plot || {}, {
       temp,
+      high,
+      low,
       humidity,
       windLevel,
-      rain
+      rain,
+      groundTemp: soilTemperature,
+      uv,
+      alert,
+      today
     }),
     summary: alert ? alert.summary : `当前体感温度 ${feelsLike}°C，适合在上午完成巡田和滴灌。`,
     tipText: alert
@@ -866,8 +1019,9 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
 }
 
 function buildWeatherFromApi(plot, payload, options = {}) {
-  if (!payload) return buildWeatherForPlot(plot, options)
+  if (!payload) throw new Error('真实天气数据缺失')
   if (payload.provider === 'cma') return buildWeatherModelFromCma(plot, payload, options)
+  if (payload.provider === 'open-meteo-cma') return buildWeatherModelFromOpenMeteoCma(plot, payload, options)
   const current = payload.current || payload.current_weather || {}
   const daily = payload.daily || {}
   const hourly = payload.hourly || {}
@@ -879,7 +1033,6 @@ function localizeWeatherModel(model) {
 }
 
 module.exports = {
-  buildWeatherForPlot: (...args) => localizeWeatherModel(buildWeatherForPlot(...args)),
   buildWeatherFromApi: (...args) => localizeWeatherModel(buildWeatherFromApi(...args)),
   buildWeatherModelFromCurrent,
   buildWeatherModelFromCma

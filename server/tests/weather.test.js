@@ -12,6 +12,11 @@ const mockCoordinates = JSON.stringify([
   { latitude: 39.47, longitude: 75.991 },
   { latitude: 39.471, longitude: 75.991 }
 ])
+const mockUnavailableCmaCoordinates = JSON.stringify([
+  { latitude: 28.167, longitude: 104.511 },
+  { latitude: 28.168, longitude: 104.511 },
+  { latitude: 28.168, longitude: 104.512 }
+])
 
 const mockDb = {
   async query(sql, params = []) {
@@ -24,6 +29,19 @@ const mockDb = {
           area: '0.00',
           coordinates: null,
           sow_date: null,
+          irrigation: '滴灌',
+          soil_type: '壤土',
+          planting_status: '已播种',
+          note: ''
+        }], []]
+      }
+      if (params[0] === 9) {
+        return [[{
+          id: 9,
+          name: '筠连县',
+          area: '42.14',
+          coordinates: mockUnavailableCmaCoordinates,
+          sow_date: '2026-04-20',
           irrigation: '滴灌',
           soil_type: '壤土',
           planting_status: '已播种',
@@ -50,6 +68,16 @@ const fetchedRequests = []
 global.fetch = async (url, options = {}) => {
   fetchedRequests.push({ url: String(url), headers: options.headers || {} })
   const currentUrl = String(url)
+  if (currentUrl.includes('/api/now/56498') || currentUrl.includes('/api/weather/view?stationid=56498')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError('Unexpected token < in JSON')
+      }
+    }
+  }
+
   if (currentUrl.includes('/api/now/')) {
     return {
       ok: true,
@@ -135,6 +163,36 @@ global.fetch = async (url, options = {}) => {
     }
   }
 
+  if (currentUrl.includes('api.open-meteo.com/v1/cma')) {
+    return {
+      ok: true,
+      json: async () => ({
+        latitude: 39.47,
+        longitude: 75.99,
+        timezone: 'Asia/Shanghai',
+        hourly: {
+          time: ['2026-07-06T10:00', '2026-07-06T11:00', '2026-07-06T12:00'],
+          temperature_2m: [27, 28, 29],
+          relative_humidity_2m: [40, 39, 38],
+          precipitation: [0, 0, 0.2],
+          weather_code: [1, 1, 3],
+          wind_speed_10m: [7.2, 8.1, 9.3],
+          wind_direction_10m: [0, 45, 90],
+          visibility: [18000, 17000, 16000],
+          surface_pressure: [860, 861, 862],
+          soil_temperature_0_to_10cm: [29, 30, 31]
+        },
+        daily: {
+          time: ['2026-07-06'],
+          weather_code: [1],
+          temperature_2m_max: [32],
+          temperature_2m_min: [22],
+          uv_index_max: [7.4]
+        }
+      })
+    }
+  }
+
   return {
     ok: false,
     status: 404,
@@ -179,15 +237,32 @@ async function run() {
     const success = await request(baseUrl, farmerToken, '/api/weather/plot/7')
     assert.strictEqual(success.status, 200)
     assert.strictEqual(success.json.data.plot.id, 7)
-    assert.strictEqual(success.json.data.weather.provider, 'cma')
-    assert.strictEqual(success.json.data.weather.station.id, 'Y9199')
-    assert.strictEqual(success.json.data.weather.forecast.daily.length, 2)
-    assert(fetchedRequests.some(item => item.url.includes('weather.cma.cn/api/now/Y9199')), 'weather request should fetch CMA realtime data')
-    assert(fetchedRequests.some(item => item.url.includes('weather.cma.cn/api/weather/view?stationid=Y9199')), 'weather request should fetch CMA forecast data')
-    assert(fetchedRequests.every(item => !item.url.includes('api.open-meteo.com')), 'weather request should not use Open-Meteo')
+    assert.strictEqual(success.json.data.weather.provider, 'open-meteo-cma')
+    assert.strictEqual(success.json.data.weather.source, 'api.open-meteo.com/v1/cma')
+    assert.strictEqual(success.json.data.weather.hourly.time.length, 3)
+    assert.strictEqual(success.json.data.weather.daily.time.length, 1)
+    assert(fetchedRequests.some(item => item.url.includes('api.open-meteo.com/v1/cma')), 'weather request should fetch CMA GRAPES hourly data')
     assert(
-      fetchedRequests.some(item => String(item.headers.Referer || '').includes('/web/weather/Y9199.html')),
-      'weather request should include CMA station referer'
+      fetchedRequests.some(item => item.url.includes('latitude=39.470333333333336') && item.url.includes('longitude=75.99066666666666')),
+      'weather request should use the plot center latitude and longitude'
+    )
+    assert(
+      fetchedRequests.some(item => item.url.includes('forecast_hours=48') && item.url.includes('soil_temperature_0_to_10cm')),
+      'weather request should ask for real hourly and soil forecast variables'
+    )
+    assert(
+      fetchedRequests.every(item => !item.url.includes('weather.cma.cn/api/now/') && !item.url.includes('weather.cma.cn/api/weather/view')),
+      'weather request should not use station-level weather as plot weather'
+    )
+
+    const cmaStationUnavailable = await request(baseUrl, farmerToken, '/api/weather/plot/9')
+    assert.strictEqual(cmaStationUnavailable.status, 200)
+    assert.strictEqual(cmaStationUnavailable.json.data.weather.provider, 'open-meteo-cma')
+    assert.strictEqual(cmaStationUnavailable.json.data.weather.source, 'api.open-meteo.com/v1/cma')
+    assert.strictEqual(cmaStationUnavailable.json.data.weather.hourly.time.length, 3)
+    assert(
+      fetchedRequests.every(item => !item.url.includes('weather.cma.cn/api/now/56498')),
+      'weather request should not try regional station data for plot-level weather'
     )
 
     console.log('weather API tests passed')
