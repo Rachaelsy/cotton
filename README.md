@@ -174,6 +174,8 @@ node -e "require('dotenv').config(); const { fetchQweatherWeather } = require('.
 
 特约商户/农机手微信支付进件资料模板见 [docs/wechat-pay-applyment.md](docs/wechat-pay-applyment.md)。商户和农机手都可通过 `/api/wechat-applyment/*` 保存草稿、提交微信审核、同步状态；审核完成返回 `sub_mchid` 后才能发起真实收款。
 
+服务商自营测试店铺也必须绑定一个自营特约商户号 `sub_mchid`，不能直接用服务商商户号作为普通商户收款。可在 `server/.env` 填写 `SELF_MERCHANT_SUB_MCHID`，再运行 `node db/create_self_merchant.js` 绑定到平台自营店铺。
+
 农资订单已接入微信支付服务商分账：下单时会按商户 `commission_rate` 标记为可分账订单；微信支付成功后记录待分账；确认收货并过 7 天售后冻结期后，由定时任务调用微信分账接口把平台服务费分到服务商商户号，并解冻剩余资金给特约商户。测试基础支付但暂未开通分账权限时，可在 `server/.env` 设置 `WECHAT_PAY_PROFIT_SHARING_ENABLED=false`，等微信支付分账产品和特约商户授权都开通后再改回 `true`。
 
 > 不要把真实 `server/.env` 提交到 GitHub。真实密钥只应保存在本地开发机、服务器环境变量或安全的密钥管理服务中。

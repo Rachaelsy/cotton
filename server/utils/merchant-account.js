@@ -26,6 +26,7 @@ async function upsertMerchantBase({ db, bcrypt, input, merchantMode }) {
   else {
     if (!/^1\d{10}$/.test(data.phone)) throw new Error('phone must be an 11-digit mainland China mobile number')
     if (!data.password || data.password.length < 6 || data.password.length > 20) throw new Error('password must be 6-20 characters')
+    if (data.subMchid && !/^\d{8,32}$/.test(data.subMchid)) throw new Error('sub_mchid must be 8-32 digits')
   }
 
   const hash = await bcrypt.hash(data.password, 10)
@@ -57,10 +58,12 @@ async function upsertMerchantBase({ db, bcrypt, input, merchantMode }) {
   if (merchants.length) {
     merchantId = merchants[0].id
     const isSelfOperated = merchantMode === 'self'
+    const subMchid = isSelfOperated ? (data.subMchid || null) : data.subMchid
     await db.query(
       `UPDATE merchants
           SET company_name=?, business_license=?, product_category=?,
-              apply_status='approved', reject_reason=NULL, sub_mchid=?,
+              apply_status='approved', reject_reason=NULL,
+              sub_mchid=${isSelfOperated ? 'COALESCE(?, sub_mchid)' : '?'},
               wechat_applyment_state=?,
               wechat_applyment_msg=?,
               wechat_applyment_updated_at=NOW(), commission_rate=?
@@ -69,10 +72,10 @@ async function upsertMerchantBase({ db, bcrypt, input, merchantMode }) {
         data.companyName,
         data.businessLicense,
         data.productCategory,
-        isSelfOperated ? null : data.subMchid,
+        subMchid,
         isSelfOperated ? 'SELF_OPERATED' : 'FINISH',
         isSelfOperated
-          ? 'Self-operated store for WeChat Pay direct test'
+          ? 'Self-operated store for WeChat Pay service-provider test'
           : 'Bound existing sub_mchid for WeChat Pay test',
         isSelfOperated ? 0 : data.commissionRate,
         merchantId
@@ -80,6 +83,7 @@ async function upsertMerchantBase({ db, bcrypt, input, merchantMode }) {
     )
   } else {
     const isSelfOperated = merchantMode === 'self'
+    const subMchid = isSelfOperated ? (data.subMchid || null) : data.subMchid
     const [result] = await db.query(
       `INSERT INTO merchants
         (user_id, company_name, business_license, product_category, apply_status,
@@ -91,10 +95,10 @@ async function upsertMerchantBase({ db, bcrypt, input, merchantMode }) {
         data.companyName,
         data.businessLicense,
         data.productCategory,
-        isSelfOperated ? null : data.subMchid,
+        subMchid,
         isSelfOperated ? 'SELF_OPERATED' : 'FINISH',
         isSelfOperated
-          ? 'Self-operated store for WeChat Pay direct test'
+          ? 'Self-operated store for WeChat Pay service-provider test'
           : 'Bound existing sub_mchid for WeChat Pay test',
         isSelfOperated ? 0 : data.commissionRate
       ]
@@ -110,6 +114,7 @@ async function upsertMerchantBase({ db, bcrypt, input, merchantMode }) {
     createdMerchant
   }
   if (merchantMode === 'self') result.selfOperated = true
+  if (merchantMode === 'self') result.subMchid = data.subMchid || ''
   else result.subMchid = data.subMchid
   return result
 }

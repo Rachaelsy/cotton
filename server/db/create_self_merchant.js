@@ -11,7 +11,8 @@ function readInput() {
     realName: process.env.SELF_MERCHANT_REAL_NAME || 'Cotton平台自营',
     companyName: process.env.SELF_MERCHANT_COMPANY_NAME || 'Cotton平台自营店',
     businessLicense: process.env.SELF_MERCHANT_BUSINESS_LICENSE || 'SELFOPERATED001',
-    productCategory: process.env.SELF_MERCHANT_PRODUCT_CATEGORY || '化肥、农药'
+    productCategory: process.env.SELF_MERCHANT_PRODUCT_CATEGORY || '化肥、农药',
+    subMchid: process.env.SELF_MERCHANT_SUB_MCHID || ''
   }
 }
 
@@ -24,6 +25,7 @@ async function run() {
   console.log(`  user_id: ${result.userId}`)
   console.log(`  merchant_id: ${result.merchantId}`)
   console.log(`  self_operated: ${result.selfOperated}`)
+  console.log(`  sub_mchid: ${result.subMchid || '(not bound)'}`)
   await db.end()
 }
 

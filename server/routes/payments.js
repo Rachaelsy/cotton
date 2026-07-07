@@ -65,8 +65,10 @@ function validateReceiver(order) {
   if (order.kind === 'supply' && Number(order.merchantCount) !== 1) {
     return { ok: false, msg: '该订单包含多个商户，请拆分订单后分别支付', code: 409 }
   }
-  if (order.isSelfOperated) return { ok: true }
   if (!order.subMchid) {
+    if (order.isSelfOperated) {
+      return { ok: false, msg: '服务商自营测试也必须绑定自营子商户号 sub_mchid，不能直接用服务商商户号收款', code: 409 }
+    }
     const who = order.kind === 'machine' ? '农机服务商' : '收款商户'
     return { ok: false, msg: `${who}尚未配置微信支付子商户号，暂不能发起真实支付`, code: 409 }
   }
@@ -223,7 +225,7 @@ async function markPaidByNotify(type, orderId, paidFen, transactionSubMchid) {
 
   const receiver = validateReceiver(order)
   if (!receiver.ok) return { ok: false, message: receiver.msg }
-  if (!order.isSelfOperated && transactionSubMchid && transactionSubMchid !== order.subMchid) return { ok: false, message: 'sub_mchid mismatch' }
+  if (transactionSubMchid && transactionSubMchid !== order.subMchid) return { ok: false, message: 'sub_mchid mismatch' }
   if (fen(order.amount) !== Number(paidFen)) return { ok: false, message: 'order amount mismatch' }
 
   if (type === 'machine') {
@@ -274,17 +276,13 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
           orderType,
           orderId: order.id,
           subMchid: order.subMchid,
-          paymentMode: order.isSelfOperated ? 'direct' : 'partner'
+          paymentMode: order.isSelfOperated ? 'self_operated' : 'partner'
         }
       }
     }
-    if (!order.isSelfOperated) {
-      prepayPayload.order.subMchid = order.subMchid
-      prepayPayload.order.profitSharing = shouldUseProfitSharing(order)
-    }
-    const prepay = order.isSelfOperated
-      ? await wxpay.jsapiPrepay(prepayPayload)
-      : await wxpay.partnerJsapiPrepay(prepayPayload)
+    prepayPayload.order.subMchid = order.subMchid
+    prepayPayload.order.profitSharing = shouldUseProfitSharing(order)
+    const prepay = await wxpay.partnerJsapiPrepay(prepayPayload)
     if (!prepay || !prepay.prepay_id) return fail(res, '微信支付未返回预支付单号', 502)
 
     const payParams = wxpay.buildRequestPaymentParams({
@@ -317,17 +315,15 @@ router.post('/wechat/confirm', farmerAuth, async (req, res) => {
     const cfg = wxpay.getServiceProviderConfig()
     if (!cfg) return fail(res, '微信支付服务商未配置：请配置服务商 AppID、服务商商户号、证书序列号、私钥和支付回调地址', 501)
 
-    const transaction = order.isSelfOperated
-      ? await wxpay.queryTransaction({ cfg, outTradeNo: outTradeNo(orderType, order) })
-      : await wxpay.queryPartnerTransaction({
-          cfg,
-          outTradeNo: outTradeNo(orderType, order),
-          subMchid: order.subMchid
-        })
+    const transaction = await wxpay.queryPartnerTransaction({
+      cfg,
+      outTradeNo: outTradeNo(orderType, order),
+      subMchid: order.subMchid
+    })
     if (transaction.trade_state !== 'SUCCESS') {
       return fail(res, `微信支付未完成：${transaction.trade_state || 'UNKNOWN'}`, 409)
     }
-    if (!order.isSelfOperated && transaction.sub_mchid && transaction.sub_mchid !== order.subMchid) return fail(res, '微信支付子商户号与订单不一致', 400)
+    if (transaction.sub_mchid && transaction.sub_mchid !== order.subMchid) return fail(res, '微信支付子商户号与订单不一致', 400)
     const paidFen = transaction.amount && (transaction.amount.payer_total || transaction.amount.total)
     if (fen(order.amount) !== Number(paidFen)) return fail(res, '微信支付金额与订单金额不一致', 400)
 

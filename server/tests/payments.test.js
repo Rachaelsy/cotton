@@ -45,6 +45,19 @@ const mockDb = {
           status: 'pending_payment',
           merchant_count: 1,
           merchant_id: 7,
+          sub_mchid: '1700000999',
+          commission_rate: '0.00',
+          self_operated: 1
+        }], []]
+      }
+      if (orderMode === 'selfMissingSub') {
+        return [[{
+          id: 9,
+          order_no: 'MG202607030002',
+          total: '9.90',
+          status: 'pending_payment',
+          merchant_count: 1,
+          merchant_id: 7,
           sub_mchid: null,
           commission_rate: '0.00',
           self_operated: 1
@@ -157,12 +170,19 @@ async function run() {
     orderMode = 'selfOperated'
     const direct = await request(baseUrl, token, { orderType: 'supply', orderId: 9 })
     assert.strictEqual(direct.status, 200)
-    assert.strictEqual(direct.json.data.payParams.package, 'prepay_id=direct-prepay-id-for-test')
-    const directPrepayCall = calls.find(item => item.type === 'jsapiPrepay')
-    assert(directPrepayCall, 'self-operated order should call direct JSAPI prepay')
-    assert.strictEqual(directPrepayCall.order.subMchid, undefined)
-    assert.strictEqual(directPrepayCall.order.amountFen, 990)
-    assert.strictEqual(directPrepayCall.order.attach.paymentMode, 'direct')
+    assert.strictEqual(direct.json.data.payParams.package, 'prepay_id=prepay-id-for-test')
+    const selfPartnerCall = calls.find(item => item.type === 'partnerJsapiPrepay')
+    assert(selfPartnerCall, 'self-operated service-provider order should still call partner JSAPI prepay')
+    assert.strictEqual(selfPartnerCall.order.subMchid, '1700000999')
+    assert.strictEqual(selfPartnerCall.order.amountFen, 990)
+    assert.strictEqual(selfPartnerCall.order.profitSharing, false)
+    assert.strictEqual(selfPartnerCall.order.attach.paymentMode, 'self_operated')
+
+    calls.length = 0
+    orderMode = 'selfMissingSub'
+    const selfMissingSub = await request(baseUrl, token, { orderType: 'supply', orderId: 9 })
+    assert.strictEqual(selfMissingSub.status, 409)
+    assert.match(selfMissingSub.json.msg, /自营.*子商户号|sub_mchid/)
 
     console.log('payments route tests passed')
   } finally {

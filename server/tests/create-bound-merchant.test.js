@@ -104,10 +104,33 @@ async function run() {
     merchantId: 202,
     createdUser: true,
     createdMerchant: true,
-    selfOperated: true
+    selfOperated: true,
+    subMchid: ''
   })
   assert(selfDb.calls.some(call => /INSERT INTO merchants/i.test(call.sql)), 'should create self-operated merchant')
   assert(selfDb.calls.some(call => call.params.includes('SELF_OPERATED')), 'should mark self-operated merchant')
+
+  const selfSubDb = makeDb()
+  const selfWithSub = await upsertSelfOperatedMerchant({
+    db: selfSubDb,
+    bcrypt,
+    input: {
+      phone: '13900000011',
+      password: 'test123',
+      subMchid: '1700000999',
+      realName: 'Cotton Self Operated',
+      companyName: 'Cotton Platform Store'
+    }
+  })
+  assert.strictEqual(selfWithSub.selfOperated, true)
+  assert.strictEqual(selfWithSub.subMchid, '1700000999')
+  assert(selfSubDb.calls.some(call => call.params.includes('1700000999')), 'self-operated merchant should save sub_mchid when provided')
+
+  await assert.rejects(() => upsertSelfOperatedMerchant({
+    db,
+    bcrypt,
+    input: { phone: '13900000012', password: 'test123', subMchid: 'abc' }
+  }), /sub_mchid/)
 
   console.log('create bound merchant tests passed')
 }
