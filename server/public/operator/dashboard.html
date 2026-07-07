@@ -67,6 +67,23 @@
     .b-on { background: #D1FAE5; color: #059669; }
     .b-off { background: #F0F0F0; color: #888; }
     .b-busy { background: #FEF3C7; color: #D97706; }
+    .pay-layout { display: grid; grid-template-columns: 320px 1fr; gap: 16px; align-items: start; }
+    .pay-status-card { padding: 20px; }
+    .pay-state { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; background: #FEF3C7; color: #B45309; }
+    .pay-state.enabled { background: #D1FAE5; color: #047857; }
+    .pay-kv { display: grid; grid-template-columns: 82px 1fr; gap: 8px; margin-top: 14px; font-size: 13px; }
+    .pay-kv span:nth-child(odd) { color: #777; }
+    .pay-kv span:nth-child(even) { color: #222; word-break: break-all; }
+    .form-section { padding: 20px; border-bottom: 1px solid #F0F0F0; }
+    .form-section:last-child { border-bottom: none; }
+    .form-section-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; color: #1F2937; }
+    .help-text { font-size: 12px; color: #8A5A16; background: #FFF8E6; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; line-height: 1.5; }
+    @media (max-width: 900px) {
+      .sidebar { position: static; width: 100%; }
+      .main { margin-left: 0; }
+      .pay-layout, .stats-grid { grid-template-columns: 1fr; }
+      .form-row { flex-direction: column; }
+    }
     /* modal */
     .mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
     .mask.show { display: flex; }
@@ -99,6 +116,7 @@
       <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">📊</span>工作台</div>
       <div class="nav-item" data-panel="machines"><span class="nav-icon">🚜</span>机具管理</div>
       <div class="nav-item" data-panel="orders"><span class="nav-icon">📋</span>接单中心<span class="nav-badge" id="navBadge" style="display:none">0</span></div>
+      <div class="nav-item" data-panel="pay"><span class="nav-icon">💳</span>微信收款</div>
       <div class="nav-item" data-panel="profile"><span class="nav-icon">⚙️</span>资料设置</div>
     </div>
     <div class="sidebar-foot">
@@ -182,6 +200,114 @@
           </div>
         </div>
       </div>
+
+      <!-- 微信收款 -->
+      <div class="panel" id="panel-pay">
+        <div class="pay-layout">
+          <div class="card pay-status-card">
+            <div class="card-title">微信支付入驻状态</div>
+            <div style="margin-top:14px"><span class="pay-state" id="payEnabled">未开通</span></div>
+            <div class="pay-kv">
+              <span>子商户号</span><span id="paySubMchid">未绑定</span>
+              <span>审核状态</span><span id="payState">未提交</span>
+              <span>申请编号</span><span id="payBusinessCode">-</span>
+              <span>微信单号</span><span id="payApplymentId">-</span>
+              <span>状态说明</span><span id="payMessage">-</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+              <button class="btn btn-outline" onclick="syncOperatorApplyment()">同步状态</button>
+              <button class="btn btn-primary" onclick="submitOperatorApplyment()">提交审核</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">微信支付进件资料</div>
+              <button class="btn btn-primary" onclick="saveOperatorPayDraft()">保存草稿</button>
+            </div>
+            <div class="form-section">
+              <div class="form-section-title">联系人</div>
+              <div class="form-row">
+                <div class="form-group"><label>业务申请编号</label><input id="op-pay-business_code" placeholder="留空则系统自动生成"></div>
+                <div class="form-group"><label>联系人姓名 *</label><input id="op-pay-contact_name"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>联系人手机 *</label><input id="op-pay-contact_mobile"></div>
+                <div class="form-group"><label>联系人邮箱</label><input id="op-pay-contact_email"></div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-title">主体证照</div>
+              <div class="help-text">图片材料先填写微信支付素材接口返回的 media_id。没有 media_id 时可以先保存草稿，但不能提交审核。</div>
+              <div class="form-row">
+                <div class="form-group"><label>主体类型</label><select id="op-pay-subject_type"><option value="SUBJECT_TYPE_INDIVIDUAL">个体工商户</option><option value="SUBJECT_TYPE_ENTERPRISE">企业</option><option value="SUBJECT_TYPE_MICRO">小微商户</option></select></div>
+                <div class="form-group"><label>营业执照 media_id</label><input id="op-pay-license_copy"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>营业执照编号</label><input id="op-pay-license_number"></div>
+                <div class="form-group"><label>主体名称</label><input id="op-pay-merchant_name"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>经营者/法人姓名</label><input id="op-pay-legal_person"></div>
+                <div class="form-group"><label>身份证姓名 *</label><input id="op-pay-id_card_name"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>身份证号码 *</label><input id="op-pay-id_card_number"></div>
+                <div class="form-group"><label>身份证人像面 media_id *</label><input id="op-pay-id_card_copy"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>身份证国徽面 media_id *</label><input id="op-pay-id_card_national"></div>
+                <div class="form-group"><label>证件开始日期 *</label><input id="op-pay-card_period_begin" placeholder="YYYY-MM-DD"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>证件结束日期 *</label><input id="op-pay-card_period_end" placeholder="YYYY-MM-DD 或 long_term"></div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-title">经营场景</div>
+              <div class="form-row">
+                <div class="form-group"><label>商户简称 *</label><input id="op-pay-merchant_shortname"></div>
+                <div class="form-group"><label>客服电话 *</label><input id="op-pay-service_phone"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>小程序 AppID *</label><input id="op-pay-mini_program_appid"></div>
+                <div class="form-group"><label>经营页面截图 media_id *</label><input id="op-pay-mini_program_pic"></div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-title">结算账户</div>
+              <div class="form-row">
+                <div class="form-group"><label>结算规则 ID *</label><input id="op-pay-settlement_id"></div>
+                <div class="form-group"><label>所属行业名称</label><input id="op-pay-qualification_type"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>账户类型</label><select id="op-pay-bank_account_type"><option value="BANK_ACCOUNT_TYPE_PERSONAL">对私账户</option><option value="BANK_ACCOUNT_TYPE_CORPORATE">对公账户</option></select></div>
+                <div class="form-group"><label>开户银行 *</label><input id="op-pay-account_bank"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>开户地址编码</label><input id="op-pay-bank_address_code"></div>
+                <div class="form-group"><label>开户银行联行号</label><input id="op-pay-bank_branch_id"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>开户支行名称</label><input id="op-pay-bank_name"></div>
+                <div class="form-group"><label>开户人姓名 *</label><input id="op-pay-account_name"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>银行卡号 *</label><input id="op-pay-account_number"></div>
+                <div class="form-group"><label>已有子商户号</label><input id="op-pay-sub_mchid" placeholder="线下已完成进件时填写"></div>
+              </div>
+              <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+                <button class="btn btn-outline" onclick="bindOperatorSubMchid()">绑定已有子商户号</button>
+                <button class="btn btn-primary" onclick="saveOperatorPayDraft()">保存草稿</button>
+                <button class="btn btn-primary" onclick="submitOperatorApplyment()">提交微信审核</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -253,11 +379,12 @@
     function switchPanel(name) {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.panel === name))
       document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name))
-      const titles = { dashboard: '工作台', machines: '机具管理', orders: '接单中心', profile: '资料设置' }
+      const titles = { dashboard: '工作台', machines: '机具管理', orders: '接单中心', pay: '微信收款', profile: '资料设置' }
       document.getElementById('pageTitle').textContent = titles[name]
       if (name === 'dashboard') loadDashboard()
       if (name === 'machines') loadMachines()
       if (name === 'orders') loadOrders()
+      if (name === 'pay') loadApplyment()
       if (name === 'profile') loadProfile()
     }
 
@@ -281,6 +408,209 @@
     function statusBadge(s) {
       const cls = s === 'pending' ? 'b-pending' : s === 'accepted' ? 'b-accepted' : s === 'completed' ? 'b-done' : s === 'cancelled' ? 'b-cancel' : 'b-progress'
       return `<span class="badge ${cls}">${CAT_LABEL[s] || s}</span>`
+    }
+
+    // 微信支付进件
+    function payVal(name) {
+      const el = document.getElementById('op-pay-' + name)
+      return el ? el.value.trim() : ''
+    }
+    function setPayVal(name, value) {
+      const el = document.getElementById('op-pay-' + name)
+      if (el) el.value = value || ''
+    }
+    function stripEmpty(value) {
+      if (Array.isArray(value)) {
+        const arr = value.map(stripEmpty).filter(item => item !== undefined)
+        return arr.length ? arr : undefined
+      }
+      if (value && typeof value === 'object') {
+        const out = {}
+        Object.keys(value).forEach(key => {
+          const cleaned = stripEmpty(value[key])
+          if (cleaned !== undefined) out[key] = cleaned
+        })
+        return Object.keys(out).length ? out : undefined
+      }
+      return value === '' || value == null ? undefined : value
+    }
+    function buildOperatorRawApplyment() {
+      const subjectType = payVal('subject_type') || 'SUBJECT_TYPE_INDIVIDUAL'
+      const licenseInfo = subjectType === 'SUBJECT_TYPE_MICRO' ? undefined : {
+        license_copy: payVal('license_copy'),
+        license_number: payVal('license_number'),
+        merchant_name: payVal('merchant_name'),
+        legal_person: payVal('legal_person')
+      }
+      const raw = {
+        contact_info: {
+          contact_type: 'LEGAL',
+          contact_name: payVal('contact_name'),
+          mobile_phone: payVal('contact_mobile'),
+          contact_email: payVal('contact_email')
+        },
+        subject_info: {
+          subject_type: subjectType,
+          business_license_info: licenseInfo,
+          identity_info: {
+            id_card_info: {
+              id_card_copy: payVal('id_card_copy'),
+              id_card_national: payVal('id_card_national'),
+              id_card_name: payVal('id_card_name'),
+              id_card_number: payVal('id_card_number'),
+              card_period_begin: payVal('card_period_begin'),
+              card_period_end: payVal('card_period_end')
+            }
+          }
+        },
+        business_info: {
+          merchant_shortname: payVal('merchant_shortname'),
+          service_phone: payVal('service_phone'),
+          sales_info: {
+            sales_scenes_type: ['SALES_SCENES_MINI_PROGRAM'],
+            mini_program_info: {
+              mini_program_appid: payVal('mini_program_appid'),
+              mini_program_pics: payVal('mini_program_pic') ? [payVal('mini_program_pic')] : []
+            }
+          }
+        },
+        settlement_info: {
+          settlement_id: payVal('settlement_id'),
+          qualification_type: payVal('qualification_type')
+        },
+        bank_account_info: {
+          bank_account_type: payVal('bank_account_type') || 'BANK_ACCOUNT_TYPE_PERSONAL',
+          account_bank: payVal('account_bank'),
+          bank_address_code: payVal('bank_address_code'),
+          bank_branch_id: payVal('bank_branch_id'),
+          bank_name: payVal('bank_name'),
+          account_name: payVal('account_name'),
+          account_number: payVal('account_number')
+        }
+      }
+      return stripEmpty(raw) || raw
+    }
+    function fillOperatorPayForm(data) {
+      const draft = (data && data.draft) || {}
+      const raw = draft.raw_applyment || {}
+      const contact = raw.contact_info || {}
+      const subject = raw.subject_info || {}
+      const license = subject.business_license_info || {}
+      const identity = subject.identity_info || {}
+      const idCard = identity.id_card_info || {}
+      const business = raw.business_info || {}
+      const sales = business.sales_info || {}
+      const miniProgram = sales.mini_program_info || {}
+      const settlement = raw.settlement_info || {}
+      const bank = raw.bank_account_info || {}
+
+      setPayVal('business_code', data.business_code || draft.business_code || '')
+      setPayVal('contact_name', contact.contact_name || INFO.real_name || '')
+      setPayVal('contact_mobile', contact.mobile_phone || INFO.phone || '')
+      setPayVal('contact_email', contact.contact_email || '')
+      setPayVal('subject_type', subject.subject_type || 'SUBJECT_TYPE_INDIVIDUAL')
+      setPayVal('license_copy', license.license_copy || '')
+      setPayVal('license_number', license.license_number || data.business_license || '')
+      setPayVal('merchant_name', license.merchant_name || data.company_name || '')
+      setPayVal('legal_person', license.legal_person || contact.contact_name || '')
+      setPayVal('id_card_copy', idCard.id_card_copy || '')
+      setPayVal('id_card_national', idCard.id_card_national || '')
+      setPayVal('id_card_name', idCard.id_card_name || license.legal_person || contact.contact_name || '')
+      setPayVal('id_card_number', idCard.id_card_number || '')
+      setPayVal('card_period_begin', idCard.card_period_begin || '')
+      setPayVal('card_period_end', idCard.card_period_end || '')
+      setPayVal('merchant_shortname', business.merchant_shortname || data.company_name || INFO.org_name || '')
+      setPayVal('service_phone', business.service_phone || contact.mobile_phone || INFO.phone || '')
+      setPayVal('mini_program_appid', (miniProgram && miniProgram.mini_program_appid) || '')
+      setPayVal('mini_program_pic', (miniProgram.mini_program_pics && miniProgram.mini_program_pics[0]) || '')
+      setPayVal('settlement_id', settlement.settlement_id || '')
+      setPayVal('qualification_type', settlement.qualification_type || '')
+      setPayVal('bank_account_type', bank.bank_account_type || 'BANK_ACCOUNT_TYPE_PERSONAL')
+      setPayVal('account_bank', bank.account_bank || '')
+      setPayVal('bank_address_code', bank.bank_address_code || '')
+      setPayVal('bank_branch_id', bank.bank_branch_id || '')
+      setPayVal('bank_name', bank.bank_name || '')
+      setPayVal('account_name', bank.account_name || idCard.id_card_name || '')
+      setPayVal('account_number', bank.account_number || '')
+      setPayVal('sub_mchid', data.sub_mchid || '')
+    }
+    function validateOperatorApplyment(strict) {
+      const phone = payVal('contact_mobile')
+      if (phone && !/^1\d{10}$/.test(phone)) { toast('请填写正确手机号'); return false }
+      if (!strict) return true
+      const required = [
+        ['contact_name', '联系人姓名'],
+        ['contact_mobile', '联系人手机'],
+        ['id_card_copy', '身份证人像面 media_id'],
+        ['id_card_national', '身份证国徽面 media_id'],
+        ['id_card_name', '身份证姓名'],
+        ['id_card_number', '身份证号码'],
+        ['card_period_begin', '证件开始日期'],
+        ['card_period_end', '证件结束日期'],
+        ['merchant_shortname', '商户简称'],
+        ['service_phone', '客服电话'],
+        ['mini_program_appid', '小程序 AppID'],
+        ['mini_program_pic', '经营页面截图 media_id'],
+        ['settlement_id', '结算规则 ID'],
+        ['account_bank', '开户银行'],
+        ['account_name', '开户人姓名'],
+        ['account_number', '银行卡号']
+      ]
+      if (payVal('subject_type') !== 'SUBJECT_TYPE_MICRO') {
+        required.push(['license_copy', '营业执照 media_id'], ['license_number', '营业执照编号'], ['merchant_name', '主体名称'], ['legal_person', '经营者/法人姓名'])
+      }
+      for (const item of required) {
+        if (!payVal(item[0])) { toast('请填写' + item[1]); return false }
+      }
+      return true
+    }
+    async function loadApplyment() {
+      const r = await api('/wechat-applyment/mine')
+      if (r.code !== 200) { toast(r.msg || '获取微信支付状态失败'); return }
+      const d = r.data || {}
+      const enabled = document.getElementById('payEnabled')
+      enabled.textContent = d.payment_enabled ? '可收款' : '未开通'
+      enabled.classList.toggle('enabled', !!d.payment_enabled)
+      document.getElementById('paySubMchid').textContent = d.sub_mchid || '未绑定'
+      document.getElementById('payState').textContent = d.state_label || '未提交'
+      document.getElementById('payBusinessCode').textContent = d.business_code || '-'
+      document.getElementById('payApplymentId').textContent = d.applyment_id || '-'
+      document.getElementById('payMessage').textContent = d.message || '-'
+      fillOperatorPayForm(d)
+    }
+    async function saveOperatorPayDraft(silent = false) {
+      if (!validateOperatorApplyment(false)) return false
+      const r = await api('/wechat-applyment/draft', {
+        method: 'POST',
+        body: JSON.stringify({
+          business_code: payVal('business_code'),
+          raw_applyment: buildOperatorRawApplyment()
+        })
+      })
+      if (r.code === 200) {
+        if (silent !== true) toast('草稿已保存')
+        await loadApplyment()
+        return true
+      }
+      toast(r.msg || '保存失败')
+      return false
+    }
+    async function submitOperatorApplyment() {
+      if (!validateOperatorApplyment(true)) return
+      const saved = await saveOperatorPayDraft(true)
+      if (!saved) return
+      const r = await api('/wechat-applyment/submit', { method: 'POST', body: JSON.stringify({}) })
+      if (r.code === 200) { toast('已提交微信审核'); await loadApplyment() } else toast(r.msg || '提交失败')
+    }
+    async function syncOperatorApplyment() {
+      const r = await api('/wechat-applyment/sync', { method: 'POST', body: JSON.stringify({}) })
+      if (r.code === 200) { toast('状态已同步'); await loadApplyment() } else toast(r.msg || '同步失败')
+    }
+    async function bindOperatorSubMchid() {
+      const subMchid = payVal('sub_mchid')
+      if (!/^\d{8,32}$/.test(subMchid)) { toast('请输入正确子商户号'); return }
+      const r = await api('/wechat-applyment/sub-mchid', { method: 'POST', body: JSON.stringify({ sub_mchid: subMchid }) })
+      if (r.code === 200) { toast('子商户号已绑定'); await loadApplyment() } else toast(r.msg || '绑定失败')
     }
 
     // 机具管理

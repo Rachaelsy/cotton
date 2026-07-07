@@ -8,18 +8,25 @@ function normalizePem(value) {
   return value ? String(value).replace(/\\n/g, '\n') : ''
 }
 
+function readEnvValue(env, name) {
+  const value = env[name]
+  if (!value) return ''
+  const text = String(value).trim()
+  return /^(TODO|your_|xxx)/i.test(text) ? '' : text
+}
+
 function readEnvText(env, valueName, pathName) {
-  let value = env[valueName] || ''
-  const filePath = env[pathName]
+  let value = readEnvValue(env, valueName)
+  const filePath = readEnvValue(env, pathName)
   if (!value && filePath && fs.existsSync(filePath)) value = fs.readFileSync(filePath, 'utf8')
   return normalizePem(value)
 }
 
 function getServiceProviderConfig({ env = process.env } = {}) {
-  const spAppid = env.WECHAT_PAY_SP_APPID || env.WECHAT_APPID || env.WX_APPID
-  const spMchid = env.WECHAT_PAY_SP_MCH_ID || env.WECHAT_PAY_MCH_ID
-  const serialNo = env.WECHAT_PAY_SERIAL_NO
-  const notifyUrl = env.WECHAT_PAY_NOTIFY_URL
+  const spAppid = readEnvValue(env, 'WECHAT_PAY_SP_APPID') || readEnvValue(env, 'WECHAT_APPID') || readEnvValue(env, 'WX_APPID')
+  const spMchid = readEnvValue(env, 'WECHAT_PAY_SP_MCH_ID') || readEnvValue(env, 'WECHAT_PAY_MCH_ID')
+  const serialNo = readEnvValue(env, 'WECHAT_PAY_SERIAL_NO')
+  const notifyUrl = readEnvValue(env, 'WECHAT_PAY_NOTIFY_URL')
   const privateKey = readEnvText(env, 'WECHAT_PAY_PRIVATE_KEY', 'WECHAT_PAY_PRIVATE_KEY_PATH')
   if (!spAppid || !spMchid || !serialNo || !notifyUrl || !privateKey) return null
   return {
@@ -36,11 +43,24 @@ function getServiceProviderConfig({ env = process.env } = {}) {
 function getNotifyConfig({ env = process.env } = {}) {
   const cfg = getServiceProviderConfig({ env })
   if (!cfg) return null
-  const apiV3Key = env.WECHAT_PAY_API_V3_KEY || ''
-  const platformSerialNo = env.WECHAT_PAY_PLATFORM_SERIAL_NO || ''
+  const apiV3Key = readEnvValue(env, 'WECHAT_PAY_API_V3_KEY')
+  const wechatpayPublicKeyId = readEnvValue(env, 'WECHAT_PAY_PUBLIC_KEY_ID')
+  const wechatpayPublicKey = readEnvText(env, 'WECHAT_PAY_PUBLIC_KEY', 'WECHAT_PAY_PUBLIC_KEY_PATH')
+  const platformSerialNo = readEnvValue(env, 'WECHAT_PAY_PLATFORM_SERIAL_NO')
   const platformCert = readEnvText(env, 'WECHAT_PAY_PLATFORM_CERT', 'WECHAT_PAY_PLATFORM_CERT_PATH')
-  if (!apiV3Key || !platformCert) return null
-  return { ...cfg, apiV3Key, platformSerialNo, platformCert }
+  const verifySerialNo = wechatpayPublicKey ? wechatpayPublicKeyId : platformSerialNo
+  const verifyKey = wechatpayPublicKey || platformCert
+  if (!apiV3Key || !verifyKey || !verifySerialNo) return null
+  return {
+    ...cfg,
+    apiV3Key,
+    platformSerialNo: verifySerialNo,
+    platformCert: verifyKey,
+    wechatpayPublicKeyId,
+    wechatpayPublicKey,
+    encryptSerialNo: verifySerialNo,
+    encryptPublicKey: verifyKey
+  }
 }
 
 function randomString(size = 32) {
@@ -73,9 +93,10 @@ function buildRequestPaymentParams({ appid, privateKey, prepayId, timestamp, non
 
 function encryptSensitive(value, cfg) {
   if (value == null || value === '') return ''
-  if (!cfg || !cfg.platformCert) throw new Error('缺少微信支付平台证书，无法加密敏感字段')
+  const publicKey = cfg && (cfg.encryptPublicKey || cfg.wechatpayPublicKey || cfg.platformCert)
+  if (!publicKey) throw new Error('缺少微信支付公钥或平台证书，无法加密敏感字段')
   return crypto.publicEncrypt({
-    key: cfg.platformCert,
+    key: publicKey,
     padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
     oaepHash: 'sha1'
   }, Buffer.from(String(value), 'utf8')).toString('base64')
@@ -105,23 +126,29 @@ function verifyNotifySignature(req, rawBody, cfg) {
   const serialNo = req.headers['wechatpay-serial']
   if (!timestamp || !nonce || !signature || !serialNo) return false
   if (cfg.platformSerialNo && cfg.platformSerialNo !== serialNo) return false
+  const verifyKey = cfg.wechatpayPublicKey || cfg.platformCert
+  if (!verifyKey) return false
   const message = `${timestamp}\n${nonce}\n${rawBody}\n`
-  return crypto.createVerify('RSA-SHA256').update(message).verify(cfg.platformCert, signature, 'base64')
+  return crypto.createVerify('RSA-SHA256').update(message).verify(verifyKey, signature, 'base64')
 }
 
-function wechatRequest(method, urlPath, body, cfg) {
+function wechatRequest(method, urlPath, body, cfg, options = {}) {
   return new Promise((resolve, reject) => {
     const bodyText = body ? JSON.stringify(body) : ''
     const auth = buildAuthorizationHeader({ cfg, method, urlPath, bodyText })
+    const headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: auth.authorization
+    }
+    if (options.wechatpaySerial && cfg.encryptSerialNo) {
+      headers['Wechatpay-Serial'] = cfg.encryptSerialNo
+    }
     const req = https.request({
       hostname: API_HOST,
       path: urlPath,
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Authorization: auth.authorization
-      }
+      headers
     }, response => {
       let raw = ''
       response.on('data', chunk => { raw += chunk })
@@ -169,7 +196,7 @@ function queryPartnerTransaction({ cfg, outTradeNo, subMchid }) {
 }
 
 function submitApplyment(cfg, payload) {
-  return wechatRequest('POST', '/v3/applyment4sub/applyment/', payload, cfg)
+  return wechatRequest('POST', '/v3/applyment4sub/applyment/', payload, cfg, { wechatpaySerial: true })
 }
 
 function queryApplymentByBusinessCode(cfg, businessCode) {

@@ -41,6 +41,15 @@ async function run() {
   assert.strictEqual(cfg.spMchid, '1900000109')
   assert.strictEqual(cfg.mchid, '1900000109')
   assert.strictEqual(wxpay.getServiceProviderConfig({ env: {} }), null)
+  assert.strictEqual(wxpay.getServiceProviderConfig({
+    env: {
+      WECHAT_PAY_SP_APPID: 'TODO_SERVICE_PROVIDER_APPID',
+      WECHAT_PAY_SP_MCH_ID: 'TODO_SERVICE_PROVIDER_MCH_ID',
+      WECHAT_PAY_SERIAL_NO: 'TODO_API_CERT_SERIAL_NO',
+      WECHAT_PAY_NOTIFY_URL: 'TODO_HTTPS_DOMAIN/api/pay/wechat/notify',
+      WECHAT_PAY_PRIVATE_KEY: privateKey.replace(/\n/g, '\\n')
+    }
+  }), null)
 
   const signature = wxpay.signMessage(privateKey, 'message-to-sign')
   const verified = crypto
@@ -70,7 +79,40 @@ async function run() {
     oaepHash: 'sha1'
   }, Buffer.from(encrypted, 'base64')).toString('utf8')
   assert.strictEqual(decrypted, '张三')
-  assert.throws(() => wxpay.encryptSensitive('张三', {}), /平台证书/)
+  assert.throws(() => wxpay.encryptSensitive('张三', {}), /公钥或平台证书/)
+
+  const publicKeyCfg = wxpay.getNotifyConfig({
+    env: {
+      WECHAT_PAY_SP_APPID: 'wxspapp',
+      WECHAT_PAY_SP_MCH_ID: '1900000109',
+      WECHAT_PAY_SERIAL_NO: 'SERIAL_NO',
+      WECHAT_PAY_NOTIFY_URL: 'https://example.com/api/pay/wechat/notify',
+      WECHAT_PAY_PRIVATE_KEY: privateKey.replace(/\n/g, '\\n'),
+      WECHAT_PAY_API_V3_KEY: '12345678901234567890123456789012',
+      WECHAT_PAY_PUBLIC_KEY_ID: 'PUB_KEY_ID_3000000001',
+      WECHAT_PAY_PUBLIC_KEY: publicKey.replace(/\n/g, '\\n')
+    }
+  })
+  assert.strictEqual(publicKeyCfg.platformSerialNo, 'PUB_KEY_ID_3000000001')
+  assert.strictEqual(publicKeyCfg.encryptSerialNo, 'PUB_KEY_ID_3000000001')
+  assert.strictEqual(publicKeyCfg.wechatpayPublicKey.includes('BEGIN PUBLIC KEY'), true)
+
+  const rawBody = '{"id":"notify-test"}'
+  const notifyTimestamp = '1710000000'
+  const notifyNonce = 'notify-nonce'
+  const notifySignature = wxpay.signMessage(privateKey, `${notifyTimestamp}\n${notifyNonce}\n${rawBody}\n`)
+  const notifyReq = {
+    headers: {
+      'wechatpay-timestamp': notifyTimestamp,
+      'wechatpay-nonce': notifyNonce,
+      'wechatpay-signature': notifySignature,
+      'wechatpay-serial': 'PUB_KEY_ID_3000000001'
+    }
+  }
+  assert.strictEqual(wxpay.verifyNotifySignature(notifyReq, rawBody, publicKeyCfg), true)
+  assert.strictEqual(wxpay.verifyNotifySignature({
+    headers: { ...notifyReq.headers, 'wechatpay-serial': 'PUB_KEY_ID_3000000002' }
+  }, rawBody, publicKeyCfg), false)
 
   const apiV3Key = '12345678901234567890123456789012'
   const resource = encryptNotifyResource({
