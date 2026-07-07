@@ -99,6 +99,20 @@ function buildAuthorizationHeader({ cfg, method, urlPath, bodyText = '', timesta
   }
 }
 
+function buildWechatRequestHeaders({ cfg, method, urlPath, bodyText = '', timestamp, nonceStr, wechatpaySerial = false }) {
+  const auth = buildAuthorizationHeader({ cfg, method, urlPath, bodyText, timestamp, nonceStr })
+  const headers = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'User-Agent': 'cotton-wechatpay/1.0',
+    Authorization: auth.authorization
+  }
+  if (wechatpaySerial && cfg.encryptSerialNo) {
+    headers['Wechatpay-Serial'] = cfg.encryptSerialNo
+  }
+  return headers
+}
+
 function buildRequestPaymentParams({ appid, privateKey, prepayId, timestamp, nonceStr }) {
   const timeStamp = timestamp || String(Math.floor(Date.now() / 1000))
   const nonce = nonceStr || randomString()
@@ -151,15 +165,13 @@ function verifyNotifySignature(req, rawBody, cfg) {
 function wechatRequest(method, urlPath, body, cfg, options = {}) {
   return new Promise((resolve, reject) => {
     const bodyText = body ? JSON.stringify(body) : ''
-    const auth = buildAuthorizationHeader({ cfg, method, urlPath, bodyText })
-    const headers = {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      Authorization: auth.authorization
-    }
-    if (options.wechatpaySerial && cfg.encryptSerialNo) {
-      headers['Wechatpay-Serial'] = cfg.encryptSerialNo
-    }
+    const headers = buildWechatRequestHeaders({
+      cfg,
+      method,
+      urlPath,
+      bodyText,
+      wechatpaySerial: options.wechatpaySerial
+    })
     const req = https.request({
       hostname: API_HOST,
       path: urlPath,
@@ -340,6 +352,7 @@ module.exports = {
   randomString,
   signMessage,
   buildAuthorizationHeader,
+  buildWechatRequestHeaders,
   buildRequestPaymentParams,
   encryptSensitive,
   decryptNotifyResource,

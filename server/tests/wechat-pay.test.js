@@ -61,6 +61,18 @@ async function run() {
   })
   assert.strictEqual(relativePathCfg.privateKey.includes('BEGIN TEST PRIVATE KEY'), true)
 
+  const requestHeaders = wxpay.buildWechatRequestHeaders({
+    cfg,
+    method: 'POST',
+    urlPath: '/v3/pay/transactions/jsapi',
+    bodyText: '{"amount":{"total":1}}',
+    timestamp: '1710000000',
+    nonceStr: 'nonce-for-headers'
+  })
+  assert.strictEqual(requestHeaders.Accept, 'application/json')
+  assert.match(requestHeaders['User-Agent'], /^cotton-wechatpay\//)
+  assert.match(requestHeaders.Authorization, /^WECHATPAY2-SHA256-RSA2048 /)
+
   const signature = wxpay.signMessage(privateKey, 'message-to-sign')
   const verified = crypto
     .createVerify('RSA-SHA256')
