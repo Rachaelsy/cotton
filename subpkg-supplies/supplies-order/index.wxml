@@ -98,7 +98,7 @@
         </view>
         <view class="kv-row">
           <text class="kv-k">运费</text>
-          <text class="kv-v">¥10</text>
+          <text class="kv-v">¥{{order.deliveryFee || 0}}</text>
         </view>
         <view class="kv-row kv-row-total">
           <text class="kv-k-bold">实付金额</text>

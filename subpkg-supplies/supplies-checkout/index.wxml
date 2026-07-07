@@ -86,7 +86,7 @@
       </view>
       <view class="delivery-row">
         <text class="delivery-label">🚚 送货到地头</text>
-        <text class="delivery-fee">¥10</text>
+        <text class="delivery-fee">¥{{deliveryFee}}</text>
       </view>
     </view>
 
@@ -132,7 +132,7 @@
       </view>
       <view class="co-total-row">
         <text class="co-total-label">运费</text>
-        <text class="co-total-val">¥10</text>
+        <text class="co-total-val">¥{{deliveryFee}}</text>
       </view>
     </view>
     <view class="co-pay-btn" bindtap="onPay">

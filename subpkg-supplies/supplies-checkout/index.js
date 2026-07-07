@@ -2,13 +2,16 @@
 const app = getApp()
 const layout = require('../../utils/layout')
 
+const DELIVERY_FEE = 0
+
 Page({
   data: {
     statusBarHeight: 20,
     capsuleSafeRight: 0,
     cartItems: [],
     cartTotal: '0',
-    totalWithFee: '10',
+    deliveryFee: DELIVERY_FEE,
+    totalWithFee: '0',
     submitting: false,
     editingAddr: false,
     receiverName: '',
@@ -27,8 +30,9 @@ Page({
       statusBarHeight: info.statusBarHeight || 20,
       capsuleSafeRight: layout.getCapsuleSafeRight(),
       cartItems: cart,
-      cartTotal: cartTotal.toFixed(0),
-      totalWithFee: (cartTotal + 10).toFixed(0),
+      cartTotal: cartTotal.toFixed(2),
+      deliveryFee: DELIVERY_FEE,
+      totalWithFee: (cartTotal + DELIVERY_FEE).toFixed(2),
       receiverName:  saved.receiverName  || '',
       receiverPhone: saved.receiverPhone || '',
       address:       saved.address       || '',
@@ -95,7 +99,7 @@ Page({
     const createdOrders = []
     for (const group of groups) {
       const subtotal = group.items.reduce((s, c) => s + c.price * c.qty, 0)
-      const deliveryFee = 10
+      const deliveryFee = DELIVERY_FEE
       const total = subtotal + deliveryFee
       const orderItems = group.items.map(ci => ({
         id: ci.id, name: ci.name, spec: ci.spec,
@@ -125,6 +129,9 @@ Page({
         if (res.code === 200) {
           orderObj.orderId = res.data.orderId
           orderObj.orderNo = res.data.orderNo
+          orderObj.subtotal = res.data.subtotal !== undefined ? res.data.subtotal : orderObj.subtotal
+          orderObj.deliveryFee = res.data.deliveryFee !== undefined ? res.data.deliveryFee : orderObj.deliveryFee
+          orderObj.total = res.data.total !== undefined ? res.data.total : orderObj.total
         } else {
           this.setData({ submitting: false })
           wx.showModal({ title: '下单失败', content: res.msg || '提交订单失败，请重试', showCancel: false })

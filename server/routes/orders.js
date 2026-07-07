@@ -7,6 +7,12 @@ const router   = express.Router()
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
+const DELIVERY_FEE = 0
+
+function parseMoney(value, fallback = 0) {
+  const number = Number.parseFloat(value)
+  return Number.isFinite(number) ? number : fallback
+}
 
 // 农户鉴权中间件（严格版：必须登录）
 function farmerAuth(req, res, next) {
@@ -92,6 +98,10 @@ router.post('/', optionalAuth, async (req, res) => {
       farmerPhone = user?.phone     || receiverPhone || ''
     }
 
+    const orderSubtotal = parseMoney(subtotal)
+    const orderDeliveryFee = DELIVERY_FEE
+    const orderTotal = Number((orderSubtotal + orderDeliveryFee).toFixed(2))
+
     const orderNo = await genOrderNo()
     const [r] = await conn.query(
       `INSERT INTO orders (order_no, user_id, farmer_name, farmer_phone,
@@ -103,9 +113,9 @@ router.post('/', optionalAuth, async (req, res) => {
         farmerName, farmerPhone,
         receiverName, receiverPhone || '',
         address,
-        parseFloat(subtotal) || 0,
-        parseFloat(deliveryFee) || 10,
-        parseFloat(total) || 0,
+        orderSubtotal,
+        orderDeliveryFee,
+        orderTotal,
         payMethod || 'wechat'
       ]
     )
@@ -132,7 +142,13 @@ router.post('/', optionalAuth, async (req, res) => {
 
     await conn.commit()
     conn.release()
-    return ok(res, { orderId, orderNo }, '订单提交成功，请在30分钟内完成支付')
+    return ok(res, {
+      orderId,
+      orderNo,
+      subtotal: orderSubtotal,
+      deliveryFee: orderDeliveryFee,
+      total: orderTotal
+    }, '订单提交成功，请在30分钟内完成支付')
   } catch (e) {
     await conn.rollback()
     conn.release()

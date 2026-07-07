@@ -47,7 +47,7 @@
         <text class="dlv-label">送至</text>
         <text class="dlv-addr">新疆喀什地区疏附县</text>
         <view class="dlv-right">
-          <text class="dlv-way">快递 ¥10</text>
+          <text class="dlv-way">快递 ¥0</text>
           <text class="dlv-arrow">›</text>
         </view>
       </view>

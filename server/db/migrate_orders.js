@@ -14,7 +14,7 @@ async function run() {
       receiver_phone VARCHAR(20) NOT NULL DEFAULT ''    COMMENT '收货人电话',
       address       VARCHAR(256) NOT NULL DEFAULT ''    COMMENT '收货地址',
       subtotal      DECIMAL(10,2) NOT NULL DEFAULT 0    COMMENT '商品合计',
-      delivery_fee  DECIMAL(10,2) NOT NULL DEFAULT 10   COMMENT '运费',
+      delivery_fee  DECIMAL(10,2) NOT NULL DEFAULT 0    COMMENT '运费',
       total         DECIMAL(10,2) NOT NULL DEFAULT 0    COMMENT '实付金额',
       pay_method    VARCHAR(20)  NOT NULL DEFAULT 'wechat' COMMENT '支付方式',
       status        VARCHAR(20)  NOT NULL DEFAULT 'pending_ship' COMMENT '状态',
@@ -28,6 +28,12 @@ async function run() {
     ) ENGINE=InnoDB COMMENT='订单主表'
   `)
   console.log('✅ orders 表已创建')
+
+  await db.query(`
+    ALTER TABLE orders
+    MODIFY delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '运费'
+  `)
+  console.log('✅ orders.delivery_fee 默认值已设为 0')
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS order_items (
