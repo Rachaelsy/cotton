@@ -25,6 +25,8 @@ Page({
     common: i18n.getPageCopy('common'),
     copy: i18n.getPageCopy('weatherPage'),
     loadError: '',
+    weatherDataError: '',
+    hasWeatherData: false,
     apiNotice: '',
     fields: [],
     fieldCount: 0,
@@ -94,7 +96,7 @@ Page({
   },
 
   async loadWeatherPage() {
-    this.setData({ loading: true, loadError: '', apiNotice: '' })
+    this.setData({ loading: true, loadError: '', weatherDataError: '', apiNotice: '' })
     try {
       const plots = await this.loadPlots()
       const selectedIndex = this.resolveSelectedIndex(plots)
@@ -144,6 +146,47 @@ Page({
     return area > 0 ? `${name} · ${formatArea(area)}${this.data.common.mu}` : name
   },
 
+  buildWeatherUnavailableModel(plot, selectedIndex, fieldCount, reason) {
+    const selectedFieldLabel = this.formatFieldLabel(plot)
+    const empty = this.textCopy.weatherDataEmpty
+    const desc = reason || this.textCopy.weatherDataEmptyDesc
+    return {
+      selectedFieldLabel,
+      fieldCount,
+      selectedIndex,
+      sourceInfo: {
+        type: 'unavailable',
+        label: empty,
+        desc
+      },
+      locationLabel: plot && plot.name ? plot.name : this.textCopy.currentField,
+      regionLabel: this.textCopy.currentField,
+      weather: {
+        temp: '--',
+        desc: empty,
+        icon: '⚠️',
+        high: '--',
+        low: '--',
+        wind: '--',
+        windLevel: '--',
+        humidity: '--',
+        groundTemp: '--',
+        groundTempLabel: this.textCopy.groundTemp,
+        rain: '--',
+        uv: '--',
+        pressure: '--',
+        visibility: '--',
+        visibilityText: '--'
+      },
+      hourly: [],
+      forecast: [],
+      advices: [],
+      alert: null,
+      summary: desc,
+      tipText: this.textCopy.weatherDataEmptyDesc
+    }
+  },
+
   resolveSelectedIndex(plots) {
     if (!Array.isArray(plots) || !plots.length) return 0
 
@@ -164,12 +207,24 @@ Page({
     const safeIndex = Math.max(0, Math.min(index, Math.max(plots.length - 1, 0)))
     const plot = plots[safeIndex]
     if (!plot) throw new Error(this.textCopy.noPlotNotice)
-    const result = await this.loadWeatherModel(plot, safeIndex, plots.length)
+    let weatherDataError = ''
+    let result
+    try {
+      result = await this.loadWeatherModel(plot, safeIndex, plots.length)
+    } catch (error) {
+      weatherDataError = error.message || this.textCopy.loadError
+      result = {
+        model: this.buildWeatherUnavailableModel(plot, safeIndex, plots.length, weatherDataError),
+        apiNotice: ''
+      }
+    }
     const weatherModel = result.model || result
 
     this.setData({
       loading: false,
       loadError: '',
+      weatherDataError,
+      hasWeatherData: !weatherDataError,
       apiNotice: result.apiNotice || '',
       fields: plots.map((item, itemIndex) => ({
         id: item.id,
@@ -223,7 +278,7 @@ Page({
   onSelField(e) {
     const index = Number(e.currentTarget.dataset.index)
     if (!Number.isInteger(index)) return
-    this.setData({ loading: true, loadError: '', apiNotice: '' })
+    this.setData({ loading: true, loadError: '', weatherDataError: '', apiNotice: '' })
     this.applySelectedPlot(index).catch(error => {
       this.setData({
         loading: false,

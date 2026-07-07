@@ -180,7 +180,7 @@ Page({
       selectedIndex: plots.findIndex(plot => Number(plot.id) === Number(targetPlot.id))
     })
     return {
-      locationLabel: model.locationLabel,
+      locationLabel: this._homeWeatherLocation(model, targetPlot),
       weather: {
         temp: model.weather.temp,
         desc: model.weather.desc,
@@ -189,8 +189,50 @@ Page({
         low: model.weather.low,
         wind: model.weather.wind
       },
-      tipText: model.tipText
+      tipText: this._homeWeatherTip(model)
     }
+  },
+
+  _homeWeatherLocation(model, plot) {
+    if (model && model.selectedFieldLabel) return model.selectedFieldLabel
+    if (plot && plot.name) return plot.name
+    return this.data.copy.allFields
+  },
+
+  _homeWeatherTip(model) {
+    const weather = (model && model.weather) || {}
+    if (model && model.alert && (model.alert.summary || model.alert.sub)) {
+      return model.alert.summary || model.alert.sub
+    }
+
+    const high = Number(weather.high)
+    const rain = Number(weather.rain || 0)
+    const windLevel = Number(weather.windLevel || 0)
+    let key = 'stable'
+
+    if (windLevel >= 5) {
+      key = 'wind'
+    } else if (rain > 0) {
+      key = 'rain'
+    } else if (Number.isFinite(high) && high >= 32) {
+      key = 'hot'
+    }
+
+    const tips = {
+      zh: {
+        stable: '天气平稳，适合巡田和滴灌。',
+        wind: '风力偏大，喷药和无人机先缓一缓。',
+        rain: '有降水影响，喷药施肥尽量提前。',
+        hot: '午后高温，注意滴灌保墒。'
+      },
+      ug: {
+        stable: 'ھاۋارايى مۇقىم، ئېتىز ئايلىنىش ۋە تامچە سۇغىرىشقا ماس.',
+        wind: 'شامال كۈچلۈك، دورا پۈركۈش ۋە ئۇچقۇچىسىز ئۈسكۈنىنى كېچىكتۈرۈڭ.',
+        rain: 'يامغۇر تەسىرى بار، دورا ۋە ئوغۇتلاشنى ئالدىن قىلىڭ.',
+        hot: 'چۈشتىن كېيىن ئىسسىق، تامچە سۇغىرىپ نەملىك ساقلاڭ.'
+      }
+    }
+    return (tips[this.data.lang] || tips.zh)[key]
   },
 
   _buildWeatherUnavailable(reason, lang = this.data.lang) {

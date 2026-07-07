@@ -214,6 +214,10 @@
     .pay-form-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; color: #1F2937; }
     .pay-help { font-size: 12px; color: #8A5A16; background: #FFF8E6; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; line-height: 1.5; }
     .pay-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+    .media-field { display: flex; gap: 8px; align-items: stretch; }
+    .media-field input { flex: 1; min-width: 0; }
+    .media-upload-btn { border: 1.5px solid #16A34A; background: #ECFDF5; color: #047857; border-radius: 9px; padding: 0 12px; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .media-upload-btn:hover { background: #D1FAE5; }
 
     /* ── 提现卡 ── */
     .withdraw-card { background: linear-gradient(135deg, #1a3c2e, #2d6a4f); border-radius: 14px; padding: 24px; color: #fff; margin-bottom: 20px; }
@@ -507,10 +511,10 @@
 
           <div class="pay-form-section">
             <div class="pay-form-title">主体证照</div>
-            <div class="pay-help">营业执照、身份证、经营截图等图片字段需要填写微信支付素材上传接口返回的 media_id。可以先保存草稿，等拿到 media_id 后再提交审核。</div>
+            <div class="pay-help">营业执照、身份证、经营截图等图片可以直接上传，系统会自动回填微信支付返回的 media_id。</div>
             <div class="form-row">
               <div class="form-field"><label>主体类型</label><select id="m-pay-subject_type"><option value="SUBJECT_TYPE_INDIVIDUAL">个体工商户</option><option value="SUBJECT_TYPE_ENTERPRISE">企业</option><option value="SUBJECT_TYPE_MICRO">小微商户</option></select></div>
-              <div class="form-field"><label>营业执照 media_id</label><input id="m-pay-license_copy" placeholder="license_copy"></div>
+              <div class="form-field"><label>营业执照图片</label><div class="media-field"><input id="m-pay-license_copy" placeholder="上传后自动填写 media_id"><button class="media-upload-btn" onclick="uploadApplymentMedia('license_copy')">上传图片</button></div></div>
             </div>
             <div class="form-row">
               <div class="form-field"><label>营业执照编号</label><input id="m-pay-license_number"></div>
@@ -522,10 +526,10 @@
             </div>
             <div class="form-row">
               <div class="form-field"><label>身份证号码 <span class="req">*</span></label><input id="m-pay-id_card_number"></div>
-              <div class="form-field"><label>身份证人像面 media_id <span class="req">*</span></label><input id="m-pay-id_card_copy" placeholder="id_card_copy"></div>
+              <div class="form-field"><label>身份证人像面 <span class="req">*</span></label><div class="media-field"><input id="m-pay-id_card_copy" placeholder="上传后自动填写 media_id"><button class="media-upload-btn" onclick="uploadApplymentMedia('id_card_copy')">上传图片</button></div></div>
             </div>
             <div class="form-row">
-              <div class="form-field"><label>身份证国徽面 media_id <span class="req">*</span></label><input id="m-pay-id_card_national" placeholder="id_card_national"></div>
+              <div class="form-field"><label>身份证国徽面 <span class="req">*</span></label><div class="media-field"><input id="m-pay-id_card_national" placeholder="上传后自动填写 media_id"><button class="media-upload-btn" onclick="uploadApplymentMedia('id_card_national')">上传图片</button></div></div>
               <div class="form-field"><label>证件开始日期 <span class="req">*</span></label><input id="m-pay-card_period_begin" placeholder="YYYY-MM-DD"></div>
             </div>
             <div class="form-row">
@@ -541,7 +545,7 @@
             </div>
             <div class="form-row">
               <div class="form-field"><label>小程序 AppID <span class="req">*</span></label><input id="m-pay-mini_program_appid"></div>
-              <div class="form-field"><label>经营页面截图 media_id <span class="req">*</span></label><input id="m-pay-mini_program_pic" placeholder="mini_program_pics[0]"></div>
+              <div class="form-field"><label>经营页面截图 <span class="req">*</span></label><div class="media-field"><input id="m-pay-mini_program_pic" placeholder="上传后自动填写 media_id"><button class="media-upload-btn" onclick="uploadApplymentMedia('mini_program_pic')">上传图片</button></div></div>
             </div>
           </div>
 
@@ -814,6 +818,41 @@ async function applymentApi(method, path, body) {
     console.error('[applyment api error]', method, path, e)
     throw e
   }
+}
+
+function uploadApplymentMedia(field) {
+  const picker = document.createElement('input')
+  picker.type = 'file'
+  picker.accept = 'image/png,image/jpeg,image/bmp'
+  picker.onchange = async () => {
+    const file = picker.files && picker.files[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { alert('图片不能超过 5MB'); return }
+    const fd = new FormData()
+    fd.append('file', file)
+    const target = document.getElementById('m-pay-' + field)
+    const oldPlaceholder = target ? target.placeholder : ''
+    if (target) target.placeholder = '正在上传...'
+    try {
+      const r = await fetch('/api/wechat-applyment/media', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd
+      })
+      const text = await r.text()
+      let data
+      try { data = JSON.parse(text) } catch { throw new Error('服务器返回格式错误: ' + text.slice(0, 100)) }
+      if (data.code === 401) { logout(); return }
+      if (data.code !== 200 || !data.data || !data.data.media_id) throw new Error(data.msg || '上传失败')
+      setPayVal(field, data.data.media_id)
+      alert('上传成功，media_id 已自动填写')
+    } catch (error) {
+      alert(error.message || '上传失败')
+    } finally {
+      if (target) target.placeholder = oldPlaceholder
+    }
+  }
+  picker.click()
 }
 
 function logout() {
@@ -1447,8 +1486,8 @@ function validateMerchantApplyment(strict) {
   const required = [
     ['contact_name', '联系人姓名'],
     ['contact_mobile', '联系人手机'],
-    ['id_card_copy', '身份证人像面 media_id'],
-    ['id_card_national', '身份证国徽面 media_id'],
+    ['id_card_copy', '身份证人像面图片'],
+    ['id_card_national', '身份证国徽面图片'],
     ['id_card_name', '身份证姓名'],
     ['id_card_number', '身份证号码'],
     ['card_period_begin', '证件开始日期'],
@@ -1456,14 +1495,14 @@ function validateMerchantApplyment(strict) {
     ['merchant_shortname', '商户简称'],
     ['service_phone', '客服电话'],
     ['mini_program_appid', '小程序 AppID'],
-    ['mini_program_pic', '经营页面截图 media_id'],
+    ['mini_program_pic', '经营页面截图'],
     ['settlement_id', '结算规则 ID'],
     ['account_bank', '开户银行'],
     ['account_name', '开户人姓名'],
     ['account_number', '银行卡号']
   ]
   if (payVal('subject_type') !== 'SUBJECT_TYPE_MICRO') {
-    required.push(['license_copy', '营业执照 media_id'], ['license_number', '营业执照编号'], ['merchant_name', '营业执照主体名称'], ['legal_person', '经营者/法人姓名'])
+    required.push(['license_copy', '营业执照图片'], ['license_number', '营业执照编号'], ['merchant_name', '营业执照主体名称'], ['legal_person', '经营者/法人姓名'])
   }
   for (const item of required) {
     if (!payVal(item[0])) { alert('请填写' + item[1]); return false }

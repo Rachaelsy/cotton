@@ -38,6 +38,36 @@
       <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onClear"><text class="tool-title">{{copy.clear}}</text><text class="tool-sub">{{copy.allPoints}}</text></view>
     </view>
 
+    <view wx:if="{{!showCoordPanel}}" class="walk-track-card {{trackingBoundary ? 'walk-track-active' : ''}}">
+      <view class="walk-track-head">
+        <view class="walk-track-title-wrap">
+          <text class="walk-track-title">{{copy.walkBoundary}}</text>
+          <text class="walk-track-sub">{{trackingBoundary ? copy.walkBoundaryActiveSub : copy.walkBoundarySub}}</text>
+        </view>
+        <view wx:if="{{!trackingBoundary}}" class="walk-track-action" bindtap="onStartBoundaryTrack">
+          <text>{{copy.startWalkTrack}}</text>
+        </view>
+        <view wx:else class="walk-track-action walk-track-stop" bindtap="onStopBoundaryTrack">
+          <text>{{copy.stopWalkTrack}}</text>
+        </view>
+      </view>
+      <view class="walk-track-metrics">
+        <view class="walk-track-metric">
+          <text class="walk-track-value">{{trackPointCount}}</text>
+          <text class="walk-track-label">{{copy.trackPoint}}</text>
+        </view>
+        <view class="walk-track-metric">
+          <text class="walk-track-value">{{trackDistance}}m</text>
+          <text class="walk-track-label">{{copy.trackDistanceLabel}}</text>
+        </view>
+        <view class="walk-track-metric">
+          <text class="walk-track-value">{{trackAccuracyText}}</text>
+          <text class="walk-track-label">{{copy.trackAccuracy}}</text>
+        </view>
+      </view>
+      <text wx:if="{{trackingBoundary || trackStatusText}}" class="walk-track-status">{{trackStatusText || copy.trackKeepScreenOn}}</text>
+    </view>
+
     <view wx:if="{{showCoordPanel}}" class="coord-panel">
       <view class="coord-head">
         <view>
@@ -100,6 +130,34 @@
         <view class="summary-body">
           <text class="summary-title">{{copy.summaryTitle}}</text>
           <text class="summary-desc">{{summaryText}}</text>
+        </view>
+      </view>
+
+      <view class="reference-images-card">
+        <view class="reference-head">
+          <view class="reference-title-wrap">
+            <text class="reference-title">{{copy.referenceImages}}</text>
+            <text class="reference-sub">{{copy.referenceImagesSub}}</text>
+          </view>
+          <view class="reference-add {{uploadingImages ? 'reference-add-disabled' : ''}}" bindtap="onChoosePlotImages">
+            <text>{{uploadingImages ? copy.uploadingImage : copy.addReferenceImage}}</text>
+          </view>
+        </view>
+        <view wx:if="{{referenceImageItems.length}}" class="reference-grid">
+          <view
+            class="reference-item"
+            wx:for="{{referenceImageItems}}"
+            wx:key="url"
+            data-url="{{item.displayUrl}}"
+            bindtap="onPreviewPlotImage"
+          >
+            <image class="reference-img" src="{{item.displayUrl}}" mode="aspectFill"></image>
+            <view class="reference-remove" data-index="{{index}}" catchtap="onRemovePlotImage"><text>×</text></view>
+          </view>
+        </view>
+        <view wx:else class="reference-empty" bindtap="onChoosePlotImages">
+          <text class="reference-empty-main">{{copy.referenceImageEmpty}}</text>
+          <text class="reference-empty-sub">{{copy.referenceImageTip}}</text>
         </view>
       </view>
 

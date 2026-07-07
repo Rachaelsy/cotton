@@ -1,5 +1,6 @@
 // server/scheduler.js — 定时任务：自动确认收货 + 售后冻结期解冻
 const db = require('./db/database')
+const profitSharing = require('./utils/profit-sharing')
 
 // 发货后 10 天无操作 → 系统自动确认收货，资金进入冻结期
 async function autoConfirmReceipt() {
@@ -28,6 +29,11 @@ async function autoConfirmReceipt() {
 // 确认收货 7 天后，且无未拒绝的售后申请 → 资金解冻为可提现
 async function releaseFunds() {
   try {
+    const sharing = await profitSharing.releaseEligibleSupplyProfitSharing()
+    if (sharing.total) {
+      console.log(`[scheduler] profit sharing release: ${sharing.success}/${sharing.total}`)
+    }
+
     const [rows] = await db.query(`
       SELECT o.id FROM orders o
       WHERE o.fund_status = 'frozen'
@@ -36,6 +42,12 @@ async function releaseFunds() {
         AND NOT EXISTS (
           SELECT 1 FROM aftersale_requests a
           WHERE a.order_id = o.id AND a.status != 'rejected'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM wechat_profit_sharing_orders ps
+          WHERE ps.order_type='supply'
+            AND ps.order_id=o.id
+            AND ps.state IN ('PENDING', 'FAILED', 'PROCESSING')
         )
     `)
     if (!rows.length) return

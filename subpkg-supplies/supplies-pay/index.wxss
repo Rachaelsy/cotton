@@ -4,13 +4,13 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 导航 ===== */
 .nav {
   background: #ffffff;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(33,61,42,0.05);
   flex-shrink: 0;
 }
 
@@ -24,7 +24,7 @@
 .nav-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 /* ===== 倒计时条 ===== */
@@ -67,10 +67,10 @@
 /* ===== 订单卡片 ===== */
 .order-card {
   background: #ffffff;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   padding: 24rpx;
   margin-bottom: 16rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.06);
+  box-shadow: 0 4rpx 16rpx rgba(33,61,42,0.05);
 }
 
 .card-store-row {
@@ -86,7 +86,7 @@
 .store-name {
   font-size: 26rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .card-item-row {
@@ -119,10 +119,10 @@
 .item-name {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
-.item-more { font-size: 22rpx; color: #C8902E; }
+.item-more { font-size: 22rpx; color: #B9852F; }
 
 .item-total {
   font-size: 30rpx;
@@ -137,34 +137,34 @@
   align-items: center;
   justify-content: space-between;
   padding-top: 16rpx;
-  border-top: 1rpx solid #F5EEE6;
+  border-top: 1rpx solid #F6F8F3;
 }
 
 .card-no-label {
   font-size: 22rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
 }
 
 .card-no-val {
   font-size: 22rpx;
-  color: #555555;
+  color: #58655B;
 }
 
 /* ===== 合计卡片 ===== */
 .total-card {
   background: #ffffff;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   padding: 28rpx 32rpx;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.06);
+  box-shadow: 0 4rpx 16rpx rgba(33,61,42,0.05);
 }
 
 .total-label {
   font-size: 28rpx;
-  color: #555555;
+  color: #58655B;
   font-weight: 600;
 }
 
@@ -177,7 +177,7 @@
 /* ===== 底部操作栏 ===== */
 .bottom-bar {
   background: #ffffff;
-  border-top: 1rpx solid #F2EBE0;
+  border-top: 1rpx solid #EAF0E6;
   padding: 20rpx 28rpx;
   padding-bottom: env(safe-area-inset-bottom);
   display: flex;
@@ -197,12 +197,12 @@
 
 .cancel-text {
   font-size: 28rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .pay-btn {
   flex: 1;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 999rpx;
   padding: 28rpx;
   display: flex;

@@ -31,7 +31,7 @@ cd F:\cotton\server
 npm install
 # 复制并编辑环境变量
 copy .env.example .env
-# 修改 .env 中的 DB_HOST / DB_USER / DB_PASS / JWT_SECRET / WX_APPID / WX_SECRET
+# 修改 .env 中的 DB_HOST / DB_USER / DB_PASS / JWT_SECRET / WX_APPID / WX_SECRET / QWEATHER_*
 
 # 建表（首次）
 node db/migrate_products.js           # 创建 products 表并插入测试商品
@@ -55,6 +55,7 @@ node db/migrate_machines.js           # 农机租赁建表（operators/machines/
 node db/migrate_order_delete.js       # 订单按角色软删除字段（farmer/merchant/operator_deleted）
 node db/migrate_delivery_range.js     # 可配送范围（machines.service_radius、merchants 定位+delivery_radius）
 node db/migrate_wechat_service_provider.js # 微信支付服务商字段（sub_mchid、进件状态、素材表）
+node db/migrate_profit_sharing.js     # 微信支付分账记录表
 node db/seed.js                       # 插入测试用户账号
 node db/seed_machines.js              # 农机演示数据（机主 13800000003 + 4 台机具）
 
@@ -92,11 +93,88 @@ JWT_EXPIRES=7d
 
 WX_APPID=自己的微信小程序 AppID
 WX_SECRET=自己的微信小程序 AppSecret
+
+# 地块气象：和风天气 QWeather
+WEATHER_PROVIDER=qweather
+QWEATHER_API_HOST=你的和风 API Host
+QWEATHER_JWT_KID=和风 JWT 凭据ID
+QWEATHER_JWT_SUB=和风项目ID
+QWEATHER_JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+QWEATHER_TIMEOUT_MS=8000
 ```
 
 `WX_APPID` 和 `WX_SECRET` 用于后端调用微信登录接口，将 `wx.login()` 得到的临时 `code` 换成用户 `openid`。没有这两个配置，微信登录和后续 JSAPI 支付都不能完整工作。
 
-微信支付服务商相关字段（如 `WECHAT_PAY_SP_MCH_ID`、`WECHAT_PAY_API_V3_KEY`、证书路径等）等公司通过微信支付服务商审核后再填写。暂时不填时，普通后端功能可以运行；发起真实微信支付时会返回未配置提示，不会走模拟支付。
+地块气象默认使用和风天气 QWeather 格点天气接口。和风控制台里的 `API Host` 必须填到 `QWEATHER_API_HOST`；生产环境使用 `QWEATHER_JWT_*`，不要同时配置 `QWEATHER_API_KEY`。注意：`ed25519-public.pem` 是上传到和风控制台的公钥，服务器签名要用 `ed25519-private.pem`，不要把私钥提交到 GitHub。
+
+### 和风天气 QWeather JWT 配置
+
+后端天气接口 `/api/weather/plot/:id` 会根据地块边界计算中心点经纬度，然后请求和风格点天气接口：
+
+- `/v7/grid-weather/now`：格点实时天气
+- `/v7/grid-weather/24h`：格点逐小时预报
+- `/v7/grid-weather/7d`：格点 7 日预报
+
+配置步骤：
+
+1. 登录和风天气控制台，进入当前项目。
+2. 在控制台「设置」中复制自己的 `API Host`，填到 `QWEATHER_API_HOST`。不要使用旧公共域名。
+3. 在项目凭据里新增 `JSON Web Token` 凭据。
+4. 生成 Ed25519 密钥对：
+
+```bash
+openssl genpkey -algorithm ED25519 -out ed25519-private.pem
+openssl pkey -pubout -in ed25519-private.pem > ed25519-public.pem
+```
+
+5. 将 `ed25519-public.pem` 的完整内容上传到和风控制台。保存后，控制台会显示凭据 ID。
+6. 将凭据 ID 填到 `QWEATHER_JWT_KID`，将项目 ID 填到 `QWEATHER_JWT_SUB`。
+7. 将 `ed25519-private.pem` 的内容写入 `QWEATHER_JWT_PRIVATE_KEY`，整段放一行，换行用 `\n`。
+
+Windows PowerShell 可以用下面命令把私钥转成可粘贴的一行：
+
+```powershell
+(Get-Content "C:\path\to\ed25519-private.pem" -Raw).Trim() -replace "\r?\n", "\n"
+```
+
+最终配置示例：
+
+```env
+WEATHER_PROVIDER=qweather
+QWEATHER_API_HOST=abc1234xyz.def.qweatherapi.com
+QWEATHER_JWT_KID=你的凭据ID
+QWEATHER_JWT_SUB=你的项目ID
+QWEATHER_JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n这里是私钥内容\n-----END PRIVATE KEY-----"
+QWEATHER_TIMEOUT_MS=8000
+```
+
+如果是本地直接运行后端，填写 `server/.env`；如果是 Docker Compose 部署，还要填写根目录 `.env`，因为 `docker-compose.yml` 会从根目录 `.env` 注入容器环境变量。
+
+配置后可在 `server/` 目录运行下面命令验证，不会打印私钥或完整 token：
+
+```bash
+node -e "require('dotenv').config(); const { createQweatherJwt } = require('./utils/qweather'); console.log(createQweatherJwt().split('.').length === 3 ? 'JWT OK' : 'JWT FAIL')"
+```
+
+真实接口连通性可以用：
+
+```bash
+node -e "require('dotenv').config(); const { fetchQweatherWeather } = require('./utils/qweather'); fetchQweatherWeather({latitude:39.47, longitude:75.99}).then(w=>console.log(w.provider, w.current.weather_text, w.hourly.time.length, w.daily.time.length)).catch(e=>{console.error(e.message); process.exit(1)})"
+```
+
+常见错误：
+
+- `和风天气 API Host 未配置`：没有填写 `QWEATHER_API_HOST`，或 Docker 容器没有注入该变量。
+- `和风天气JWT认证未配置完整`：`QWEATHER_JWT_KID`、`QWEATHER_JWT_SUB`、`QWEATHER_JWT_PRIVATE_KEY` 缺任意一项。
+- `和风天气JWT签名失败`：误填了 `ed25519-public.pem`，或私钥换行格式不对。后端必须使用 private key。
+- `403 Security Restriction`：和风凭据设置了 API/IP/域名等安全限制，当前机器或云服务器出口 IP 没有被允许。
+- `401 Unauthorized`：凭据 ID、项目 ID、私钥和上传的公钥不是同一组，或服务器时间偏差较大。
+
+微信支付服务商相关字段（如 `WECHAT_PAY_SP_MCH_ID`、`WECHAT_PAY_API_V3_KEY`、`WECHAT_PAY_PUBLIC_KEY_ID`、API 私钥路径等）等公司通过微信支付服务商审核后再填写。Docker Compose 会通过 `env_file: ./server/.env` 注入微信支付配置，所以这些字段要填在 `server/.env`。新服务商优先使用微信支付公钥模式：在服务商平台 `账户中心 -> 账户设置 -> API安全 -> 管理公钥` 下载公钥，填写 `WECHAT_PAY_PUBLIC_KEY_ID` 和 `WECHAT_PAY_PUBLIC_KEY_PATH`。旧平台证书字段仅作兼容保留。暂时不填时，普通后端功能可以运行；发起真实微信支付时会返回未配置提示，不会走模拟支付。
+
+特约商户/农机手微信支付进件资料模板见 [docs/wechat-pay-applyment.md](docs/wechat-pay-applyment.md)。商户和农机手都可通过 `/api/wechat-applyment/*` 保存草稿、提交微信审核、同步状态；审核完成返回 `sub_mchid` 后才能发起真实收款。
+
+农资订单已接入微信支付服务商分账：下单时会按商户 `commission_rate` 标记为可分账订单；微信支付成功后记录待分账；确认收货并过 7 天售后冻结期后，由定时任务调用微信分账接口把平台服务费分到服务商商户号，并解冻剩余资金给特约商户。测试基础支付但暂未开通分账权限时，可在 `server/.env` 设置 `WECHAT_PAY_PROFIT_SHARING_ENABLED=false`，等微信支付分账产品和特约商户授权都开通后再改回 `true`。
 
 > 不要把真实 `server/.env` 提交到 GitHub。真实密钥只应保存在本地开发机、服务器环境变量或安全的密钥管理服务中。
 

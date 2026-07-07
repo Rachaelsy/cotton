@@ -37,6 +37,7 @@ echo "🗄️  运行数据库迁移..."
 node db/migrate_products.js           2>/dev/null || true
 node db/migrate_admin.js              2>/dev/null || true
 node db/migrate_merchant_approval.js  2>/dev/null || true
+node db/migrate_openid.js             2>/dev/null || true
 node db/migrate_product_image.js      2>/dev/null || true
 node db/migrate_orders.js             2>/dev/null || true
 node db/migrate_product_detail.js     2>/dev/null || true
@@ -54,6 +55,7 @@ node db/migrate_machines.js           2>/dev/null || true
 node db/migrate_order_delete.js       2>/dev/null || true
 node db/migrate_delivery_range.js     2>/dev/null || true
 node db/migrate_wechat_service_provider.js 2>/dev/null || true
+node db/migrate_profit_sharing.js     2>/dev/null || true
 node db/seed.js                       2>/dev/null || true
 node db/seed_machines.js              2>/dev/null || true
 echo "✅ 数据库初始化完成"

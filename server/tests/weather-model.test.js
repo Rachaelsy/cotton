@@ -154,6 +154,62 @@ function run() {
   )
 
   assert.deepStrictEqual(missingGenericHourly.hourly, [])
+
+  const qweatherModel = buildWeatherFromApi({
+    id: 13,
+    name: '和风测试地块',
+    area: 20,
+    coordinates: '[]'
+  }, {
+    provider: 'qweather',
+    source: 'abc1234xyz.qweatherapi.com',
+    model: 'QWeather Grid Weather',
+    current: {
+      time: '2026-07-07T10:00:00+08:00',
+      temperature_2m: 27,
+      relative_humidity_2m: 80,
+      precipitation: 0.1,
+      weather_code: 95,
+      weather_text: '雷阵雨',
+      wind_speed_10m: 9,
+      wind_direction_10m: 45,
+      surface_pressure: 862,
+      visibility: null,
+      soil_temperature_0cm: null,
+      apparent_temperature: null
+    },
+    hourly: {
+      time: ['2026-07-07T10:00:00+08:00', '2026-07-07T11:00:00+08:00'],
+      temperature_2m: [27, 28],
+      relative_humidity_2m: [80, 76],
+      precipitation: [0.1, 0.3],
+      weather_code: [95, 61],
+      wind_speed_10m: [9, 10],
+      wind_direction_10m: [45, 60],
+      surface_pressure: [862, 861]
+    },
+    daily: {
+      time: ['2026-07-07', '2026-07-08'],
+      weather_code: [95, 2],
+      temperature_2m_max: [31, 33],
+      temperature_2m_min: [22, 23],
+      precipitation_sum: [1.2, 0],
+      wind_speed_10m_max: [11, 13],
+      wind_direction_10m_dominant: [45, 80]
+    }
+  }, { today: new Date('2026-07-07T10:00:00+08:00') })
+
+  assert.strictEqual(qweatherModel.sourceInfo.label, '和风天气')
+  assert.strictEqual(qweatherModel.weather.desc, '雷阵雨')
+  assert.strictEqual(qweatherModel.weather.high, 31)
+  assert.strictEqual(qweatherModel.weather.low, 22)
+  assert.strictEqual(qweatherModel.weather.groundTemp, '--')
+  assert.strictEqual(qweatherModel.weather.uv, '--')
+  assert.strictEqual(qweatherModel.weather.visibilityText, '--')
+  assert.strictEqual(qweatherModel.hourly[0].rainChance, null)
+  assert.strictEqual(qweatherModel.hourly[0].rainText, '0.1mm')
+  assert(qweatherModel.sourceInfo.desc.includes('无本地估算'))
+
   assert.throws(
     () => buildWeatherFromApi({ id: 9, name: '测试地块', area: 20 }, null),
     /真实天气数据缺失/

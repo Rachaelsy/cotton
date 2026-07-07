@@ -1018,10 +1018,81 @@ function buildWeatherModelFromCma(plot, payload, options = {}) {
   }
 }
 
+function buildWeatherModelFromQweather(plot, payload, options = {}) {
+  const model = buildWeatherModelFromCurrent(
+    plot,
+    payload.current || {},
+    payload.daily || {},
+    payload.hourly || {},
+    options
+  )
+  const fieldName = plot && plot.name ? plot.name : '全部地块'
+  const today = options.today || new Date()
+
+  model.locationLabel = `和风格点天气 · ${fieldName}`
+  model.regionLabel = '和风格点天气'
+  model.sourceInfo = {
+    type: 'real',
+    label: '和风天气',
+    desc: '来自和风天气 QWeather 格点天气接口，按地块中心经纬度请求；无本地估算。'
+  }
+
+  if (payload.current && payload.current.weather_text) {
+    model.weather.desc = payload.current.weather_text
+  }
+
+  model.weather.groundTemp = '--'
+  model.weather.groundTempLabel = '地温'
+  model.weather.uv = '--'
+  model.weather.visibility = null
+  model.weather.visibilityText = '--'
+
+  const precipitation = payload.hourly && Array.isArray(payload.hourly.precipitation)
+    ? payload.hourly.precipitation
+    : []
+  const hourlyTimes = payload.hourly && Array.isArray(payload.hourly.time) ? payload.hourly.time : []
+  const currentTime = payload.current && payload.current.time ? new Date(payload.current.time).getTime() : Date.now()
+  let startIndex = hourlyTimes.findIndex(time => {
+    const value = new Date(time).getTime()
+    return Number.isFinite(value) && value >= currentTime - 30 * 60 * 1000
+  })
+  if (startIndex < 0) startIndex = 0
+
+  model.hourly = (model.hourly || [])
+    .filter((item, index) => index % 2 === 0)
+    .slice(0, 12)
+    .map((item, index) => {
+      const rain = finiteNumber(pickArrayValue(precipitation, startIndex + index * 2, null))
+      return {
+        ...item,
+        rainChance: null,
+        rainText: rain === null ? '--' : formatRainAmount(rain)
+      }
+    })
+
+  model.advices = stageAdvice(plot || {}, {
+    temp: model.weather.temp,
+    high: model.weather.high,
+    low: model.weather.low,
+    humidity: model.weather.humidity,
+    windLevel: model.weather.windLevel,
+    rain: model.weather.rain,
+    groundTemp: model.weather.temp,
+    uv: 0,
+    alert: model.alert,
+    today
+  })
+  model.summary = `当前天气 ${model.weather.desc}，温度 ${model.weather.temp}°C，数据来自和风天气格点接口。`
+  model.tipText = `天气按 ${fieldName} 的中心经纬度请求和风格点接口；缺失的地温、紫外线和能见度不做本地估算。`
+
+  return model
+}
+
 function buildWeatherFromApi(plot, payload, options = {}) {
   if (!payload) throw new Error('真实天气数据缺失')
   if (payload.provider === 'cma') return buildWeatherModelFromCma(plot, payload, options)
   if (payload.provider === 'open-meteo-cma') return buildWeatherModelFromOpenMeteoCma(plot, payload, options)
+  if (payload.provider === 'qweather') return buildWeatherModelFromQweather(plot, payload, options)
   const current = payload.current || payload.current_weather || {}
   const daily = payload.daily || {}
   const hourly = payload.hourly || {}
@@ -1035,5 +1106,6 @@ function localizeWeatherModel(model) {
 module.exports = {
   buildWeatherFromApi: (...args) => localizeWeatherModel(buildWeatherFromApi(...args)),
   buildWeatherModelFromCurrent,
-  buildWeatherModelFromCma
+  buildWeatherModelFromCma,
+  buildWeatherModelFromQweather
 }

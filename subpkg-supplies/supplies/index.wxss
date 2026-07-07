@@ -4,13 +4,13 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
   box-sizing: border-box;
 }
 
 /* ===== 头部 ===== */
 .sup-header {
-  background: linear-gradient(160deg, #E65100, #FF8F00);
+  background: linear-gradient(160deg, #BF641A, #FF8F00);
   flex-shrink: 0;
   padding-left: 28rpx;
   padding-right: 28rpx;
@@ -50,12 +50,12 @@
   right: -4rpx;
   min-width: 32rpx;
   height: 32rpx;
-  background: #F5222D;
+  background: #D6453D;
   border-radius: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3rpx solid #E65100;
+  border: 3rpx solid #BF641A;
   padding: 0 6rpx;
 }
 
@@ -89,7 +89,7 @@
 .search-input {
   flex: 1;
   font-size: 28rpx;
-  color: #1A1A1A;
+  color: #18231A;
   height: 56rpx;
   line-height: 56rpx;
 }
@@ -104,7 +104,7 @@
 
 .search-placeholder {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* ===== 滚动区 ===== */
@@ -133,7 +133,7 @@
 .cat-icon-wrap {
   width: 88rpx;
   height: 88rpx;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -143,12 +143,12 @@
 
 .cat-name {
   font-size: 22rpx;
-  color: #555555;
+  color: #58655B;
   font-weight: 600;
 }
 
 .cat-name-on {
-  color: #C8902E;
+  color: #B9852F;
 }
 
 /* ===== 横幅 ===== */
@@ -162,15 +162,15 @@
 
 .banner {
   flex: 1;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   padding: 24rpx 20rpx;
   display: flex;
   flex-direction: column;
   gap: 6rpx;
 }
 
-.banner-spring { background: linear-gradient(135deg, #81C784, #2E7D32); }
-.banner-cert   { background: linear-gradient(135deg, #FFD54F, #E65100); }
+.banner-spring { background: linear-gradient(135deg, #81C784, #2F7D4B); }
+.banner-cert   { background: linear-gradient(135deg, #FFD54F, #BF641A); }
 
 .banner-tag {
   font-size: 18rpx;
@@ -204,12 +204,12 @@
 .sec-title {
   font-size: 30rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .sec-more {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* ===== 商品网格 ===== */
@@ -224,9 +224,9 @@
 .prod-card {
   width: 337rpx;
   background: #ffffff;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   overflow: hidden;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  box-shadow: 0 4rpx 24rpx rgba(33, 61, 42, 0.06);
 }
 
 .prod-img {
@@ -257,7 +257,7 @@
 }
 
 .tag-new { background: #FF3B30; }
-.tag-hot { background: #FF6B00; }
+.tag-hot { background: #D97918; }
 .tag-out { top: auto; bottom: 16rpx; left: 16rpx; background: rgba(220,38,38,0.92); }
 
 .prod-body {
@@ -270,7 +270,7 @@
 .prod-name {
   font-size: 24rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -281,19 +281,19 @@
 
 .prod-store {
   font-size: 20rpx;
-  color: #C8902E;
+  color: #B9852F;
   margin-top: 4rpx;
   display: block;
 }
 
 .prod-spec {
   font-size: 20rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .prod-sold {
   font-size: 20rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }
 
 .prod-bottom {
@@ -319,13 +319,13 @@
 
 .prod-unit {
   font-size: 20rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .add-btn {
   width: 56rpx;
   height: 56rpx;
-  background: #C8902E;
+  background: #B9852F;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -352,7 +352,7 @@
 
 .empty-text {
   font-size: 28rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .list-bottom { height: 40rpx; }
@@ -382,20 +382,20 @@
   align-items: center;
   justify-content: space-between;
 }
-.cs-title { font-size: 32rpx; font-weight: 800; color: #1A1A1A; }
+.cs-title { font-size: 32rpx; font-weight: 800; color: #18231A; }
 .cs-close {
   width: 56rpx; height: 56rpx;
-  background: #F5EEE6;
+  background: #F6F8F3;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
 }
-.cs-close-icon { font-size: 28rpx; color: #888888; }
-.quality-item { display: flex; align-items: flex-start; padding: 16rpx 0; border-bottom: 1rpx solid #F5EEE6; }
+.cs-close-icon { font-size: 28rpx; color: #8A948B; }
+.quality-item { display: flex; align-items: flex-start; padding: 16rpx 0; border-bottom: 1rpx solid #F6F8F3; }
 .quality-icon { font-size: 40rpx; margin-right: 20rpx; margin-top: 4rpx; }
-.quality-title { display: block; font-size: 28rpx; font-weight: 600; color: #1A1A1A; margin-bottom: 6rpx; }
-.quality-desc  { display: block; font-size: 24rpx; color: #888; }
+.quality-title { display: block; font-size: 28rpx; font-weight: 600; color: #18231A; margin-bottom: 6rpx; }
+.quality-desc  { display: block; font-size: 24rpx; color: #8A948B; }
 .cs-copy-btn {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 999rpx;
   padding: 28rpx 0;
   display: flex; align-items: center; justify-content: center;

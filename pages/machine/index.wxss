@@ -4,13 +4,13 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
   box-sizing: border-box;
 }
 
 /* ===== 头部 ===== */
 .mach-header {
-  background: linear-gradient(160deg, #006064, #00ACC1);
+  background: linear-gradient(160deg, #1F6F63, #4AAFA7);
   flex-shrink: 0;
   padding-left: 28rpx;
   padding-right: 28rpx;
@@ -76,7 +76,7 @@
 }
 
 .filter-tab-on .filter-tab-text {
-  color: #006064;
+  color: #1F6F63;
 }
 
 /* ===== 滚动区 ===== */
@@ -95,21 +95,21 @@
 
 .machine-card {
   background: #ffffff;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   padding: 24rpx;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   gap: 20rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  box-shadow: 0 4rpx 24rpx rgba(33, 61, 42, 0.06);
 }
 
 /* 左侧图标 */
 .card-icon-wrap {
   width: 108rpx;
   height: 108rpx;
-  background: linear-gradient(135deg, #E0F7FA, #B2EBF2);
-  border-radius: 24rpx;
+  background: linear-gradient(135deg, #E9F6F2, #CFEAE3);
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,7 +140,7 @@
 .card-name {
   font-size: 28rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
   flex: 1;
   min-width: 0;
 }
@@ -166,17 +166,17 @@
 }
 
 .badge-green .badge-text {
-  color: #2E7D32;
+  color: #2F7D4B;
 }
 
 .badge-orange .badge-text {
-  color: #E65100;
+  color: #BF641A;
 }
 
 /* 机构 */
 .card-org {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* 参数行 */
@@ -188,7 +188,7 @@
 }
 
 .param-item {
-  background: #F5EEE6;
+  background: #F6F8F3;
   border-radius: 10rpx;
   padding: 6rpx 14rpx;
   display: flex;
@@ -199,13 +199,13 @@
 
 .param-label {
   font-size: 20rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .param-value {
   font-size: 20rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 /* 底部：价格 + 评分 + 按钮 */
@@ -228,22 +228,22 @@
 .price-main {
   font-size: 36rpx;
   font-weight: 900;
-  color: #006064;
+  color: #1F6F63;
 }
 
 .price-unit {
   font-size: 20rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .card-rating {
   font-size: 22rpx;
-  color: #555555;
+  color: #58655B;
   font-weight: 600;
 }
 
 .book-btn {
-  background: linear-gradient(135deg, #006064, #00ACC1);
+  background: linear-gradient(135deg, #1F6F63, #4AAFA7);
   border-radius: 999rpx;
   padding: 12rpx 28rpx;
 }
@@ -269,12 +269,12 @@
 
 .empty-text {
   font-size: 28rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .empty-sub {
   font-size: 24rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
 }
 
 .list-bottom {
@@ -329,8 +329,8 @@
 }
 .locate-icon { font-size: 24rpx; }
 .locate-text { flex: 1; min-width: 0; font-size: 24rpx; color: #fff; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.locate-tag { font-size: 18rpx; color: #006064; background: #fff; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 10rpx; font-weight: 700; }
-.locate-warn { font-size: 18rpx; color: #fff; background: #DC2626; border-radius: 6rpx; padding: 2rpx 12rpx; margin-left: 10rpx; font-weight: 700; }
+.locate-tag { font-size: 18rpx; color: #1F6F63; background: #fff; border-radius: 6rpx; padding: 2rpx 10rpx; margin-left: 10rpx; font-weight: 700; }
+.locate-warn { font-size: 18rpx; color: #fff; background: #C93D35; border-radius: 6rpx; padding: 2rpx 12rpx; margin-left: 10rpx; font-weight: 700; }
 .locate-action { flex-shrink: 0; text-align: right; font-size: 22rpx; color: #FFE082; font-weight: 700; }
 
 .gps-btn {
@@ -351,7 +351,7 @@
 
 .gps-btn-text {
   font-size: 22rpx;
-  color: #006064;
+  color: #1F6F63;
   font-weight: 800;
 }
 
@@ -369,8 +369,8 @@
   align-items: center;
   justify-content: center;
 }
-.sort-text { font-size: 26rpx; color: #888; font-weight: 600; }
-.sort-item-on .sort-text { color: #006064; font-weight: 800; }
+.sort-text { font-size: 26rpx; color: #8A948B; font-weight: 600; }
+.sort-item-on .sort-text { color: #1F6F63; font-weight: 800; }
 
 .card-org-row {
   display: flex;
@@ -378,14 +378,14 @@
   align-items: center;
   justify-content: space-between;
 }
-.card-dist { font-size: 22rpx; color: #00838F; font-weight: 700; }
-.card-dist-out { color: #DC2626; }
+.card-dist { font-size: 22rpx; color: #2B8377; font-weight: 700; }
+.card-dist-out { color: #C93D35; }
 
 .param-badge {
   background: #F0F7F7;
   border-radius: 8rpx;
   padding: 5rpx 14rpx;
   font-size: 20rpx;
-  color: #00838F;
+  color: #2B8377;
   font-weight: 600;
 }

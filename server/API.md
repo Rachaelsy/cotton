@@ -615,7 +615,8 @@
 ## 四、地块气象模块 `/api/weather`
 
 > 地块气象不再使用本地模拟数据，也不再把区域气象站作为地块天气主数据。
-> 后端会根据地块边界中心点经纬度请求 Open-Meteo CMA GRAPES 坐标预报，提供实时天气、7 日预报、逐小时预报、地温、紫外线和能见度。前端每 2 小时展示一条逐小时预报；灾害预警为基于地块中心坐标预报字段生成的模型风险提示，并明确标注来源；如果真实坐标预报失败，接口直接返回失败，不再使用本地估算或模拟数据。
+> 后端默认使用和风天气 QWeather 格点天气接口，根据地块边界中心点经纬度请求实时天气、7 日预报和逐小时预报。和风格点接口未返回的地温、紫外线、能见度会显示为不可用，不再本地估算；如果真实接口失败，接口直接返回失败。`WEATHER_PROVIDER=open-meteo-cma` 仅作为旧数据源备用。
+> 生产环境需要配置 `QWEATHER_API_HOST`，并在 `QWEATHER_API_KEY` 或 `QWEATHER_JWT_*` 中选择一种认证方式。
 > 该接口需要农户登录态，且地块必须存在边界坐标。
 
 ### 4.1 获取指定地块天气
@@ -640,9 +641,9 @@
       "longitude": 75.8602
     },
     "weather": {
-      "provider": "open-meteo-cma",
-      "source": "api.open-meteo.com/v1/cma",
-      "model": "CMA GFS GRAPES",
+      "provider": "qweather",
+      "source": "abc1234xyz.qweatherapi.com",
+      "model": "QWeather Grid Weather",
       "current": { ... },
       "hourly": { ... },
       "forecast": {

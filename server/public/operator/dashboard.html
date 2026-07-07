@@ -78,6 +78,10 @@
     .form-section:last-child { border-bottom: none; }
     .form-section-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; color: #1F2937; }
     .help-text { font-size: 12px; color: #8A5A16; background: #FFF8E6; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; line-height: 1.5; }
+    .media-field { display: flex; gap: 8px; align-items: stretch; }
+    .media-field input { flex: 1; min-width: 0; }
+    .media-upload-btn { border: 1.5px solid #00838F; background: #E0F2F1; color: #006064; border-radius: 8px; padding: 0 12px; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .media-upload-btn:hover { background: #B2EBF2; }
     @media (max-width: 900px) {
       .sidebar { position: static; width: 100%; }
       .main { margin-left: 0; }
@@ -239,10 +243,10 @@
 
             <div class="form-section">
               <div class="form-section-title">主体证照</div>
-              <div class="help-text">图片材料先填写微信支付素材接口返回的 media_id。没有 media_id 时可以先保存草稿，但不能提交审核。</div>
+              <div class="help-text">图片材料可以直接上传，系统会自动回填微信支付返回的 media_id。没有 media_id 时可以先保存草稿，但不能提交审核。</div>
               <div class="form-row">
                 <div class="form-group"><label>主体类型</label><select id="op-pay-subject_type"><option value="SUBJECT_TYPE_INDIVIDUAL">个体工商户</option><option value="SUBJECT_TYPE_ENTERPRISE">企业</option><option value="SUBJECT_TYPE_MICRO">小微商户</option></select></div>
-                <div class="form-group"><label>营业执照 media_id</label><input id="op-pay-license_copy"></div>
+                <div class="form-group"><label>营业执照图片</label><div class="media-field"><input id="op-pay-license_copy" placeholder="上传后自动填写 media_id"><button class="media-upload-btn" onclick="uploadApplymentMedia('license_copy')">上传图片</button></div></div>
               </div>
               <div class="form-row">
                 <div class="form-group"><label>营业执照编号</label><input id="op-pay-license_number"></div>
@@ -254,10 +258,10 @@
               </div>
               <div class="form-row">
                 <div class="form-group"><label>身份证号码 *</label><input id="op-pay-id_card_number"></div>
-                <div class="form-group"><label>身份证人像面 media_id *</label><input id="op-pay-id_card_copy"></div>
+                <div class="form-group"><label>身份证人像面 *</label><div class="media-field"><input id="op-pay-id_card_copy" placeholder="上传后自动填写 media_id"><button class="media-upload-btn" onclick="uploadApplymentMedia('id_card_copy')">上传图片</button></div></div>
               </div>
               <div class="form-row">
-                <div class="form-group"><label>身份证国徽面 media_id *</label><input id="op-pay-id_card_national"></div>
+                <div class="form-group"><label>身份证国徽面 *</label><div class="media-field"><input id="op-pay-id_card_national" placeholder="上传后自动填写 media_id"><button class="media-upload-btn" onclick="uploadApplymentMedia('id_card_national')">上传图片</button></div></div>
                 <div class="form-group"><label>证件开始日期 *</label><input id="op-pay-card_period_begin" placeholder="YYYY-MM-DD"></div>
               </div>
               <div class="form-row">
@@ -273,7 +277,7 @@
               </div>
               <div class="form-row">
                 <div class="form-group"><label>小程序 AppID *</label><input id="op-pay-mini_program_appid"></div>
-                <div class="form-group"><label>经营页面截图 media_id *</label><input id="op-pay-mini_program_pic"></div>
+                <div class="form-group"><label>经营页面截图 *</label><div class="media-field"><input id="op-pay-mini_program_pic" placeholder="上传后自动填写 media_id"><button class="media-upload-btn" onclick="uploadApplymentMedia('mini_program_pic')">上传图片</button></div></div>
               </div>
             </div>
 
@@ -363,6 +367,38 @@
       const r = await fetch('/api' + path, opts)
       if (r.status === 401) { localStorage.clear(); location.replace('/operator/login.html'); throw new Error('登录失效') }
       return r.json()
+    }
+    async function uploadApplymentMedia(field) {
+      const picker = document.createElement('input')
+      picker.type = 'file'
+      picker.accept = 'image/png,image/jpeg,image/bmp'
+      picker.onchange = async () => {
+        const file = picker.files && picker.files[0]
+        if (!file) return
+        if (file.size > 5 * 1024 * 1024) { toast('图片不能超过 5MB'); return }
+        const fd = new FormData()
+        fd.append('file', file)
+        const target = document.getElementById('op-pay-' + field)
+        const oldPlaceholder = target ? target.placeholder : ''
+        if (target) target.placeholder = '正在上传...'
+        try {
+          const r = await fetch('/api/wechat-applyment/media', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + TOKEN },
+            body: fd
+          })
+          const data = await r.json()
+          if (data.code === 401) { localStorage.clear(); location.replace('/operator/login.html'); return }
+          if (data.code !== 200 || !data.data || !data.data.media_id) throw new Error(data.msg || '上传失败')
+          setPayVal(field, data.data.media_id)
+          toast('上传成功，media_id 已自动填写')
+        } catch (error) {
+          toast(error.message || '上传失败')
+        } finally {
+          if (target) target.placeholder = oldPlaceholder
+        }
+      }
+      picker.click()
     }
     function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000) }
     function logout() { localStorage.clear(); location.replace('/operator/login.html') }
@@ -541,8 +577,8 @@
       const required = [
         ['contact_name', '联系人姓名'],
         ['contact_mobile', '联系人手机'],
-        ['id_card_copy', '身份证人像面 media_id'],
-        ['id_card_national', '身份证国徽面 media_id'],
+        ['id_card_copy', '身份证人像面图片'],
+        ['id_card_national', '身份证国徽面图片'],
         ['id_card_name', '身份证姓名'],
         ['id_card_number', '身份证号码'],
         ['card_period_begin', '证件开始日期'],
@@ -550,14 +586,14 @@
         ['merchant_shortname', '商户简称'],
         ['service_phone', '客服电话'],
         ['mini_program_appid', '小程序 AppID'],
-        ['mini_program_pic', '经营页面截图 media_id'],
+        ['mini_program_pic', '经营页面截图'],
         ['settlement_id', '结算规则 ID'],
         ['account_bank', '开户银行'],
         ['account_name', '开户人姓名'],
         ['account_number', '银行卡号']
       ]
       if (payVal('subject_type') !== 'SUBJECT_TYPE_MICRO') {
-        required.push(['license_copy', '营业执照 media_id'], ['license_number', '营业执照编号'], ['merchant_name', '主体名称'], ['legal_person', '经营者/法人姓名'])
+        required.push(['license_copy', '营业执照图片'], ['license_number', '营业执照编号'], ['merchant_name', '主体名称'], ['legal_person', '经营者/法人姓名'])
       }
       for (const item of required) {
         if (!payVal(item[0])) { toast('请填写' + item[1]); return false }

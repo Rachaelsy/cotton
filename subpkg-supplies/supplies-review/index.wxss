@@ -1,17 +1,17 @@
 /* subpkg-supplies/supplies-review/index.wxss */
 .anon-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: 16rpx; padding: 24rpx 28rpx; margin: 0 24rpx 20rpx; }
-.anon-label { font-size: 24rpx; color: #888; flex: 1; padding-right: 20rpx; }
+.anon-label { font-size: 24rpx; color: #8A948B; flex: 1; padding-right: 20rpx; }
 
 .page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 顶部 ===== */
 .header {
-  background: linear-gradient(160deg, #92400e, #C8902E);
+  background: linear-gradient(160deg, #92400e, #B9852F);
   flex-shrink: 0;
   padding-left: 28rpx;
   padding-right: 28rpx;
@@ -53,14 +53,14 @@
 /* ===== 商品卡片 ===== */
 .items-card {
   background: #fff;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
 }
 
 .items-title {
   font-size: 22rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
   margin-bottom: 16rpx;
   display: block;
 }
@@ -76,7 +76,7 @@
 .item-icon-wrap {
   width: 72rpx;
   height: 72rpx;
-  background: #FBF5EA;
+  background: #FFF8EA;
   border-radius: 14rpx;
   display: flex;
   align-items: center;
@@ -88,7 +88,7 @@
 
 .item-name {
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
   font-weight: 600;
   flex: 1;
 }
@@ -96,7 +96,7 @@
 /* ===== 星级评分 ===== */
 .rate-card {
   background: #fff;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   padding: 36rpx 28rpx;
   margin-bottom: 20rpx;
   display: flex;
@@ -108,7 +108,7 @@
 .rate-label {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .stars-row {
@@ -129,7 +129,7 @@
 
 .rate-hint {
   font-size: 26rpx;
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 600;
   min-height: 36rpx;
 }
@@ -137,7 +137,7 @@
 /* ===== 文字评价 ===== */
 .content-card {
   background: #fff;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   padding: 28rpx;
   margin-bottom: 24rpx;
 }
@@ -145,7 +145,7 @@
 .content-label {
   font-size: 26rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
   margin-bottom: 16rpx;
   display: block;
 }
@@ -154,13 +154,13 @@
   width: 100%;
   height: 200rpx;
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.6;
 }
 
 .content-count {
   font-size: 22rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
   text-align: right;
   display: block;
   margin-top: 10rpx;
@@ -168,7 +168,7 @@
 
 /* ===== 提交按钮 ===== */
 .submit-btn {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 999rpx;
   padding: 28rpx 0;
   display: flex;
@@ -198,19 +198,19 @@
 .success-title {
   font-size: 40rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .success-sub {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
   text-align: center;
   line-height: 1.6;
 }
 
 .done-btn {
   margin-top: 40rpx;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 999rpx;
   padding: 24rpx 80rpx;
 }

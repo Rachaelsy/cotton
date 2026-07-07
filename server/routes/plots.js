@@ -12,6 +12,7 @@ const router = express.Router()
 const IRRIGATION_OPTIONS = ['滴灌', '漫灌', '喷灌', '无']
 const SOIL_OPTIONS = ['壤土', '沙壤土', '粘土', '沙土', '盐碱土']
 const PLANTING_OPTIONS = ['已播种', '计划播种', '未播种']
+const IMAGE_EXT_RE = /\.(jpe?g|png|webp|gif)$/i
 
 const ok = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
@@ -37,6 +38,24 @@ function cleanText(value, maxLength = 64) {
   return String(value || '').trim().slice(0, maxLength)
 }
 
+function cleanReferenceImages(value) {
+  let list = []
+  if (Array.isArray(value)) {
+    list = value
+  } else if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) list = parsed
+    } catch (error) {
+      list = value.split(',')
+    }
+  }
+  return [...new Set(list
+    .map(item => cleanText(item, 255))
+    .filter(url => url.startsWith('/uploads/') && IMAGE_EXT_RE.test(url))
+  )].slice(0, 6)
+}
+
 function validDate(value) {
   if (!value) return true
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
@@ -52,6 +71,8 @@ function parsePlotInput(body, { requireBoundary = false } = {}) {
   const soilType = cleanText(body.soil_type, 32) || '壤土'
   const plantingStatus = cleanText(body.planting_status, 16) || '已播种'
   const note = cleanText(body.note, 1000)
+  const hasReferenceImages = Object.prototype.hasOwnProperty.call(body, 'reference_images')
+  const referenceImages = cleanReferenceImages(body.reference_images)
 
   if (!name) return { error: '地块名称不能为空' }
   if (!variety) return { error: '棉花品种不能为空' }
@@ -69,6 +90,7 @@ function parsePlotInput(body, { requireBoundary = false } = {}) {
     plantingStatus,
     note
   }
+  if (requireBoundary || hasReferenceImages) result.referenceImages = referenceImages
 
   if (requireBoundary) {
     const sourceCoordinates = Array.isArray(body.coordinates) ? body.coordinates : []
@@ -139,8 +161,8 @@ router.post('/', farmerAuth, async (req, res) => {
   try {
     const [result] = await db.query(
       `INSERT INTO plots
-       (user_id,name,variety,area,perimeter,coordinates,sow_date,irrigation,soil_type,planting_status,note)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+       (user_id,name,variety,area,perimeter,coordinates,sow_date,irrigation,soil_type,planting_status,note,reference_images)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.user.id,
         input.name,
@@ -152,7 +174,8 @@ router.post('/', farmerAuth, async (req, res) => {
         input.irrigation,
         input.soilType,
         input.plantingStatus,
-        input.note
+        input.note,
+        JSON.stringify(input.referenceImages || [])
       ]
     )
     return ok(res, {
@@ -228,21 +251,25 @@ router.put('/:id', farmerAuth, async (req, res) => {
   const input = parsePlotInput(req.body)
   if (input.error) return fail(res, input.error)
   try {
-    const [result] = await db.query(
-      `UPDATE plots SET name=?,variety=?,sow_date=?,irrigation=?,soil_type=?,planting_status=?,note=?
-       WHERE id=? AND user_id=?`,
-      [
-        input.name,
-        input.variety,
-        input.sowDate,
-        input.irrigation,
-        input.soilType,
-        input.plantingStatus,
-        input.note,
-        id,
-        req.user.id
-      ]
-    )
+    const hasReferenceImages = Object.prototype.hasOwnProperty.call(input, 'referenceImages')
+    const sql = hasReferenceImages
+      ? `UPDATE plots SET name=?,variety=?,sow_date=?,irrigation=?,soil_type=?,planting_status=?,note=?,reference_images=?
+         WHERE id=? AND user_id=?`
+      : `UPDATE plots SET name=?,variety=?,sow_date=?,irrigation=?,soil_type=?,planting_status=?,note=?
+         WHERE id=? AND user_id=?`
+    const params = [
+      input.name,
+      input.variety,
+      input.sowDate,
+      input.irrigation,
+      input.soilType,
+      input.plantingStatus,
+      input.note,
+      ...(hasReferenceImages ? [JSON.stringify(input.referenceImages || [])] : []),
+      id,
+      req.user.id
+    ]
+    const [result] = await db.query(sql, params)
     if (!result.affectedRows) return fail(res, '地块不存在', 404)
     return ok(res, { id }, '更新成功')
   } catch (error) {

@@ -27,6 +27,11 @@ function run() {
   assert.ok(!homeJs.includes('aiPreferVoice'), 'home page should not force voice mode from a removed card')
   assert.ok(!homeWxss.includes('.ai-hero-card'), 'home styles should not keep removed AI hero card CSS')
   assert.ok(!i18n.includes('aiHeroTitle'), 'home copy should not keep removed AI hero title strings')
+  assert.ok(!homeWxml.includes('wc-date'), 'home weather card should not show a separate date line')
+  assert.ok(homeWxml.includes('wc-loc-change'), 'home weather card should keep a compact plot switch affordance')
+  assert.ok(!homeJs.includes('model.locationLabel'), 'home weather preview should not expose source-heavy location labels')
+  assert.ok(!homeJs.includes('tipText: model.tipText'), 'home weather preview should use short home tips instead of full weather-source copy')
+  assert.ok(!homeWxml.includes('sourceInfo'), 'home weather card should not render weather source details')
 }
 
 run()

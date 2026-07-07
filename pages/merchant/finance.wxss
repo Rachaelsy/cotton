@@ -4,7 +4,7 @@
 .scroll { flex: 1; height: 0; }
 
 .header {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   padding: 8rpx 32rpx 40rpx;
 }
 .header-tag {
@@ -22,7 +22,7 @@
   background: #fff;
   border-radius: 20rpx;
   padding: 32rpx 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.10);
+  box-shadow: 0 4rpx 20rpx rgba(33,61,42,0.09);
 }
 .fund-main {
   display: flex;
@@ -34,13 +34,13 @@
 .fund-item { display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
 .fund-val { font-size: 34rpx; font-weight: 800; }
 .fund-val.pending  { color: #D97706; }
-.fund-val.settled  { color: #16A34A; }
+.fund-val.settled  { color: #2F8A52; }
 .fund-val.frozen   { color: #6B7280; }
-.fund-lbl { font-size: 22rpx; color: #888888; }
-.fund-divider { width: 1rpx; height: 60rpx; background: #EEEEEE; }
+.fund-lbl { font-size: 22rpx; color: #8A948B; }
+.fund-divider { width: 1rpx; height: 60rpx; background: #E3E9DE; }
 
 .withdraw-btn {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 16rpx;
   height: 88rpx;
   display: flex;
@@ -53,7 +53,7 @@
 .section-title {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
   padding: 0 24rpx;
   margin-bottom: 16rpx;
 }
@@ -62,7 +62,7 @@
   background: #fff;
   border-radius: 20rpx;
   overflow: hidden;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(33,61,42,0.05);
 }
 .record-item {
   display: flex;
@@ -85,8 +85,8 @@
 .record-icon-wrap.refund   { background: #FEF2F2; }
 .record-icon-wrap.withdraw { background: #EFF6FF; }
 .record-icon-wrap.pending  { background: #FFF7ED; }
-.record-icon { font-size: 30rpx; color: #16A34A; font-weight: 700; }
-.record-icon-wrap.refund .record-icon   { color: #DC2626; }
+.record-icon { font-size: 30rpx; color: #2F8A52; font-weight: 700; }
+.record-icon-wrap.refund .record-icon   { color: #C93D35; }
 .record-icon-wrap.withdraw .record-icon { color: #2563EB; }
 .record-icon-wrap.pending .record-icon  { color: #D97706; }
 
@@ -98,9 +98,9 @@
   justify-content: space-between;
   margin-bottom: 6rpx;
 }
-.record-type  { font-size: 26rpx; font-weight: 600; color: #1A1A1A; }
-.record-amount { font-size: 28rpx; font-weight: 700; color: #16A34A; }
-.record-amount.refund   { color: #DC2626; }
+.record-type  { font-size: 26rpx; font-weight: 600; color: #18231A; }
+.record-amount { font-size: 28rpx; font-weight: 700; color: #2F8A52; }
+.record-amount.refund   { color: #C93D35; }
 .record-amount.withdraw { color: #2563EB; }
 .record-amount.pending  { color: #D97706; }
 
@@ -111,6 +111,6 @@
   justify-content: space-between;
   margin-bottom: 4rpx;
 }
-.record-desc { font-size: 22rpx; color: #888888; flex: 1; }
-.record-time { font-size: 20rpx; color: #BBBBBB; }
+.record-desc { font-size: 22rpx; color: #8A948B; flex: 1; }
+.record-time { font-size: 20rpx; color: #C5CCC5; }
 .record-balance { font-size: 20rpx; color: #CCCCCC; }

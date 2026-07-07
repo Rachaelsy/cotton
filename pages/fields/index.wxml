@@ -106,8 +106,15 @@
           bindtap="onFieldTap"
         >
           <view class="preview-wrap">
+            <image
+              wx:if="{{item.hasReferenceImage}}"
+              class="preview-image"
+              src="{{item.firstReferenceImage}}"
+              mode="aspectFill"
+              lazy-load
+            ></image>
             <map
-              wx:if="{{item.hasBoundary}}"
+              wx:elif="{{item.hasBoundary}}"
               class="preview-map"
               latitude="{{item.mapLat}}"
               longitude="{{item.mapLng}}"
@@ -156,8 +163,15 @@
           bindtap="onFieldTap"
         >
           <view class="preview-wrap">
+            <image
+              wx:if="{{item.hasReferenceImage}}"
+              class="preview-image"
+              src="{{item.firstReferenceImage}}"
+              mode="aspectFill"
+              lazy-load
+            ></image>
             <map
-              wx:if="{{item.hasBoundary}}"
+              wx:elif="{{item.hasBoundary}}"
               class="preview-map"
               latitude="{{item.mapLat}}"
               longitude="{{item.mapLng}}"

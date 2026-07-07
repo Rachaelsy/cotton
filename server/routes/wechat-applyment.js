@@ -1,12 +1,22 @@
 // server/routes/wechat-applyment.js - WeChat Pay service-provider applyment
 const express = require('express')
 const jwt = require('jsonwebtoken')
+const multer = require('multer')
 const db = require('../db/database')
 const wxpay = require('../utils/wechat-pay')
 
 const router = express.Router()
 const ok = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/bmp'])
+    if (allowed.has(file.mimetype)) return cb(null, true)
+    cb(new Error('仅支持 JPG、PNG、BMP 图片，且单张不超过 5MB'))
+  }
+})
 
 const ACTOR_META = {
   merchant: {
@@ -314,6 +324,33 @@ router.post('/sub-mchid', applymentAuth, async (req, res) => {
     console.error('[wechat-applyment-sub-mchid]', error)
     return fail(res, '绑定子商户号失败', 500)
   }
+})
+
+router.post('/media', applymentAuth, (req, res) => {
+  imageUpload.single('file')(req, res, async error => {
+    if (error) return fail(res, error.message || '图片上传失败')
+    if (!req.file) return fail(res, '请选择要上传的图片')
+    try {
+      const actor = req.applymentActor
+      const owner = await loadOwner(actor)
+      if (!owner) return fail(res, `${ACTOR_META[actor.role].label}不存在`, 404)
+      const cfg = wxpay.getServiceProviderConfig()
+      if (!cfg) return fail(res, '微信支付服务商未配置，无法上传微信支付素材', 501)
+      const result = await wxpay.uploadMediaImage(cfg, {
+        filename: req.file.originalname,
+        buffer: req.file.buffer,
+        mimeType: req.file.mimetype
+      })
+      if (!result || !result.media_id) return fail(res, '微信支付未返回 media_id', 502)
+      return ok(res, {
+        media_id: result.media_id,
+        filename: req.file.originalname
+      }, '微信支付素材上传成功')
+    } catch (uploadError) {
+      console.error('[wechat-applyment-media]', uploadError)
+      return fail(res, uploadError.message || '微信支付素材上传失败', 500)
+    }
+  })
 })
 
 router.post('/submit', applymentAuth, async (req, res) => {

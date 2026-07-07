@@ -29,7 +29,7 @@
       <text class="wx-state-desc">{{copy.loadingDesc}}</text>
     </view>
 
-    <view wx:elif="{{loadError}}" class="wx-state">
+    <view wx:elif="{{loadError && !fields.length}}" class="wx-state">
       <text class="wx-state-title">{{copy.loadFailTitle}}</text>
       <text class="wx-state-desc">{{loadError}}</text>
       <view class="wx-state-btn" bindtap="onRetry"><text>{{common.retry}}</text></view>
@@ -37,6 +37,14 @@
 
     <view wx:else>
       <view class="wx-main-card">
+        <view wx:if="{{weatherDataError}}" class="wx-weather-error">
+          <view class="wx-weather-error-text">
+            <text class="wx-weather-error-title">{{copy.weatherDataFailTitle}}</text>
+            <text class="wx-weather-error-desc">{{weatherDataError}}</text>
+          </view>
+          <view class="wx-weather-error-btn" bindtap="onRetry"><text>{{common.retry}}</text></view>
+        </view>
+
         <view wx:if="{{apiNotice}}" class="wx-api-notice">
           <text>{{apiNotice}}</text>
         </view>
@@ -45,14 +53,14 @@
           <view class="wx-main-info">
             <view class="wx-chip-row">
               <view class="wx-main-chip">{{selectedFieldLabel}}</view>
-              <view class="wx-source-chip {{sourceInfo.type === 'real' ? 'real' : 'mock'}}" bindtap="onSourceTap">
+              <view class="wx-source-chip {{sourceInfo.type === 'real' ? 'real' : (sourceInfo.type === 'unavailable' ? 'unavailable' : 'mock')}}" bindtap="onSourceTap">
                 <text class="source-dot"></text>
                 <text>{{sourceInfo.label}}</text>
               </view>
             </view>
-            <text class="wx-big-temp">{{weather.temp}}°</text>
+            <text class="wx-big-temp">{{weather.temp}}{{weather.temp === '--' ? '' : '°'}}</text>
             <text class="wx-desc">{{weather.desc}}</text>
-            <text class="wx-hl">{{weather.low}}° ~ {{weather.high}}° · {{weather.wind}}</text>
+            <text class="wx-hl">{{weather.low}}{{weather.low === '--' ? '' : '°'}} ~ {{weather.high}}{{weather.high === '--' ? '' : '°'}} · {{weather.wind}}</text>
           </view>
           <text class="wx-icon-big">{{weather.icon}}</text>
         </view>
@@ -70,7 +78,7 @@
           </view>
           <view class="wx-di">
             <text class="wdi-icon">🌡</text>
-            <text class="wdi-val">{{weather.groundTemp}}°C</text>
+            <text class="wdi-val">{{weather.groundTemp}}{{weather.groundTemp === '--' ? '' : '°C'}}</text>
             <text class="wdi-lbl">{{weather.groundTempLabel || copy.groundTemp}}</text>
           </view>
           <view class="wx-di">
@@ -96,20 +104,23 @@
       </view>
 
       <view class="wx-alert-banner {{alert ? '' : 'safe'}}" bindtap="onAlertTap">
-        <text class="wa-icon">{{alert ? alert.icon : '✅'}}</text>
+        <text class="wa-icon">{{alert ? alert.icon : (weatherDataError ? '⚠️' : '✅')}}</text>
         <view class="wa-txt">
-          <text class="wa-title">{{alert ? alert.title + (alert.level ? ' · ' + alert.level : '') : copy.todayTip}}</text>
+          <text class="wa-title">{{alert ? alert.title + (alert.level ? ' · ' + alert.level : '') : (weatherDataError ? copy.weatherDataFailTitle : copy.todayTip)}}</text>
           <text class="wa-sub">{{alert ? alert.sub : summary}}</text>
         </view>
         <text class="wa-arr">›</text>
       </view>
 
-      <view wx:if="{{hourly.length}}" class="wx-card wx-hourly-card">
+      <view class="wx-card wx-hourly-card">
         <view class="wx-card-head">
           <view class="wx-card-bar"></view>
           <text class="wx-card-title">{{copy.hourly}}</text>
         </view>
-        <scroll-view class="hourly-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view wx:if="{{!hourly.length}}" class="wx-empty-data">
+          <text>{{copy.weatherDataEmpty}}</text>
+        </view>
+        <scroll-view wx:else class="hourly-scroll" scroll-x enhanced show-scrollbar="{{false}}">
           <view class="hourly-row">
             <view class="hourly-item {{item.now ? 'hourly-now' : ''}}" wx:for="{{hourly}}" wx:key="time">
               <text class="hour-time">{{item.time}}</text>
@@ -127,7 +138,10 @@
           <view class="wx-card-bar"></view>
           <text class="wx-card-title">{{copy.forecast7}}</text>
         </view>
-        <scroll-view class="forecast-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view wx:if="{{!forecast.length}}" class="wx-empty-data">
+          <text>{{copy.weatherDataEmpty}}</text>
+        </view>
+        <scroll-view wx:else class="forecast-scroll" scroll-x enhanced show-scrollbar="{{false}}">
           <view class="forecast-row">
             <view class="forecast-item" wx:for="{{forecast}}" wx:key="day">
               <text class="fc-day">{{item.day}}</text>
@@ -144,15 +158,20 @@
           <view class="wx-card-bar"></view>
           <text class="wx-card-title">{{copy.aiAdvice}}</text>
         </view>
-        <view class="adv-item" wx:for="{{advices}}" wx:key="title">
-          <view class="adv-icon" style="background: {{item.bg}}">
-            <text class="adv-icon-emoji">{{item.icon}}</text>
-          </view>
-          <view class="adv-body">
-            <text class="adv-title">{{item.title}}</text>
-            <text class="adv-sub">{{item.sub}}</text>
-          </view>
+        <view wx:if="{{!advices.length}}" class="wx-empty-data">
+          <text>{{copy.weatherDataEmpty}}</text>
         </view>
+        <block wx:else>
+          <view class="adv-item" wx:for="{{advices}}" wx:key="title">
+            <view class="adv-icon" style="background: {{item.bg}}">
+              <text class="adv-icon-emoji">{{item.icon}}</text>
+            </view>
+            <view class="adv-body">
+              <text class="adv-title">{{item.title}}</text>
+              <text class="adv-sub">{{item.sub}}</text>
+            </view>
+          </view>
+        </block>
       </view>
 
       <view style="height: 40rpx"></view>

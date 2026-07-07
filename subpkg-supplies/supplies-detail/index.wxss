@@ -1,14 +1,14 @@
 /* pages/supplies-detail/index.wxss — 商品详情页样式 */
-.quality-item { display: flex; align-items: flex-start; padding: 16rpx 0; border-bottom: 1rpx solid #F5EEE6; }
+.quality-item { display: flex; align-items: flex-start; padding: 16rpx 0; border-bottom: 1rpx solid #F6F8F3; }
 .quality-icon { font-size: 40rpx; margin-right: 20rpx; margin-top: 4rpx; }
-.quality-title { display: block; font-size: 28rpx; font-weight: 600; color: #1A1A1A; margin-bottom: 6rpx; }
-.quality-desc  { display: block; font-size: 24rpx; color: #888; }
+.quality-title { display: block; font-size: 28rpx; font-weight: 600; color: #18231A; margin-bottom: 6rpx; }
+.quality-desc  { display: block; font-size: 24rpx; color: #8A948B; }
 
 .page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
   overflow: hidden;
   position: relative;
 }
@@ -96,14 +96,14 @@
 
 .price-unit {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
   margin-left: 4rpx;
 }
 
 .prod-name {
   font-size: 30rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.5;
   margin-bottom: 16rpx;
   display: block;
@@ -114,25 +114,25 @@
   flex-direction: row;
   gap: 28rpx;
   padding-top: 16rpx;
-  border-top: 1rpx solid #F2EBE0;
+  border-top: 1rpx solid #EAF0E6;
 }
 
 .stat-item {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .stat-bold {
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 /* ===== ③ 商品简介 ===== */
 .brief-section {
-  background: #FBF5EA;
+  background: #FFF8EA;
   margin-top: 2rpx;
   padding: 20rpx 28rpx;
-  border-left: 6rpx solid #C8902E;
+  border-left: 6rpx solid #B9852F;
 }
 
 .brief-text {
@@ -158,7 +158,7 @@
 
 .dlv-label {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
   width: 60rpx;
   flex-shrink: 0;
 }
@@ -166,7 +166,7 @@
 .dlv-addr {
   flex: 1;
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
   font-weight: 600;
 }
 
@@ -179,12 +179,12 @@
 
 .dlv-way {
   font-size: 24rpx;
-  color: #555555;
+  color: #58655B;
 }
 
 .dlv-arrow {
   font-size: 28rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }
 
 .dlv-tags {
@@ -197,8 +197,8 @@
 
 .dlv-tag {
   font-size: 20rpx;
-  color: #C8902E;
-  background: #FBF5EA;
+  color: #B9852F;
+  background: #FFF8EA;
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
   border: 1rpx solid #E8C87A;
@@ -207,13 +207,13 @@
 .dlv-store-name {
   flex: 1;
   font-size: 26rpx;
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 600;
 }
 
 .delivery-line {
   height: 1rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
   margin: 0 28rpx;
 }
 
@@ -235,12 +235,12 @@
 .section-title {
   font-size: 28rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .section-more {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* ===== ⑤ 评价 ===== */
@@ -250,14 +250,14 @@
   align-items: center;
   gap: 12rpx;
   padding: 16rpx 0 20rpx;
-  border-bottom: 1rpx solid #F2EBE0;
+  border-bottom: 1rpx solid #EAF0E6;
   margin-bottom: 24rpx;
 }
 
 .review-score {
   font-size: 52rpx;
   font-weight: 900;
-  color: #FF6B00;
+  color: #D97918;
   line-height: 1;
 }
 
@@ -268,12 +268,12 @@
 
 .star {
   font-size: 28rpx;
-  color: #FF6B00;
+  color: #D97918;
 }
 
 .review-pct {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
   margin-left: 4rpx;
 }
 
@@ -292,7 +292,7 @@
 .reviewer-avatar {
   width: 60rpx;
   height: 60rpx;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -313,17 +313,17 @@
 .reviewer-name {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .review-stars-row {
   font-size: 22rpx;
-  color: #FF6B00;
+  color: #D97918;
 }
 
 .review-date {
   font-size: 22rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }
 
 .review-content {
@@ -336,18 +336,18 @@
 
 .review-spec {
   font-size: 22rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
   display: block;
 }
 
 .review-divider {
   height: 1rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
   margin: 16rpx 0;
 }
 
 .review-reply {
-  background: #FBF5EA;
+  background: #FFF8EA;
   border-radius: 12rpx;
   padding: 14rpx 18rpx;
   margin-top: 12rpx;
@@ -360,7 +360,7 @@
 }
 
 .review-no-content {
-  color: #BBBBBB;
+  color: #C5CCC5;
   font-style: italic;
 }
 
@@ -373,7 +373,7 @@
 
 .review-empty-text {
   font-size: 24rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
 }
 
 /* ===== ⑥ 商品介绍：规格 ===== */
@@ -382,17 +382,17 @@
   flex-direction: row;
   justify-content: space-between;
   padding: 16rpx 0;
-  border-bottom: 1rpx solid #F2EBE0;
+  border-bottom: 1rpx solid #EAF0E6;
 }
 
 .spec-label {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .spec-val {
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
   font-weight: 600;
 }
 
@@ -402,7 +402,7 @@
 
 .desc-divider {
   height: 1rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
   margin-bottom: 24rpx;
 }
 
@@ -427,19 +427,19 @@
 .desc-placeholder-name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .desc-placeholder-sub {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* ===== 底部操作栏 ===== */
 .action-bar {
   flex-shrink: 0;
   background: #ffffff;
-  border-top: 1rpx solid #F2EBE0;
+  border-top: 1rpx solid #EAF0E6;
   padding: 16rpx 24rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
   display: flex;
@@ -458,7 +458,7 @@
 
 .ai-icon {
   font-size: 40rpx;
-  color: #555555;
+  color: #58655B;
 }
 
 .icon-fav {
@@ -467,21 +467,21 @@
 
 .ai-label {
   font-size: 18rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .action-divider {
   width: 1rpx;
   height: 64rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
   flex-shrink: 0;
   margin: 0 4rpx;
 }
 
 .btn-cart {
   flex: 1;
-  background: #FBF5EA;
-  border: 3rpx solid #C8902E;
+  background: #FFF8EA;
+  border: 3rpx solid #B9852F;
   border-radius: 999rpx;
   padding: 20rpx 0;
   display: flex;
@@ -491,7 +491,7 @@
 
 .btn-buy {
   flex: 1;
-  background: linear-gradient(135deg, #FF6B00, #FF3B30);
+  background: linear-gradient(135deg, #D97918, #FF3B30);
   border-radius: 999rpx;
   padding: 20rpx 0;
   display: flex;
@@ -502,7 +502,7 @@
 .btn-cart .btn-text {
   font-size: 26rpx;
   font-weight: 800;
-  color: #C8902E;
+  color: #B9852F;
 }
 
 .btn-buy .btn-text {
@@ -545,13 +545,13 @@
 .cs-title {
   font-size: 32rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .cs-close {
   width: 56rpx;
   height: 56rpx;
-  background: #F5EEE6;
+  background: #F6F8F3;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -560,7 +560,7 @@
 
 .cs-close-icon {
   font-size: 28rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .cs-avatar-row {
@@ -573,8 +573,8 @@
 .cs-avatar {
   width: 96rpx;
   height: 96rpx;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
-  border-radius: 28rpx;
+  background: linear-gradient(135deg, #B9852F, #C9973A);
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -592,12 +592,12 @@
 .cs-store-name {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .cs-store-sub {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .cs-wechat-card {
@@ -612,18 +612,18 @@
 
 .cs-wechat-label {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .cs-wechat-id {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
   letter-spacing: 1rpx;
 }
 
 .cs-copy-btn {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 999rpx;
   padding: 28rpx 0;
   display: flex;
@@ -639,7 +639,7 @@
 
 .cs-tip {
   font-size: 22rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
   text-align: center;
   display: block;
 }
@@ -654,5 +654,5 @@
 
 .not-found-text {
   font-size: 28rpx;
-  color: #888888;
+  color: #8A948B;
 }

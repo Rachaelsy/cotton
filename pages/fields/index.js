@@ -26,6 +26,21 @@ function parseCoordinates(value) {
   }
 }
 
+function parseReferenceImages(value) {
+  if (Array.isArray(value)) return value.filter(Boolean)
+  try {
+    const parsed = value ? JSON.parse(value) : []
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : []
+  } catch (error) {
+    return []
+  }
+}
+
+function imageDisplayUrl(url) {
+  if (!url) return ''
+  return String(url).startsWith('http') ? url : `${auth.BASE_URL}${url}`
+}
+
 function formatDate(value, lang = i18n.getLanguage(), copy = i18n.getCopy('fields', lang)) {
   if (!value) return ''
   const raw = String(value)
@@ -150,6 +165,7 @@ Page({
     else if (score >= 80) tagText = this.textCopy.growthGood || i18n.localizeText('长势良好', this.data.lang)
 
     const coordinates = parseCoordinates(plot.coordinates)
+    const referenceImages = parseReferenceImages(plot.reference_images)
     const center = calculateCenter(coordinates)
     const previewPolygons = coordinates.length >= 3 ? [{
       points: coordinates,
@@ -168,6 +184,9 @@ Page({
       date: formatDate(plot.updated_at, this.data.lang, this.textCopy),
       mapLat: center.latitude,
       mapLng: center.longitude,
+      referenceImages,
+      firstReferenceImage: imageDisplayUrl(referenceImages[0]),
+      hasReferenceImage: referenceImages.length > 0,
       previewPolygons,
       hasBoundary: coordinates.length >= 3,
       planting_status: plot.planting_status || '已播种',

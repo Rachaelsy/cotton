@@ -1,6 +1,7 @@
 const crypto = require('crypto')
 const https = require('https')
 const fs = require('fs')
+const path = require('path')
 
 const API_HOST = 'api.mch.weixin.qq.com'
 
@@ -15,10 +16,24 @@ function readEnvValue(env, name) {
   return /^(TODO|your_|xxx)/i.test(text) ? '' : text
 }
 
+function resolveEnvFilePath(filePath) {
+  const text = String(filePath || '').trim()
+  if (!text) return ''
+  const candidates = path.isAbsolute(text)
+    ? [text]
+    : [
+        path.resolve(process.cwd(), text),
+        path.resolve(__dirname, '..', text),
+        path.resolve(__dirname, '..', '..', text)
+      ]
+  return candidates.find(candidate => fs.existsSync(candidate)) || ''
+}
+
 function readEnvText(env, valueName, pathName) {
   let value = readEnvValue(env, valueName)
   const filePath = readEnvValue(env, pathName)
-  if (!value && filePath && fs.existsSync(filePath)) value = fs.readFileSync(filePath, 'utf8')
+  const resolvedPath = resolveEnvFilePath(filePath)
+  if (!value && resolvedPath) value = fs.readFileSync(resolvedPath, 'utf8')
   return normalizePem(value)
 }
 
@@ -171,6 +186,76 @@ function wechatRequest(method, urlPath, body, cfg, options = {}) {
   })
 }
 
+function sanitizeUploadFilename(filename) {
+  const name = String(filename || 'wechatpay-media')
+    .replace(/[\\/\r\n"]/g, '_')
+    .slice(0, 120)
+  return name || 'wechatpay-media'
+}
+
+function buildMediaUploadBody({ filename, buffer, mimeType = 'application/octet-stream', boundary }) {
+  const fileBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || '')
+  const safeFilename = sanitizeUploadFilename(filename)
+  const sha256 = crypto.createHash('sha256').update(fileBuffer).digest('hex')
+  const meta = JSON.stringify({ filename: safeFilename, sha256 })
+  const formBoundary = boundary || `----cotton-wechatpay-${randomString(24)}`
+  const head = Buffer.from(
+    `--${formBoundary}\r\n` +
+    'Content-Disposition: form-data; name="meta"\r\n' +
+    'Content-Type: application/json\r\n\r\n' +
+    `${meta}\r\n` +
+    `--${formBoundary}\r\n` +
+    `Content-Disposition: form-data; name="file"; filename="${safeFilename}"\r\n` +
+    `Content-Type: ${mimeType || 'application/octet-stream'}\r\n\r\n`
+  )
+  const tail = Buffer.from(`\r\n--${formBoundary}--\r\n`)
+  return {
+    meta,
+    boundary: formBoundary,
+    contentType: `multipart/form-data; boundary=${formBoundary}`,
+    bodyBuffer: Buffer.concat([head, fileBuffer, tail])
+  }
+}
+
+function uploadMediaImage(cfg, file) {
+  return new Promise((resolve, reject) => {
+    const urlPath = '/v3/merchant/media/upload'
+    const upload = buildMediaUploadBody(file)
+    // WeChat Pay signs only the JSON meta string for media upload, not the multipart body.
+    const auth = buildAuthorizationHeader({ cfg, method: 'POST', urlPath, bodyText: upload.meta })
+    const req = https.request({
+      hostname: API_HOST,
+      path: urlPath,
+      method: 'POST',
+      headers: {
+        'Content-Type': upload.contentType,
+        'Content-Length': upload.bodyBuffer.length,
+        Accept: 'application/json',
+        Authorization: auth.authorization,
+        'User-Agent': 'cotton-wechatpay/1.0'
+      }
+    }, response => {
+      let raw = ''
+      response.on('data', chunk => { raw += chunk })
+      response.on('end', () => {
+        let json = {}
+        try { json = raw ? JSON.parse(raw) : {} } catch {}
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          return reject(new Error(json.message || json.code || `微信支付素材上传 HTTP ${response.statusCode}`))
+        }
+        resolve(json)
+      })
+    })
+    req.on('error', reject)
+    req.setTimeout(15000, () => {
+      req.destroy()
+      reject(new Error('微信支付素材上传超时'))
+    })
+    req.write(upload.bodyBuffer)
+    req.end()
+  })
+}
+
 function buildPartnerJsapiBody({ cfg, order, openid }) {
   const body = {
     sp_appid: cfg.spAppid,
@@ -183,6 +268,7 @@ function buildPartnerJsapiBody({ cfg, order, openid }) {
     payer: { sp_openid: openid },
     attach: JSON.stringify(order.attach || {})
   }
+  if (order.profitSharing) body.settle_info = { profit_sharing: true }
   return body
 }
 
@@ -207,6 +293,23 @@ function queryApplymentById(cfg, applymentId) {
   return wechatRequest('GET', `/v3/applyment4sub/applyment/applyment_id/${encodeURIComponent(applymentId)}`, null, cfg)
 }
 
+function addProfitSharingReceiver(cfg, receiver) {
+  return wechatRequest('POST', '/v3/profitsharing/receivers/add', receiver, cfg)
+}
+
+function requestProfitSharing(cfg, payload) {
+  return wechatRequest('POST', '/v3/profitsharing/orders', payload, cfg)
+}
+
+function queryProfitSharingOrder(cfg, { subMchid, transactionId, outOrderNo }) {
+  const query = new URLSearchParams({
+    sub_mchid: subMchid,
+    transaction_id: transactionId,
+    out_order_no: outOrderNo
+  })
+  return wechatRequest('GET', `/v3/profitsharing/orders?${query.toString()}`, null, cfg)
+}
+
 module.exports = {
   getServiceProviderConfig,
   getNotifyConfig,
@@ -223,5 +326,10 @@ module.exports = {
   queryPartnerTransaction,
   submitApplyment,
   queryApplymentByBusinessCode,
-  queryApplymentById
+  queryApplymentById,
+  buildMediaUploadBody,
+  uploadMediaImage,
+  addProfitSharingReceiver,
+  requestProfitSharing,
+  queryProfitSharingOrder
 }

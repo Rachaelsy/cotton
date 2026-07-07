@@ -1,24 +1,33 @@
 /* app.wxss — 全局样式 */
 page {
-  --br: #C8902E;
-  --br-d: #9A6E1C;
-  --br-l: #F5E6C8;
-  --br-bg: #FBF5EA;
-  --ok: #4CAF50;
-  --ok-bg: #F1F8F1;
-  --warn: #FF6B00;
-  --warn-bg: #FFF3E6;
-  --danger: #F5222D;
-  --info: #1890FF;
-  --bg: #F5EEE6;
+  --br: #B9852F;
+  --br-d: #7A5A26;
+  --br-l: #EFE0BE;
+  --br-bg: #FFF8EA;
+  --green: #2F7D4B;
+  --green-d: #215C38;
+  --green-l: #E8F3EA;
+  --ok: #2F8A52;
+  --ok-bg: #EAF6EF;
+  --warn: #D97918;
+  --warn-bg: #FFF3E3;
+  --danger: #D6453D;
+  --info: #2D86B8;
+  --bg: #F6F8F3;
   --card: #ffffff;
-  --t1: #1A1A1A;
-  --t2: #555555;
-  --t3: #888888;
-  --t4: #BBBBBB;
-  --bdr: #EEE5D8;
-  --div: #F2EBE0;
-  background-color: #F5EEE6;
+  --surface: #FFFFFF;
+  --surface-soft: #F8FAF5;
+  --t1: #18231A;
+  --t2: #58655B;
+  --t3: #8A948B;
+  --t4: #B7C0B8;
+  --bdr: #E3E9DE;
+  --div: #EAF0E6;
+  --shadow-card: 0 4rpx 22rpx rgba(33, 61, 42, 0.06);
+  --shadow-float: 0 10rpx 32rpx rgba(33, 61, 42, 0.10);
+  --radius-card: 26rpx;
+  --radius-inner: 18rpx;
+  background-color: #F6F8F3;
   font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
   box-sizing: border-box;
 }
@@ -56,13 +65,13 @@ page {
 .nav-back-dark {
   width: 64rpx;
   height: 64rpx;
-  background: #F5EEE6;
+  background: #F6F8F3;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 40rpx;
-  color: #1A1A1A;
+  color: #18231A;
   flex-shrink: 0;
 }
 

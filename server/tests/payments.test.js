@@ -41,10 +41,12 @@ const mockDb = {
         id: 8,
         order_no: 'MG202607030001',
         total: '25.80',
-        status: 'pending_payment',
-        merchant_count: 1,
-        sub_mchid: '1700000001'
-      }], []]
+          status: 'pending_payment',
+          merchant_count: 1,
+          merchant_id: 6,
+          sub_mchid: '1700000001',
+          commission_rate: '5.00'
+        }], []]
     }
     throw new Error(`Unexpected SQL in test: ${sql}`)
   }
@@ -132,6 +134,7 @@ async function run() {
     assert.strictEqual(prepayCall.order.subMchid, '1700000001')
     assert.strictEqual(prepayCall.openid, 'openid-under-sp-appid')
     assert.strictEqual(prepayCall.order.amountFen, 2580)
+    assert.strictEqual(prepayCall.order.profitSharing, true)
 
     console.log('payments route tests passed')
   } finally {

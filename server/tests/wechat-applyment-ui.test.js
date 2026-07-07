@@ -42,6 +42,10 @@ function assertWebApplymentPage(html, prefix, label) {
   for (const field of requiredFields) {
     assert.ok(html.includes(`id="${prefix}${field}"`), `${label} should expose ${field}`)
   }
+
+  for (const field of ['license_copy', 'id_card_copy', 'id_card_national', 'mini_program_pic']) {
+    assert.ok(html.includes(`uploadApplymentMedia('${field}'`), `${label} should upload ${field}`)
+  }
 }
 
 function assertScriptSyntax(html, label) {
@@ -62,6 +66,7 @@ function run() {
   assert.ok(merchantDashboard.includes('submitMerchantApplyment'), 'merchant dashboard should submit applyment')
   assert.ok(merchantDashboard.includes('syncMerchantApplyment'), 'merchant dashboard should sync applyment status')
   assert.ok(merchantDashboard.includes('bindMerchantSubMchid'), 'merchant dashboard should bind existing sub_mchid')
+  assert.ok(merchantDashboard.includes('/media'), 'merchant dashboard should upload WeChat Pay media')
   assertWebApplymentPage(merchantDashboard, 'm-pay-', 'merchant dashboard')
   assertScriptSyntax(merchantDashboard, 'merchant dashboard')
 
@@ -70,6 +75,7 @@ function run() {
   assert.ok(operatorDashboard.includes('/wechat-applyment/draft'), 'operator dashboard should save applyment draft')
   assert.ok(operatorDashboard.includes('/wechat-applyment/submit'), 'operator dashboard should submit applyment')
   assert.ok(operatorDashboard.includes('/wechat-applyment/sync'), 'operator dashboard should sync applyment status')
+  assert.ok(operatorDashboard.includes('/wechat-applyment/media'), 'operator dashboard should upload WeChat Pay media')
   assert.ok(operatorDashboard.includes('buildOperatorRawApplyment'), 'operator dashboard should build raw applyment payload')
   assertWebApplymentPage(operatorDashboard, 'op-pay-', 'operator dashboard')
   assertScriptSyntax(operatorDashboard, 'operator dashboard')

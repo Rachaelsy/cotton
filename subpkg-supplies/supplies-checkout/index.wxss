@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 顶部导航 ===== */
@@ -13,7 +13,7 @@
   padding-left: 28rpx;
   padding-right: 28rpx;
   padding-bottom: 24rpx;
-  border-bottom: 1rpx solid #F2EBE0;
+  border-bottom: 1rpx solid #EAF0E6;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -24,7 +24,7 @@
 .nav-back-btn {
   width: 64rpx;
   height: 64rpx;
-  background: #F5EEE6;
+  background: #F6F8F3;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -33,14 +33,14 @@
 
 .back-icon {
   font-size: 44rpx;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .co-title {
   flex: 1;
   font-size: 34rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
   text-align: center;
 }
 
@@ -53,10 +53,10 @@
 /* ===== 卡片通用 ===== */
 .co-card {
   background: #ffffff;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   margin: 20rpx 28rpx 0;
   padding: 24rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  box-shadow: 0 4rpx 24rpx rgba(33, 61, 42, 0.06);
 }
 
 .co-card-title {
@@ -70,14 +70,14 @@
 .co-card-title-bar {
   width: 6rpx;
   height: 28rpx;
-  background: #C8902E;
+  background: #B9852F;
   border-radius: 4rpx;
 }
 
 .co-card-title-text {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 /* ===== 收货地址 ===== */
@@ -107,17 +107,17 @@
 .addr-display-name {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .addr-display-phone {
   font-size: 26rpx;
-  color: #555;
+  color: #58655B;
 }
 
 .addr-display-detail {
   font-size: 26rpx;
-  color: #555;
+  color: #58655B;
   line-height: 1.5;
 }
 
@@ -133,12 +133,12 @@
 
 .addr-empty-text {
   font-size: 28rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }
 
 .addr-edit-btn {
   margin-top: 20rpx;
-  border: 2rpx solid #C8902E;
+  border: 2rpx solid #B9852F;
   border-radius: 999rpx;
   padding: 14rpx 0;
   display: flex;
@@ -149,7 +149,7 @@
 .addr-edit-text {
   font-size: 26rpx;
   font-weight: 600;
-  color: #C8902E;
+  color: #B9852F;
 }
 
 /* 编辑模式 */
@@ -157,7 +157,7 @@
 
 .addr-confirm-btn {
   margin-top: 20rpx;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 999rpx;
   padding: 18rpx 0;
   display: flex;
@@ -191,7 +191,7 @@
   border-radius: 12rpx;
   padding: 14rpx 18rpx;
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .addr-name-row {
@@ -212,7 +212,7 @@
   align-items: center;
   gap: 20rpx;
   padding: 16rpx 0;
-  border-bottom: 1rpx solid #F2EBE0;
+  border-bottom: 1rpx solid #EAF0E6;
 }
 
 .co-item:last-child { border-bottom: none; }
@@ -245,13 +245,13 @@
 .co-item-name {
   font-size: 24rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.4;
 }
 
 .co-item-spec {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .co-item-price {
@@ -271,13 +271,13 @@
 
 .delivery-label {
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .delivery-fee {
   font-size: 26rpx;
   font-weight: 700;
-  color: #555555;
+  color: #58655B;
 }
 
 /* ===== 支付方式 ===== */
@@ -287,7 +287,7 @@
   align-items: center;
   gap: 24rpx;
   padding: 26rpx 0;
-  border-bottom: 1rpx solid #F2EBE0;
+  border-bottom: 1rpx solid #EAF0E6;
 }
 
 .pay-opt:last-child { border-bottom: none; }
@@ -313,25 +313,25 @@
 .pay-name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .pay-sub {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .pay-radio {
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
-  border: 3rpx solid #EEE5D8;
+  border: 3rpx solid #E3E9DE;
   flex-shrink: 0;
 }
 
 .pay-radio-on {
-  background: #C8902E;
-  border-color: #C8902E;
+  background: #B9852F;
+  border-color: #B9852F;
 }
 
 /* ===== 备注 ===== */
@@ -344,18 +344,18 @@
 
 .remark-placeholder {
   font-size: 26rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }
 
 .remark-arr {
   font-size: 28rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }
 
 /* ===== 底部结算 ===== */
 .co-bottom {
   background: #ffffff;
-  border-top: 1rpx solid #F2EBE0;
+  border-top: 1rpx solid #EAF0E6;
   padding: 20rpx 28rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
   flex-shrink: 0;
@@ -375,17 +375,17 @@
 
 .co-total-label {
   font-size: 26rpx;
-  color: #555555;
+  color: #58655B;
 }
 
 .co-total-val {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .co-pay-btn {
-  background: linear-gradient(135deg, #FF6B00, #FF3B30);
+  background: linear-gradient(135deg, #D97918, #FF3B30);
   border-radius: 999rpx;
   padding: 28rpx;
   display: flex;

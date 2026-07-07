@@ -3,12 +3,12 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 导航栏 ===== */
 .nav-bar {
-  background: linear-gradient(160deg, #5D3A1A, #7B4F2A);
+  background: linear-gradient(160deg, #5E4A2F, #80613C);
   flex-shrink: 0;
 }
 .nav-inner {
@@ -53,11 +53,11 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  background: linear-gradient(135deg, #C8902E, #E5A84A);
-  border-radius: 28rpx;
+  background: linear-gradient(135deg, #B9852F, #D7A248);
+  border-radius: 22rpx;
   margin: 32rpx 28rpx 0;
   padding: 36rpx 32rpx;
-  box-shadow: 0 8rpx 32rpx rgba(200, 144, 46, 0.45);
+  box-shadow: 0 8rpx 32rpx rgba(185, 133, 47, 0.26);
   position: relative;
   overflow: hidden;
 }
@@ -122,7 +122,7 @@
   background: #fff;
   border-radius: 20rpx;
   padding: 28rpx 0;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.07);
+  box-shadow: 0 4rpx 20rpx rgba(33, 61, 42, 0.06);
   gap: 12rpx;
 }
 .btn-small-secondary {
@@ -136,7 +136,7 @@
 .btn-small-text {
   font-size: 26rpx;
   font-weight: 500;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 /* ===== Section 标题 ===== */
@@ -150,11 +150,11 @@
 .section-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 .section-sub {
   font-size: 24rpx;
-  color: #888;
+  color: #8A948B;
 }
 
 /* ===== 过滤标签 ===== */
@@ -179,12 +179,12 @@
   flex-shrink: 0;
 }
 .filter-tag-active {
-  background: #C8902E;
-  border-color: #C8902E;
+  background: #B9852F;
+  border-color: #B9852F;
 }
 .filter-tag-text {
   font-size: 26rpx;
-  color: #555;
+  color: #58655B;
 }
 .filter-tag-active .filter-tag-text {
   color: #fff;
@@ -202,12 +202,12 @@
 .grid-item {
   width: calc((100% - 40rpx) / 3);
   background: #fff;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 24rpx 12rpx 20rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  box-shadow: 0 4rpx 24rpx rgba(33, 61, 42, 0.06);
   position: relative;
   overflow: hidden;
 }
@@ -217,7 +217,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  background: #F5222D;
+  background: #D6453D;
   border-radius: 0 24rpx 0 16rpx;
   padding: 4rpx 12rpx;
 }
@@ -232,7 +232,7 @@
 .grid-icon-wrap {
   width: 96rpx;
   height: 96rpx;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -254,7 +254,7 @@
 .grid-name {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
   margin-bottom: 10rpx;
   text-align: center;
 }
@@ -269,11 +269,11 @@
 .tag-physio  { background: #E8F0FF; }
 .grid-type-text {
   font-size: 20rpx;
-  color: #555;
+  color: #58655B;
 }
-.tag-bug     .grid-type-text { color: #FF6B00; }
-.tag-disease .grid-type-text { color: #4CAF50; }
-.tag-physio  .grid-type-text { color: #1890FF; }
+.tag-bug     .grid-type-text { color: #D97918; }
+.tag-disease .grid-type-text { color: #2F8A52; }
+.tag-physio  .grid-type-text { color: #2D86B8; }
 
 /* ===== 底部留白 ===== */
 .bottom-gap {

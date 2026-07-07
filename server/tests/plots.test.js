@@ -22,6 +22,7 @@ const mockPlot = {
   irrigation: '滴灌',
   soil_type: '壤土',
   planting_status: '已播种',
+  reference_images: JSON.stringify(['/uploads/plots/demo-a.jpg']),
   health_score: 92,
   status: 'normal'
 }
@@ -84,6 +85,7 @@ async function run() {
       area: 999999,
       perimeter: 999999,
       coordinates,
+      reference_images: ['/uploads/plots/demo-a.jpg', '/uploads/plots/demo-b.png'],
       irrigation: '滴灌',
       soil_type: '壤土',
       planting_status: '已播种'
@@ -96,6 +98,11 @@ async function run() {
     assert(insertQuery, 'create should issue INSERT')
     assert.notStrictEqual(insertQuery.params[3], 999999, 'server must recalculate area')
     assert.notStrictEqual(insertQuery.params[4], 999999, 'server must recalculate perimeter')
+    assert.deepStrictEqual(
+      JSON.parse(insertQuery.params[11]),
+      ['/uploads/plots/demo-a.jpg', '/uploads/plots/demo-b.png'],
+      'create should persist reference images for plot identification'
+    )
 
     const listed = await request(baseUrl, token, 'GET', '/api/plots?status=normal&min_area=10')
     assert.strictEqual(listed.status, 200)

@@ -32,18 +32,20 @@
         <view class="wc-top">
           <picker mode="selector" range="{{homePlotOptions}}" value="{{homePlotIndex}}" bindchange="onHomePlotChange" catchtap="noop">
             <view class="wc-loc-pill">
-              <text class="wc-loc-text">📍 {{weatherPreview.locationLabel}} · {{copy.switchPlot}}</text>
+              <text class="wc-loc-text">📍 {{weatherPreview.locationLabel}}</text>
+              <text class="wc-loc-change">{{copy.switchPlot}}</text>
             </view>
           </picker>
-          <text class="wc-date">{{today}}</text>
         </view>
         <view class="wc-main">
-          <text class="wc-icon">{{weatherPreview.weather.icon}}</text>
-          <text class="wc-temp">{{weatherPreview.weather.temp}}{{weatherPreview.weather.temp === '--' ? '' : '°'}}</text>
           <view class="wc-info">
-            <text class="wc-desc">{{weatherPreview.weather.desc}}</text>
+            <view class="wc-temp-row">
+              <text class="wc-temp">{{weatherPreview.weather.temp}}{{weatherPreview.weather.temp === '--' ? '' : '°'}}</text>
+              <text class="wc-desc">{{weatherPreview.weather.desc}}</text>
+            </view>
             <text class="wc-sub">{{weatherPreview.weather.low}}°~ {{weatherPreview.weather.high}}° · {{weatherPreview.weather.wind}}</text>
           </view>
+          <text class="wc-icon">{{weatherPreview.weather.icon}}</text>
         </view>
         <view class="wc-tip">
           <text class="wc-tip-text">🌿 <text class="tip-bold">{{weatherPreview.tipText}}</text></text>

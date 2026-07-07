@@ -54,6 +54,23 @@
         </view>
       </view>
 
+      <view wx:if="{{plot.referenceImageItems.length}}" class="section-card reference-detail-card">
+        <view class="section-head"><text class="section-title">{{copy.referenceImages}}</text><text class="section-sub">{{copy.referenceImagesSub}}</text></view>
+        <scroll-view class="reference-detail-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="reference-detail-row">
+            <image
+              class="reference-detail-img"
+              wx:for="{{plot.referenceImageItems}}"
+              wx:key="url"
+              src="{{item.displayUrl}}"
+              mode="aspectFill"
+              data-url="{{item.displayUrl}}"
+              bindtap="onPreviewReferenceImage"
+            ></image>
+          </view>
+        </scroll-view>
+      </view>
+
       <view class="section-card">
         <view class="section-head"><text class="section-title">{{copy.dataCenter}}</text><text class="section-sub">{{copy.dataCenterSub}}</text></view>
         <view class="module-grid">

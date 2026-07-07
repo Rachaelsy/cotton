@@ -4,13 +4,13 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
   overflow: hidden;
 }
 
 /* ── Header ── */
 .header {
-  background: linear-gradient(135deg, #5C3A1E 0%, #8B5E3C 60%, #C8902E 100%);
+  background: linear-gradient(135deg, #5C3A1E 0%, #8B5E3C 60%, #B9852F 100%);
   padding-left: 28rpx;
   padding-right: 28rpx;
   padding-bottom: 0;
@@ -28,7 +28,7 @@
   width: 64rpx;
   height: 64rpx;
   background: rgba(255,255,255,0.18);
-  border-radius: 32rpx;
+  border-radius: 26rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,7 +77,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  background: #DC2626;
+  background: #C93D35;
   color: #fff;
   font-size: 18rpx;
   font-weight: 700;
@@ -104,11 +104,11 @@
 
 .tip-text {
   font-size: 28rpx;
-  color: #888;
+  color: #8A948B;
 }
 
 .go-btn {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 999rpx;
   padding: 18rpx 48rpx;
   margin-top: 8rpx;
@@ -138,7 +138,7 @@
   background: #fff;
   border-radius: 16rpx;
   overflow: hidden;
-  box-shadow: 0 2rpx 14rpx rgba(0,0,0,0.07);
+  box-shadow: 0 2rpx 14rpx rgba(33,61,42,0.06);
 }
 
 .prod-img-wrap {
@@ -165,7 +165,7 @@
   display: block;
   font-size: 26rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.45;
   max-height: 76rpx;
   overflow: hidden;
@@ -174,14 +174,14 @@
 .prod-unit {
   display: block;
   font-size: 22rpx;
-  color: #888;
+  color: #8A948B;
   margin-top: 4rpx;
 }
 
 .prod-store {
   display: block;
   font-size: 20rpx;
-  color: #C8902E;
+  color: #B9852F;
   margin-top: 4rpx;
 }
 
@@ -201,13 +201,13 @@
 .price-symbol {
   font-size: 24rpx;
   font-weight: 800;
-  color: #C8902E;
+  color: #B9852F;
 }
 
 .price-main {
   font-size: 36rpx;
   font-weight: 900;
-  color: #C8902E;
+  color: #B9852F;
 }
 
 .prod-actions {
@@ -220,14 +220,14 @@
   width: 56rpx;
   height: 56rpx;
   background: #FEE2E2;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .fav-icon {
-  color: #DC2626;
+  color: #C93D35;
   font-size: 32rpx;
   line-height: 1;
 }
@@ -235,8 +235,8 @@
 .add-btn {
   width: 56rpx;
   height: 56rpx;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
-  border-radius: 28rpx;
+  background: linear-gradient(135deg, #B9852F, #C9973A);
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;

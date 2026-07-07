@@ -50,6 +50,16 @@ async function run() {
       WECHAT_PAY_PRIVATE_KEY: privateKey.replace(/\n/g, '\\n')
     }
   }), null)
+  const relativePathCfg = wxpay.getServiceProviderConfig({
+    env: {
+      WECHAT_PAY_SP_APPID: 'wxspapp',
+      WECHAT_PAY_SP_MCH_ID: '1900000109',
+      WECHAT_PAY_SERIAL_NO: 'SERIAL_NO',
+      WECHAT_PAY_NOTIFY_URL: 'https://example.com/api/pay/wechat/notify',
+      WECHAT_PAY_PRIVATE_KEY_PATH: 'tests/fixtures/wechat-test-private-key.txt'
+    }
+  })
+  assert.strictEqual(relativePathCfg.privateKey.includes('BEGIN TEST PRIVATE KEY'), true)
 
   const signature = wxpay.signMessage(privateKey, 'message-to-sign')
   const verified = crypto
@@ -140,6 +150,36 @@ async function run() {
   assert.deepStrictEqual(partnerBody.payer, { sp_openid: 'openid-under-sp-appid' })
   assert.strictEqual(partnerBody.amount.total, 2580)
   assert.strictEqual(JSON.parse(partnerBody.attach).subMchid, '1700000001')
+
+  const partnerProfitSharingBody = wxpay.buildPartnerJsapiBody({
+    cfg,
+    order: {
+      subMchid: '1700000001',
+      description: '棉花农资订单 MG202607030001',
+      outTradeNo: 'SUPPLY_MG202607030001_8',
+      amountFen: 2580,
+      profitSharing: true,
+      attach: { orderType: 'supply', orderId: 8, subMchid: '1700000001' }
+    },
+    openid: 'openid-under-sp-appid'
+  })
+  assert.deepStrictEqual(partnerProfitSharingBody.settle_info, { profit_sharing: true })
+
+  const media = wxpay.buildMediaUploadBody({
+    filename: 'license.png',
+    buffer: Buffer.from('image-bytes-for-test'),
+    mimeType: 'image/png',
+    boundary: '----cotton-test-boundary'
+  })
+  assert.strictEqual(JSON.parse(media.meta).filename, 'license.png')
+  assert.strictEqual(
+    JSON.parse(media.meta).sha256,
+    crypto.createHash('sha256').update(Buffer.from('image-bytes-for-test')).digest('hex')
+  )
+  assert.match(media.contentType, /multipart\/form-data; boundary=----cotton-test-boundary/)
+  assert.ok(media.bodyBuffer.includes(Buffer.from('name="meta"')))
+  assert.ok(media.bodyBuffer.includes(Buffer.from('name="file"; filename="license.png"')))
+  assert.ok(media.bodyBuffer.includes(Buffer.from('image-bytes-for-test')))
 
   console.log('wechat pay utility tests passed')
 }

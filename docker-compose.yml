@@ -28,6 +28,8 @@ services:
       dockerfile: Dockerfile
     container_name: cotton-app
     restart: always
+    env_file:
+      - ./server/.env
     environment:
       PORT: 3000
       DB_HOST: db
@@ -40,8 +42,18 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       SILICONFLOW_API_KEY: ${SILICONFLOW_API_KEY:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      WEATHER_PROVIDER: ${WEATHER_PROVIDER:-qweather}
+      QWEATHER_API_HOST: ${QWEATHER_API_HOST:-}
+      QWEATHER_API_KEY: ${QWEATHER_API_KEY:-}
+      QWEATHER_JWT_KID: ${QWEATHER_JWT_KID:-}
+      QWEATHER_JWT_SUB: ${QWEATHER_JWT_SUB:-}
+      QWEATHER_JWT_PRIVATE_KEY_PATH: ${QWEATHER_JWT_PRIVATE_KEY_PATH:-}
+      QWEATHER_JWT_PRIVATE_KEY: ${QWEATHER_JWT_PRIVATE_KEY:-}
+      QWEATHER_TIMEOUT_MS: ${QWEATHER_TIMEOUT_MS:-8000}
     volumes:
       - uploads:/app/public/uploads
+      - ${WECHAT_PAY_PRIVATE_KEY_HOST_PATH:-./apiclient_key.pem}:/app/apiclient_key.pem:ro
+      - ${WECHAT_PAY_PUBLIC_KEY_HOST_PATH:-./pub_key.pem}:/app/pub_key.pem:ro
     depends_on:
       db:
         condition: service_healthy

@@ -1,0 +1,3 @@
+-----BEGIN TEST PRIVATE KEY-----
+test-key-for-relative-path-resolution
+-----END TEST PRIVATE KEY-----

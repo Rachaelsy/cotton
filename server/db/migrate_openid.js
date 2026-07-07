@@ -1,24 +1,33 @@
-// server/db/migrate_openid.js — 添加 openid 字段，允许 password 为空（微信用户）
+// server/db/migrate_openid.js - add openid field for WeChat login/payment users
 require('dotenv').config()
 const db = require('./database')
 
+async function hasColumn(table, column) {
+  const [rows] = await db.query(
+    `SELECT COUNT(*) AS count
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?`,
+    [table, column]
+  )
+  return Number(rows[0]?.count || 0) > 0
+}
+
 async function main() {
-  // 添加 openid 列（若已存在则跳过）
-  await db.query(`
-    ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS openid VARCHAR(64) DEFAULT NULL
-  `).catch(() => {
-    // MySQL 8.0 可能不支持 IF NOT EXISTS，逐一处理
-  })
+  if (!(await hasColumn('users', 'openid'))) {
+    await db.query('ALTER TABLE users ADD COLUMN openid VARCHAR(64) DEFAULT NULL')
+    console.log('[migrate] users.openid added')
+  } else {
+    console.log('[migrate] users.openid exists, skipped')
+  }
 
-  // 用 MODIFY 允许 password 为 NULL（微信登录用户无密码）
-  await db.query(`
-    ALTER TABLE users
-    MODIFY COLUMN password VARCHAR(72) NULL DEFAULT NULL
-  `)
-
-  console.log('✅ openid 字段已添加，password 已改为可空')
+  await db.query('ALTER TABLE users MODIFY COLUMN password VARCHAR(72) NULL DEFAULT NULL')
+  console.log('[migrate] users.openid ready; password nullable')
   process.exit(0)
 }
 
-main().catch(e => { console.error('❌ 迁移失败:', e.message); process.exit(1) })
+main().catch(error => {
+  console.error('[migrate] openid failed:', error.message)
+  process.exit(1)
+})

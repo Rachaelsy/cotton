@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 顶部渐变 ===== */
@@ -39,9 +39,9 @@
 /* ===== 用户卡片 ===== */
 .user-card {
   background: rgba(255, 255, 255, 0.88);
-  border-radius: 32rpx;
+  border-radius: 26rpx;
   padding: 28rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  box-shadow: 0 4rpx 24rpx rgba(33, 61, 42, 0.06);
 }
 
 .uc-top {
@@ -82,7 +82,7 @@
 .uc-name {
   font-size: 36rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .verified-chip {
@@ -93,7 +93,7 @@
 
 .verified-text {
   font-size: 20rpx;
-  color: #4CAF50;
+  color: #2F8A52;
   font-weight: 700;
 }
 
@@ -112,13 +112,13 @@
 
 .uc-tag-text {
   font-size: 22rpx;
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 600;
 }
 
 .uc-arr {
   font-size: 40rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
   flex-shrink: 0;
 }
 
@@ -128,7 +128,7 @@
   flex-direction: row;
   align-items: center;
   padding-top: 24rpx;
-  border-top: 1rpx solid #F2EBE0;
+  border-top: 1rpx solid #EAF0E6;
 }
 
 .uc-stat {
@@ -149,24 +149,24 @@
 .uc-stat-val {
   font-size: 40rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1;
 }
 
 .uc-stat-unit {
   font-size: 20rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .uc-stat-label {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .uc-divider {
   width: 1rpx;
   height: 48rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
 }
 
 /* ===== 滚动区 ===== */
@@ -178,10 +178,10 @@
 /* ===== 菜单组 ===== */
 .menu-group {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   margin: 24rpx 28rpx 0;
   overflow: hidden;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4rpx 20rpx rgba(33, 61, 42, 0.045);
 }
 
 .menu-item {
@@ -214,14 +214,14 @@
 .mi-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
   display: block;
   margin-bottom: 4rpx;
 }
 
 .mi-sub {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
   display: block;
 }
 
@@ -235,13 +235,13 @@
 
 .mi-verified {
   font-size: 24rpx;
-  color: #4CAF50;
+  color: #2F8A52;
   font-weight: 600;
 }
 
 .mi-count {
   font-size: 28rpx;
-  color: #888888;
+  color: #8A948B;
   font-weight: 600;
 }
 
@@ -253,32 +253,32 @@
 
 .mi-badge-text {
   font-size: 22rpx;
-  color: #FF6B00;
+  color: #D97918;
   font-weight: 700;
 }
 
 .mi-version {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .mi-arr {
   font-size: 36rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }
 
 .mi-div {
   height: 1rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
   margin: 0 28rpx;
 }
 
 /* ===== 游客卡片 ===== */
 .guest-card {
   background: rgba(255, 255, 255, 0.88);
-  border-radius: 32rpx;
+  border-radius: 26rpx;
   padding: 32rpx 28rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  box-shadow: 0 4rpx 24rpx rgba(33, 61, 42, 0.06);
   display: flex;
   flex-direction: column;
   gap: 24rpx;
@@ -313,12 +313,12 @@
 .guest-title {
   font-size: 34rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .guest-sub {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* 微信登录按钮 */
@@ -354,33 +354,33 @@
 
 .phone-login-text {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .phone-login-arr {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* 未登录时菜单项置灰 */
-.item-dim .mi-title { color: #AAAAAA; }
+.item-dim .mi-title { color: #B7C0B8; }
 .item-dim .mi-sub   { color: #CCCCCC; }
 .item-dim .mi-emoji { opacity: 0.4; }
 
 /* ===== 退出登录 ===== */
 .logout-wrap {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   margin: 20rpx 28rpx 0;
   padding: 32rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4rpx 20rpx rgba(33, 61, 42, 0.045);
 }
 
 .logout-text {
   font-size: 30rpx;
-  color: #F5222D;
+  color: #D6453D;
   font-weight: 600;
 }

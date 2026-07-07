@@ -4,15 +4,15 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 导航栏 ===== */
 .ai-nav {
   background: #ffffff;
-  border-bottom: 1rpx solid #F2EBE0;
+  border-bottom: 1rpx solid #EAF0E6;
   flex-shrink: 0;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.05);
+  box-shadow: 0 2rpx 12rpx rgba(33,61,42,0.045);
 }
 
 .ai-nav-inner {
@@ -31,8 +31,8 @@
 .ai-avatar {
   width: 80rpx;
   height: 80rpx;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
-  border-radius: 24rpx;
+  background: linear-gradient(135deg, #B9852F, #C9973A);
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,11 +64,11 @@
 .ai-name {
   font-size: 32rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .ai-badge {
-  background: #1890FF;
+  background: #2D86B8;
   border-radius: 8rpx;
   padding: 3rpx 12rpx;
 }
@@ -94,22 +94,22 @@
 }
 
 .ai-status-dot.speaking {
-  background: #1890FF;
+  background: #2D86B8;
 }
 
 .ai-status-dot.recording {
-  background: #D64545;
+  background: #C84D45;
 }
 
 .ai-status-text {
   font-size: 22rpx;
-  color: #4CAF50;
+  color: #2F8A52;
 }
 
 .ai-more-btn {
   width: 64rpx;
   height: 64rpx;
-  background: #F5EEE6;
+  background: #F6F8F3;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -119,7 +119,7 @@
 
 .ai-more-icon {
   font-size: 28rpx;
-  color: #888888;
+  color: #8A948B;
   letter-spacing: -4rpx;
   font-weight: 800;
 }
@@ -142,8 +142,8 @@
 
 .chat-date-text {
   font-size: 22rpx;
-  color: #888888;
-  background: rgba(0,0,0,0.06);
+  color: #8A948B;
+  background: rgba(33,61,42,0.05);
   border-radius: 999rpx;
   padding: 6rpx 24rpx;
 }
@@ -151,9 +151,9 @@
 /* ===== 欢迎卡片 ===== */
 .chat-ai-card {
   background: #ffffff;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   padding: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.07);
+  box-shadow: 0 4rpx 20rpx rgba(33,61,42,0.06);
   margin-bottom: 8rpx;
 }
 
@@ -168,7 +168,7 @@
 .cac-avatar {
   width: 72rpx;
   height: 72rpx;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 20rpx;
   display: flex;
   align-items: center;
@@ -195,11 +195,11 @@
 .cac-name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .cac-ai-chip {
-  background: #1890FF;
+  background: #2D86B8;
   border-radius: 6rpx;
   padding: 2rpx 10rpx;
 }
@@ -212,17 +212,17 @@
 
 .cac-sub {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .cac-body {
   font-size: 28rpx;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.7;
   margin-bottom: 20rpx;
 }
 
-.cac-bold { color: #C8902E; font-weight: 700; }
+.cac-bold { color: #B9852F; font-weight: 700; }
 
 .quick-grid {
   display: flex;
@@ -233,8 +233,8 @@
 
 .quick-item {
   width: 47%;
-  background: #FBF5EA;
-  border: 1rpx solid #EEE5D8;
+  background: #FFF8EA;
+  border: 1rpx solid #E3E9DE;
   border-radius: 20rpx;
   padding: 20rpx;
   display: flex;
@@ -247,7 +247,7 @@
 
 .quick-text {
   font-size: 24rpx;
-  color: #555555;
+  color: #58655B;
 }
 
 /* ===== 消息 ===== */
@@ -268,7 +268,7 @@
 .user-avatar {
   width: 56rpx;
   height: 56rpx;
-  background: linear-gradient(135deg, #1890FF, #40A9FF);
+  background: linear-gradient(135deg, #2D86B8, #6AAFD0);
   border-radius: 16rpx;
   display: flex;
   align-items: center;
@@ -290,20 +290,20 @@
 
 .msg-nm-left {
   font-size: 20rpx;
-  color: #888888;
+  color: #8A948B;
   margin-bottom: 6rpx;
 }
 
 .msg-nm-right {
   font-size: 20rpx;
-  color: #888888;
+  color: #8A948B;
   margin-bottom: 6rpx;
   text-align: right;
 }
 
 .bubble {
   padding: 20rpx 24rpx;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
 }
 
 .bubble-text {
@@ -318,10 +318,10 @@ rich-text.bubble-text {
 .ai-bubble {
   background: #ffffff;
   border-top-left-radius: 8rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.07);
+  box-shadow: 0 4rpx 16rpx rgba(33,61,42,0.06);
 }
 
-.ai-bubble .bubble-text { color: #1A1A1A; }
+.ai-bubble .bubble-text { color: #18231A; }
 
 .message-actions {
   display: flex;
@@ -333,7 +333,7 @@ rich-text.bubble-text {
   min-height: 48rpx;
   padding: 8rpx 18rpx;
   border-radius: 999rpx;
-  background: #F5EEE6;
+  background: #F6F8F3;
   border: 1rpx solid #E7D8C5;
   display: flex;
   flex-direction: row;
@@ -352,13 +352,13 @@ rich-text.bubble-text {
 
 .replay-answer-text {
   font-size: 21rpx;
-  color: #7A5020;
+  color: #6F552B;
   font-weight: 700;
 }
 
 .jump-card {
   margin-top: 12rpx;
-  background: #FBF5EA;
+  background: #FFF8EA;
   border: 1rpx solid #E8D9C2;
   border-radius: 20rpx;
   padding: 18rpx;
@@ -366,7 +366,7 @@ rich-text.bubble-text {
   flex-direction: row;
   align-items: center;
   gap: 16rpx;
-  box-shadow: 0 4rpx 14rpx rgba(139, 92, 36, 0.08);
+  box-shadow: 0 4rpx 14rpx rgba(33, 61, 42, 0.07);
 }
 
 .jump-icon {
@@ -397,18 +397,18 @@ rich-text.bubble-text {
 
 .jump-title {
   font-size: 27rpx;
-  color: #1A1A1A;
+  color: #18231A;
   font-weight: 900;
 }
 
 .jump-desc {
   font-size: 21rpx;
-  color: #777777;
+  color: #758076;
   line-height: 1.35;
 }
 
 .jump-enter {
-  background: #C8902E;
+  background: #B9852F;
   color: #ffffff;
   border-radius: 999rpx;
   padding: 10rpx 18rpx;
@@ -418,7 +418,7 @@ rich-text.bubble-text {
 }
 
 .user-bubble {
-  background: #C8902E;
+  background: #B9852F;
   border-top-right-radius: 8rpx;
 }
 
@@ -443,14 +443,14 @@ rich-text.bubble-text {
 .tdot {
   width: 12rpx;
   height: 12rpx;
-  background: #888888;
+  background: #8A948B;
   border-radius: 50%;
 }
 
 /* ===== 底部输入 ===== */
 .chat-bottom {
   background: #ffffff;
-  border-top: 1rpx solid #F2EBE0;
+  border-top: 1rpx solid #EAF0E6;
   flex-shrink: 0;
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -467,8 +467,8 @@ rich-text.bubble-text {
 }
 
 .quick-chip {
-  background: #F5EEE6;
-  border: 1rpx solid #EEE5D8;
+  background: #F6F8F3;
+  border: 1rpx solid #E3E9DE;
   border-radius: 999rpx;
   padding: 10rpx 24rpx;
   margin-right: 16rpx;
@@ -477,7 +477,7 @@ rich-text.bubble-text {
 
 .quick-chip-text {
   font-size: 24rpx;
-  color: #555555;
+  color: #58655B;
   white-space: nowrap;
 }
 
@@ -492,8 +492,8 @@ rich-text.bubble-text {
   min-height: 52rpx;
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
-  background: #F5EEE6;
-  border: 1rpx solid #EEE5D8;
+  background: #F6F8F3;
+  border: 1rpx solid #E3E9DE;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -525,7 +525,7 @@ rich-text.bubble-text {
 
 .voice-answer-toggle.on .voice-answer-switch {
   justify-content: flex-end;
-  background: #C8902E;
+  background: #B9852F;
 }
 
 .voice-answer-label {
@@ -550,7 +550,7 @@ rich-text.bubble-text {
 .kbd-btn {
   width: 68rpx;
   height: 68rpx;
-  background: #F5EEE6;
+  background: #F6F8F3;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -571,7 +571,7 @@ rich-text.bubble-text {
 .voice-btn {
   width: 100%;
   min-height: 76rpx;
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   border-radius: 999rpx;
   padding: 18rpx 22rpx;
   display: flex;
@@ -579,11 +579,11 @@ rich-text.bubble-text {
   align-items: center;
   justify-content: center;
   gap: 16rpx;
-  box-shadow: 0 6rpx 24rpx rgba(200, 144, 46, 0.4);
+  box-shadow: 0 6rpx 24rpx rgba(185, 133, 47, 0.24);
 }
 
 .voice-btn.recording {
-  background: linear-gradient(135deg, #D64545, #E76F51);
+  background: linear-gradient(135deg, #C84D45, #D8735C);
   box-shadow: 0 6rpx 28rpx rgba(214, 69, 69, 0.35);
 }
 
@@ -598,7 +598,7 @@ rich-text.bubble-text {
 .voice-live-text {
   max-width: 100%;
   font-size: 22rpx;
-  color: #7A5020;
+  color: #6F552B;
   line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -608,18 +608,18 @@ rich-text.bubble-text {
 
 .txt-input {
   flex: 1;
-  background: #F5EEE6;
-  border: 3rpx solid #EEE5D8;
+  background: #F6F8F3;
+  border: 3rpx solid #E3E9DE;
   border-radius: 40rpx;
   padding: 16rpx 28rpx;
   font-size: 28rpx;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .send-btn {
   width: 68rpx;
   height: 68rpx;
-  background: #C8902E;
+  background: #B9852F;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -627,7 +627,7 @@ rich-text.bubble-text {
   flex-shrink: 0;
 }
 
-.send-btn.off { background: #BBBBBB; }
+.send-btn.off { background: #C5CCC5; }
 
 .send-icon {
   font-size: 28rpx;

@@ -3,14 +3,14 @@
   width: 750rpx;
   height: 140rpx;
   background: #ffffff;
-  border-top: 1rpx solid #EEEEEE;
+  border-top: 1rpx solid #E3E9DE;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   justify-content: space-around;
   padding-top: 14rpx;
   padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -2rpx 16rpx rgba(33, 61, 42, 0.05);
 }
 
 .mitem {
@@ -28,11 +28,11 @@
 
 .mlbl {
   font-size: 18rpx;
-  color: #999999;
+  color: #9BA49C;
   font-weight: 500;
 }
 
 .on .mlbl {
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 700;
 }

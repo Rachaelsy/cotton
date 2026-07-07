@@ -4,12 +4,12 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ── 顶部英雄区 ────────────────────────────── */
 .hero {
-  background: linear-gradient(160deg, #C8902E, #D4A043);
+  background: linear-gradient(160deg, #B9852F, #C9973A);
   padding: 0 32rpx 48rpx;
   flex-shrink: 0;
   position: relative;
@@ -70,24 +70,24 @@
 /* ── 步骤标题 ──────────────────────────────── */
 .role-tag {
   display: inline-flex;
-  background: #FBF5EA;
+  background: #FFF8EA;
   border-radius: 999rpx;
   padding: 6rpx 24rpx;
   margin-bottom: 16rpx;
 }
-.role-tag-text { font-size: 24rpx; color: #C8902E; font-weight: 700; }
+.role-tag-text { font-size: 24rpx; color: #B9852F; font-weight: 700; }
 
 .step-title {
   display: block;
   font-size: 40rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
   margin-bottom: 8rpx;
 }
 .step-sub {
   display: block;
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
   margin-bottom: 48rpx;
 }
 
@@ -99,14 +99,14 @@
   gap: 24rpx;
   background: #FAFAFA;
   border: 2rpx solid #F0E8E0;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   padding: 32rpx 28rpx;
   margin-bottom: 20rpx;
 }
 .role-icon-wrap {
   width: 100rpx;
   height: 100rpx;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -116,15 +116,15 @@
 .merchant-bg { background: #FFF3E0; }
 .role-icon   { font-size: 52rpx; }
 .role-info   { flex: 1; }
-.role-name   { display: block; font-size: 32rpx; font-weight: 800; color: #1A1A1A; margin-bottom: 6rpx; }
-.role-desc   { display: block; font-size: 22rpx; color: #888888; }
-.role-arr    { font-size: 40rpx; color: #BBBBBB; flex-shrink: 0; }
+.role-name   { display: block; font-size: 32rpx; font-weight: 800; color: #18231A; margin-bottom: 6rpx; }
+.role-desc   { display: block; font-size: 22rpx; color: #8A948B; }
+.role-arr    { font-size: 40rpx; color: #C5CCC5; flex-shrink: 0; }
 
 /* ── 表单字段 ──────────────────────────────── */
 .section-title {
   font-size: 26rpx;
   font-weight: 700;
-  color: #C8902E;
+  color: #B9852F;
   margin: 24rpx 0 16rpx;
   display: flex;
   align-items: center;
@@ -135,7 +135,7 @@
   display: block;
   width: 6rpx;
   height: 24rpx;
-  background: #C8902E;
+  background: #B9852F;
   border-radius: 3rpx;
 }
 
@@ -144,32 +144,32 @@
 .field-label {
   display: block;
   font-size: 24rpx;
-  color: #555555;
+  color: #58655B;
   font-weight: 600;
   margin-bottom: 10rpx;
 }
-.required { color: #F5222D; }
+.required { color: #D6453D; }
 
 .input-box {
   display: flex;
   flex-direction: row;
   align-items: center;
   background: #F8F4EF;
-  border: 1.5rpx solid #EEE5D8;
+  border: 1.5rpx solid #E3E9DE;
   border-radius: 18rpx;
   padding: 0 24rpx;
   height: 88rpx;
 }
 .input-prefix {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
   margin-right: 16rpx;
   flex-shrink: 0;
 }
 .field-input {
   flex: 1;
   font-size: 28rpx;
-  color: #1A1A1A;
+  color: #18231A;
   height: 88rpx;
 }
 .eye-btn {
@@ -180,8 +180,8 @@
 
 /* ── 提交按钮 ──────────────────────────────── */
 .submit-btn {
-  background: linear-gradient(135deg, #D4A043, #C8902E);
-  border-radius: 24rpx;
+  background: linear-gradient(135deg, #C9973A, #B9852F);
+  border-radius: 22rpx;
   height: 96rpx;
   display: flex;
   align-items: center;
@@ -205,8 +205,8 @@
   gap: 8rpx;
   margin-top: 28rpx;
 }
-.switch-text { font-size: 24rpx; color: #888888; }
-.switch-link { font-size: 24rpx; color: #C8902E; font-weight: 700; }
+.switch-text { font-size: 24rpx; color: #8A948B; }
+.switch-link { font-size: 24rpx; color: #B9852F; font-weight: 700; }
 
 
 /* ── 微信登录按钮 ────────────────────────────── */
@@ -234,4 +234,4 @@
   margin: 28rpx 0 8rpx;
 }
 .divider-line { flex: 1; height: 1rpx; background: #E5DDD3; }
-.divider-text { font-size: 22rpx; color: #AAAAAA; flex-shrink: 0; }
+.divider-text { font-size: 22rpx; color: #B7C0B8; flex-shrink: 0; }

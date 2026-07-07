@@ -11,7 +11,7 @@
 
 /* Header */
 .header {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   padding: 8rpx 32rpx 36rpx;
 }
 .header-tag {
@@ -71,12 +71,12 @@
 .section-title {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
   margin-bottom: 16rpx;
 }
 .section-more {
   font-size: 24rpx;
-  color: #C8902E;
+  color: #B9852F;
 }
 
 /* Stat grid */
@@ -88,7 +88,7 @@
   background: #ffffff;
   border-radius: 20rpx;
   padding: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.08);
+  box-shadow: 0 4rpx 20rpx rgba(33,61,42,0.07);
 }
 .stat-card {
   width: 300rpx;
@@ -107,15 +107,15 @@
 .stat-val {
   font-size: 32rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 .stat-lbl {
   font-size: 22rpx;
-  color: #666666;
+  color: #687468;
 }
 .stat-unit {
   font-size: 18rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
 }
 
 /* Quick actions */
@@ -125,7 +125,7 @@
   background: #ffffff;
   border-radius: 20rpx;
   padding: 24rpx 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
+  box-shadow: 0 4rpx 20rpx rgba(33,61,42,0.05);
 }
 .quick-item {
   flex: 1;
@@ -137,7 +137,7 @@
 .quick-icon {
   width: 88rpx;
   height: 88rpx;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -149,14 +149,14 @@
 .quick-emoji { font-size: 40rpx; }
 .quick-lbl {
   font-size: 22rpx;
-  color: #555555;
+  color: #58655B;
 }
 
 /* Order list */
 .order-list {
   background: #ffffff;
   border-radius: 20rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
+  box-shadow: 0 4rpx 20rpx rgba(33,61,42,0.05);
   overflow: hidden;
 }
 .order-item {
@@ -170,7 +170,7 @@
 .order-left { flex: 1; }
 .order-id {
   font-size: 20rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
   display: block;
 }
 .order-goods {
@@ -188,7 +188,7 @@
 .order-amount {
   font-size: 28rpx;
   font-weight: 700;
-  color: #C8902E;
+  color: #B9852F;
 }
 .order-status {
   padding: 4rpx 14rpx;
@@ -199,7 +199,7 @@
 .order-status.done    { background: #F0FDF4; }
 .order-status-text {
   font-size: 20rpx;
-  color: #666666;
+  color: #687468;
 }
 .order-status.pending .order-status-text { color: #D97706; }
-.order-status.done .order-status-text    { color: #16A34A; }
+.order-status.done .order-status-text    { color: #2F8A52; }

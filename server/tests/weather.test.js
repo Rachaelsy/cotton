@@ -3,6 +3,7 @@ const express = require('express')
 const jwt = require('jsonwebtoken')
 
 process.env.JWT_SECRET = 'weather-route-test-secret'
+process.env.WEATHER_PROVIDER = 'open-meteo-cma'
 
 const dbPath = require.resolve('../db/database')
 const queryLog = []
@@ -16,6 +17,11 @@ const mockUnavailableCmaCoordinates = JSON.stringify([
   { latitude: 28.167, longitude: 104.511 },
   { latitude: 28.168, longitude: 104.511 },
   { latitude: 28.168, longitude: 104.512 }
+])
+const mockTimeoutCoordinates = JSON.stringify([
+  { latitude: 39.48, longitude: 75.99 },
+  { latitude: 39.48, longitude: 75.991 },
+  { latitude: 39.481, longitude: 75.991 }
 ])
 
 const mockDb = {
@@ -41,6 +47,19 @@ const mockDb = {
           name: '筠连县',
           area: '42.14',
           coordinates: mockUnavailableCmaCoordinates,
+          sow_date: '2026-04-20',
+          irrigation: '滴灌',
+          soil_type: '壤土',
+          planting_status: '已播种',
+          note: ''
+        }], []]
+      }
+      if (params[0] === 10) {
+        return [[{
+          id: 10,
+          name: '上游超时地块',
+          area: '18.20',
+          coordinates: mockTimeoutCoordinates,
           sow_date: '2026-04-20',
           irrigation: '滴灌',
           soil_type: '壤土',
@@ -164,6 +183,9 @@ global.fetch = async (url, options = {}) => {
   }
 
   if (currentUrl.includes('api.open-meteo.com/v1/cma')) {
+    if (currentUrl.includes('latitude=39.480333333333334')) {
+      throw new Error('真实小时预报接口响应超时')
+    }
     return {
       ok: true,
       json: async () => ({
@@ -264,6 +286,11 @@ async function run() {
       fetchedRequests.every(item => !item.url.includes('weather.cma.cn/api/now/56498')),
       'weather request should not try regional station data for plot-level weather'
     )
+
+    const upstreamTimeout = await request(baseUrl, farmerToken, '/api/weather/plot/10')
+    assert.strictEqual(upstreamTimeout.status, 503)
+    assert.strictEqual(upstreamTimeout.json.code, 503)
+    assert.match(upstreamTimeout.json.msg, /真实小时预报接口响应超时/)
 
     console.log('weather API tests passed')
   } finally {

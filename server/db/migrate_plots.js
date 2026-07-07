@@ -11,6 +11,7 @@ async function migrate() {
       area         DECIMAL(10,2) NOT NULL DEFAULT 0        COMMENT '面积（亩）',
       perimeter    DECIMAL(10,2) NOT NULL DEFAULT 0        COMMENT '周长（米）',
       coordinates  TEXT         DEFAULT NULL               COMMENT 'JSON [{latitude,longitude},...]',
+      reference_images TEXT     DEFAULT NULL               COMMENT '地块辅助识别图片 JSON',
       sow_date     DATE         DEFAULT NULL               COMMENT '播种日期',
       irrigation   VARCHAR(16)  NOT NULL DEFAULT '滴灌'   COMMENT '灌溉方式',
       soil_type    VARCHAR(32)  NOT NULL DEFAULT ''        COMMENT '土壤类型',
@@ -31,6 +32,15 @@ async function migrate() {
       ADD COLUMN planting_status VARCHAR(16) NOT NULL DEFAULT '已播种'
       COMMENT '已播种 / 计划播种 / 未播种'
       AFTER soil_type
+    `)
+  }
+  const [imageColumns] = await db.query("SHOW COLUMNS FROM plots LIKE 'reference_images'")
+  if (!imageColumns.length) {
+    await db.query(`
+      ALTER TABLE plots
+      ADD COLUMN reference_images TEXT DEFAULT NULL
+      COMMENT '地块辅助识别图片 JSON'
+      AFTER coordinates
     `)
   }
   console.log('✅ plots 表已创建')

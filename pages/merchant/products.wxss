@@ -9,7 +9,7 @@
 .scroll { flex: 1; height: 0; }
 
 .header {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
   padding: 8rpx 32rpx 28rpx;
 }
 .header-tag {
@@ -31,7 +31,7 @@
   flex-direction: row;
   align-items: center;
   background: rgba(255,255,255,0.25);
-  border-radius: 30rpx;
+  border-radius: 26rpx;
   padding: 10rpx 24rpx;
   gap: 6rpx;
 }
@@ -43,19 +43,19 @@
   display: flex;
   flex-direction: row;
   background: #fff;
-  border-bottom: 1rpx solid #F0F0F0;
+  border-bottom: 1rpx solid #EAF0E6;
 }
 .tab-item {
   flex: 1;
   text-align: center;
   padding: 24rpx 0;
   font-size: 26rpx;
-  color: #888;
+  color: #8A948B;
 }
 .tab-item.active {
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 700;
-  border-bottom: 4rpx solid #C8902E;
+  border-bottom: 4rpx solid #B9852F;
 }
 
 /* Product list */
@@ -64,7 +64,7 @@
   background: #fff;
   border-radius: 16rpx;
   padding: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(33,61,42,0.05);
 }
 .prod-info { display: flex; flex-direction: row; gap: 20rpx; margin-bottom: 20rpx; }
 .prod-icon {
@@ -76,13 +76,13 @@
 }
 .prod-emoji { font-size: 40rpx; }
 .prod-detail { flex: 1; }
-.prod-name { font-size: 28rpx; font-weight: 600; color: #1A1A1A; display: block; }
-.prod-cat { font-size: 22rpx; color: #AAAAAA; margin-top: 4rpx; display: block; }
+.prod-name { font-size: 28rpx; font-weight: 600; color: #18231A; display: block; }
+.prod-cat { font-size: 22rpx; color: #B7C0B8; margin-top: 4rpx; display: block; }
 .prod-meta { display: flex; flex-direction: row; align-items: baseline; gap: 8rpx; margin-top: 8rpx; }
-.prod-price { font-size: 30rpx; font-weight: 700; color: #C8902E; }
-.prod-unit { font-size: 20rpx; color: #AAAAAA; }
-.prod-stock { font-size: 20rpx; color: #4CAF50; margin-left: 8rpx; }
-.prod-stock.out { color: #F5222D; }
+.prod-price { font-size: 30rpx; font-weight: 700; color: #B9852F; }
+.prod-unit { font-size: 20rpx; color: #B7C0B8; }
+.prod-stock { font-size: 20rpx; color: #2F8A52; margin-left: 8rpx; }
+.prod-stock.out { color: #D6453D; }
 
 .prod-actions { display: flex; flex-direction: row; gap: 12rpx; }
 .action-btn {
@@ -94,8 +94,8 @@
 }
 .action-btn.edit    { background: #EFF6FF; color: #2563EB; }
 .action-btn.off-btn { background: #FFF7ED; color: #D97706; }
-.action-btn.on-btn  { background: #F0FDF4; color: #16A34A; }
-.action-btn.del     { background: #FEF2F2; color: #DC2626; }
+.action-btn.on-btn  { background: #F0FDF4; color: #2F8A52; }
+.action-btn.del     { background: #FEF2F2; color: #C93D35; }
 
 /* Empty */
 .empty {
@@ -106,7 +106,7 @@
   gap: 16rpx;
 }
 .empty-icon { font-size: 80rpx; }
-.empty-text { font-size: 26rpx; color: #AAAAAA; }
+.empty-text { font-size: 26rpx; color: #B7C0B8; }
 
 /* Modal */
 .modal-mask {
@@ -119,15 +119,15 @@
   position: fixed;
   left: 0; right: 0; bottom: 0;
   background: #fff;
-  border-radius: 32rpx 32rpx 0 0;
+  border-radius: 28rpx 28rpx 0 0;
   padding: 40rpx 32rpx;
   z-index: 101;
 }
-.modal-title { font-size: 32rpx; font-weight: 700; color: #1A1A1A; display: block; margin-bottom: 32rpx; }
+.modal-title { font-size: 32rpx; font-weight: 700; color: #18231A; display: block; margin-bottom: 32rpx; }
 .form-item { margin-bottom: 24rpx; }
 .form-row { display: flex; flex-direction: row; gap: 20rpx; }
 .form-item.half { flex: 1; }
-.form-label { font-size: 24rpx; color: #555; display: block; margin-bottom: 10rpx; }
+.form-label { font-size: 24rpx; color: #58655B; display: block; margin-bottom: 10rpx; }
 .form-input {
   width: 100%;
   height: 80rpx;
@@ -135,7 +135,7 @@
   border-radius: 12rpx;
   padding: 0 20rpx;
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
   box-sizing: border-box;
 }
 .modal-btns { display: flex; flex-direction: row; gap: 20rpx; margin-top: 16rpx; }
@@ -149,5 +149,5 @@
   font-size: 28rpx;
   font-weight: 600;
 }
-.modal-btn.cancel  { background: #F5F6FA; color: #666; }
-.modal-btn.confirm { background: #C8902E; color: #fff; }
+.modal-btn.cancel  { background: #F5F6FA; color: #687468; }
+.modal-btn.confirm { background: #B9852F; color: #fff; }

@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 导航 ===== */
@@ -16,7 +16,7 @@
   padding-left: 16rpx;
   padding-right: 24rpx;
   padding-bottom: 16rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06);
+  box-shadow: 0 2rpx 12rpx rgba(33,61,42,0.05);
 }
 
 .nav-back-btn {
@@ -39,7 +39,7 @@
   text-align: center;
   font-size: 32rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 /* ===== 滚动区 ===== */
@@ -61,7 +61,7 @@
   width: 144rpx;
   height: 144rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #15803d, #22c55e);
+  background: linear-gradient(135deg, #2F7D4B, #45A565);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,16 +102,16 @@
 
 .avatar-hint {
   font-size: 24rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
 }
 
 /* ===== 表单卡片 ===== */
 .form-card {
   background: #ffffff;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   margin: 0 28rpx 32rpx;
   padding: 0 32rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.06);
+  box-shadow: 0 4rpx 20rpx rgba(33,61,42,0.05);
 }
 
 .field-row {
@@ -124,7 +124,7 @@
 
 .field-label {
   font-size: 28rpx;
-  color: #555555;
+  color: #58655B;
   width: 160rpx;
   flex-shrink: 0;
 }
@@ -132,7 +132,7 @@
 .field-input {
   flex: 1;
   font-size: 28rpx;
-  color: #1A1A1A;
+  color: #18231A;
   text-align: right;
 }
 
@@ -143,7 +143,7 @@
 .field-readonly {
   flex: 1;
   font-size: 28rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
   text-align: right;
 }
 
@@ -158,7 +158,7 @@
 
 .field-unit {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
   flex-shrink: 0;
 }
 
@@ -171,7 +171,7 @@
 
 .field-picker-val {
   font-size: 28rpx;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .field-picker-arr {
@@ -181,12 +181,12 @@
 
 .field-div {
   height: 1rpx;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 保存按钮 ===== */
 .save-btn {
-  background: linear-gradient(135deg, #15803d, #22c55e);
+  background: linear-gradient(135deg, #2F7D4B, #45A565);
   border-radius: 999rpx;
   margin: 0 28rpx;
   padding: 32rpx;

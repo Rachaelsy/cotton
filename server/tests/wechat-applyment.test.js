@@ -15,6 +15,9 @@ delete process.env.WECHAT_PAY_PUBLIC_KEY_ID
 delete process.env.WECHAT_PAY_PUBLIC_KEY_PATH
 
 const dbPath = require.resolve('../db/database')
+const wxpayPath = require.resolve('../utils/wechat-pay')
+let wxpayUploadEnabled = false
+let uploadedMedia = null
 const merchantRow = {
   id: 9,
   user_id: 42,
@@ -81,6 +84,23 @@ const mockDb = {
 }
 
 require.cache[dbPath] = { id: dbPath, filename: dbPath, loaded: true, exports: mockDb }
+require.cache[wxpayPath] = {
+  id: wxpayPath,
+  filename: wxpayPath,
+  loaded: true,
+  exports: {
+    getServiceProviderConfig() {
+      return wxpayUploadEnabled ? { spMchid: '1900000109' } : null
+    },
+    getNotifyConfig() {
+      return null
+    },
+    async uploadMediaImage(_cfg, file) {
+      uploadedMedia = file
+      return { media_id: 'MEDIA_ID_TEST' }
+    }
+  }
+}
 const router = require('../routes/wechat-applyment')
 
 async function request(baseUrl, token, method, route, body) {
@@ -149,6 +169,36 @@ async function run() {
     const operatorSub = await request(baseUrl, operatorToken, 'POST', '/api/wechat-applyment/sub-mchid', { sub_mchid: '1700000002' })
     assert.strictEqual(operatorSub.status, 200)
     assert.strictEqual(operatorRow.sub_mchid, '1700000002')
+
+    const missingMediaConfig = await fetch(`${baseUrl}/api/wechat-applyment/media`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${merchantToken}` },
+      body: (() => {
+        const fd = new FormData()
+        fd.append('file', new Blob([Buffer.from('fake-image')], { type: 'image/png' }), 'license.png')
+        return fd
+      })()
+    })
+    const missingMediaConfigJson = await missingMediaConfig.json()
+    assert.strictEqual(missingMediaConfig.status, 501)
+    assert.match(missingMediaConfigJson.msg, /微信支付/)
+
+    wxpayUploadEnabled = true
+    const mediaUpload = await fetch(`${baseUrl}/api/wechat-applyment/media`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${merchantToken}` },
+      body: (() => {
+        const fd = new FormData()
+        fd.append('file', new Blob([Buffer.from('fake-image')], { type: 'image/png' }), 'license.png')
+        return fd
+      })()
+    })
+    const mediaUploadJson = await mediaUpload.json()
+    assert.strictEqual(mediaUpload.status, 200)
+    assert.strictEqual(mediaUploadJson.data.media_id, 'MEDIA_ID_TEST')
+    assert.strictEqual(uploadedMedia.filename, 'license.png')
+    assert.strictEqual(uploadedMedia.mimeType, 'image/png')
+    assert.ok(Buffer.isBuffer(uploadedMedia.buffer))
 
     const submit = await request(baseUrl, merchantToken, 'POST', '/api/wechat-applyment/submit')
     assert.strictEqual(submit.status, 501)

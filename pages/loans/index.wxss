@@ -3,12 +3,12 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 头部 ===== */
 .loan-hd {
-  background: linear-gradient(160deg, #003D2B, #006064);
+  background: linear-gradient(160deg, #003D2B, #1F6F63);
   padding: 0 28rpx 36rpx;
   flex-shrink: 0;
 }
@@ -58,7 +58,7 @@
   display: flex;
   align-items: center;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   padding: 28rpx 32rpx;
   border: 2rpx solid rgba(255, 255, 255, 0.15);
 }
@@ -120,7 +120,7 @@
 .credit-score {
   font-size: 56rpx;
   font-weight: 900;
-  color: #B2EBF2;
+  color: #CFEAE3;
   line-height: 1;
 }
 
@@ -156,7 +156,7 @@
 .quick-ico {
   width: 104rpx;
   height: 104rpx;
-  border-radius: 32rpx;
+  border-radius: 26rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -168,7 +168,7 @@
 
 .quick-lbl {
   font-size: 22rpx;
-  color: #555;
+  color: #58655B;
   font-weight: 600;
 }
 
@@ -183,23 +183,23 @@
   flex: 1;
   font-size: 32rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .section-more {
   font-size: 24rpx;
-  color: #006064;
+  color: #1F6F63;
   font-weight: 600;
 }
 
 /* ===== 贷款卡片 ===== */
 .loan-card {
   background: #fff;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   margin: 0 28rpx 20rpx;
   padding: 28rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
-  border: 2rpx solid #EEEEEE;
+  box-shadow: 0 4rpx 20rpx rgba(33, 61, 42, 0.05);
+  border: 2rpx solid #E3E9DE;
 }
 
 .loan-card.highlight {
@@ -229,7 +229,7 @@
 
 .bank-name {
   font-size: 22rpx;
-  color: #888;
+  color: #8A948B;
   font-weight: 500;
 }
 
@@ -250,7 +250,7 @@
   display: block;
   font-size: 36rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #18231A;
   margin-bottom: 20rpx;
 }
 
@@ -262,7 +262,7 @@
   border-radius: 20rpx;
   padding: 20rpx 0;
   margin-bottom: 18rpx;
-  border: 2rpx solid #E0F7FA;
+  border: 2rpx solid #E9F6F2;
 }
 
 .loan-stat-item {
@@ -276,23 +276,23 @@
 .stat-val {
   font-size: 36rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .stat-val.teal {
-  color: #006064;
+  color: #1F6F63;
 }
 
 .stat-key {
   font-size: 20rpx;
-  color: #888;
+  color: #8A948B;
   font-weight: 500;
 }
 
 .stat-divider {
   width: 2rpx;
   height: 48rpx;
-  background: #E0F7FA;
+  background: #E9F6F2;
 }
 
 /* 放款速度 */
@@ -309,7 +309,7 @@
 
 .loan-speed-text {
   font-size: 24rpx;
-  color: #FF6B00;
+  color: #D97918;
   font-weight: 700;
 }
 
@@ -328,7 +328,7 @@
 }
 
 .tag-teal {
-  background: #E0F7FA;
+  background: #E9F6F2;
 }
 
 .tag-gray {
@@ -338,17 +338,17 @@
 .loan-tag-text {
   font-size: 20rpx;
   font-weight: 600;
-  color: #006064;
+  color: #1F6F63;
 }
 
 .tag-gray .loan-tag-text {
-  color: #666;
+  color: #687468;
 }
 
 /* 分隔线 */
 .lcard-div {
   height: 2rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
   margin-bottom: 20rpx;
 }
 
@@ -364,7 +364,7 @@
 
 .footer-info-text {
   font-size: 20rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
 }
 
 /* 申请按钮 */
@@ -374,7 +374,7 @@
 }
 
 .apply-btn-teal {
-  background: linear-gradient(135deg, #006064, #00838F);
+  background: linear-gradient(135deg, #1F6F63, #2B8377);
 }
 
 .apply-btn-gray {
@@ -396,5 +396,5 @@
 
 .footer-tip-text {
   font-size: 20rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }

@@ -6,7 +6,7 @@
 // ENV = 'server' → 连接云服务器（走 Nginx 80 端口）
 // ENV = 'real'   → 真机调试，使用电脑局域网 IP + 端口 3000
 // ENV = 'sim'    → 模拟器调试，使用 localhost
-const ENV = 'prod'
+const ENV = 'real'
 
 const PROD_URL   = 'https://cyaia.cn'        // ← 上线后改为真实备案域名
 const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP
@@ -75,6 +75,29 @@ function request(method, path, data) {
       },
       fail(err) {
         wx.showToast({ title: '网络异常，请检查网络', icon: 'none' })
+        reject(err)
+      }
+    })
+  })
+}
+
+function uploadFile(path, filePath, name = 'file') {
+  return new Promise((resolve, reject) => {
+    wx.uploadFile({
+      url: BASE_URL + path,
+      filePath,
+      name,
+      header: {
+        'Authorization': getToken() ? `Bearer ${getToken()}` : ''
+      },
+      success(res) {
+        try {
+          resolve(JSON.parse(res.data || '{}'))
+        } catch (error) {
+          reject(new Error('上传响应解析失败'))
+        }
+      },
+      fail(err) {
         reject(err)
       }
     })
@@ -174,7 +197,7 @@ module.exports = {
   BASE_URL,
   saveToken, getToken, clearToken,
   saveUser, getUser,
-  request,
+  request, uploadFile,
   register, login, verify, logout, wxLogin,
   isLoggedIn, requireLogin
 }

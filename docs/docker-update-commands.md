@@ -17,6 +17,49 @@ curl http://127.0.0.1/api/ping
 curl -I http://127.0.0.1/
 ```
 
+## 微信支付证书文件
+
+如果 `server/.env` 中使用的是下面这种相对路径：
+
+```env
+WECHAT_PAY_PRIVATE_KEY_PATH=apiclient_key.pem
+WECHAT_PAY_PUBLIC_KEY_PATH=pub_key.pem
+```
+
+需要在服务器项目根目录放置这两个文件：
+
+```bash
+cd /root/cotton
+ls -l apiclient_key.pem pub_key.pem
+```
+
+`docker-compose.yml` 会把它们只读挂载到容器内：
+
+```text
+/root/cotton/apiclient_key.pem -> /app/apiclient_key.pem
+/root/cotton/pub_key.pem       -> /app/pub_key.pem
+```
+
+如果你想把证书放到仓库外，例如 `/root/cotton-secrets/`，就在根目录 `.env` 里加：
+
+```env
+WECHAT_PAY_PRIVATE_KEY_HOST_PATH=/root/cotton-secrets/apiclient_key.pem
+WECHAT_PAY_PUBLIC_KEY_HOST_PATH=/root/cotton-secrets/pub_key.pem
+```
+
+同时 `server/.env` 仍然可以保持容器内路径：
+
+```env
+WECHAT_PAY_PRIVATE_KEY_PATH=apiclient_key.pem
+WECHAT_PAY_PUBLIC_KEY_PATH=pub_key.pem
+```
+
+重建后可用下面命令做不泄露密钥的自检：
+
+```bash
+docker compose exec app node -e "const wx=require('./utils/wechat-pay'); const cfg=wx.getServiceProviderConfig(); const notify=wx.getNotifyConfig(); console.log(JSON.stringify({serviceProviderConfigured:!!cfg, notifyVerifyConfigured:!!notify, notifyUrlHttps:!!(cfg&&/^https:\/\//.test(cfg.notifyUrl)), publicKeyMode:!!(notify&&notify.wechatpayPublicKey)}))"
+```
+
 如果只想看实时启动日志：
 
 ```bash

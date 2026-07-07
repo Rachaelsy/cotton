@@ -76,7 +76,7 @@
       "desc": "用于 AI 问答语音提问，将您的语音转成文字后获取回答"
     }
   },
-  "requiredPrivateInfos": ["getLocation", "chooseLocation"],
+  "requiredPrivateInfos": ["getLocation", "chooseLocation", "startLocationUpdate"],
   "plugins": {
     "WechatSI": {
       "version": "0.3.7",

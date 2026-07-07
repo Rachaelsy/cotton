@@ -4,12 +4,12 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 顶部成功区 ===== */
 .hero {
-  background: linear-gradient(160deg, #15803d, #22c55e);
+  background: linear-gradient(160deg, #2F7D4B, #45A565);
   padding-left: 40rpx;
   padding-right: 40rpx;
   padding-bottom: 60rpx;
@@ -63,9 +63,9 @@
 
 .order-card {
   background: #ffffff;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   padding: 28rpx 28rpx 16rpx;
-  box-shadow: 0 6rpx 30rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6rpx 30rpx rgba(33, 61, 42, 0.07);
 }
 
 .store-row {
@@ -81,7 +81,7 @@
 .store-name {
   font-size: 26rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .order-subtotal {
@@ -94,10 +94,10 @@
 /* ===== 摘要卡片 ===== */
 .summary-card {
   background: #ffffff;
-  border-radius: 32rpx;
+  border-radius: 26rpx;
   margin: 16rpx 28rpx 0;
   padding: 24rpx 32rpx;
-  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.10);
+  box-shadow: 0 8rpx 40rpx rgba(33, 61, 42, 0.09);
 }
 
 .item-row {
@@ -130,23 +130,23 @@
 .item-name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.4;
 }
 
 .item-more {
   font-size: 22rpx;
-  color: #C8902E;
+  color: #B9852F;
 }
 
 .item-spec {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .divider {
   height: 1rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
   margin-bottom: 20rpx;
 }
 
@@ -160,13 +160,13 @@
 
 .kv-k {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .kv-v {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .kv-no-wrap {
@@ -178,13 +178,13 @@
 
 .kv-no {
   font-size: 24rpx;
-  color: #555555;
+  color: #58655B;
   font-weight: 500;
 }
 
 .kv-copy {
   font-size: 22rpx;
-  color: #22c55e;
+  color: #45A565;
   font-weight: 700;
   background: #f0fdf4;
   padding: 4rpx 14rpx;
@@ -206,7 +206,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #15803d, #22c55e);
+  background: linear-gradient(135deg, #2F7D4B, #45A565);
   border-radius: 999rpx;
   padding: 30rpx;
   display: flex;
@@ -233,7 +233,7 @@
 .btn-text-gray {
   font-size: 30rpx;
   font-weight: 700;
-  color: #666666;
+  color: #687468;
 }
 
 /* ===== 提示 ===== */
@@ -247,5 +247,5 @@
 
 .tips-text {
   font-size: 24rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
 }

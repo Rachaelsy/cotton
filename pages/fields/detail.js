@@ -27,6 +27,21 @@ function finiteNumber(value, fallback = 0) {
   return Number.isFinite(number) ? number : fallback
 }
 
+function parseReferenceImages(value) {
+  if (Array.isArray(value)) return value.filter(Boolean)
+  try {
+    const parsed = value ? JSON.parse(value) : []
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : []
+  } catch (error) {
+    return []
+  }
+}
+
+function imageDisplayUrl(url) {
+  if (!url) return ''
+  return String(url).startsWith('http') ? url : `${auth.BASE_URL}${url}`
+}
+
 function formatArea(value) {
   const number = finiteNumber(value)
   return number.toFixed(number % 1 === 0 ? 0 : 1)
@@ -119,8 +134,11 @@ Page({
     const coordinates = normalizeCoordinates(parsed)
     const center = calculateCenter(coordinates)
     const score = Number.isFinite(Number(raw.health_score)) ? Number(raw.health_score) : 100
+    const referenceImages = parseReferenceImages(raw.reference_images)
     const plot = {
       ...raw,
+      referenceImages,
+      referenceImageItems: referenceImages.map(url => ({ url, displayUrl: imageDisplayUrl(url) })),
       health_score: score,
       sowDateText: dateText(raw.sow_date, this.textCopy, this.currentLang),
       areaText: formatArea(raw.area),
@@ -220,6 +238,7 @@ Page({
         irrigation,
         soil_type: soilType,
         planting_status: plantingStatus,
+        reference_images: this.data.plot.referenceImages || [],
         note: note.trim()
       })
       if (res.code !== 200) throw new Error(res.msg || this.textCopy.saveFail)
@@ -246,6 +265,12 @@ Page({
     if (!route) return
     const query = `plotId=${this.plotId}&plotName=${encodeURIComponent(this.data.plot.name || '')}`
     wx.navigateTo({ url: `${route}?${query}` })
+  },
+
+  onPreviewReferenceImage(event) {
+    const current = event.currentTarget.dataset.url
+    const urls = (this.data.plot.referenceImageItems || []).map(item => item.displayUrl)
+    if (current && urls.length) wx.previewImage({ current, urls })
   },
 
   onDelete() {

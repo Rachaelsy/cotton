@@ -11,6 +11,28 @@ const {
 // 新疆喀什默认中心（GPS 不可用时的回退坐标）
 const DEFAULT_LAT = 39.4700
 const DEFAULT_LNG = 75.9900
+const MAX_REFERENCE_IMAGES = 6
+const MIN_TRACK_POINT_DISTANCE = 6
+const MAX_TRACK_POINTS = 500
+const EARTH_RADIUS_METERS = 6371000
+
+function imageDisplayUrl(url) {
+  if (!url) return ''
+  return String(url).startsWith('http') ? url : `${auth.BASE_URL}${url}`
+}
+
+function distanceMeters(a, b) {
+  if (!a || !b) return 0
+  const toRad = value => Number(value) * Math.PI / 180
+  const lat1 = toRad(a.latitude)
+  const lat2 = toRad(b.latitude)
+  const dLat = toRad(b.latitude - a.latitude)
+  const dLng = toRad(b.longitude - a.longitude)
+  const sinLat = Math.sin(dLat / 2)
+  const sinLng = Math.sin(dLng / 2)
+  const h = sinLat * sinLat + Math.cos(lat1) * Math.cos(lat2) * sinLng * sinLng
+  return 2 * EARTH_RADIUS_METERS * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
+}
 
 Page({
   data: {
@@ -38,6 +60,15 @@ Page({
     manualLat: '',
     manualLng: '',
     pickedLocationName: '',
+    referenceImages: [],
+    referenceImageItems: [],
+    uploadingImages: false,
+    trackingBoundary: false,
+    trackDistance: 0,
+    trackPointCount: 0,
+    trackAccuracy: 0,
+    trackAccuracyText: '--',
+    trackStatusText: '',
     // 提示文字
     tipText: '点击地图添加地块顶点',
     // 表单（完成绘制后填写）
@@ -71,6 +102,14 @@ Page({
 
   onShow() {
     this.applyLanguage()
+  },
+
+  onHide() {
+    if (this.data.trackingBoundary) this._stopBoundaryTrack({ silent: true, closePolygon: false })
+  },
+
+  onUnload() {
+    this._stopBoundaryTrack({ silent: true, closePolygon: false })
   },
 
   applyLanguage() {
@@ -118,6 +157,10 @@ Page({
   // ── 地图打点 ───────────────────────────────
   onMapTap(e) {
     if (this.data.closed || this.data.showForm) return
+    if (this.data.trackingBoundary) {
+      wx.showToast({ title: this.data.copy.trackManualDisabled, icon: 'none' })
+      return
+    }
     const { latitude, longitude } = e.detail
     this._addPoint({ latitude, longitude })
   },
@@ -229,6 +272,10 @@ Page({
 
   // ── 撤销 ──────────────────────────────────
   onUndo() {
+    if (this.data.trackingBoundary) {
+      wx.showToast({ title: this.data.copy.trackStopFirst, icon: 'none' })
+      return
+    }
     if (this.data.closed) {
       // 打开已闭合的多边形，回到最后一点
       this._updateMap(this.data.points, false)
@@ -241,6 +288,7 @@ Page({
 
   // ── 清空 ──────────────────────────────────
   onClear() {
+    if (this.data.trackingBoundary) this._stopBoundaryTrack({ silent: true, closePolygon: false })
     if (!this.data.points.length) return
     wx.showModal({
       title: this.data.copy.clearTitle,
@@ -253,6 +301,117 @@ Page({
         }
       }
     })
+  },
+
+  // ── 沿边界行走采集 ─────────────────────────
+  onStartBoundaryTrack() {
+    if (this.data.closed || this.data.showForm) {
+      wx.showToast({ title: this.data.copy.closedCannotAdd, icon: 'none' })
+      return
+    }
+    if (this.data.trackingBoundary) return
+    if (typeof wx.startLocationUpdate !== 'function' || typeof wx.onLocationChange !== 'function') {
+      wx.showToast({ title: this.data.copy.trackUnsupported, icon: 'none' })
+      return
+    }
+
+    this.setData({
+      showCoordPanel: false,
+      trackStatusText: this.data.copy.trackPreparing,
+      trackDistance: 0,
+      trackPointCount: this.data.points.length,
+      trackAccuracy: 0,
+      trackAccuracyText: '--'
+    })
+
+    wx.startLocationUpdate({
+      type: 'gcj02',
+      success: () => {
+        this._boundaryLocationHandler = res => this._appendTrackPoint(res)
+        wx.onLocationChange(this._boundaryLocationHandler)
+        this.setData({
+          trackingBoundary: true,
+          closed: false,
+          trackStatusText: this.data.copy.trackCollecting
+        })
+        wx.getLocation({
+          type: 'gcj02',
+          success: res => this._appendTrackPoint(res)
+        })
+      },
+      fail: (err) => {
+        const message = err && err.errMsg ? `${this.data.copy.trackLocationFail}：${err.errMsg}` : this.data.copy.trackLocationFail
+        this.setData({ trackStatusText: '' })
+        wx.showToast({ title: message, icon: 'none' })
+      }
+    })
+  },
+
+  onStopBoundaryTrack() {
+    this._stopBoundaryTrack({ silent: false, closePolygon: true })
+  },
+
+  _appendTrackPoint(res) {
+    if (!this.data.trackingBoundary || this.data.closed || this.data.showForm) return
+    const latitude = Number(res && res.latitude)
+    const longitude = Number(res && res.longitude)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return
+
+    const point = { latitude, longitude }
+    const points = this.data.points || []
+    const prevPoint = points[points.length - 1]
+    const segment = prevPoint ? distanceMeters(prevPoint, point) : 0
+    const accuracy = Math.round(Number(res.accuracy) || 0)
+    const accuracyText = accuracy > 0 ? `${accuracy}m` : '--'
+
+    this.setData({
+      mapLat: latitude,
+      mapLng: longitude,
+      trackAccuracy: accuracy,
+      trackAccuracyText: accuracyText
+    })
+
+    if (prevPoint && segment < MIN_TRACK_POINT_DISTANCE) return
+    if (points.length >= MAX_TRACK_POINTS) {
+      wx.showToast({ title: this.data.copy.trackTooManyPoints, icon: 'none' })
+      this._stopBoundaryTrack({ silent: true, closePolygon: false })
+      return
+    }
+
+    const nextPoints = normalizeCoordinates([...points, point])
+    if (nextPoints.length !== points.length + 1) return
+
+    this._updateMap(nextPoints, false)
+    this.setData({
+      trackDistance: Math.round(this.data.trackDistance + segment),
+      trackPointCount: nextPoints.length,
+      trackStatusText: this.data.copy.trackCollecting
+    })
+  },
+
+  _stopBoundaryTrack(options = {}) {
+    const wasTracking = this.data.trackingBoundary || this._boundaryLocationHandler
+    if (this._boundaryLocationHandler && typeof wx.offLocationChange === 'function') {
+      wx.offLocationChange(this._boundaryLocationHandler)
+    }
+    this._boundaryLocationHandler = null
+    if (wasTracking && typeof wx.stopLocationUpdate === 'function') {
+      wx.stopLocationUpdate({ complete: () => {} })
+    }
+    if (wasTracking) {
+      this.setData({
+        trackingBoundary: false,
+        trackStatusText: ''
+      })
+    }
+
+    if (!options.closePolygon) return
+    if (this.data.points.length >= 3) {
+      this._closePolygon()
+      if (!options.silent) wx.showToast({ title: this.data.copy.trackCompleted, icon: 'success' })
+    } else if (!options.silent) {
+      wx.showToast({ title: this.data.copy.trackNeedMore, icon: 'none' })
+    }
   },
 
   // ── 定位到当前位置 ────────────────────────
@@ -268,6 +427,10 @@ Page({
   },
 
   onChooseLocation() {
+    if (this.data.trackingBoundary) {
+      wx.showToast({ title: this.data.copy.trackStopFirst, icon: 'none' })
+      return
+    }
     if (this.data.closed || this.data.showForm) {
       wx.showToast({ title: this.data.copy.closedCannotAdd, icon: 'none' })
       return
@@ -303,6 +466,10 @@ Page({
   },
 
   onToggleCoordPanel() {
+    if (this.data.trackingBoundary) {
+      wx.showToast({ title: this.data.copy.trackStopFirst, icon: 'none' })
+      return
+    }
     this.setData({ showCoordPanel: !this.data.showCoordPanel })
   },
 
@@ -350,6 +517,7 @@ Page({
 
   // ── 完成绘制 → 展开表单 ───────────────────
   onFinishDraw() {
+    if (this.data.trackingBoundary) this._stopBoundaryTrack({ silent: true, closePolygon: false })
     if (!this.data.closed) {
       if (this.data.points.length < 3) {
         wx.showToast({ title: this.data.copy.minPoints, icon: 'none' }); return
@@ -377,6 +545,63 @@ Page({
   },
   onNoteInput(e) { this.setData({ 'form.note': e.detail.value }) },
 
+  _setReferenceImages(images) {
+    const referenceImages = images.slice(0, MAX_REFERENCE_IMAGES)
+    this.setData({
+      referenceImages,
+      referenceImageItems: referenceImages.map(url => ({
+        url,
+        displayUrl: imageDisplayUrl(url)
+      }))
+    })
+  },
+
+  onChoosePlotImages() {
+    if (this.data.uploadingImages) return
+    const remain = MAX_REFERENCE_IMAGES - this.data.referenceImages.length
+    if (remain <= 0) {
+      wx.showToast({ title: this.data.copy.referenceImageMax, icon: 'none' })
+      return
+    }
+    wx.chooseMedia({
+      count: remain,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: async (res) => {
+        const files = (res.tempFiles || []).map(file => file.tempFilePath).filter(Boolean)
+        if (!files.length) return
+        this.setData({ uploadingImages: true })
+        wx.showLoading({ title: this.data.copy.uploadingImage, mask: true })
+        const uploaded = []
+        try {
+          for (const filePath of files) {
+            const result = await auth.uploadFile('/api/upload', filePath)
+            if (result.code === 200 && result.data && result.data.url) uploaded.push(result.data.url)
+          }
+          if (!uploaded.length) throw new Error(this.data.copy.imageUploadFail)
+          this._setReferenceImages([...this.data.referenceImages, ...uploaded])
+          if (uploaded.length < files.length) wx.showToast({ title: this.data.copy.imageUploadPartial, icon: 'none' })
+        } catch (error) {
+          wx.showToast({ title: error.message || this.data.copy.imageUploadFail, icon: 'none' })
+        } finally {
+          wx.hideLoading()
+          this.setData({ uploadingImages: false })
+        }
+      }
+    })
+  },
+
+  onRemovePlotImage(e) {
+    const index = Number(e.currentTarget.dataset.index)
+    this._setReferenceImages(this.data.referenceImages.filter((_, i) => i !== index))
+  },
+
+  onPreviewPlotImage(e) {
+    const current = e.currentTarget.dataset.url
+    const urls = this.data.referenceImageItems.map(item => item.displayUrl)
+    if (current && urls.length) wx.previewImage({ current, urls })
+  },
+
   // ── 保存地块 ──────────────────────────────
   async onSave() {
     const { name, variety, sowDate, irrigation, soilType, plantingStatus, note } = this.data.form
@@ -394,6 +619,7 @@ Page({
         area:        parseFloat(this.data.area) || 0,
         perimeter:   this.data.perimeter,
         coordinates: this.data.points,
+        reference_images: this.data.referenceImages,
         sow_date:    sowDate || null,
         irrigation,
         soil_type:   soilType,
@@ -414,15 +640,21 @@ Page({
 
   onBack() {
     if (this.data.showForm) { this.setData({ showForm: false }); return }
-    if (this.data.points.length) {
+    if (this.data.points.length || this.data.referenceImages.length) {
       wx.showModal({
         title: this.data.copy.abandonTitle,
         content: this.data.copy.abandonContent,
         confirmColor: '#DC2626',
-        success: (r) => { if (r.confirm) wx.navigateBack() }
+        success: (r) => {
+          if (r.confirm) {
+            this._stopBoundaryTrack({ silent: true, closePolygon: false })
+            wx.navigateBack()
+          }
+        }
       })
       return
     }
+    this._stopBoundaryTrack({ silent: true, closePolygon: false })
     wx.navigateBack()
   }
 })

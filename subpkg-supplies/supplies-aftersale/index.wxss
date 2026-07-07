@@ -4,12 +4,12 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 顶部导航 ===== */
 .as-header {
-  background: linear-gradient(160deg, #92400e, #C8902E);
+  background: linear-gradient(160deg, #92400e, #B9852F);
   padding-left: 28rpx;
   padding-right: 28rpx;
   padding-bottom: 24rpx;
@@ -57,7 +57,7 @@
 .as-section {
   background: #ffffff;
   margin: 16rpx 28rpx 0;
-  border-radius: 24rpx;
+  border-radius: 22rpx;
   padding: 28rpx 24rpx 24rpx;
 }
 
@@ -72,19 +72,19 @@
 .as-req {
   font-size: 28rpx;
   font-weight: 800;
-  color: #E53935;
+  color: #D6453D;
   line-height: 1;
 }
 
 .as-section-title {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .as-optional {
   font-size: 22rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
 }
 
 /* ===== ① 售后类型 ===== */
@@ -96,7 +96,7 @@
 
 .type-item {
   flex: 1;
-  border: 2rpx solid #EEE5D8;
+  border: 2rpx solid #E3E9DE;
   border-radius: 16rpx;
   padding: 20rpx 12rpx;
   display: flex;
@@ -107,8 +107,8 @@
 }
 
 .type-item-on {
-  border-color: #C8902E;
-  background: #FBF5EA;
+  border-color: #B9852F;
+  background: #FFF8EA;
 }
 
 .type-radio {
@@ -123,25 +123,25 @@
 }
 
 .type-radio-on {
-  border-color: #C8902E;
+  border-color: #B9852F;
 }
 
 .type-radio-dot {
   width: 18rpx;
   height: 18rpx;
   border-radius: 50%;
-  background: #C8902E;
+  background: #B9852F;
 }
 
 .type-label {
   font-size: 24rpx;
-  color: #555555;
+  color: #58655B;
   font-weight: 600;
   flex: 1;
 }
 
 .type-label-on {
-  color: #C8902E;
+  color: #B9852F;
 }
 
 /* ===== ② 售后原因宫格 ===== */
@@ -154,7 +154,7 @@
 
 .reason-item {
   width: 200rpx;
-  border: 2rpx solid #EEE5D8;
+  border: 2rpx solid #E3E9DE;
   border-radius: 12rpx;
   padding: 18rpx 8rpx;
   display: flex;
@@ -164,19 +164,19 @@
 }
 
 .reason-item-on {
-  border-color: #C8902E;
-  background: #FBF5EA;
+  border-color: #B9852F;
+  background: #FFF8EA;
 }
 
 .reason-text {
   font-size: 22rpx;
-  color: #555555;
+  color: #58655B;
   font-weight: 600;
   text-align: center;
 }
 
 .reason-text-on {
-  color: #C8902E;
+  color: #B9852F;
 }
 
 /* ===== ③ 其他原因输入 ===== */
@@ -185,7 +185,7 @@
   border-radius: 12rpx;
   padding: 20rpx 20rpx;
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
   width: 100%;
   box-sizing: border-box;
 }
@@ -202,7 +202,7 @@
   width: 100%;
   min-height: 160rpx;
   font-size: 26rpx;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.7;
   box-sizing: border-box;
 }
@@ -211,19 +211,19 @@
   display: block;
   text-align: right;
   font-size: 20rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
   margin-top: 8rpx;
 }
 
 .input-placeholder {
-  color: #BBBBBB;
+  color: #C5CCC5;
   font-size: 26rpx;
 }
 
 /* ===== ⑤ 上传凭证 ===== */
 .upload-tip {
   font-size: 22rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
   display: block;
   margin-bottom: 20rpx;
 }
@@ -283,20 +283,20 @@
 
 .upload-add-icon {
   font-size: 56rpx;
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 300;
   line-height: 1;
 }
 
 .upload-add-label {
   font-size: 20rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* ===== 底部提交按钮 ===== */
 .as-bottom {
   background: #ffffff;
-  border-top: 1rpx solid #F2EBE0;
+  border-top: 1rpx solid #EAF0E6;
   padding: 20rpx 28rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
   flex-shrink: 0;
@@ -311,8 +311,8 @@
 }
 
 .submit-btn-on {
-  background: linear-gradient(135deg, #C8902E, #D4A043);
-  box-shadow: 0 8rpx 32rpx rgba(200, 144, 46, 0.4);
+  background: linear-gradient(135deg, #B9852F, #C9973A);
+  box-shadow: 0 8rpx 32rpx rgba(185, 133, 47, 0.24);
 }
 
 .submit-btn-off {

@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
   overflow: hidden;
 }
 
@@ -15,7 +15,7 @@
 
 /* ===== 顶部渐变区 ===== */
 .home-top {
-  background: linear-gradient(180deg, #D8EAF5 0%, #EDE8DF 100%);
+  background: linear-gradient(180deg, #EAF5EF 0%, #F6F8F3 100%);
   padding: 12rpx 32rpx 0;
 }
 
@@ -36,13 +36,13 @@
 
 .home-greeting {
   font-size: 24rpx;
-  color: #555555;
+  color: #58655B;
 }
 
 .home-title {
   font-size: 40rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.25;
 }
 
@@ -57,12 +57,12 @@
 .login-hint-text {
   font-size: 26rpx;
   font-weight: 700;
-  color: #C8902E;
+  color: #B9852F;
 }
 
 .login-hint-arr {
   font-size: 26rpx;
-  color: #C8902E;
+  color: #B9852F;
 }
 
 .home-actions {
@@ -85,7 +85,7 @@
 
 .lang-pill-text {
   font-size: 22rpx;
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 600;
 }
 
@@ -108,7 +108,7 @@
   right: 8rpx;
   width: 16rpx;
   height: 16rpx;
-  background: #E53935;
+  background: #D6453D;
   border-radius: 50%;
   border: 3rpx solid rgba(216, 234, 245, 0.9);
 }
@@ -116,105 +116,132 @@
 /* ===== 天气卡片 ===== */
 .weather-card {
   background: #ffffff;
-  border-radius: 32rpx;
-  margin: 0 0 28rpx;
-  padding: 28rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.07);
+  border-radius: 26rpx;
+  margin: 0 0 24rpx;
+  padding: 24rpx 26rpx;
+  border: 1rpx solid rgba(227, 233, 222, 0.75);
+  box-shadow: 0 4rpx 20rpx rgba(33, 61, 42, 0.045);
   overflow: hidden;
 }
 
 .wc-top {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 20rpx;
+  margin-bottom: 14rpx;
 }
 
 .wc-loc-pill {
-  background: #F0F7FF;
+  background: #EEF7F4;
   border-radius: 999rpx;
-  padding: 6rpx 20rpx;
+  padding: 6rpx 10rpx 6rpx 18rpx;
   display: flex;
   align-items: center;
+  gap: 10rpx;
+  max-width: 100%;
 }
 
 .wc-loc-text {
   font-size: 22rpx;
-  color: #1890FF;
+  color: #2D86B8;
   font-weight: 600;
+  max-width: 430rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.wc-date {
-  font-size: 22rpx;
-  color: #888888;
+.wc-loc-change {
+  flex-shrink: 0;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.75);
+  color: #B9852F;
+  font-size: 20rpx;
+  font-weight: 700;
 }
 
 .wc-main {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   gap: 12rpx;
-  margin-bottom: 20rpx;
+  margin-bottom: 14rpx;
 }
 
-.wc-icon { font-size: 96rpx; line-height: 1; }
+.wc-icon {
+  flex-shrink: 0;
+  font-size: 72rpx;
+  line-height: 1;
+}
 
 .wc-temp {
-  font-size: 84rpx;
+  font-size: 76rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1;
-  margin-left: 8rpx;
 }
 
 .wc-info {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
-  margin-left: 16rpx;
+  gap: 8rpx;
+}
+
+.wc-temp-row {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 14rpx;
 }
 
 .wc-desc {
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .wc-sub {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .wc-tip {
-  background: #FBF5EA;
-  border-radius: 20rpx;
-  padding: 18rpx 24rpx;
+  background: #FFF8EA;
+  border-radius: 18rpx;
+  padding: 14rpx 18rpx;
 }
 
 .wc-tip-text {
-  font-size: 24rpx;
-  color: #7A5020;
-  line-height: 1.6;
+  font-size: 23rpx;
+  color: #6F552B;
+  line-height: 1.45;
 }
 
 .tip-bold {
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 700;
 }
 
 /* ===== 主体内容 ===== */
 .home-body {
-  background: #F5EEE6;
+  background: #F6F8F3;
 }
 
 /* ===== 通用卡片 ===== */
 .hcard {
   background: #ffffff;
-  border-radius: 32rpx;
+  border-radius: 26rpx;
   margin: 24rpx 32rpx 0;
   padding: 28rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4rpx 24rpx rgba(33, 61, 42, 0.045);
 }
 
 .hcard-last {
@@ -239,19 +266,19 @@
 .hcard-bar {
   width: 8rpx;
   height: 32rpx;
-  background: #C8902E;
+  background: #B9852F;
   border-radius: 4rpx;
 }
 
 .hcard-title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .hcard-more {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* ===== 地块统计 ===== */
@@ -261,8 +288,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 18rpx;
-  background: #F8F3EC;
-  border: 2rpx solid #EEE5D8;
+  background: #F8FAF5;
+  border: 2rpx solid #E3E9DE;
   border-radius: 18rpx;
   padding: 18rpx 22rpx;
   margin-bottom: 22rpx;
@@ -284,7 +311,7 @@
 
 .home-plot-v {
   font-size: 28rpx;
-  color: #1A1A1A;
+  color: #18231A;
   font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -294,7 +321,7 @@
 .home-plot-arr {
   flex-shrink: 0;
   font-size: 23rpx;
-  color: #C8902E;
+  color: #B9852F;
   font-weight: 800;
 }
 
@@ -315,22 +342,22 @@
 .stat3-div {
   width: 2rpx;
   height: 48rpx;
-  background: #F2EBE0;
+  background: #EAF0E6;
 }
 
 .stat3-v {
   font-size: 44rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1;
 }
 
-.stat3-v.ok  { color: #4CAF50; }
-.stat3-v.warn { color: #FF6B00; }
+.stat3-v.ok  { color: #2F8A52; }
+.stat3-v.warn { color: #D97918; }
 
 .stat3-l {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .stat3-l-wrap {
@@ -342,13 +369,13 @@
 
 .stat3-unit {
   font-size: 18rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 /* ===== 拍照识别横幅 ===== */
 .photo-banner {
-  background: linear-gradient(135deg, #F5E0B0, #F0C870);
-  border-radius: 32rpx;
+  background: linear-gradient(135deg, #F1E2BF, #D6BA72);
+  border-radius: 26rpx;
   margin: 24rpx 32rpx 0;
   padding: 28rpx;
   position: relative;
@@ -359,7 +386,7 @@
   position: absolute;
   top: 16rpx;
   left: 24rpx;
-  background: #F5222D;
+  background: #D6453D;
   border-radius: 999rpx;
   padding: 4rpx 14rpx;
 }
@@ -382,7 +409,7 @@
   width: 96rpx;
   height: 96rpx;
   background: rgba(255, 255, 255, 0.6);
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -404,11 +431,11 @@
 .pb-title {
   font-size: 30rpx;
   font-weight: 800;
-  color: #5A3200;
+  color: #4D3B21;
 }
 
 .pb-ai {
-  background: #1890FF;
+  background: #2D86B8;
   border-radius: 8rpx;
   padding: 4rpx 12rpx;
 }
@@ -425,7 +452,7 @@
 }
 
 .pb-btn {
-  background: #C8902E;
+  background: #B9852F;
   border-radius: 999rpx;
   padding: 16rpx 28rpx;
   flex-shrink: 0;
@@ -457,7 +484,7 @@
 .mod-icon {
   width: 104rpx;
   height: 104rpx;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -470,7 +497,7 @@
   position: absolute;
   top: -8rpx;
   right: -8rpx;
-  background: #1890FF;
+  background: #2D86B8;
   border-radius: 999rpx;
   padding: 2rpx 10rpx;
 }
@@ -483,7 +510,7 @@
 
 .mod-name {
   font-size: 22rpx;
-  color: #555555;
+  color: #58655B;
   text-align: center;
   line-height: 1.3;
 }

@@ -1,19 +1,19 @@
 /* pages/supplies-order/index.wxss — 订单详情 */
-.text-green  { color: #16A34A; }
-.text-red    { color: #DC2626; }
+.text-green  { color: #2F8A52; }
+.text-red    { color: #C93D35; }
 .text-orange { color: #D97706; }
 
 .page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F5EEE6;
+  background: #F6F8F3;
   position: relative;
 }
 
 /* ===== 顶部 ===== */
 .ord-header {
-  background: linear-gradient(160deg, #92400e, #C8902E);
+  background: linear-gradient(160deg, #92400e, #B9852F);
   padding-left: 28rpx;
   padding-right: 28rpx;
   padding-bottom: 32rpx;
@@ -86,7 +86,7 @@
   flex-direction: row;
   align-items: flex-start;
   flex-shrink: 0;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4rpx 16rpx rgba(33, 61, 42, 0.05);
 }
 
 .step {
@@ -109,11 +109,11 @@
 }
 
 .step-dot-done {
-  background: #22c55e;
+  background: #45A565;
 }
 
 .step-dot-active {
-  background: #C8902E;
+  background: #B9852F;
   box-shadow: 0 0 0 6rpx rgba(200, 144, 46, 0.2);
 }
 
@@ -131,12 +131,12 @@
 
 .step-label {
   font-size: 20rpx;
-  color: #BBBBBB;
+  color: #C5CCC5;
   font-weight: 600;
   text-align: center;
 }
 
-.step-label-on { color: #1A1A1A; }
+.step-label-on { color: #18231A; }
 
 .step-line {
   position: absolute;
@@ -151,7 +151,7 @@
 
 .step-line-fill {
   height: 100%;
-  background: #22c55e;
+  background: #45A565;
   transition: width 0.3s;
 }
 
@@ -168,7 +168,7 @@
 /* ===== 内容卡片 ===== */
 .section-card {
   background: #ffffff;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   padding: 28rpx 24rpx;
   margin-bottom: 16rpx;
 }
@@ -180,7 +180,7 @@
   gap: 12rpx;
   margin-bottom: 20rpx;
   padding-bottom: 16rpx;
-  border-bottom: 1rpx solid #F2EBE0;
+  border-bottom: 1rpx solid #EAF0E6;
 }
 
 .section-icon { font-size: 32rpx; }
@@ -188,7 +188,7 @@
 .section-title {
   font-size: 26rpx;
   font-weight: 800;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 /* ===== 地址 ===== */
@@ -208,17 +208,17 @@
 .addr-name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .addr-phone {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .addr-detail {
   font-size: 24rpx;
-  color: #555555;
+  color: #58655B;
   line-height: 1.5;
 }
 
@@ -229,7 +229,7 @@
   align-items: center;
   gap: 20rpx;
   padding: 16rpx 0;
-  border-bottom: 1rpx solid #F2EBE0;
+  border-bottom: 1rpx solid #EAF0E6;
 }
 
 .ord-item:last-child { border-bottom: none; }
@@ -256,13 +256,13 @@
 .ord-item-name {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
   line-height: 1.4;
 }
 
 .ord-item-spec {
   font-size: 22rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .ord-item-price {
@@ -287,19 +287,19 @@
 
 .kv-k {
   font-size: 24rpx;
-  color: #888888;
+  color: #8A948B;
 }
 
 .kv-k-bold {
   font-size: 26rpx;
   font-weight: 700;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .kv-v {
   font-size: 24rpx;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .kv-no-wrap {
@@ -311,7 +311,7 @@
 
 .kv-copy {
   font-size: 20rpx;
-  color: #22c55e;
+  color: #45A565;
   font-weight: 700;
   background: #f0fdf4;
   padding: 4rpx 12rpx;
@@ -327,7 +327,7 @@
 /* ===== 底部操作栏 ===== */
 .ord-bottom {
   background: #ffffff;
-  border-top: 1rpx solid #F2EBE0;
+  border-top: 1rpx solid #EAF0E6;
   padding: 20rpx 28rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
   display: flex;
@@ -337,7 +337,7 @@
 }
 
 .confirm-receipt-btn {
-  background: linear-gradient(135deg, #16A34A, #22C55E);
+  background: linear-gradient(135deg, #2F8A52, #22C55E);
   border-radius: 999rpx;
   padding: 26rpx 0;
   display: flex;
@@ -367,7 +367,7 @@
   align-items: center;
   justify-content: center;
   gap: 6rpx;
-  border: 2rpx solid #EEE5D8;
+  border: 2rpx solid #E3E9DE;
 }
 
 .action-contact { border-color: #D4EDDA; background: #F0FDF4; }
@@ -388,7 +388,7 @@
 
 .action-sub {
   font-size: 18rpx;
-  color: #AAAAAA;
+  color: #B7C0B8;
   margin-top: -4rpx;
 }
 
@@ -417,9 +417,9 @@
   font-weight: 700;
 }
 
-.c3btn-review  .c3btn-label { color: #C8902E; }
-.c3btn-contact .c3btn-label { color: #16A34A; }
-.c3btn-aftersale .c3btn-label { color: #E53935; }
+.c3btn-review  .c3btn-label { color: #B9852F; }
+.c3btn-contact .c3btn-label { color: #2F8A52; }
+.c3btn-aftersale .c3btn-label { color: #D6453D; }
 
 /* ===== 收货成功弹窗 ===== */
 .success-overlay {
@@ -449,7 +449,7 @@
 .success-icon-wrap {
   width: 120rpx;
   height: 120rpx;
-  background: linear-gradient(135deg, #16A34A, #22C55E);
+  background: linear-gradient(135deg, #2F8A52, #22C55E);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -467,12 +467,12 @@
 .success-title {
   font-size: 40rpx;
   font-weight: 900;
-  color: #1A1A1A;
+  color: #18231A;
 }
 
 .success-sub {
   font-size: 26rpx;
-  color: #888888;
+  color: #8A948B;
   text-align: center;
   line-height: 1.6;
 }
@@ -480,7 +480,7 @@
 .success-close-btn {
   margin-top: 16rpx;
   width: 100%;
-  background: linear-gradient(135deg, #16A34A, #22C55E);
+  background: linear-gradient(135deg, #2F8A52, #22C55E);
   border-radius: 999rpx;
   padding: 26rpx 0;
   display: flex;
