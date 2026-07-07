@@ -1,6 +1,6 @@
 const assert = require('assert')
 
-const { upsertBoundMerchant } = require('../utils/merchant-account')
+const { upsertBoundMerchant, upsertSelfOperatedMerchant } = require('../utils/merchant-account')
 
 function makeDb() {
   const calls = []
@@ -87,6 +87,27 @@ async function run() {
     bcrypt,
     input: { phone: '13900000009', password: 'test123', subMchid: '1700000001' }
   }), /already exists as farmer/)
+
+  const selfDb = makeDb()
+  const self = await upsertSelfOperatedMerchant({
+    db: selfDb,
+    bcrypt,
+    input: {
+      phone: '13900000010',
+      password: 'test123',
+      realName: 'Cotton Self Operated',
+      companyName: 'Cotton Platform Store'
+    }
+  })
+  assert.deepStrictEqual(self, {
+    userId: 101,
+    merchantId: 202,
+    createdUser: true,
+    createdMerchant: true,
+    selfOperated: true
+  })
+  assert(selfDb.calls.some(call => /INSERT INTO merchants/i.test(call.sql)), 'should create self-operated merchant')
+  assert(selfDb.calls.some(call => call.params.includes('SELF_OPERATED')), 'should mark self-operated merchant')
 
   console.log('create bound merchant tests passed')
 }

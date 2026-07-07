@@ -91,10 +91,11 @@ function buildAuthorizationHeader({ cfg, method, urlPath, bodyText = '', timesta
   const nonce = nonceStr || randomString()
   const message = `${method}\n${urlPath}\n${ts}\n${nonce}\n${bodyText}\n`
   const signature = signMessage(cfg.privateKey, message)
+  const mchid = cfg.mchid || cfg.spMchid
   return {
     timestamp: ts,
     nonce,
-    authorization: `WECHATPAY2-SHA256-RSA2048 mchid="${cfg.spMchid}",nonce_str="${nonce}",timestamp="${ts}",serial_no="${cfg.serialNo}",signature="${signature}"`
+    authorization: `WECHATPAY2-SHA256-RSA2048 mchid="${mchid}",nonce_str="${nonce}",timestamp="${ts}",serial_no="${cfg.serialNo}",signature="${signature}"`
   }
 }
 
@@ -276,8 +277,31 @@ function partnerJsapiPrepay({ cfg, order, openid }) {
   return wechatRequest('POST', '/v3/pay/partner/transactions/jsapi', buildPartnerJsapiBody({ cfg, order, openid }), cfg)
 }
 
+function buildJsapiBody({ cfg, order, openid }) {
+  return {
+    appid: cfg.appid || cfg.spAppid,
+    mchid: cfg.mchid || cfg.spMchid,
+    description: String(order.description || '').slice(0, 120),
+    out_trade_no: order.outTradeNo,
+    notify_url: cfg.notifyUrl,
+    amount: { total: Number(order.amountFen), currency: 'CNY' },
+    payer: { openid },
+    attach: JSON.stringify(order.attach || {})
+  }
+}
+
+function jsapiPrepay({ cfg, order, openid }) {
+  return wechatRequest('POST', '/v3/pay/transactions/jsapi', buildJsapiBody({ cfg, order, openid }), cfg)
+}
+
 function queryPartnerTransaction({ cfg, outTradeNo, subMchid }) {
   const path = `/v3/pay/partner/transactions/out-trade-no/${encodeURIComponent(outTradeNo)}?sp_mchid=${encodeURIComponent(cfg.spMchid)}&sub_mchid=${encodeURIComponent(subMchid)}`
+  return wechatRequest('GET', path, null, cfg)
+}
+
+function queryTransaction({ cfg, outTradeNo }) {
+  const mchid = cfg.mchid || cfg.spMchid
+  const path = `/v3/pay/transactions/out-trade-no/${encodeURIComponent(outTradeNo)}?mchid=${encodeURIComponent(mchid)}`
   return wechatRequest('GET', path, null, cfg)
 }
 
@@ -321,8 +345,11 @@ module.exports = {
   decryptNotifyResource,
   verifyNotifySignature,
   wechatRequest,
+  buildJsapiBody,
+  jsapiPrepay,
   buildPartnerJsapiBody,
   partnerJsapiPrepay,
+  queryTransaction,
   queryPartnerTransaction,
   submitApplyment,
   queryApplymentByBusinessCode,

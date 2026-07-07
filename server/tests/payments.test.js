@@ -37,6 +37,19 @@ const mockDb = {
           sub_mchid: '1700000001'
         }], []]
       }
+      if (orderMode === 'selfOperated') {
+        return [[{
+          id: 9,
+          order_no: 'MG202607030002',
+          total: '9.90',
+          status: 'pending_payment',
+          merchant_count: 1,
+          merchant_id: 7,
+          sub_mchid: null,
+          commission_rate: '0.00',
+          self_operated: 1
+        }], []]
+      }
       return [[{
         id: 8,
         order_no: 'MG202607030001',
@@ -65,6 +78,10 @@ const mockWxpay = {
   async partnerJsapiPrepay({ cfg, order, openid }) {
     calls.push({ type: 'partnerJsapiPrepay', cfg, order, openid })
     return { prepay_id: 'prepay-id-for-test' }
+  },
+  async jsapiPrepay({ cfg, order, openid }) {
+    calls.push({ type: 'jsapiPrepay', cfg, order, openid })
+    return { prepay_id: 'direct-prepay-id-for-test' }
   },
   buildRequestPaymentParams({ prepayId }) {
     calls.push({ type: 'buildRequestPaymentParams', prepayId })
@@ -135,6 +152,17 @@ async function run() {
     assert.strictEqual(prepayCall.openid, 'openid-under-sp-appid')
     assert.strictEqual(prepayCall.order.amountFen, 2580)
     assert.strictEqual(prepayCall.order.profitSharing, true)
+
+    calls.length = 0
+    orderMode = 'selfOperated'
+    const direct = await request(baseUrl, token, { orderType: 'supply', orderId: 9 })
+    assert.strictEqual(direct.status, 200)
+    assert.strictEqual(direct.json.data.payParams.package, 'prepay_id=direct-prepay-id-for-test')
+    const directPrepayCall = calls.find(item => item.type === 'jsapiPrepay')
+    assert(directPrepayCall, 'self-operated order should call direct JSAPI prepay')
+    assert.strictEqual(directPrepayCall.order.subMchid, undefined)
+    assert.strictEqual(directPrepayCall.order.amountFen, 990)
+    assert.strictEqual(directPrepayCall.order.attach.paymentMode, 'direct')
 
     console.log('payments route tests passed')
   } finally {

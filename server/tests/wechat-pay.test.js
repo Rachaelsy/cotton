@@ -151,6 +151,22 @@ async function run() {
   assert.strictEqual(partnerBody.amount.total, 2580)
   assert.strictEqual(JSON.parse(partnerBody.attach).subMchid, '1700000001')
 
+  const directBody = wxpay.buildJsapiBody({
+    cfg,
+    order: {
+      description: 'Cotton平台自营订单 MG202607030002',
+      outTradeNo: 'SUPPLY_MG202607030002_9',
+      amountFen: 990,
+      attach: { orderType: 'supply', orderId: 9, paymentMode: 'direct' }
+    },
+    openid: 'openid-under-appid'
+  })
+  assert.strictEqual(directBody.appid, 'wxspapp')
+  assert.strictEqual(directBody.mchid, '1900000109')
+  assert.strictEqual(directBody.amount.total, 990)
+  assert.deepStrictEqual(directBody.payer, { openid: 'openid-under-appid' })
+  assert.strictEqual(JSON.parse(directBody.attach).paymentMode, 'direct')
+
   const partnerProfitSharingBody = wxpay.buildPartnerJsapiBody({
     cfg,
     order: {

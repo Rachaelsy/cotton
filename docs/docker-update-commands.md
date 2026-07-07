@@ -60,6 +60,25 @@ WECHAT_PAY_PUBLIC_KEY_PATH=pub_key.pem
 docker compose exec app node -e "const wx=require('./utils/wechat-pay'); const cfg=wx.getServiceProviderConfig(); const notify=wx.getNotifyConfig(); console.log(JSON.stringify({serviceProviderConfigured:!!cfg, notifyVerifyConfigured:!!notify, notifyUrlHttps:!!(cfg&&/^https:\/\//.test(cfg.notifyUrl)), publicKeyMode:!!(notify&&notify.wechatpayPublicKey)}))"
 ```
 
+## 创建服务商自营测试店铺
+
+如果特约商户暂时没有审批下来，但服务商自己的商户号已经可以 JSAPI 收款，可以先创建一个平台自营店铺测试微信支付。自营订单会走微信支付普通 JSAPI 下单接口，不需要 `sub_mchid`。
+
+```bash
+cd /root/cotton
+git pull --ff-only origin main
+docker compose up -d --build --remove-orphans
+
+docker compose exec app sh -lc '
+SELF_MERCHANT_PHONE=13900000010 \
+SELF_MERCHANT_PASSWORD=test123 \
+SELF_MERCHANT_COMPANY_NAME="Cotton平台自营店" \
+node db/create_self_merchant.js
+'
+```
+
+然后用 `13900000010 / test123` 登录商户后台，上架一个测试商品；农户在小程序里下单时，如果订单商品属于这个自营店铺，会直接收款到服务商商户号。
+
 如果只想看实时启动日志：
 
 ```bash
