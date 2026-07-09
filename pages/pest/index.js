@@ -11,6 +11,7 @@ Page({
     statusBarHeight: 20,
     capsuleSafeRight: 0,
     scrollTop: 0,
+    common: i18n.getCopy('common', i18n.getLanguage()),
     copy: getPestCopy('index', i18n.getLanguage()),
     commonCountText: '',
     pests: getPestCopy('index', i18n.getLanguage()).pests,
@@ -42,6 +43,7 @@ Page({
     const lang = i18n.getLanguage()
     this.textCopy = getPestCopy('index', lang)
     this.setData({
+      common: i18n.getCopy('common', lang),
       copy: this.textCopy,
       pests: this.textCopy.pests,
       filters: this.textCopy.filters,

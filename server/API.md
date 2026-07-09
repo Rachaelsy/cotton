@@ -1,7 +1,7 @@
 # 棉花智能体 · 接口文档
 
 > 本文档记录所有后端 API 接口，包含认证、商品和管理后台三个模块。
-> 最后更新：2026-05-25
+> 最后更新：2026-07-09
 
 ---
 
@@ -765,3 +765,74 @@ const r = await fetch('/api/admin/merchants', {
 | 商户 | `13800000002` | `test123` | 商户 API 测试 |
 | 商户 | `13900000001` | `merchant123` | 商户 API 测试 |
 | 管理员 | `10000000000` | `Admin@Cotton2026` | 网页后台登录 |
+
+---
+
+## 近期更新（2026-07-09）
+
+### 地理位置天气
+
+**GET** /api/weather/location?lat=<纬度>&lng=<经度>
+
+- 用途：按当前位置经纬度获取真实天气，用于首页天气卡片。
+- 鉴权：无需登录。
+- 成功返回：location + center + weather。
+- 失败说明：上游天气服务不可用时，接口可能返回 503。
+
+**成功示例**
+```json
+{
+  "code": 200,
+  "msg": "天气获取成功",
+  "data": {
+    "center": { "latitude": 39.47, "longitude": 75.99 },
+    "location": {
+      "name": "喀什地区",
+      "inService": true,
+      "distance_km": 2.1
+    },
+    "weather": { }
+  }
+}
+```
+
+### 病虫害图片识别
+
+**POST** /api/ai/photo
+
+- 用途：上传病虫害图片并返回结构化识别结果。
+- 请求格式：multipart/form-data
+- 文件字段：photo
+- 鉴权：当前前端按已登录场景接入，服务端会保存识别图片并返回结构化诊断。
+- 说明：文字问答 /api/ai/chat 继续走文本模型；图片识别单独走视觉模型。
+
+**成功返回字段重点**
+- image：识别后保存的图片地址
+- diagnosis_name：诊断名称
+- category / category_code：病害分类
+- severity / severity_code：严重程度
+- confidence / confidence_code：置信度
+- summary：一句话结论
+- symptoms / evidence / actions / products / warning：结构化识别结果
+
+**成功示例**
+```json
+{
+  "code": 200,
+  "msg": "识别成功",
+  "data": {
+    "image": "/uploads/pest/pest-xxx.jpg",
+    "diagnosis_name": "棉铃虫为害",
+    "category": "虫害",
+    "category_code": "pest",
+    "severity": "中度",
+    "confidence": "中",
+    "summary": "图片中可见虫体和棉铃受害痕迹。",
+    "symptoms": ["棉铃表面受损"],
+    "evidence": ["可见虫体"],
+    "actions": ["优先复查周边棉株"],
+    "products": [],
+    "warning": ""
+  }
+}
+```

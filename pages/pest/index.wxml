@@ -2,7 +2,7 @@
   <view class="nav-bar" style="padding-top:{{statusBarHeight}}px;">
     <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
       <view class="back-btn cm-back-btn" bindtap="onBack">
-        <text class="back-icon cm-back-text">??</text>
+        <text class="back-icon cm-back-text">{{common.back}}</text>
       </view>
       <text class="nav-title">{{copy.title}}</text>
       <view class="nav-right"></view>

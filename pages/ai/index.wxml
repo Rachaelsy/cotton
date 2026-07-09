@@ -181,5 +181,5 @@
       </view>
     </view>
   </view>
-  <tab-bar selected="{{1}}"></tab-bar>
+  <tab-bar selected="{{1}}" copy="{{tabCopy}}"></tab-bar>
 </view>

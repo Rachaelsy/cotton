@@ -177,5 +177,5 @@
 
     <view style="height: 40rpx"></view>
   </scroll-view>
-  <tab-bar selected="{{2}}"></tab-bar>
+  <tab-bar selected="{{2}}" copy="{{tabCopy}}"></tab-bar>
 </view>

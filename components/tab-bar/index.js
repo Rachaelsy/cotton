@@ -2,14 +2,20 @@ const i18n = require('../../utils/i18n')
 
 Component({
   properties: {
-    selected: { type: Number, value: 0 }
+    selected: { type: Number, value: 0 },
+    copy: { type: Object, value: null }
   },
   data: {
     copy: i18n.getCopy('tab')
   },
   lifetimes: {
     attached() {
-      this.setData({ copy: i18n.getCopy('tab') })
+      this.setData({ copy: this.properties.copy || i18n.getCopy('tab') })
+    }
+  },
+  observers: {
+    copy(value) {
+      if (value) this.setData({ copy: value })
     }
   },
   methods: {
