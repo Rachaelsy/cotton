@@ -4,6 +4,7 @@ const db = require('../db/database')
 const { fetchCmaWeather } = require('../utils/cma-weather')
 const { fetchQweatherWeather } = require('../utils/qweather')
 const { normalizeCoordinates, calculateCenter } = require('../utils/plot-geometry')
+const { locateService } = require('../utils/regions')
 
 const router = express.Router()
 
@@ -19,7 +20,7 @@ function weatherProvider() {
   return String(process.env.WEATHER_PROVIDER || 'qweather').trim().toLowerCase()
 }
 
-async function fetchPlotWeather(center, plot) {
+async function fetchPointWeather(center, plot) {
   const provider = weatherProvider()
   if (provider === 'open-meteo-cma' || provider === 'cma') {
     return fetchCmaWeather(center, plot)
@@ -56,6 +57,55 @@ function parseCoordinates(value) {
   }
 }
 
+function parseLatLng(query) {
+  const lat = Number(query.lat != null ? query.lat : query.latitude)
+  const lng = Number(query.lng != null ? query.lng : query.longitude)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { error: '经纬度不能为空' }
+  }
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return { error: '经纬度范围无效' }
+  }
+  return { center: { latitude: lat, longitude: lng } }
+}
+
+// GET /api/weather/location?lat=39.47&lng=75.99 — 获取当前位置真实天气
+router.get('/location', async (req, res) => {
+  const parsed = parseLatLng(req.query)
+  if (parsed.error) return fail(res, parsed.error)
+
+  const center = parsed.center
+  const location = locateService(center.latitude, center.longitude)
+  const locationName = location && location.name ? location.name : '当前位置'
+
+  try {
+    const weather = await fetchPointWeather(center, {
+      id: null,
+      name: locationName,
+      area: 0,
+      coordinates: JSON.stringify([center])
+    })
+    return ok(res, {
+      center,
+      location: {
+        name: locationName,
+        inService: !!(location && location.inService),
+        distance_km: Number.isFinite(Number(location && location.distance))
+          ? Number(Number(location.distance).toFixed(1))
+          : null
+      },
+      weather
+    }, '天气获取成功')
+  } catch (error) {
+    const statusCode = isWeatherUpstreamError(error) ? 503 : 500
+    if (statusCode === 503) {
+      console.warn('[weather-location] upstream unavailable:', error.message)
+    } else {
+      console.error('[weather-location]', error)
+    }
+    return fail(res, error.message || '天气获取失败', statusCode)
+  }
+})
 // GET /api/weather/plot/:id — 获取指定地块的真实天气
 router.get('/plot/:id', farmerAuth, async (req, res) => {
   const plotId = parsePositiveId(req.params.id)
@@ -73,7 +123,7 @@ router.get('/plot/:id', farmerAuth, async (req, res) => {
     if (!coordinates.length) return fail(res, '地块暂无边界数据', 400)
 
     const center = calculateCenter(coordinates)
-    const weather = await fetchPlotWeather(center, plot)
+    const weather = await fetchPointWeather(center, plot)
     return ok(res, {
       plot: {
         id: plot.id,

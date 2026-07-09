@@ -42,7 +42,7 @@ Page({
     location: '新疆 · 棉花种植管理平台',
     today: '',
     weatherPreview: {
-      locationLabel: '全部地块',
+      locationLabel: '当前位置',
       weather: { temp: '--', desc: '', icon: '⚠️', high: '--', low: '--', wind: '--' },
       tipText: ''
     },
@@ -69,6 +69,7 @@ Page({
     this.applyLanguage()
     this._refreshUser()
     this._loadPlotStats()
+    this._loadLocationWeatherPreview()
   },
 
   applyLanguage() {
@@ -79,7 +80,7 @@ Page({
       common: i18n.getCopy('common', lang),
       copy,
       modules: buildModules(lang),
-      weatherPreview: this._buildWeatherUnavailable(this.data.isLoggedIn ? copy.weatherLoadFail : copy.weatherLoginTip, lang),
+      weatherPreview: this._buildWeatherUnavailable(copy.weatherLocating || copy.weatherLoadFail, lang),
       homePlotLabel: this.data.homePlot ? this._plotLabel(this.data.homePlot) : copy.allFields,
       homePlotOptions: this.data.homePlots.length
         ? [copy.allFields, ...this.data.homePlots.map(plot => this._plotLabel(plot))]
@@ -110,8 +111,7 @@ Page({
         homePlotOptions: [this.data.copy.allFields],
         homePlotIndex: 0,
         homePlot: null,
-        homePlotLabel: this.data.copy.allFields,
-        weatherPreview: this._buildWeatherUnavailable(this.data.copy.weatherLoginTip)
+        homePlotLabel: this.data.copy.allFields
       })
       return
     }
@@ -119,14 +119,20 @@ Page({
     try {
       const res = await auth.request('GET', '/api/plots')
       if (res.code !== 200 || !Array.isArray(res.data)) {
-        this.setData({ weatherPreview: this._buildWeatherUnavailable(res.msg || this.data.copy.weatherLoadFail) })
+        this.setData({
+          plotStats: { count: 0, area: '0', attention: 0 },
+          homePlots: [],
+          homePlotOptions: [this.data.copy.allFields],
+          homePlotIndex: 0,
+          homePlot: null,
+          homePlotLabel: this.data.copy.allFields
+        })
         return
       }
       const plots = res.data
       const area = plots.reduce((sum, plot) => sum + Number(plot.area || 0), 0)
       const selected = this._resolveHomePlot(plots)
       const selectedIndex = selected ? plots.findIndex(plot => Number(plot.id) === Number(selected.id)) + 1 : 0
-      const weatherPreview = await this._loadWeatherPreview(plots, selected)
 
       this.setData({
         plotStats: {
@@ -138,11 +144,17 @@ Page({
         homePlotOptions: [this.data.copy.allFields, ...plots.map(plot => this._plotLabel(plot))],
         homePlotIndex: selectedIndex,
         homePlot: selected,
-        homePlotLabel: selected ? this._plotLabel(selected) : this.data.copy.allFields,
-        weatherPreview
+        homePlotLabel: selected ? this._plotLabel(selected) : this.data.copy.allFields
       })
     } catch (error) {
-      this.setData({ weatherPreview: this._buildWeatherUnavailable(error.message || this.data.copy.weatherLoadFail) })
+      this.setData({
+        plotStats: { count: 0, area: '0', attention: 0 },
+        homePlots: [],
+        homePlotOptions: [this.data.copy.allFields],
+        homePlotIndex: 0,
+        homePlot: null,
+        homePlotLabel: this.data.copy.allFields
+      })
     }
   },
 
@@ -160,27 +172,33 @@ Page({
     return plots[0]
   },
 
-  async _loadWeatherPreview(plots, selectedPlot) {
-    const targetPlot = selectedPlot || (Array.isArray(plots) && plots.length ? plots[0] : null)
-    if (!targetPlot) return this._buildWeatherUnavailable(this.data.copy.weatherNoPlot)
+  _getCurrentLocation() {
+    return new Promise((resolve, reject) => {
+      wx.getLocation({
+        type: 'gcj02',
+        isHighAccuracy: true,
+        highAccuracyExpireTime: 4000,
+        success: resolve,
+        fail: reject
+      })
+    })
+  },
 
-    let res
-    try {
-      res = await auth.request('GET', `/api/weather/plot/${targetPlot.id}`)
-    } catch (error) {
-      return this._buildWeatherUnavailable(error.message || this.data.copy.weatherLoadFail)
-    }
+  _formatLocationWeatherLabel(location) {
+    const copy = this.data.copy || {}
+    if (location && location.name) return `${location.name} · ${copy.currentWeatherLocation || '当前位置'}`
+    return copy.currentWeatherLocation || '当前位置'
+  },
 
-    if (res.code !== 200 || !(res.data && res.data.weather)) {
-      return this._buildWeatherUnavailable(res.msg || this.data.copy.weatherLoadFail)
-    }
-
-    const model = buildWeatherFromApi(res.data.plot || targetPlot, res.data.weather, {
-      fieldCount: plots.length,
-      selectedIndex: plots.findIndex(plot => Number(plot.id) === Number(targetPlot.id))
+  _buildHomeWeatherPreview(payload) {
+    const location = payload && payload.location ? payload.location : null
+    const locationName = location && location.name ? location.name : (this.data.copy.currentWeatherLocation || '当前位置')
+    const model = buildWeatherFromApi({ name: locationName, area: 0 }, payload.weather, {
+      fieldCount: 0,
+      selectedIndex: 0
     })
     return {
-      locationLabel: this._homeWeatherLocation(model, targetPlot),
+      locationLabel: this._formatLocationWeatherLabel(location),
       weather: {
         temp: model.weather.temp,
         desc: model.weather.desc,
@@ -193,10 +211,28 @@ Page({
     }
   },
 
-  _homeWeatherLocation(model, plot) {
-    if (model && model.selectedFieldLabel) return model.selectedFieldLabel
-    if (plot && plot.name) return plot.name
-    return this.data.copy.allFields
+  async _loadLocationWeatherPreview(options = {}) {
+    const { showToast = false } = options
+    const copy = this.data.copy || {}
+    this.setData({ weatherPreview: this._buildWeatherUnavailable(copy.weatherLocating || copy.weatherLoadFail) })
+
+    try {
+      const position = await this._getCurrentLocation()
+      const lat = encodeURIComponent(position.latitude)
+      const lng = encodeURIComponent(position.longitude)
+      const res = await auth.request('GET', `/api/weather/location?lat=${lat}&lng=${lng}`)
+      if (res.code !== 200 || !(res.data && res.data.weather)) {
+        throw new Error(res.msg || copy.weatherLoadFail)
+      }
+      this.setData({ weatherPreview: this._buildHomeWeatherPreview(res.data) })
+    } catch (error) {
+      const message = String(error && (error.errMsg || error.message) ? (error.errMsg || error.message) : '')
+      const reason = /auth deny|auth denied|authorize|permission/i.test(message)
+        ? (copy.weatherLocationDenied || copy.weatherLoadFail)
+        : ((error && error.message) || copy.weatherLoadFail)
+      this.setData({ weatherPreview: this._buildWeatherUnavailable(reason) })
+      if (showToast) wx.showToast({ title: reason, icon: 'none' })
+    }
   },
 
   _homeWeatherTip(model) {
@@ -238,7 +274,7 @@ Page({
   _buildWeatherUnavailable(reason, lang = this.data.lang) {
     const copy = i18n.getCopy('home', lang)
     return {
-      locationLabel: copy.allFields,
+      locationLabel: copy.currentWeatherLocation || '当前位置',
       weather: {
         temp: '--',
         desc: copy.weatherUnavailable,
@@ -261,7 +297,7 @@ Page({
     this.setData({ today: `${d.getMonth() + 1}月${d.getDate()}日 ${week[d.getDay()]}` })
   },
 
-  async onHomePlotChange(e) {
+  onHomePlotChange(e) {
     const index = Number(e.detail.value)
     const plot = index > 0 ? this.data.homePlots[index - 1] : null
     if (plot && plot.id) wx.setStorageSync('home_plot_id', plot.id)
@@ -271,8 +307,6 @@ Page({
       homePlot: plot,
       homePlotLabel: plot ? this._plotLabel(plot) : this.data.copy.allFields
     })
-    const weatherPreview = await this._loadWeatherPreview(this.data.homePlots, plot || this._resolveHomePlot(this.data.homePlots))
-    this.setData({ weatherPreview })
   },
 
   _buildPlotPageUrl(path) {
@@ -313,6 +347,10 @@ Page({
     wx.navigateTo({ url: '/pages/fields/index' })
   },
 
+  onRefreshWeatherLocation() {
+    this._loadLocationWeatherPreview({ showToast: true })
+  },
+
   onGoWeather() {
     wx.navigateTo({ url: '/pages/weather/index' })
   },
@@ -328,12 +366,12 @@ Page({
           src: tempFilePath,
           quality: 50,
           success: (compRes) => {
-            app.globalData.pendingPhoto = { tempFilePath: compRes.tempFilePath }
-            wx.switchTab({ url: '/pages/ai/index' })
+            app.globalData.pendingPestPhoto = { tempFilePath: compRes.tempFilePath }
+            wx.navigateTo({ url: '/pages/pest/result' })
           },
           fail: () => {
-            app.globalData.pendingPhoto = { tempFilePath }
-            wx.switchTab({ url: '/pages/ai/index' })
+            app.globalData.pendingPestPhoto = { tempFilePath }
+            wx.navigateTo({ url: '/pages/pest/result' })
           }
         })
       },

@@ -142,6 +142,19 @@ async function runRouteTest() {
     assert(qweatherRequests.some(item => new URL(item.url).pathname === '/v7/grid-weather/7d'))
     assert(qweatherRequests.every(item => new URL(item.url).searchParams.get('location') === '75.99,39.47'))
     assert(qweatherRequests.every(item => item.headers['X-QW-Api-Key'] === 'test-qweather-api-key'))
+
+    const invalidLocation = await request(baseUrl, '', '/api/weather/location?lat=x&lng=75.99')
+    assert.strictEqual(invalidLocation.status, 400)
+
+    const locationSuccess = await request(baseUrl, '', '/api/weather/location?lat=39.4677&lng=75.9938')
+    assert.strictEqual(locationSuccess.status, 200)
+    assert.strictEqual(locationSuccess.json.data.location.name, '喀什市')
+    assert.strictEqual(locationSuccess.json.data.location.inService, true)
+    assert.strictEqual(locationSuccess.json.data.weather.provider, 'qweather')
+
+    const allQweatherRequests = fetchedRequests.filter(item => item.url.includes('qweatherapi.com'))
+    assert.strictEqual(allQweatherRequests.length, 6)
+    assert(allQweatherRequests.slice(3).every(item => new URL(item.url).searchParams.get('location') === '75.99,39.47'))
     assert(fetchedRequests.every(item => !item.url.includes('api.open-meteo.com')), 'qweather provider should not request Open-Meteo')
   } finally {
     await new Promise(resolve => server.close(resolve))

@@ -1,37 +1,48 @@
 const app = getApp()
-const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
 const layout = require('../../utils/layout')
+const { getPestCopy } = require('../../utils/pest-copy')
+const { decorateHistoryRecord } = require('../../utils/pest-recognition')
+
+const HISTORY_KEY = 'pest_recognition_history'
 
 Page({
   data: {
     statusBarHeight: 20,
     capsuleSafeRight: 0,
-    copy: i18n.getPageCopy('pest'),
+    scrollTop: 0,
+    copy: getPestCopy('index', i18n.getLanguage()),
     commonCountText: '',
-    pests: i18n.getPageCopy('pest').pests,
-    filter: i18n.getPageCopy('pest').filters[0],
-    filters: i18n.getPageCopy('pest').filters,
-    filteredPests: []
+    pests: getPestCopy('index', i18n.getLanguage()).pests,
+    filter: getPestCopy('index', i18n.getLanguage()).filters[0],
+    filters: getPestCopy('index', i18n.getLanguage()).filters,
+    filteredPests: [],
+    recentHistory: []
   },
 
   onLoad() {
-    const sysInfo = wx.getSystemInfoSync();
+    const sysInfo = wx.getSystemInfoSync()
     this.applyLanguage()
-    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() });
-    this._applyFilter(this.data.filters[0]);
+    this.setData({
+      statusBarHeight: sysInfo.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight()
+    })
+    this._applyFilter(this.data.filters[0])
+    this._loadHistory()
   },
 
   onShow() {
     this.applyLanguage()
-    this._applyFilter(this.data.filters[0])
+    this.setData({ scrollTop: 0 })
+    this._applyFilter(this.data.filter || this.data.filters[0])
+    this._loadHistory()
   },
 
   applyLanguage() {
     const lang = i18n.getLanguage()
-    this.textCopy = i18n.getCopy('pest', lang)
+    this.textCopy = getPestCopy('index', lang)
     this.setData({
-      copy: i18n.getPageCopy('pest', lang),
+      copy: this.textCopy,
       pests: this.textCopy.pests,
       filters: this.textCopy.filters,
       commonCountText: this.textCopy.commonCount(this.textCopy.pests.length)
@@ -39,14 +50,22 @@ Page({
   },
 
   _applyFilter(filter) {
-    const all = this.data.pests;
-    const result = filter === this.data.filters[0] ? all : all.filter(p => p.type === filter);
-    this.setData({ filteredPests: result, filter });
+    const all = this.data.pests
+    const rootFilter = this.data.filters[0]
+    const result = filter === rootFilter ? all : all.filter(item => item.type === filter)
+    this.setData({ filteredPests: result, filter })
+  },
+
+  _loadHistory() {
+    const stored = wx.getStorageSync(HISTORY_KEY)
+    const history = Array.isArray(stored) ? stored : []
+    this.setData({
+      recentHistory: history.slice(0, 6).map(item => decorateHistoryRecord(item, this.textCopy))
+    })
   },
 
   onFilterTap(e) {
-    const val = e.currentTarget.dataset.val;
-    this._applyFilter(val);
+    this._applyFilter(e.currentTarget.dataset.val)
   },
 
   onTakePhoto() {
@@ -54,14 +73,9 @@ Page({
       count: 1,
       mediaType: ['image'],
       sourceType: ['camera'],
-      success: (res) => {
-        const filePath = res.tempFiles[0].tempFilePath;
-        this._doRecognize(filePath);
-      },
-      fail: () => {
-        wx.showToast({ title: this.textCopy.photoCancel, icon: 'none' });
-      }
-    });
+      success: (res) => this._openResultPage(res.tempFiles[0].tempFilePath),
+      fail: () => wx.showToast({ title: this.textCopy.photoCancel, icon: 'none' })
+    })
   },
 
   onChooseAlbum() {
@@ -69,58 +83,46 @@ Page({
       count: 1,
       mediaType: ['image'],
       sourceType: ['album'],
-      success: (res) => {
-        const filePath = res.tempFiles[0].tempFilePath;
-        this._doRecognize(filePath);
-      },
-      fail: () => {
-        wx.showToast({ title: this.textCopy.albumCancel, icon: 'none' });
-      }
-    });
+      success: (res) => this._openResultPage(res.tempFiles[0].tempFilePath),
+      fail: () => wx.showToast({ title: this.textCopy.albumCancel, icon: 'none' })
+    })
   },
 
-  _doRecognize(filePath) {
-    wx.showLoading({ title: this.textCopy.recognizing, mask: true });
-    wx.uploadFile({
-      url: auth.BASE_URL + '/api/ai/photo',
-      filePath,
-      name: 'photo',
-      header: { Authorization: auth.getToken() ? `Bearer ${auth.getToken()}` : '' },
+  _openResultPage(filePath) {
+    app.globalData.pendingPestPhoto = { tempFilePath: filePath }
+    wx.navigateTo({ url: '/pages/pest/result' })
+  },
+
+  onHistory() {
+    const list = this.data.recentHistory
+    if (!list.length) {
+      wx.showToast({ title: this.textCopy.noHistory, icon: 'none' })
+      return
+    }
+    wx.showActionSheet({
+      itemList: list.slice(0, 6).map(item => `${item.title}｜${item.displaySeverity}`),
       success: (res) => {
-        wx.hideLoading()
-        try {
-          const data = JSON.parse(res.data || '{}')
-          if (data.code !== 200 || !(data.data && data.data.reply)) {
-            wx.showToast({ title: data.msg || this.textCopy.recognizeFail || '识别失败', icon: 'none' })
-            return
-          }
-          app.globalData.pestRecognitionResult = {
-            image: filePath,
-            reply: data.data.reply,
-            time: Date.now()
-          }
-          wx.navigateTo({ url: '/pages/pest/detail?id=ai&from=recognize' })
-        } catch (error) {
-          wx.showToast({ title: this.textCopy.parseFail || '识别结果解析失败', icon: 'none' })
-        }
-      },
-      fail: () => {
-        wx.hideLoading()
-        wx.showToast({ title: this.textCopy.uploadFail || '图片上传失败', icon: 'none' })
+        const picked = list[res.tapIndex]
+        if (!picked) return
+        app.globalData.pestRecognitionResult = picked
+        wx.navigateTo({ url: `/pages/pest/result?mode=history&id=${picked.id}` })
       }
     })
   },
 
-  onHistory() {
-    wx.showToast({ title: this.textCopy.noHistory, icon: 'none' });
+  onHistoryTap(e) {
+    const id = e.currentTarget.dataset.id
+    const record = this.data.recentHistory.find(item => item.id === id)
+    if (!record) return
+    app.globalData.pestRecognitionResult = record
+    wx.navigateTo({ url: `/pages/pest/result?mode=history&id=${record.id}` })
   },
 
   onPestTap(e) {
-    const id = e.currentTarget.dataset.id;
-    wx.navigateTo({ url: `/pages/pest/detail?id=${id}` });
+    wx.navigateTo({ url: `/pages/pest/detail?id=${e.currentTarget.dataset.id}` })
   },
 
   onBack() {
-    wx.navigateBack();
+    wx.navigateBack()
   }
-});
+})

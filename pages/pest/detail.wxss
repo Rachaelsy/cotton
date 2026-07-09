@@ -1,19 +1,16 @@
-/* ===== 全局页面 ===== */
 .page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F6F8F3;
+  background: #f6f8f3;
 }
 
-/* ===== 头部（深棕色渐变） ===== */
 .header {
-  background: linear-gradient(160deg, #5E4A2F, #80613C);
+  background: linear-gradient(160deg, #5e4a2f, #80613c);
   flex-shrink: 0;
   padding-bottom: 40rpx;
 }
 
-/* 导航行 */
 .nav-inner {
   display: flex;
   flex-direction: row;
@@ -22,6 +19,7 @@
   height: 88rpx;
   padding: 0 28rpx;
 }
+
 .back-btn,
 .nav-right {
   width: 64rpx;
@@ -30,26 +28,28 @@
   align-items: center;
   justify-content: center;
 }
+
 .back-icon {
   font-size: 52rpx;
   color: #fff;
   font-weight: 300;
   line-height: 1;
 }
+
 .share-icon {
   font-size: 38rpx;
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* 病虫害主信息区 */
 .pest-hero {
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 0 36rpx;
   margin-top: 8rpx;
-  gap: 28rpx;
+  gap: 24rpx;
 }
+
 .pest-icon-wrap {
   width: 120rpx;
   height: 120rpx;
@@ -60,114 +60,151 @@
   justify-content: center;
   flex-shrink: 0;
 }
+
 .pest-icon {
   font-size: 64rpx;
   line-height: 1;
 }
+
 .pest-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 14rpx;
 }
+
 .pest-name {
-  font-size: 44rpx;
-  font-weight: 700;
+  font-size: 40rpx;
+  font-weight: 800;
   color: #fff;
+  line-height: 1.2;
 }
+
+.pest-badges {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
 .pest-type-badge {
   display: inline-flex;
   background: rgba(255, 255, 255, 0.22);
   border-radius: 20rpx;
-  padding: 6rpx 24rpx;
+  padding: 6rpx 20rpx;
   align-self: flex-start;
 }
-.pest-type-text {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
+
+.pest-type-badge-soft {
+  background: rgba(255, 255, 255, 0.14);
 }
+
+.pest-type-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+}
+
 .treat-days-wrap {
+  min-width: 116rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 20rpx;
-  padding: 16rpx 20rpx;
+  padding: 16rpx 18rpx;
   flex-shrink: 0;
 }
+
 .treat-days-num {
-  font-size: 48rpx;
-  font-weight: 700;
-  color: #FFD580;
+  font-size: 46rpx;
+  font-weight: 800;
+  color: #ffd580;
   line-height: 1;
 }
+
 .treat-days-label {
   font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.78);
   margin-top: 6rpx;
   text-align: center;
 }
 
-/* ===== 滚动主体 ===== */
 .scroll-body {
   flex: 1;
   height: 0;
 }
 
-/* ===== 通用卡片 ===== */
 .card {
   background: #fff;
-  border-radius: 22rpx;
+  border-radius: 24rpx;
   margin: 24rpx 28rpx 0;
-  padding: 32rpx;
-  box-shadow: 0 4rpx 24rpx rgba(33, 61, 42, 0.06);
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(33, 61, 42, 0.06);
 }
+
 .card-title {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #18231A;
   display: block;
-  margin-bottom: 24rpx;
+  margin-bottom: 22rpx;
   padding-left: 16rpx;
-  border-left: 6rpx solid #B9852F;
+  border-left: 6rpx solid #b9852f;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #18231a;
 }
 
 .ai-result-card {
-  border: 2rpx solid rgba(200, 144, 46, .28);
+  border: 2rpx solid rgba(200, 144, 46, 0.28);
 }
 
 .ai-result-image {
   width: 100%;
-  height: 320rpx;
+  height: 340rpx;
   border-radius: 20rpx;
-  background: #F6F8F3;
+  background: #f6f8f3;
   margin-bottom: 20rpx;
 }
 
 .ai-result-text {
   display: block;
   font-size: 26rpx;
-  color: #333;
+  color: #2f3a31;
   line-height: 1.75;
-  font-weight: 600;
   white-space: pre-wrap;
+}
+
+.ai-result-warning {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+  background: #fff8ea;
+}
+
+.ai-result-warning-label {
+  display: block;
+  font-size: 22rpx;
+  font-weight: 800;
+  color: #b9852f;
+  margin-bottom: 8rpx;
+}
+
+.ai-result-warning-text {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #6f552b;
 }
 
 .ai-result-tip {
   margin-top: 18rpx;
   border-radius: 16rpx;
-  background: #FFF8F0;
-  color: #8A5C20;
+  background: #f7faf5;
+  color: #6b756d;
   font-size: 23rpx;
   line-height: 1.6;
-  padding: 16rpx 20rpx;
+  padding: 16rpx 18rpx;
 }
 
-/* ===== 严重程度卡片 ===== */
-.severity-card {
-  /* 继承 .card */
-}
 .severity-row {
   display: flex;
   flex-direction: row;
@@ -177,15 +214,17 @@
   padding: 0 24rpx;
   margin-bottom: 24rpx;
 }
+
 .severity-line {
   position: absolute;
   left: 60rpx;
   right: 60rpx;
   top: 20rpx;
   height: 4rpx;
-  background: #E8D8C4;
+  background: #e8d8c4;
   z-index: 0;
 }
+
 .severity-item {
   display: flex;
   flex-direction: column;
@@ -193,6 +232,7 @@
   gap: 12rpx;
   z-index: 1;
 }
+
 .severity-dot {
   width: 40rpx;
   height: 40rpx;
@@ -201,112 +241,150 @@
   align-items: center;
   justify-content: center;
 }
+
 .dot-inactive {
-  background: #E8D8C4;
+  background: #e8d8c4;
 }
+
 .dot-active {
-  background: #D98222;
+  background: #d98222;
   box-shadow: 0 0 0 8rpx rgba(255, 152, 0, 0.25);
 }
+
 .dot-inner {
   width: 18rpx;
   height: 18rpx;
   background: #fff;
   border-radius: 50%;
 }
+
 .severity-label {
   font-size: 24rpx;
-  color: #8A948B;
+  color: #8a948b;
 }
+
 .label-active {
-  color: #D98222;
-  font-weight: 600;
+  color: #d98222;
+  font-weight: 700;
 }
+
 .severity-tip {
   display: flex;
   flex-direction: row;
   align-items: center;
-  background: #FFF8F0;
+  gap: 12rpx;
+  background: #fff8f0;
   border-radius: 16rpx;
   padding: 16rpx 20rpx;
-  gap: 12rpx;
 }
+
 .severity-tip-icon {
   font-size: 28rpx;
   line-height: 1;
 }
+
 .severity-tip-text {
   font-size: 24rpx;
-  font-weight: 500;
+  font-weight: 600;
   flex: 1;
 }
 
-/* ===== 描述文字 ===== */
 .desc-text {
-  font-size: 26rpx;
-  color: #58655B;
-  line-height: 1.8;
   display: block;
+  font-size: 26rpx;
+  color: #58655b;
+  line-height: 1.8;
 }
 
-/* ===== 处理方案 ===== */
+.bullet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.bullet-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+.bullet-dot {
+  font-size: 28rpx;
+  color: #b9852f;
+  line-height: 1.4;
+}
+
+.bullet-text {
+  flex: 1;
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: #445248;
+}
+
 .treatment-item {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   gap: 24rpx;
-  margin-bottom: 28rpx;
+  margin-bottom: 24rpx;
 }
+
 .treatment-item:last-child {
   margin-bottom: 0;
 }
+
 .treatment-num-wrap {
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #B9852F, #D7A248);
+  background: linear-gradient(135deg, #b9852f, #d7a248);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 4rpx;
 }
+
 .treatment-num {
   font-size: 28rpx;
-  font-weight: 700;
+  font-weight: 800;
   color: #fff;
 }
+
 .treatment-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
-}
-.treatment-name {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #18231A;
-}
-.treatment-desc {
-  font-size: 24rpx;
-  color: #58655B;
-  line-height: 1.75;
+  gap: 8rpx;
 }
 
-/* ===== 推荐农药 ===== */
+.treatment-name {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: #18231a;
+}
+
+.treatment-desc {
+  font-size: 24rpx;
+  line-height: 1.75;
+  color: #58655b;
+}
+
 .product-item {
   display: flex;
   flex-direction: row;
   align-items: center;
-  background: #FFF8F0;
+  background: #fff8f0;
   border-radius: 20rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
-  gap: 20rpx;
+  padding: 22rpx;
+  margin-bottom: 18rpx;
+  gap: 18rpx;
 }
+
 .product-item:last-child {
   margin-bottom: 0;
 }
+
 .product-icon-wrap {
   width: 80rpx;
   height: 80rpx;
@@ -316,41 +394,46 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2rpx 12rpx rgba(33, 61, 42, 0.06);
 }
+
 .product-icon {
   font-size: 40rpx;
   line-height: 1;
 }
+
 .product-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8rpx;
 }
+
 .product-name {
   font-size: 26rpx;
-  font-weight: 500;
-  color: #18231A;
-}
-.product-price {
-  font-size: 28rpx;
   font-weight: 700;
-  color: #B9852F;
+  color: #18231a;
 }
+
+.product-price {
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: #6f7b72;
+}
+
 .buy-btn {
-  background: linear-gradient(135deg, #B9852F, #D7A248);
-  border-radius: 40rpx;
-  padding: 16rpx 32rpx;
+  background: linear-gradient(135deg, #b9852f, #d7a248);
+  border-radius: 999rpx;
+  padding: 14rpx 28rpx;
   flex-shrink: 0;
 }
+
 .buy-btn-text {
-  font-size: 26rpx;
-  font-weight: 600;
+  font-size: 24rpx;
+  font-weight: 700;
   color: #fff;
 }
 
-/* ===== 底部留白 ===== */
 .bottom-gap {
   height: 60rpx;
 }

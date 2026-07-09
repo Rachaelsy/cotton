@@ -30,12 +30,10 @@
       <!-- 天气卡片 -->
       <view class="weather-card" bindtap="onGoWeather">
         <view class="wc-top">
-          <picker mode="selector" range="{{homePlotOptions}}" value="{{homePlotIndex}}" bindchange="onHomePlotChange" catchtap="noop">
-            <view class="wc-loc-pill">
-              <text class="wc-loc-text">📍 {{weatherPreview.locationLabel}}</text>
-              <text class="wc-loc-change">{{copy.switchPlot}}</text>
-            </view>
-          </picker>
+          <view class="wc-loc-pill" catchtap="onRefreshWeatherLocation">
+            <text class="wc-loc-text">📍 {{weatherPreview.locationLabel}}</text>
+            <text class="wc-loc-change">{{copy.refreshWeather}}</text>
+          </view>
         </view>
         <view class="wc-main">
           <view class="wc-info">

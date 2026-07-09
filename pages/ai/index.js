@@ -90,11 +90,6 @@ Page({
       this.setData({ voiceMode: true })
     }
 
-    const photo = app.globalData.pendingPhoto
-    if (photo) {
-      app.globalData.pendingPhoto = null
-      this._sendPhoto(photo)
-    }
   },
 
   onUnload() {
@@ -173,48 +168,6 @@ Page({
         speak: options.fromVoice || this.data.voiceAnswerEnabled
       })
     }
-  },
-
-  async _sendPhoto(photo) {
-    const userMsg = {
-      id:    ++this._msgId,
-      role:  'user',
-      text:  this.textCopy.photoAsk,
-      image: photo.tempFilePath,
-      time:  this._formatTime()
-    }
-    const messages = [...this.data.messages, userMsg]
-    this.setData({
-      messages,
-      typing:     true,
-      scrollToId: 'bottom'
-    })
-    this._saveHistory(messages)
-
-    const serverUrl = auth.BASE_URL + '/api/ai/photo'
-    const token     = auth.getToken()
-
-    wx.uploadFile({
-      url:      serverUrl,
-      filePath: photo.tempFilePath,
-      name:     'photo',
-      header:   { Authorization: token ? `Bearer ${token}` : '' },
-      success:  (res) => {
-        try {
-          const data = JSON.parse(res.data)
-          this._appendAI(
-            data.code === 200 && data.data?.reply
-              ? data.data.reply
-              : (data.msg || this.textCopy.photoFail)
-          )
-        } catch {
-          this._appendAI(this.textCopy.parseFail)
-        }
-      },
-      fail: () => {
-        this._appendAI(this.textCopy.uploadFail)
-      }
-    })
   },
 
   _appendAI(text, extra = {}, options = {}) {

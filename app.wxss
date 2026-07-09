@@ -75,6 +75,33 @@ page {
   flex-shrink: 0;
 }
 
+.cm-back-btn {
+  min-width: 76rpx;
+  height: 56rpx;
+  padding: 0 16rpx;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1rpx solid rgba(255, 255, 255, 0.24);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.cm-back-text {
+  color: #FFFFFF;
+  font-size: 23rpx;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cm-back-spacer {
+  min-width: 76rpx;
+  height: 56rpx;
+  flex-shrink: 0;
+}
+
 /* Tab 页底部占位块，防止 scroll-view 延伸到 fixed tab bar 区域 */
 .tbar-placeholder {
   flex-shrink: 0;

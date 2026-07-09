@@ -148,6 +148,9 @@ App({
     navBarHeight: 44,
     user: null,
     selectedProduct: null,
-    localProducts: PRODUCTS
+    localProducts: PRODUCTS,
+    pendingPestPhoto: null,
+    pestRecognitionResult: null,
+    language: i18n.getLanguage()
   }
 })

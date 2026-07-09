@@ -1,159 +1,328 @@
-// server/routes/ai.js — AI 问答 + 图片分析代理
-// 文字优先级：DEEPSEEK_API_KEY → GROQ_API_KEY → SILICONFLOW_API_KEY
-// 视觉优先级：SILICONFLOW_API_KEY
+const crypto = require('crypto')
 const express = require('express')
-const https   = require('https')
-const multer  = require('multer')
-const path    = require('path')
-const fs      = require('fs')
-const router  = express.Router()
+const https = require('https')
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
 const { detectAiIntent, buildIntentReply } = require('../utils/ai-intent')
 
-// 临时目录（分析后立即删除）
+const router = express.Router()
+
 const aiTempDir = path.join(__dirname, '../public/uploads/ai_temp')
+const pestImageDir = path.join(__dirname, '../public/uploads/pest')
 if (!fs.existsSync(aiTempDir)) fs.mkdirSync(aiTempDir, { recursive: true })
+if (!fs.existsSync(pestImageDir)) fs.mkdirSync(pestImageDir, { recursive: true })
 
 const photoUpload = multer({ dest: aiTempDir, limits: { fileSize: 8 * 1024 * 1024 } })
 
-// ── System prompts ─────────────────────────────
-const CHAT_SYSTEM = `你是"小棉"，专为新疆棉花种植农户设计的AI农业助手。
-专业领域：棉花种植技术（播种、施肥、灌溉、打药时机）、病虫害识别与防治（棉蚜、棉铃虫、红蜘蛛、枯萎病等）、农事管理、棉花市场行情与销售。
-回答要求：简洁实用、不超过250字、用通俗中文。列举步骤用"1. 2. 3."格式。不确定时说明"建议咨询当地农技站"。`
+const CHAT_SYSTEM = '你是“小棉”，专为新疆棉花种植农户设计的 AI 农业助手。你擅长棉花种植、农事管理、棉花交易与农资使用建议。回答要简洁、实用、通俗，控制在 250 字内；如需步骤，请使用 1. 2. 3. 的格式。若无法确认，请明确说明并建议结合当地农技人员意见。'
 
-const VISION_QUESTION = `请分析这张棉花作物照片，告诉我：
-1. 作物整体长势如何
-2. 是否有病虫害（如有请说明是什么）
-3. 是否有营养缺乏或其他异常
-4. 具体防治或处理建议
-请用简洁中文回答，不超过300字。`
+const VISION_SYSTEM = '你是新疆棉花病虫害识别助手，必须基于图片中真实可见的信息判断，不得编造天气、面积、产量、地块历史或药效结论。'
 
-// ── 获取当前可用的 API 配置 ────────────────────
-function getApiConfig(needVision = false) {
-  if (needVision && process.env.SILICONFLOW_API_KEY) {
-    return {
-      host:   'api.siliconflow.cn',
-      path:   '/v1/chat/completions',
-      apiKey: process.env.SILICONFLOW_API_KEY,
-      provider: 'siliconflow',
-      model:  'Qwen/Qwen2-VL-7B-Instruct'
-    }
+const VISION_QUESTION = [
+  '请只输出 JSON，不要输出 JSON 之外的任何文字。',
+  '{',
+  '  "diagnosis_name": "最可能的问题名称，没有把握时写待进一步确认",',
+  '  "category": "虫害/病害/生理性/待确认",',
+  '  "severity": "轻度/中度/重度/待确认",',
+  '  "confidence": "高/中/低",',
+  '  "summary": "一句话概括当前判断",',
+  '  "symptoms": ["图片里直接看见的症状1", "症状2"],',
+  '  "evidence": ["支持判断的依据1", "依据2"],',
+  '  "actions": ["建议措施1", "建议措施2", "建议措施3"],',
+  '  "products": [{ "name": "药剂或处理品名称", "usage": "怎么用", "note": "注意事项" }],',
+  '  "warning": "如果暂不建议立即用药，写清原因；没有就写空字符串"',
+  '}',
+  '要求：',
+  '1. 识别对象限定为棉花常见虫害、病害、生理性问题和营养异常。',
+  '2. 如果图片不足以明确判断，diagnosis_name 必须写“待进一步确认”，并说明还需要观察什么。',
+  '3. actions 必须具体、可执行，优先给田间处理建议。',
+  '4. products 没把握时返回空数组。'
+].join('\n')
+
+function getVisionModel() {
+  return String(process.env.SILICONFLOW_VISION_MODEL || 'Qwen/Qwen3-VL-8B-Instruct').trim()
+}
+
+function getVisionConfig() {
+  if (!process.env.SILICONFLOW_API_KEY) return null
+  return {
+    host: 'api.siliconflow.com',
+    path: '/v1/chat/completions',
+    apiKey: process.env.SILICONFLOW_API_KEY,
+    provider: 'siliconflow',
+    model: getVisionModel()
   }
-  if (!needVision && process.env.DEEPSEEK_API_KEY) {
+}
+
+function getChatConfig() {
+  if (process.env.DEEPSEEK_API_KEY) {
     return {
-      host:   'api.deepseek.com',
-      path:   '/v1/chat/completions',
+      host: 'api.deepseek.com',
+      path: '/v1/chat/completions',
       apiKey: process.env.DEEPSEEK_API_KEY,
       provider: 'deepseek',
-      model:  'deepseek-chat'
+      model: 'deepseek-chat'
     }
   }
-  if (process.env.GROQ_API_KEY && !needVision) {
+
+  if (process.env.GROQ_API_KEY) {
     return {
-      host:   'api.groq.com',
-      path:   '/openai/v1/chat/completions',
+      host: 'api.groq.com',
+      path: '/openai/v1/chat/completions',
       apiKey: process.env.GROQ_API_KEY,
       provider: 'groq',
-      model:  'llama-3.3-70b-versatile'
+      model: 'llama-3.3-70b-versatile'
     }
   }
-  if (process.env.SILICONFLOW_API_KEY && !needVision) {
+
+  if (process.env.SILICONFLOW_API_KEY) {
     return {
-      host:   'api.siliconflow.cn',
-      path:   '/v1/chat/completions',
+      host: 'api.siliconflow.com',
+      path: '/v1/chat/completions',
       apiKey: process.env.SILICONFLOW_API_KEY,
       provider: 'siliconflow',
-      model:  'deepseek-ai/DeepSeek-V3'
+      model: 'deepseek-ai/DeepSeek-V3'
     }
   }
+
   return null
 }
 
-// ── 通用 HTTPS POST ────────────────────────────
 function httpsPost(cfg, bodyObj, timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
     const bodyStr = JSON.stringify(bodyObj)
     const req = https.request({
       hostname: cfg.host,
-      port:     443,
-      path:     cfg.path,
-      method:   'POST',
+      port: 443,
+      path: cfg.path,
+      method: 'POST',
       headers: {
-        'Content-Type':   'application/json',
-        'Authorization':  `Bearer ${cfg.apiKey}`,
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${cfg.apiKey}`,
         'Content-Length': Buffer.byteLength(bodyStr)
       }
     }, (res) => {
       let data = ''
-      res.on('data', c => { data += c })
+      res.on('data', chunk => { data += chunk })
       res.on('end', () => {
         let json
-        try { json = JSON.parse(data) } catch {
-          return reject(new Error('返回格式异常: ' + data.slice(0, 120)))
+        try {
+          json = JSON.parse(data)
+        } catch (error) {
+          return reject(new Error(`返回格式异常: ${data.slice(0, 160)}`))
         }
-        // 兼容 OpenAI 格式 {"error":{...}} 和 Siliconflow/其他格式 {"code":xxx,"message":"..."}
-        if (json.error)   return reject(new Error(json.error.message || JSON.stringify(json.error)))
-        if (!json.choices) {
-          const msg = json.message || json.msg || `HTTP ${res.statusCode}: 服务异常`
-          return reject(new Error(msg))
-        }
+
+        if (json.error) return reject(new Error(json.error.message || JSON.stringify(json.error)))
+        if (!json.choices) return reject(new Error(json.message || json.msg || `HTTP ${res.statusCode}: 服务异常`))
         resolve(json)
       })
     })
+
     req.on('error', reject)
-    req.setTimeout(timeoutMs, () => { req.destroy(); reject(new Error('响应超时')) })
+    req.setTimeout(timeoutMs, () => {
+      req.destroy()
+      reject(new Error('响应超时'))
+    })
     req.write(bodyStr)
     req.end()
   })
 }
 
-// ─────────────────────────────────────────────
-// POST /api/ai/chat — 文字问答
-// ─────────────────────────────────────────────
+function normalizeEnum(value, allowed, fallback) {
+  const text = String(value || '').trim()
+  return allowed.includes(text) ? text : fallback
+}
+
+function uniqueStringList(value, limit = 6) {
+  if (!Array.isArray(value)) return []
+  const seen = new Set()
+  const result = []
+  value.forEach((item) => {
+    const text = String(item || '').replace(/\s+/g, ' ').trim()
+    if (!text || seen.has(text)) return
+    seen.add(text)
+    result.push(text)
+  })
+  return result.slice(0, limit)
+}
+
+function normalizeProducts(value) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const name = String(item.name || '').trim()
+      const usage = String(item.usage || '').trim()
+      const note = String(item.note || '').trim()
+      if (!name && !usage && !note) return null
+      return { name: name || '建议结合当地植保方案选药', usage, note }
+    })
+    .filter(Boolean)
+    .slice(0, 4)
+}
+
+function categoryCodeFromValue(value) {
+  if (value === '虫害') return 'pest'
+  if (value === '病害') return 'disease'
+  if (value === '生理性') return 'physiological'
+  return 'unknown'
+}
+
+function severityCodeFromValue(value) {
+  if (value === '轻度') return 'light'
+  if (value === '中度') return 'medium'
+  if (value === '重度') return 'severe'
+  return 'unknown'
+}
+
+function confidenceCodeFromValue(value) {
+  if (value === '高') return 'high'
+  if (value === '中') return 'medium'
+  return 'low'
+}
+
+function buildDiagnosisReply(diagnosis) {
+  const lines = []
+  lines.push(`判断：${diagnosis.diagnosis_name}（${diagnosis.category}，${diagnosis.severity}，可信度${diagnosis.confidence}）`)
+  if (diagnosis.summary) lines.push(diagnosis.summary)
+  if (diagnosis.actions.length) lines.push(`建议：${diagnosis.actions.join('；')}`)
+  if (diagnosis.warning) lines.push(`提醒：${diagnosis.warning}`)
+  return lines.join('\n')
+}
+
+function extractJsonObject(text) {
+  const source = String(text || '').trim()
+  if (!source) return null
+
+  try {
+    return JSON.parse(source)
+  } catch (error) {}
+
+  const start = source.indexOf('{')
+  const end = source.lastIndexOf('}')
+  if (start >= 0 && end > start) {
+    try {
+      return JSON.parse(source.slice(start, end + 1))
+    } catch (error) {}
+  }
+  return null
+}
+
+function fallbackDiagnosisFromText(text) {
+  const clean = String(text || '').trim()
+  const lines = clean
+    .split(/\n+/)
+    .map(item => item.replace(/^[\-\d\.\s]+/, '').trim())
+    .filter(Boolean)
+
+  return {
+    diagnosis_name: '待进一步确认',
+    category: '待确认',
+    severity: '待确认',
+    confidence: '低',
+    summary: lines[0] || clean || '模型已返回结果，但暂未成功结构化。',
+    symptoms: lines.slice(0, 2),
+    evidence: [],
+    actions: lines.slice(1, 4),
+    products: [],
+    warning: ''
+  }
+}
+
+function normalizeDiagnosis(raw, replyText) {
+  const source = raw && typeof raw === 'object' ? raw : fallbackDiagnosisFromText(replyText)
+  const category = normalizeEnum(source.category, ['虫害', '病害', '生理性', '待确认'], '待确认')
+  const severity = normalizeEnum(source.severity, ['轻度', '中度', '重度', '待确认'], '待确认')
+  const confidence = normalizeEnum(source.confidence, ['高', '中', '低'], '低')
+
+  const diagnosis = {
+    diagnosis_name: String(source.diagnosis_name || '').trim() || '待进一步确认',
+    category,
+    category_code: categoryCodeFromValue(category),
+    severity,
+    severity_code: severityCodeFromValue(severity),
+    confidence,
+    confidence_code: confidenceCodeFromValue(confidence),
+    summary: String(source.summary || '').replace(/\s+/g, ' ').trim() || '已完成图片分析，请结合田间症状进一步核实。',
+    symptoms: uniqueStringList(source.symptoms, 5),
+    evidence: uniqueStringList(source.evidence, 5),
+    actions: uniqueStringList(source.actions, 5),
+    products: normalizeProducts(source.products),
+    warning: String(source.warning || '').replace(/\s+/g, ' ').trim()
+  }
+
+  if (!diagnosis.actions.length) {
+    diagnosis.actions = ['建议补拍叶背、虫体或病斑近景，并结合当地植保方案进一步确认。']
+  }
+  if (!diagnosis.symptoms.length && diagnosis.summary) {
+    diagnosis.symptoms = [diagnosis.summary]
+  }
+
+  return diagnosis
+}
+
+function extensionFromMime(mimeType, originalName) {
+  const rawExt = path.extname(originalName || '').trim().toLowerCase()
+  if (rawExt) return rawExt
+  if (mimeType === 'image/png') return '.png'
+  if (mimeType === 'image/webp') return '.webp'
+  return '.jpg'
+}
+
+function persistPestImage(buffer, mimeType, originalName) {
+  const ext = extensionFromMime(mimeType, originalName)
+  const filename = `pest-${Date.now()}-${crypto.randomBytes(4).toString('hex')}${ext}`
+  fs.writeFileSync(path.join(pestImageDir, filename), buffer)
+  return `/uploads/pest/${filename}`
+}
+
 router.post('/chat', async (req, res) => {
-  const message = (req.body.message || '').trim()
+  const message = String(req.body.message || '').trim()
   if (!message) return res.json({ code: 400, msg: '消息不能为空', data: null })
+
   const lang = req.body.language === 'ug' ? 'ug' : 'zh'
-  const displayMessage = (req.body.displayMessage || message).trim()
+  const displayMessage = String(req.body.displayMessage || message).trim()
   const intent = detectAiIntent(displayMessage || message, lang)
   const jump = intent ? intent.jump : null
+  const cfg = getChatConfig()
 
-  const cfg = getApiConfig(false)
   if (!cfg) {
     const reply = intent
       ? buildIntentReply(intent, lang)
-      : '⚠️ 未配置任何 AI API Key，请在 server/.env 中填写 GROQ_API_KEY、SILICONFLOW_API_KEY 或 DEEPSEEK_API_KEY。'
+      : '未配置可用的 AI 文本接口，请在 server/.env 中填写 DEEPSEEK_API_KEY、GROQ_API_KEY 或 SILICONFLOW_API_KEY。'
     return res.json({ code: 200, data: { reply, intent, jump, provider: intent ? 'local-intent' : 'none' } })
   }
 
-  const history  = Array.isArray(req.body.history) ? req.body.history.slice(-10) : []
+  const history = Array.isArray(req.body.history) ? req.body.history.slice(-10) : []
   const intentHint = intent
-    ? `\n用户意图：${intent.key}。如回答涉及打开功能，请提醒用户点击下方入口卡片。`
+    ? `\n用户意图：${intent.key}。如果回答涉及打开功能，请提醒用户点击页面中的对应入口。`
     : ''
   const languageHint = lang === 'ug'
-    ? '\n请尽量使用维吾尔语回答；如果专业词难以表达，可以保留少量中文农业术语。'
+    ? '\n请尽量使用维吾尔语回答；若专业术语难以表达，可保留少量中文农业术语。'
     : '\n请使用简洁中文回答。'
+
   const messages = [
-    { role: 'system', content: `${CHAT_SYSTEM}${languageHint}${intentHint}` },
+    { role: 'system', content: CHAT_SYSTEM + languageHint + intentHint },
     ...history,
     { role: 'user', content: message }
   ]
 
   try {
     const result = await httpsPost(cfg, { model: cfg.model, messages, max_tokens: 600, temperature: 0.7 })
-    const reply  = result.choices[0].message.content.trim()
+    const reply = String(result.choices[0].message.content || '').trim()
     return res.json({ code: 200, data: { reply, intent, jump, provider: cfg.provider, model: cfg.model } })
-  } catch (e) {
-    console.error('[ai-chat]', e.message)
-    const reply = e.message.includes('超时') ? '⏱ 响应超时，请稍后重试。'
-      : e.message.includes('balance') || e.message.includes('insufficient') ? '⚠️ API 余额不足，请联系管理员更换免费 Key。'
-      : `小棉暂时无法回答（${e.message}）`
+  } catch (error) {
+    console.error('[ai-chat]', error.message)
+    const reply = error.message.includes('超时')
+      ? 'AI 回复超时，请稍后重试。'
+      : error.message.includes('balance') || error.message.includes('insufficient')
+        ? 'AI 接口余额不足，请联系管理员处理。'
+        : `AI 暂时无法回答：${error.message}`
     return res.json({ code: 200, data: { reply, intent, jump, provider: cfg.provider, model: cfg.model } })
   }
 })
 
-// ─────────────────────────────────────────────
-// POST /api/ai/photo — 图片分析（multipart，字段名 photo）
-// ─────────────────────────────────────────────
 router.post('/photo', photoUpload.single('photo'), async (req, res) => {
   if (!req.file) return res.json({ code: 400, msg: '未收到图片', data: null })
 
@@ -162,55 +331,65 @@ router.post('/photo', photoUpload.single('photo'), async (req, res) => {
 
   try {
     const buffer = fs.readFileSync(filePath)
+    const imageUrl = persistPestImage(buffer, mimeType, req.file.originalname)
     const base64 = buffer.toString('base64')
     fs.unlink(filePath, () => {})
 
-    const cfg = getApiConfig(true)   // 需要视觉能力
+    const cfg = getVisionConfig()
     if (!cfg) {
-      return res.json({ code: 200, data: { reply: '⚠️ 图片分析需要 SILICONFLOW_API_KEY，当前未配置。' } })
-    }
-
-    // 若当前 API 是 Groq（不支持视觉），改用 Siliconflow
-    let visionCfg = cfg
-    if (cfg.host === 'api.groq.com') {
-      if (process.env.SILICONFLOW_API_KEY) {
-        visionCfg = {
-          host:   'api.siliconflow.cn',
-          path:   '/v1/chat/completions',
-          apiKey: process.env.SILICONFLOW_API_KEY,
-          provider: 'siliconflow',
-          model:  'Qwen/Qwen2-VL-7B-Instruct'
+      return res.json({
+        code: 200,
+        data: {
+          reply: '未配置硅基流动视觉模型，暂时无法进行病虫害识别。',
+          image_url: imageUrl,
+          diagnosis: null
         }
-      } else {
-        // Groq 无视觉，降级为文字描述提示
-        return res.json({ code: 200, data: { reply: '📷 收到您的照片！Groq 暂不支持图片分析。请用文字描述照片里看到的症状（如叶片颜色、虫害特征），小棉来帮您分析。' } })
-      }
+      })
     }
 
-    const dataUrl  = `data:${mimeType};base64,${base64}`
     const messages = [
-      { role: 'system', content: CHAT_SYSTEM },
+      { role: 'system', content: `${CHAT_SYSTEM}\n${VISION_SYSTEM}` },
       {
         role: 'user',
         content: [
-          { type: 'image_url', image_url: { url: dataUrl } },
-          { type: 'text',      text: VISION_QUESTION }
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+          { type: 'text', text: VISION_QUESTION }
         ]
       }
     ]
 
-    const result = await httpsPost(visionCfg,
-      { model: visionCfg.model, messages, max_tokens: 600 },
-      60000)
-    const reply = result.choices[0].message.content.trim()
-    return res.json({ code: 200, data: { reply } })
-  } catch (e) {
+    const result = await httpsPost(cfg, {
+      model: cfg.model,
+      messages,
+      max_tokens: 900,
+      temperature: 0.2,
+      response_format: { type: 'json_object' }
+    }, 60000)
+
+    const rawReply = String(result.choices[0].message.content || '').trim()
+    const diagnosis = normalizeDiagnosis(extractJsonObject(rawReply), rawReply)
+    const reply = buildDiagnosisReply(diagnosis)
+
+    return res.json({
+      code: 200,
+      data: {
+        reply,
+        image_url: imageUrl,
+        diagnosis,
+        provider: cfg.provider,
+        model: cfg.model,
+        raw_reply: rawReply
+      }
+    })
+  } catch (error) {
     fs.unlink(filePath, () => {})
-    console.error('[ai-vision]', e.message)
-    const reply = e.message.includes('balance') || e.message.includes('insufficient')
-      ? '⚠️ 图片分析 API 余额不足。请用文字描述症状，小棉依然可以帮您诊断。'
-      : `图片分析失败（${e.message}），请用文字描述症状。`
-    return res.json({ code: 200, data: { reply } })
+    console.error('[ai-vision]', error.message)
+    const reply = error.message.includes('401') || error.message.toLowerCase().includes('unauthorized')
+      ? '硅基流动鉴权失败，请检查 SILICONFLOW_API_KEY 或模型权限。'
+      : error.message.includes('balance') || error.message.includes('insufficient')
+        ? '病虫害识别接口余额不足，请联系管理员处理。'
+        : `病虫害识别失败：${error.message}`
+    return res.json({ code: 200, data: { reply, diagnosis: null } })
   }
 })
 

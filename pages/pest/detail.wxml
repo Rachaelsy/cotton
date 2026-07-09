@@ -1,26 +1,24 @@
 <view class="page">
-
-  <!-- 顶部导航 + 病虫害头部信息 -->
   <view class="header" style="padding-top:{{statusBarHeight}}px;">
-    <!-- 导航行 -->
     <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
       <view class="back-btn" bindtap="onBack">
-        <text class="back-icon">‹</text>
+        <text class="back-icon">&lt;</text>
       </view>
       <view class="nav-right" bindtap="onShare">
-        <text class="share-icon">⤴</text>
+        <text class="share-icon">...</text>
       </view>
     </view>
 
-    <!-- 病虫害主信息 -->
     <view class="pest-hero">
       <view class="pest-icon-wrap">
         <text class="pest-icon">{{pest.icon}}</text>
       </view>
       <view class="pest-info">
         <text class="pest-name">{{pest.name}}</text>
-        <view class="pest-type-badge">
-          <text class="pest-type-text">{{pest.type}}</text>
+        <view class="pest-badges">
+          <view class="pest-type-badge">
+            <text class="pest-type-text">{{pest.type}}</text>
+          </view>
         </view>
       </view>
       <view class="treat-days-wrap">
@@ -30,55 +28,32 @@
     </view>
   </view>
 
-  <!-- 可滚动主体 -->
   <scroll-view class="scroll-body" scroll-y>
-
-    <view wx:if="{{fromRecognize && recognition}}" class="card ai-result-card">
-      <text class="card-title">{{copy.aiResultTitle}}</text>
-      <image wx:if="{{recognition.image}}" class="ai-result-image" src="{{recognition.image}}" mode="aspectFill"></image>
-      <text class="ai-result-text">{{recognition.reply}}</text>
-      <view class="ai-result-tip">
-        <text>{{copy.aiResultTip}}</text>
-      </view>
-    </view>
-
-    <!-- 严重程度卡片 -->
     <view class="card severity-card">
       <text class="card-title">{{copy.severity}}</text>
       <view class="severity-row">
-        <view
-          wx:for="{{severityLevels}}"
-          wx:key="value"
-          class="severity-item"
-        >
-          <view class="severity-dot {{pest.severity === item.value ? 'dot-active' : 'dot-inactive'}}">
-            <view wx:if="{{pest.severity === item.value}}" class="dot-inner"></view>
+        <view wx:for="{{severityLevels}}" wx:key="value" class="severity-item">
+          <view class="severity-dot {{pest.severityKey === item.value ? 'dot-active' : 'dot-inactive'}}">
+            <view wx:if="{{pest.severityKey === item.value}}" class="dot-inner"></view>
           </view>
-          <text class="severity-label {{pest.severity === item.value ? 'label-active' : ''}}">{{item.label}}</text>
+          <text class="severity-label {{pest.severityKey === item.value ? 'label-active' : ''}}">{{item.label}}</text>
         </view>
-        <!-- 连接线 -->
         <view class="severity-line"></view>
       </view>
       <view class="severity-tip">
-        <text class="severity-tip-icon">⚠️</text>
+        <text class="severity-tip-icon">!</text>
         <text class="severity-tip-text" style="color:{{pest.severityColor}};">{{severityTipText}}</text>
       </view>
     </view>
 
-    <!-- 描述卡片 -->
     <view class="card">
       <text class="card-title">{{copy.descTitle}}</text>
       <text class="desc-text">{{pest.desc}}</text>
     </view>
 
-    <!-- 处理方案卡片 -->
     <view class="card">
       <text class="card-title">{{copy.treatmentTitle}}</text>
-      <view
-        wx:for="{{pest.treatments}}"
-        wx:key="n"
-        class="treatment-item"
-      >
+      <view wx:for="{{pest.treatments}}" wx:key="n" class="treatment-item">
         <view class="treatment-num-wrap">
           <text class="treatment-num">{{index + 1}}</text>
         </view>
@@ -89,14 +64,9 @@
       </view>
     </view>
 
-    <!-- 推荐农药卡片 -->
     <view class="card">
       <text class="card-title">{{copy.productTitle}}</text>
-      <view
-        wx:for="{{pest.products}}"
-        wx:key="name"
-        class="product-item"
-      >
+      <view wx:for="{{pest.products}}" wx:key="name" class="product-item">
         <view class="product-icon-wrap">
           <text class="product-icon">{{item.icon}}</text>
         </view>
@@ -110,8 +80,6 @@
       </view>
     </view>
 
-    <!-- 底部留白 -->
     <view class="bottom-gap"></view>
-
   </scroll-view>
 </view>

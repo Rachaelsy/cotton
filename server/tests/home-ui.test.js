@@ -14,6 +14,8 @@ function run() {
   const homeJs = readRootFile('pages', 'index', 'index.js')
   const homeWxss = readRootFile('pages', 'index', 'index.wxss')
   const i18n = readRootFile('utils', 'i18n.js')
+  const machineJs = readRootFile('pages', 'machine', 'index.js')
+  const regions = readRootFile('utils', 'regions.js')
 
   assert.ok(
     appJson.tabBar.list.some(item => item.pagePath === 'pages/ai/index'),
@@ -28,10 +30,18 @@ function run() {
   assert.ok(!homeWxss.includes('.ai-hero-card'), 'home styles should not keep removed AI hero card CSS')
   assert.ok(!i18n.includes('aiHeroTitle'), 'home copy should not keep removed AI hero title strings')
   assert.ok(!homeWxml.includes('wc-date'), 'home weather card should not show a separate date line')
-  assert.ok(homeWxml.includes('wc-loc-change'), 'home weather card should keep a compact plot switch affordance')
+  assert.ok(homeWxml.includes('copy.refreshWeather'), 'home weather card should offer a compact location weather refresh affordance')
+  assert.ok(homeWxml.includes('onRefreshWeatherLocation'), 'home weather card should refresh current-location weather without opening the plot picker')
+  assert.ok(homeJs.includes('wx.getLocation'), 'home weather preview should request the current device location')
+  assert.ok(homeJs.includes('/api/weather/location'), 'home weather preview should request weather by current latitude and longitude')
+  assert.ok(!homeJs.includes('/api/weather/plot'), 'home weather preview should not request plot weather')
   assert.ok(!homeJs.includes('model.locationLabel'), 'home weather preview should not expose source-heavy location labels')
   assert.ok(!homeJs.includes('tipText: model.tipText'), 'home weather preview should use short home tips instead of full weather-source copy')
   assert.ok(!homeWxml.includes('sourceInfo'), 'home weather card should not render weather source details')
+  assert.ok(machineJs.includes('this.locateCurrent({ showFailToast: true })'), 'machine rental should try real-time location on first load')
+  assert.ok(machineJs.includes('lat: fallback.lat') && machineJs.includes('lng: fallback.lng'), 'machine rental should fall back to a concrete Kashgar point when location fails')
+  assert.ok(machineJs.includes('locationFallback'), 'machine rental should tell users when it falls back after location failure')
+  assert.ok(regions.includes('喀什市') && regions.includes('疏附县') && regions.includes('塔什库尔干县'), 'machine rental should keep Kashgar region choices available')
 }
 
 run()

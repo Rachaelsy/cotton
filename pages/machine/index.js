@@ -64,13 +64,15 @@ Page({
     })
 
     const onFail = (error) => {
+      const fallback = KASHGAR_REGIONS[0]
       this.setData({
         locating: false,
         locByGps: false,
         outOfService: false,
-        locName: this.textCopy.locationFail,
-        lat: null,
-        lng: null
+        locName: this.textCopy.locationFallback || fallback.name,
+        selectedRegionIndex: 0,
+        lat: fallback.lat,
+        lng: fallback.lng
       })
       this.loadMachines()
       if (showFailToast) wx.showToast({ title: this.textCopy.locationFailShort, icon: 'none' })

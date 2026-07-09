@@ -1,0 +1,219 @@
+<view class="page">
+  <view class="header {{phase === 'loading' ? 'header-loading' : ''}}" style="padding-top:{{statusBarHeight}}px;">
+    <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
+      <view class="back-btn" bindtap="onBack">
+        <text class="back-icon">&lt;</text>
+      </view>
+      <view class="nav-right" bindtap="onShare">
+        <text class="share-icon">...</text>
+      </view>
+    </view>
+
+    <view wx:if="{{phase === 'loading'}}" class="scan-hero">
+      <text class="scan-title">{{resultCopy.scanningTitle}}</text>
+      <text class="scan-sub">{{resultCopy.scanningSub}}</text>
+      <view class="scan-frame">
+        <image wx:if="{{previewImage}}" class="scan-preview" src="{{previewImage}}" mode="aspectFill"></image>
+        <view class="scan-mask"></view>
+        <view class="scan-grid"></view>
+        <view class="scan-laser"></view>
+        <view class="scan-focus"></view>
+        <view class="scan-corners corner-tl"></view>
+        <view class="scan-corners corner-tr"></view>
+        <view class="scan-corners corner-bl"></view>
+        <view class="scan-corners corner-br"></view>
+      </view>
+      <view class="scan-step-chip">
+        <text class="scan-step-text">{{scanStepText}}</text>
+      </view>
+      <view class="scan-meta">
+        <view class="scan-meta-item">
+          <text class="scan-meta-label">{{resultCopy.modeLabel}}</text>
+          <text class="scan-meta-value">{{resultCopy.modeValue}}</text>
+        </view>
+        <view class="scan-meta-item">
+          <text class="scan-meta-label">{{resultCopy.modelLabel}}</text>
+          <text class="scan-meta-value">Qwen VL</text>
+        </view>
+      </view>
+      <text class="scan-hint">{{resultCopy.scanningHint}}</text>
+    </view>
+
+    <view wx:elif="{{phase === 'done'}}" class="pest-hero">
+      <view class="pest-icon-wrap">
+        <text class="pest-icon">{{pest.icon}}</text>
+      </view>
+      <view class="pest-info">
+        <text class="pest-name">{{pest.name}}</text>
+        <view class="pest-badges">
+          <view class="pest-type-badge">
+            <text class="pest-type-text">{{pest.type}}</text>
+          </view>
+          <view wx:if="{{recognition && recognition.confidence}}" class="pest-type-badge pest-type-badge-soft">
+            <text class="pest-type-text">{{copy.confidenceLabel}}{{recognition.confidence}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="treat-days-wrap">
+        <text class="treat-days-num">{{pest.treatDays}}</text>
+        <text class="treat-days-label">{{copy.cycle}}</text>
+      </view>
+    </view>
+
+    <view wx:else class="error-hero">
+      <text class="error-title">{{resultCopy.scanFail}}</text>
+      <text class="error-sub">{{errorText}}</text>
+    </view>
+  </view>
+
+  <scroll-view class="scroll-body" scroll-y>
+    <view wx:if="{{phase === 'loading'}}" class="loading-body">
+      <view class="loading-card">
+        <view wx:for="{{resultCopy.scanningSteps}}" wx:key="*this" class="loading-step {{index <= scanStepIndex ? 'loading-step-active' : ''}}">
+          <view class="loading-step-index">{{index + 1}}</view>
+          <view class="loading-step-copy">
+            <text class="loading-step-label">{{item}}</text>
+            <text class="loading-step-sub">{{index < scanStepIndex ? resultCopy.statusDone : index === scanStepIndex ? resultCopy.statusActive : resultCopy.statusPending}}</text>
+          </view>
+          <view class="loading-step-tail {{index <= scanStepIndex ? 'loading-step-tail-active' : ''}}"></view>
+        </view>
+      </view>
+    </view>
+
+    <block wx:elif="{{phase === 'done'}}">
+      <view class="card overview-card">
+        <view class="overview-head">
+          <view>
+            <text class="card-title card-title-inline">{{copy.resultSummaryTitle}}</text>
+            <text class="overview-sub">{{copy.resultSummarySub}}</text>
+          </view>
+          <view class="overview-chip">
+            <text class="overview-chip-text">{{pest.name}}</text>
+          </view>
+        </view>
+        <view class="metric-row">
+          <view class="metric-card">
+            <text class="metric-label">{{copy.metricType}}</text>
+            <text class="metric-value">{{pest.type}}</text>
+          </view>
+          <view class="metric-card">
+            <text class="metric-label">{{copy.metricSeverity}}</text>
+            <text class="metric-value">{{pest.severity}}</text>
+          </view>
+          <view class="metric-card">
+            <text class="metric-label">{{copy.metricConfidence}}</text>
+            <text class="metric-value">{{recognition.confidence}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="card ai-result-card">
+        <text class="card-title">{{copy.aiResultTitle}}</text>
+        <view class="ai-result-media">
+          <image wx:if="{{recognition && recognition.image}}" class="ai-result-image" src="{{recognition.image}}" mode="aspectFill"></image>
+          <view class="ai-result-badge">
+            <text class="ai-result-badge-text">{{pest.type}}</text>
+          </view>
+        </view>
+        <view class="ai-result-body">
+          <text class="ai-result-text">{{recognition.reply}}</text>
+        </view>
+        <view wx:if="{{recognition.warning}}" class="ai-result-warning">
+          <text class="ai-result-warning-label">{{copy.warningTitle}}</text>
+          <text class="ai-result-warning-text">{{recognition.warning}}</text>
+        </view>
+        <view class="ai-result-tip">
+          <text>{{copy.aiResultTip}}</text>
+        </view>
+      </view>
+
+      <view class="card severity-card">
+        <text class="card-title">{{copy.severity}}</text>
+        <view class="severity-row">
+          <view wx:for="{{severityLevels}}" wx:key="value" class="severity-item">
+            <view class="severity-dot {{pest.severityKey === item.value ? 'dot-active' : 'dot-inactive'}}">
+              <view wx:if="{{pest.severityKey === item.value}}" class="dot-inner"></view>
+            </view>
+            <text class="severity-label {{pest.severityKey === item.value ? 'label-active' : ''}}">{{item.label}}</text>
+          </view>
+          <view class="severity-line"></view>
+        </view>
+        <view class="severity-tip">
+          <text class="severity-tip-icon">!</text>
+          <text class="severity-tip-text" style="color:{{pest.severityColor}};">{{severityTipText}}</text>
+        </view>
+      </view>
+
+      <view class="card">
+        <text class="card-title">{{copy.descTitle}}</text>
+        <text class="desc-text">{{pest.desc}}</text>
+      </view>
+
+      <view wx:if="{{symptomList.length}}" class="card">
+        <text class="card-title">{{copy.symptomTitle}}</text>
+        <view class="bullet-list">
+          <view wx:for="{{symptomList}}" wx:key="*this" class="bullet-item">
+            <text class="bullet-dot">-</text>
+            <text class="bullet-text">{{item}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{evidenceList.length}}" class="card">
+        <text class="card-title">{{copy.evidenceTitle}}</text>
+        <view class="bullet-list">
+          <view wx:for="{{evidenceList}}" wx:key="*this" class="bullet-item">
+            <text class="bullet-dot">-</text>
+            <text class="bullet-text">{{item}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{pest.treatments.length}}" class="card">
+        <text class="card-title">{{copy.treatmentTitle}}</text>
+        <view wx:for="{{pest.treatments}}" wx:key="n" class="treatment-item">
+          <view class="treatment-num-wrap">
+            <text class="treatment-num">{{index + 1}}</text>
+          </view>
+          <view class="treatment-content">
+            <text class="treatment-name">{{item.n}}</text>
+            <text class="treatment-desc">{{item.d}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{pest.products.length}}" class="card">
+        <text class="card-title">{{copy.productTitle}}</text>
+        <view wx:for="{{pest.products}}" wx:key="name" class="product-item">
+          <view class="product-icon-wrap">
+            <text class="product-icon">{{item.icon}}</text>
+          </view>
+          <view class="product-info">
+            <text class="product-name">{{item.name}}</text>
+            <text class="product-price">{{item.price}}</text>
+          </view>
+          <view class="buy-btn" bindtap="onBuyProduct" data-name="{{item.name}}">
+            <text class="buy-btn-text">{{copy.buy}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view wx:else class="error-body">
+      <view class="error-card">
+        <text class="error-card-title">{{resultCopy.scanFail}}</text>
+        <text class="error-card-text">{{errorText}}</text>
+        <view class="error-actions">
+          <view class="error-btn error-btn-primary" bindtap="onRetry">
+            <text class="error-btn-text">{{resultCopy.retry}}</text>
+          </view>
+          <view class="error-btn" bindtap="onBackToList">
+            <text class="error-btn-text error-btn-text-muted">{{resultCopy.backList}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-gap"></view>
+  </scroll-view>
+</view>

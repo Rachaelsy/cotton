@@ -1,94 +1,113 @@
-<view class="page">
-
-  <!-- 顶部导航栏 -->
+﻿<view class="page">
   <view class="nav-bar" style="padding-top:{{statusBarHeight}}px;">
     <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
-      <view class="back-btn" bindtap="onBack">
-        <text class="back-icon">‹</text>
+      <view class="back-btn cm-back-btn" bindtap="onBack">
+        <text class="back-icon cm-back-text">??</text>
       </view>
       <text class="nav-title">{{copy.title}}</text>
       <view class="nav-right"></view>
     </view>
   </view>
 
-  <!-- 可滚动主体 -->
-  <scroll-view class="scroll-body" scroll-y>
-
-    <!-- 拍照识别大按钮 -->
+  <scroll-view class="scroll-body" scroll-y scroll-top="{{scrollTop}}">
     <view class="recognize-card" bindtap="onTakePhoto">
-      <view class="recognize-icon-wrap">
-        <text class="recognize-icon">📷</text>
+      <view class="recognize-main">
+        <view class="recognize-copy">
+          <view class="recognize-kicker">
+            <text class="recognize-kicker-text">AI</text>
+          </view>
+          <text class="recognize-title">{{copy.recognize}}</text>
+          <text class="recognize-sub">{{copy.recognizeSub}}</text>
+        </view>
+        <view class="recognize-actions">
+          <view class="action-pill action-pill-primary">
+            <text class="action-pill-text">{{copy.cameraAction}}</text>
+          </view>
+          <view class="action-pill" catchtap="onChooseAlbum">
+            <text class="action-pill-text">{{copy.album}}</text>
+          </view>
+        </view>
       </view>
-      <view class="recognize-text-wrap">
-        <text class="recognize-title">{{copy.recognize}}</text>
-        <text class="recognize-sub">{{copy.recognizeSub}}</text>
-      </view>
-      <view class="ai-badge">
-        <text class="ai-badge-text">AI</text>
+      <view class="recognize-visual">
+        <view class="visual-frame visual-frame-lg"><text class="visual-emoji">AI</text></view>
+        <view class="visual-stack">
+          <view class="visual-frame"><text class="visual-emoji">馃尶</text></view>
+          <view class="visual-frame"><text class="visual-emoji">馃悰</text></view>
+        </view>
       </view>
     </view>
 
-    <!-- 相册 / 历史 两个小按钮 -->
-    <view class="btn-row">
-      <view class="btn-small" bindtap="onChooseAlbum">
-        <text class="btn-small-icon">🖼</text>
-        <text class="btn-small-text">{{copy.album}}</text>
+    <view class="toolbar-row">
+      <view class="toolbar-card" bindtap="onHistory">
+        <view class="toolbar-copy">
+          <text class="toolbar-badge">{{copy.historyBadge}}</text>
+          <text class="toolbar-title">{{copy.history}}</text>
+          <text class="toolbar-sub">{{recentHistory.length ? copy.historyCount(recentHistory.length) : copy.noHistoryShort}}</text>
+        </view>
       </view>
-      <view class="btn-small btn-small-secondary" bindtap="onHistory">
-        <text class="btn-small-icon">🕐</text>
-        <text class="btn-small-text">{{copy.history}}</text>
+      <view class="toolbar-card toolbar-card-accent" bindtap="onChooseAlbum">
+        <view class="toolbar-copy">
+          <text class="toolbar-badge">{{copy.albumBadge}}</text>
+          <text class="toolbar-title">{{copy.album}}</text>
+          <text class="toolbar-sub">{{copy.albumSub}}</text>
+        </view>
       </view>
     </view>
 
-    <!-- 知识库标题 -->
+    <view wx:if="{{recentHistory.length}}" class="section-header">
+      <view class="section-copy">
+        <text class="section-title">{{copy.recentTitle}}</text>
+        <text class="section-sub section-sub-block">{{copy.recentSub}}</text>
+      </view>
+    </view>
+    <scroll-view wx:if="{{recentHistory.length}}" class="history-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="history-row">
+        <view wx:for="{{recentHistory}}" wx:key="id" class="history-card" bindtap="onHistoryTap" data-id="{{item.id}}">
+          <image class="history-image" src="{{item.image}}" mode="aspectFill"></image>
+          <view class="history-body">
+            <text class="history-name">{{item.title}}</text>
+            <text class="history-summary">{{item.summary}}</text>
+            <view class="history-tags">
+              <text class="history-tag">{{item.displayCategory}}</text>
+              <text class="history-tag history-tag-warn">{{item.displaySeverity}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
     <view class="section-header">
       <text class="section-title">{{copy.library}}</text>
       <text class="section-sub">{{commonCountText}}</text>
     </view>
 
-    <!-- 过滤标签栏 -->
-    <scroll-view class="filter-scroll" scroll-x>
+    <scroll-view class="filter-scroll" scroll-x enhanced show-scrollbar="{{false}}">
       <view class="filter-row">
-        <view
-          wx:for="{{filters}}"
-          wx:key="*this"
-          class="filter-tag {{filter === item ? 'filter-tag-active' : ''}}"
-          bindtap="onFilterTap"
-          data-val="{{item}}"
-        >
+        <view wx:for="{{filters}}" wx:key="*this" class="filter-tag {{filter === item ? 'filter-tag-active' : ''}}" bindtap="onFilterTap" data-val="{{item}}">
           <text class="filter-tag-text">{{item}}</text>
         </view>
       </view>
     </scroll-view>
 
-    <!-- 3列网格 -->
     <view class="grid">
-      <view
-        wx:for="{{filteredPests}}"
-        wx:key="id"
-        class="grid-item"
-        bindtap="onPestTap"
-        data-id="{{item.id}}"
-      >
-        <!-- HOT 角标 -->
+      <view wx:for="{{filteredPests}}" wx:key="id" class="grid-item" bindtap="onPestTap" data-id="{{item.id}}">
         <view wx:if="{{item.hot}}" class="hot-badge">
           <text class="hot-badge-text">HOT</text>
         </view>
-        <!-- 图标区 -->
-        <view class="grid-icon-wrap {{item.bg}}">
-          <text class="grid-icon">{{item.icon}}</text>
+        <view class="grid-head">
+          <view class="grid-icon-wrap {{item.bg}}">
+            <text class="grid-icon">{{item.icon}}</text>
+          </view>
+          <view class="grid-type-tag {{item.type === filters[1] ? 'tag-bug' : item.type === filters[2] ? 'tag-disease' : 'tag-physio'}}">
+            <text class="grid-type-text">{{item.type}}</text>
+          </view>
         </view>
-        <!-- 名称 -->
         <text class="grid-name">{{item.n}}</text>
-        <!-- 类型标签 -->
-        <view class="grid-type-tag {{item.type === filters[1] ? 'tag-bug' : item.type === filters[2] ? 'tag-disease' : 'tag-physio'}}">
-          <text class="grid-type-text">{{item.type}}</text>
-        </view>
+        <text class="grid-cta">{{copy.viewGuide}}</text>
       </view>
     </view>
 
-    <!-- 底部留白 -->
     <view class="bottom-gap"></view>
-
   </scroll-view>
 </view>
+

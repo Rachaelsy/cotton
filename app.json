@@ -15,6 +15,7 @@
     "pages/fields/draw",
     "pages/fields/detail",
     "pages/pest/index",
+    "pages/pest/result",
     "pages/pest/detail",
     "pages/weather/index",
     "pages/water/index",
