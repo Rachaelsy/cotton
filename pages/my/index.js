@@ -11,6 +11,7 @@ Page({
     lang: 'zh',
     copy: i18n.getCopy('my'),
     common: i18n.getCopy('common'),
+    tabCopy: i18n.getCopy('tab'),
     isLoggedIn: false,
     wxLoading: false,
     userInfo: { name: '--', tags: [], verified: false, landSize: 0 },
@@ -41,7 +42,8 @@ Page({
     this.setData({
       lang,
       copy: i18n.getCopy('my', lang),
-      common: i18n.getCopy('common', lang)
+      common: i18n.getCopy('common', lang),
+      tabCopy: i18n.getCopy('tab', lang)
     })
   },
 

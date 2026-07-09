@@ -32,6 +32,7 @@ Page({
     capsuleSafeRight: 0,
     timeStr: '',
     copy: i18n.getPageCopy('ai'),
+    tabCopy: i18n.getCopy('tab'),
     voiceMode: false,
     voiceSupported: !!speechManager,
     voiceLiveText: '',
@@ -106,6 +107,7 @@ Page({
     this.textCopy = i18n.getCopy('ai', lang)
     this.setData({
       copy: i18n.getPageCopy('ai', lang),
+      tabCopy: i18n.getCopy('tab', lang),
       quickList: this.textCopy.quickList,
       chips: this.textCopy.chips
     })
