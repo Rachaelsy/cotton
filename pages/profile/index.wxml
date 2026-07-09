@@ -4,7 +4,7 @@
   <!-- 顶部导航 -->
   <view class="pf-nav" style="padding-top: {{statusBarHeight}}px">
     <view class="nav-back-btn cm-back-btn" bindtap="onBack">
-      <text class="back-icon cm-back-text">鈥?/text>
+      <text class="back-icon cm-back-text">‹</text>
     </view>
     <text class="pf-title">{{copy.title}}</text>
     <view class="cm-back-spacer"></view>
@@ -84,4 +84,3 @@
   </scroll-view>
 
 </view>
-

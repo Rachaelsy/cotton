@@ -785,6 +785,10 @@
   height: 60rpx;
 }
 
+.toolbar-card-full {
+  flex: 1;
+}
+
 @keyframes scanMove {
   from { transform: translateY(0); }
   to { transform: translateY(348rpx); }

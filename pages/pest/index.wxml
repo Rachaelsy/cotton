@@ -15,10 +15,6 @@
     <view class="recognize-card" bindtap="onTakePhoto">
       <view class="recognize-main">
         <view class="recognize-copy">
-          <view class="recognize-kicker">
-            <text class="recognize-kicker-text">AI</text>
-          </view>
-
           <text class="recognize-title">{{copy.recognize}}</text>
           <text class="recognize-sub">{{copy.recognizeSub}}</text>
         </view>
@@ -33,40 +29,16 @@
           </view>
         </view>
       </view>
-
-      <view class="recognize-visual">
-        <view class="visual-frame visual-frame-lg">
-          <text class="visual-emoji">AI</text>
-        </view>
-
-        <view class="visual-stack">
-          <view class="visual-frame">
-            <text class="visual-emoji">🌿</text>
-          </view>
-
-          <view class="visual-frame">
-            <text class="visual-emoji">🐛</text>
-          </view>
-        </view>
-      </view>
     </view>
 
     <view class="toolbar-row">
-      <view class="toolbar-card" bindtap="onHistory">
+      <view class="toolbar-card toolbar-card-full" bindtap="onHistory">
         <view class="toolbar-copy">
           <text class="toolbar-badge">{{copy.historyBadge}}</text>
           <text class="toolbar-title">{{copy.history}}</text>
           <text class="toolbar-sub">
             {{recentHistory.length ? historyCountText : copy.noHistoryShort}}
           </text>
-        </view>
-      </view>
-
-      <view class="toolbar-card toolbar-card-accent" bindtap="onChooseAlbum">
-        <view class="toolbar-copy">
-          <text class="toolbar-badge">{{copy.albumBadge}}</text>
-          <text class="toolbar-title">{{copy.album}}</text>
-          <text class="toolbar-sub">{{copy.albumSub}}</text>
         </view>
       </view>
     </view>
@@ -135,7 +107,6 @@
         bindtap="onPestTap"
         data-id="{{item.id}}"
       >
-
         <view class="grid-head">
           <view class="grid-icon-wrap {{item.bg}}">
             <text class="grid-icon">{{item.icon}}</text>
