@@ -1,10 +1,10 @@
-﻿<!-- pages/profile/index.wxml 鈥?涓汉璧勬枡缂栬緫 -->
+﻿<!-- pages/profile/index.wxml - 个人资料编辑 -->
 <view class="page">
 
-  <!-- 椤堕儴瀵艰埅 -->
+  <!-- 顶部导航 -->
   <view class="pf-nav" style="padding-top: {{statusBarHeight}}px">
     <view class="nav-back-btn cm-back-btn" bindtap="onBack">
-      <text class="back-icon cm-back-text">鈥?/text>
+      <text class="back-icon cm-back-text">‹</text>
     </view>
     <text class="pf-title">{{copy.title}}</text>
     <view class="cm-back-spacer"></view>
@@ -12,19 +12,19 @@
 
   <scroll-view class="pf-scroll" scroll-y>
 
-    <!-- 澶村儚鍖猴紙鐐瑰嚮閫夊浘涓婁紶锛?-->
+    <!-- 头像区（点击选图上传） -->
     <view class="avatar-section" bindtap="onChooseAvatar">
       <view class="avatar-circle">
         <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill"/>
         <text wx:else class="avatar-text">{{initial}}</text>
         <view class="avatar-edit-badge">
-          <text class="avatar-edit-icon">馃摲</text>
+          <text class="avatar-edit-icon">📷</text>
         </view>
       </view>
       <text class="avatar-hint">{{uploading ? copy.uploading : copy.avatarHint}}</text>
     </view>
 
-    <!-- 琛ㄥ崟 -->
+    <!-- 表单 -->
     <view class="form-card">
 
       <view class="field-row">
@@ -75,7 +75,7 @@
       </view>
     </view>
 
-    <!-- 淇濆瓨鎸夐挳 -->
+    <!-- 保存按钮 -->
     <view class="save-btn {{saving ? 'save-btn-off' : ''}}" bindtap="onSave">
       <text class="save-btn-text">{{saving ? copy.saving : copy.save}}</text>
     </view>
@@ -84,4 +84,3 @@
   </scroll-view>
 
 </view>
-
