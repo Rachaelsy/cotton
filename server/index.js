@@ -6,6 +6,7 @@ const cors    = require('cors')
 const path    = require('path')
 
 const app = express()
+app.set('trust proxy', true)
 
 // ── 中间件 ──────────────────────────────────
 app.use(cors())
@@ -46,6 +47,7 @@ app.use('/api/orders',   require('./routes/orders'))
 app.use('/api/plots',    require('./routes/plots'))
 app.use('/api/farm-records', require('./routes/farm-records'))
 app.use('/api/weather',  require('./routes/weather'))
+app.use('/api/expert',   require('./routes/expert'))
 app.use('/api/pay',      require('./routes/payments'))
 app.use('/api/wechat-applyment', require('./routes/wechat-applyment'))
 app.use('/api/operator',       require('./routes/operator'))

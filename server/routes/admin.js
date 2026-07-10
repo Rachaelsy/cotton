@@ -27,6 +27,23 @@ const upload = multer({
   }
 })
 
+const expertUploadDir = path.join(__dirname, '../public/uploads/expert')
+if (!fs.existsSync(expertUploadDir)) fs.mkdirSync(expertUploadDir, { recursive: true })
+const expertStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, expertUploadDir),
+  filename: (_req, file, cb) => cb(null, `expert_${Date.now()}_${Math.floor(Math.random() * 10000)}${path.extname(file.originalname)}`)
+})
+const expertUpload = multer({
+  storage: expertStorage,
+  limits: { fileSize: 200 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith('image/') && !file.mimetype.startsWith('video/')) {
+      return cb(new Error('只允许上传图片或视频'))
+    }
+    cb(null, true)
+  }
+})
+
 const JWT_SECRET  = process.env.JWT_SECRET
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d'
 
@@ -78,6 +95,67 @@ async function submitMerchantApplyment(merchant) {
   return { payload, result, state, message }
 }
 
+function splitTags(value) {
+  if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean)
+  return String(value || '')
+    .split(/[,，、\n]/)
+    .map(v => v.trim())
+    .filter(Boolean)
+}
+
+function parseQuiz(value) {
+  if (!value) return []
+  if (Array.isArray(value)) return value
+  const raw = String(value).trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+      const parts = line.split('|').map(part => part.trim()).filter(Boolean)
+      if (parts.length < 4) return null
+      const question = parts[0]
+      const answerRaw = parts.length >= 5 ? parts[parts.length - 2] : '1'
+      const explanation = parts.length >= 5 ? parts[parts.length - 1] : ''
+      const optionEnd = parts.length >= 5 ? parts.length - 2 : parts.length
+      const options = parts.slice(1, optionEnd)
+      const answer = Math.max(0, Math.min(options.length - 1, (parseInt(answerRaw, 10) || 1) - 1))
+      return { question, options, answer, explanation }
+    }).filter(Boolean)
+  }
+}
+
+function normalizeExpertContentBody(body = {}) {
+  const priceType = body.price_type === 'paid' ? 'paid' : 'free'
+  const price = priceType === 'paid' ? Math.max(0, Number(body.price || 0)) : 0
+  const type = ['video', 'article', 'qa'].includes(body.type) ? body.type : 'video'
+  return {
+    type,
+    title: String(body.title || '').trim(),
+    subtitle: String(body.subtitle || '').trim(),
+    category_key: String(body.category_key || 'planting').trim(),
+    category_name: String(body.category_name || '').trim(),
+    teacher: String(body.teacher || '').trim(),
+    teacher_title: String(body.teacher_title || '').trim(),
+    org: String(body.org || '').trim(),
+    expert_avatar: String(body.expert_avatar || '👨‍🌾').trim(),
+    expert_tags: JSON.stringify(splitTags(body.expert_tags)),
+    intro: String(body.intro || '').trim(),
+    content: String(body.content || '').trim(),
+    cover_url: String(body.cover_url || '').trim(),
+    video_url: String(body.video_url || '').trim(),
+    duration: String(body.duration || '').trim(),
+    price_type: priceType,
+    price,
+    quiz_json: JSON.stringify(parseQuiz(body.quiz_text || body.quiz_json || body.quiz)),
+    ai_prompt: String(body.ai_prompt || '').trim(),
+    students: Math.max(0, parseInt(body.students, 10) || 0),
+    sort_order: parseInt(body.sort_order, 10) || 0,
+    is_published: body.is_published === false || body.is_published === '0' || body.is_published === 0 ? 0 : 1
+  }
+}
+
 // ── 管理员身份验证中间件 ──────────────────────────────────
 const R_OK   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const R_FAIL = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
@@ -122,6 +200,89 @@ router.post('/login', async (req, res) => {
 router.post('/upload', adminAuth, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ code: 400, msg: '未选择图片' })
   res.json({ code: 200, data: { url: `/uploads/products/${req.file.filename}` } })
+})
+
+// ── POST /api/admin/expert-upload（专家讲堂素材上传）────────
+router.post('/expert-upload', adminAuth, expertUpload.single('file'), (req, res) => {
+  if (!req.file) return R_FAIL(res, '未选择文件')
+  res.json({ code: 200, data: { url: `/uploads/expert/${req.file.filename}` } })
+})
+
+// ── 专家讲堂内容管理 ───────────────────────────────────
+router.get('/expert-contents', adminAuth, async (_req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM expert_contents ORDER BY sort_order ASC, id DESC')
+    return R_OK(res, rows)
+  } catch (e) {
+    console.error('[admin-expert-list]', e)
+    return R_FAIL(res, '专家讲堂内容加载失败', 500)
+  }
+})
+
+router.post('/expert-contents', adminAuth, async (req, res) => {
+  try {
+    const data = normalizeExpertContentBody(req.body)
+    if (!data.title) return R_FAIL(res, '请填写内容标题')
+    await db.query(
+      `INSERT INTO expert_contents
+       (type,title,subtitle,category_key,category_name,teacher,teacher_title,org,expert_avatar,expert_tags,
+        intro,content,cover_url,video_url,duration,price_type,price,quiz_json,ai_prompt,students,sort_order,is_published)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [
+        data.type, data.title, data.subtitle, data.category_key, data.category_name, data.teacher,
+        data.teacher_title, data.org, data.expert_avatar, data.expert_tags, data.intro, data.content,
+        data.cover_url, data.video_url, data.duration, data.price_type, data.price, data.quiz_json,
+        data.ai_prompt, data.students, data.sort_order, data.is_published
+      ]
+    )
+    return R_OK(res, null, '专家内容已新增')
+  } catch (e) {
+    console.error('[admin-expert-create]', e)
+    return R_FAIL(res, '专家内容保存失败', 500)
+  }
+})
+
+router.put('/expert-contents/:id', adminAuth, async (req, res) => {
+  try {
+    const data = normalizeExpertContentBody(req.body)
+    if (!data.title) return R_FAIL(res, '请填写内容标题')
+    await db.query(
+      `UPDATE expert_contents SET
+       type=?, title=?, subtitle=?, category_key=?, category_name=?, teacher=?, teacher_title=?, org=?,
+       expert_avatar=?, expert_tags=?, intro=?, content=?, cover_url=?, video_url=?, duration=?,
+       price_type=?, price=?, quiz_json=?, ai_prompt=?, students=?, sort_order=?, is_published=?
+       WHERE id=?`,
+      [
+        data.type, data.title, data.subtitle, data.category_key, data.category_name, data.teacher,
+        data.teacher_title, data.org, data.expert_avatar, data.expert_tags, data.intro, data.content,
+        data.cover_url, data.video_url, data.duration, data.price_type, data.price, data.quiz_json,
+        data.ai_prompt, data.students, data.sort_order, data.is_published, req.params.id
+      ]
+    )
+    return R_OK(res, null, '专家内容已保存')
+  } catch (e) {
+    console.error('[admin-expert-update]', e)
+    return R_FAIL(res, '专家内容保存失败', 500)
+  }
+})
+
+router.post('/expert-contents/:id/toggle', adminAuth, async (req, res) => {
+  try {
+    const isPublished = req.body.is_published ? 1 : 0
+    await db.query('UPDATE expert_contents SET is_published=? WHERE id=?', [isPublished, req.params.id])
+    return R_OK(res, null, isPublished ? '已上架' : '已下架')
+  } catch (e) {
+    return R_FAIL(res, '上下架失败', 500)
+  }
+})
+
+router.delete('/expert-contents/:id', adminAuth, async (req, res) => {
+  try {
+    await db.query('DELETE FROM expert_contents WHERE id=?', [req.params.id])
+    return R_OK(res, null, '已删除')
+  } catch (e) {
+    return R_FAIL(res, '删除失败', 500)
+  }
 })
 
 // ── GET /api/admin/stats ─────────────────────────────────

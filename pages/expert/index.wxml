@@ -17,6 +17,9 @@
   </view>
 
   <scroll-view class="exp-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{loading}}" class="notice-card">专家内容加载中...</view>
+    <view wx:elif="{{loadError}}" class="notice-card weak">{{loadError}}</view>
+
     <view class="section">
       <view class="section-head"><text class="section-title">{{copy.onlineExperts}}</text><text class="section-more" bindtap="onAskExpert">{{copy.askNow}}</text></view>
       <scroll-view class="expert-row" scroll-x enhanced show-scrollbar="{{false}}">
@@ -35,12 +38,13 @@
     <view class="section">
       <view class="section-head"><text class="section-title">{{copy.featured}}</text></view>
       <view class="feature-card" wx:for="{{featured}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
-        <view class="feature-icon"><text>{{item.icon}}</text></view>
+        <image wx:if="{{item.coverUrl}}" class="feature-cover" src="{{item.coverUrl}}" mode="aspectFill"></image>
+        <view wx:else class="feature-icon"><text>{{item.icon}}</text></view>
         <view class="feature-main">
           <text class="feature-title">{{item.title}}</text>
-          <text class="feature-meta">{{item.teacher}} · {{item.duration}} · {{item.students}}{{copy.learned}}</text>
+          <text class="feature-meta">{{item.typeLabel}} · {{item.teacher}} · {{item.duration}} · {{item.students}}{{copy.learned}}</text>
         </view>
-        <text class="feature-play">{{copy.play}}</text>
+        <text class="feature-play {{item.isPaid ? 'paid' : ''}}">{{item.tag}}</text>
       </view>
     </view>
 
@@ -55,7 +59,8 @@
     <view class="section course-section">
       <view class="section-head"><text class="section-title">{{copy.courseList}}</text></view>
       <view class="course-card" wx:for="{{filteredCourses}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
-        <view class="course-icon"><text>{{item.icon}}</text></view>
+        <image wx:if="{{item.coverUrl}}" class="course-cover" src="{{item.coverUrl}}" mode="aspectFill"></image>
+        <view wx:else class="course-icon"><text>{{item.icon}}</text></view>
         <view class="course-main">
           <view class="course-title-row"><text class="course-title">{{item.title}}</text><text class="course-tag">{{item.tag}}</text></view>
           <text class="course-meta">{{item.teacher}} {{item.titleName}} · {{item.org}}</text>

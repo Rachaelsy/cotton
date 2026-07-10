@@ -64,6 +64,7 @@ Page({
   _voiceStopFallbackTimer: null,
   _lastRecognizedText: '',
   _autoJumpTimer: null,
+  _trainingPromptConsumed: false,
   _audio: null,
 
   onLoad() {
@@ -78,6 +79,7 @@ Page({
       voiceSupported: !!speechManager
     })
     this._initSpeech()
+    setTimeout(() => this._consumeTrainingPrompt(), 200)
   },
 
   onShow() {
@@ -91,6 +93,7 @@ Page({
       this.setData({ voiceMode: true })
     }
 
+    this._consumeTrainingPrompt()
   },
 
   onUnload() {
@@ -128,6 +131,15 @@ Page({
     if (!text || this.data.typing) return
     this.setData({ inputText: '' })
     this._doSend(text)
+  },
+
+  _consumeTrainingPrompt() {
+    if (this._trainingPromptConsumed || this.data.typing) return
+    const prompt = wx.getStorageSync('ai_training_prompt')
+    if (!prompt) return
+    this._trainingPromptConsumed = true
+    wx.removeStorageSync('ai_training_prompt')
+    this._doSend(prompt)
   },
 
   async _doSend(text, options = {}) {

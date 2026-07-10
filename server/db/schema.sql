@@ -77,3 +77,37 @@ CREATE TABLE IF NOT EXISTS login_logs (
   created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB COMMENT='登录日志';
+
+-- -------------------------------------------------------
+-- 专家讲堂内容
+-- -------------------------------------------------------
+CREATE TABLE IF NOT EXISTS expert_contents (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  type ENUM('video','article','qa') NOT NULL DEFAULT 'video',
+  title VARCHAR(160) NOT NULL,
+  subtitle VARCHAR(255) DEFAULT '',
+  category_key VARCHAR(40) DEFAULT 'planting',
+  category_name VARCHAR(64) DEFAULT '',
+  teacher VARCHAR(64) DEFAULT '',
+  teacher_title VARCHAR(64) DEFAULT '',
+  org VARCHAR(128) DEFAULT '',
+  expert_avatar VARCHAR(16) DEFAULT '',
+  expert_tags VARCHAR(512) DEFAULT '[]',
+  intro TEXT,
+  content MEDIUMTEXT,
+  cover_url VARCHAR(255) DEFAULT '',
+  video_url VARCHAR(255) DEFAULT '',
+  duration VARCHAR(32) DEFAULT '',
+  price_type ENUM('free','paid') NOT NULL DEFAULT 'free',
+  price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  quiz_json MEDIUMTEXT,
+  ai_prompt TEXT,
+  students INT UNSIGNED NOT NULL DEFAULT 0,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_published TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_expert_type (type),
+  INDEX idx_expert_category (category_key),
+  INDEX idx_expert_publish_sort (is_published, sort_order, id)
+) ENGINE=InnoDB COMMENT='专家讲堂内容';

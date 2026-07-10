@@ -169,6 +169,9 @@
     .img-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 8px; }
     .img-remove { font-size: 12px; color: #DC2626; cursor: pointer; background: none; border: none; padding: 0; }
     .prod-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; vertical-align: middle; }
+    .expert-thumb { width: 56px; height: 40px; border-radius: 8px; object-fit: cover; background: #F4F1EA; vertical-align: middle; }
+    .expert-form-modal { width: 760px; }
+    .help-text { font-size: 12px; color: #888; line-height: 1.6; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -206,6 +209,9 @@
     </div>
     <div class="nav-item" data-panel="announcements" onclick="switchPanel(this)">
       <span class="nav-icon">📢</span> 平台公告
+    </div>
+    <div class="nav-item" data-panel="experts" onclick="switchPanel(this)">
+      <span class="nav-icon">🎓</span> 专家讲堂
     </div>
     <div class="nav-item" data-panel="aftersale" onclick="switchPanel(this)">
       <span class="nav-icon">🔄</span> 售后管理
@@ -318,6 +324,24 @@
         <table>
           <thead><tr><th>公告标题</th><th>内容摘要</th><th>发布时间</th><th>操作</th></tr></thead>
           <tbody id="announce-table"><tr class="empty-row"><td colspan="4">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ 专家讲堂面板 ══ -->
+    <div class="panel" id="panel-experts">
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">专家讲堂内容</span>
+          <span class="badge" id="expert-count">0 条内容</span>
+          <button class="act-btn approve" onclick="openExpertAdd()">+ 新增内容</button>
+          <button class="act-btn" onclick="loadExpertContents()" style="background:#F0F0F0;color:#555">刷新</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>封面</th><th>标题</th><th>类型</th><th>分类</th><th>讲师</th><th>价格</th><th>互动</th><th>状态</th><th>操作</th></tr>
+          </thead>
+          <tbody id="expertTable"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -535,6 +559,89 @@
   </div>
 </div>
 
+<!-- ══ 弹窗：专家讲堂内容（新增/编辑）══ -->
+<div class="modal-mask" id="modalExpert">
+  <div class="modal expert-form-modal">
+    <h3 id="expertModalTitle">新增专家讲堂内容</h3>
+    <input type="hidden" id="e-id">
+    <div class="mrow">
+      <div class="mfield">
+        <label>内容类型</label>
+        <select id="e-type">
+          <option value="video">视频课</option>
+          <option value="article">图文课</option>
+          <option value="qa">问答课</option>
+        </select>
+      </div>
+      <div class="mfield">
+        <label>状态</label>
+        <select id="e-published"><option value="1">上架</option><option value="0">草稿/下架</option></select>
+      </div>
+      <div class="mfield"><label>排序</label><input id="e-sort" type="number" value="0"></div>
+    </div>
+    <div class="mfield"><label>标题 <span class="req">*</span></label><input id="e-title" placeholder="如：棉花蕾期水肥管理"></div>
+    <div class="mfield"><label>副标题</label><input id="e-subtitle" placeholder="一句话说明这节课解决什么问题"></div>
+    <div class="mrow">
+      <div class="mfield">
+        <label>分类</label>
+        <select id="e-category-key">
+          <option value="planting">种植技术</option>
+          <option value="pest">病虫害防治</option>
+          <option value="waterFert">水肥管理</option>
+          <option value="machine">农机作业</option>
+          <option value="policy">政策与经营</option>
+        </select>
+      </div>
+      <div class="mfield"><label>自定义分类名</label><input id="e-category-name" placeholder="默认使用上方分类"></div>
+      <div class="mfield"><label>时长</label><input id="e-duration" placeholder="如：18分钟"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>讲师</label><input id="e-teacher" placeholder="平台专家"></div>
+      <div class="mfield"><label>职称</label><input id="e-teacher-title" placeholder="农艺师 / 研究员"></div>
+      <div class="mfield"><label>单位</label><input id="e-org" placeholder="喀什地区农技推广站"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>头像 Emoji</label><input id="e-avatar" placeholder="👨‍🌾"></div>
+      <div class="mfield"><label>专家标签</label><input id="e-tags" placeholder="播种, 水肥, 病虫害"></div>
+      <div class="mfield"><label>学习人数</label><input id="e-students" type="number" min="0" value="0"></div>
+    </div>
+    <div class="mfield"><label>课程简介</label><textarea id="e-intro" rows="3" placeholder="显示在课程列表和详情顶部"></textarea></div>
+    <div class="mfield"><label>图文正文 / 问答内容</label><textarea id="e-content" rows="5" placeholder="视频课也可以填写文字要点，图文课建议写完整内容"></textarea></div>
+    <div class="mrow">
+      <div class="mfield">
+        <label>封面图</label>
+        <input id="e-cover" placeholder="/uploads/expert/cover.jpg">
+        <div class="help-text"><input type="file" id="e-cover-file" accept="image/*" onchange="uploadExpertMedia(event,'e-cover')"></div>
+      </div>
+      <div class="mfield">
+        <label>视频地址</label>
+        <input id="e-video" placeholder="/uploads/expert/video.mp4">
+        <div class="help-text"><input type="file" id="e-video-file" accept="video/*" onchange="uploadExpertMedia(event,'e-video')"></div>
+      </div>
+    </div>
+    <div class="mrow">
+      <div class="mfield">
+        <label>付费方式</label>
+        <select id="e-price-type"><option value="free">免费</option><option value="paid">付费</option></select>
+      </div>
+      <div class="mfield"><label>价格（元）</label><input id="e-price" type="number" min="0" step="0.01" value="0"></div>
+    </div>
+    <div class="mfield">
+      <label>互动小测</label>
+      <textarea id="e-quiz" rows="4" placeholder="每行一道题：题目 | 选项A | 选项B | 选项C | 正确选项序号 | 解析"></textarea>
+      <div class="help-text">例：红蜘蛛常见在叶片哪里？ | 叶背 | 主根 | 棉铃内部 | 1 | 红蜘蛛多在叶背活动。</div>
+    </div>
+    <div class="mfield">
+      <label>AI 陪练提示词</label>
+      <textarea id="e-ai-prompt" rows="3" placeholder="告诉 AI 如何围绕这节课训练农户"></textarea>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalExpert')">取消</button>
+      <button class="mbtn save" onclick="saveExpertContent()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 弹窗：审批 ══ -->
 <div class="modal-mask" id="modalApprove">
   <div class="modal">
@@ -576,7 +683,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', aftersale: '售后管理', finance: '财务管理' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', experts: '专家讲堂', aftersale: '售后管理', finance: '财务管理' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -596,6 +703,7 @@
     else if (panel === 'products')    loadProducts()
     else if (panel === 'orders')      loadAdminOrders()
     else if (panel === 'announcements') loadAnnouncements()
+    else if (panel === 'experts')       loadExpertContents()
     else if (panel === 'aftersale')     loadAftersales()
     else if (panel === 'finance')       { loadFinance(); loadWithdrawals() }
   }
@@ -1229,6 +1337,180 @@
     const r = await api('DELETE', '/announcements/' + id)
     if (r?.code === 200) loadAnnouncements()
     else alert(r?.msg || '删除失败')
+  }
+
+  // ── 专家讲堂 ─────────────────────────────────
+  let expertContentsData = []
+  const EXPERT_TYPE_LABEL = { video: '视频课', article: '图文课', qa: '问答课' }
+  const EXPERT_CATEGORY_LABEL = {
+    planting: '种植技术',
+    pest: '病虫害防治',
+    waterFert: '水肥管理',
+    machine: '农机作业',
+    policy: '政策与经营'
+  }
+
+  function parseMaybeJson(value, fallback) {
+    if (!value) return fallback
+    if (Array.isArray(value)) return value
+    try { return JSON.parse(value) } catch { return fallback }
+  }
+
+  function quizToText(value) {
+    return parseMaybeJson(value, []).map(q => {
+      const options = Array.isArray(q.options) ? q.options : []
+      return [q.question || '', ...options, Number(q.answer || 0) + 1, q.explanation || ''].join(' | ')
+    }).join('\n')
+  }
+
+  async function loadExpertContents() {
+    const tbody = document.getElementById('expertTable')
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">加载中...</td></tr>'
+    const r = await api('GET', '/expert-contents')
+    if (!r || r.code !== 200) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="9">加载失败</td></tr>'
+      return
+    }
+    expertContentsData = r.data || []
+    document.getElementById('expert-count').textContent = `${expertContentsData.length} 条内容`
+    if (!expertContentsData.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="9">暂无专家讲堂内容</td></tr>'
+      return
+    }
+    tbody.innerHTML = expertContentsData.map(item => {
+      const tags = parseMaybeJson(item.expert_tags, [])
+      const quiz = parseMaybeJson(item.quiz_json, [])
+      const price = item.price_type === 'paid' ? `¥${Number(item.price || 0).toFixed(2)}` : '免费'
+      const cover = item.cover_url
+        ? `<img class="expert-thumb" src="${esc(item.cover_url)}">`
+        : '<span style="color:#BBB">无</span>'
+      return `<tr>
+        <td>${cover}</td>
+        <td><strong>${esc(item.title)}</strong><br><span style="color:#888;font-size:12px">${esc(item.subtitle || '')}</span></td>
+        <td>${EXPERT_TYPE_LABEL[item.type] || item.type}</td>
+        <td>${esc(item.category_name || EXPERT_CATEGORY_LABEL[item.category_key] || item.category_key)}</td>
+        <td>${esc(item.teacher || '平台专家')}<br><span style="color:#888;font-size:12px">${esc(tags.join('、'))}</span></td>
+        <td>${price}</td>
+        <td>${quiz.length ? quiz.length + '题' : '未配置'}</td>
+        <td><span class="badge ${item.is_published ? 'badge-ok' : 'badge-warn'}">${item.is_published ? '已上架' : '草稿'}</span></td>
+        <td style="white-space:nowrap">
+          <button class="act-btn edit" onclick="openExpertEdit(${item.id})">编辑</button>
+          <button class="act-btn ${item.is_published ? 'disable' : 'enable'}" onclick="toggleExpertPublish(${item.id},${item.is_published ? 0 : 1})">${item.is_published ? '下架' : '上架'}</button>
+          <button class="act-btn reject" onclick="deleteExpertContent(${item.id},'${esc(item.title)}')">删除</button>
+        </td>
+      </tr>`
+    }).join('')
+  }
+
+  function fillExpertForm(item = {}) {
+    document.getElementById('e-id').value = item.id || ''
+    document.getElementById('e-type').value = item.type || 'video'
+    document.getElementById('e-published').value = item.is_published === 0 ? '0' : '1'
+    document.getElementById('e-sort').value = item.sort_order || 0
+    document.getElementById('e-title').value = item.title || ''
+    document.getElementById('e-subtitle').value = item.subtitle || ''
+    document.getElementById('e-category-key').value = item.category_key || 'planting'
+    document.getElementById('e-category-name').value = item.category_name || ''
+    document.getElementById('e-duration').value = item.duration || ''
+    document.getElementById('e-teacher').value = item.teacher || ''
+    document.getElementById('e-teacher-title').value = item.teacher_title || ''
+    document.getElementById('e-org').value = item.org || ''
+    document.getElementById('e-avatar').value = item.expert_avatar || '👨‍🌾'
+    document.getElementById('e-tags').value = parseMaybeJson(item.expert_tags, []).join(', ')
+    document.getElementById('e-students').value = item.students || 0
+    document.getElementById('e-intro').value = item.intro || ''
+    document.getElementById('e-content').value = item.content || ''
+    document.getElementById('e-cover').value = item.cover_url || ''
+    document.getElementById('e-video').value = item.video_url || ''
+    document.getElementById('e-price-type').value = item.price_type || 'free'
+    document.getElementById('e-price').value = item.price || 0
+    document.getElementById('e-quiz').value = quizToText(item.quiz_json)
+    document.getElementById('e-ai-prompt').value = item.ai_prompt || ''
+    document.getElementById('e-cover-file').value = ''
+    document.getElementById('e-video-file').value = ''
+  }
+
+  function openExpertAdd() {
+    document.getElementById('expertModalTitle').textContent = '新增专家讲堂内容'
+    fillExpertForm({})
+    document.getElementById('modalExpert').classList.add('show')
+  }
+
+  function openExpertEdit(id) {
+    const item = expertContentsData.find(x => x.id === id)
+    if (!item) return alert('内容不存在')
+    document.getElementById('expertModalTitle').textContent = '编辑专家讲堂内容'
+    fillExpertForm(item)
+    document.getElementById('modalExpert').classList.add('show')
+  }
+
+  function collectExpertForm() {
+    const categoryKey = document.getElementById('e-category-key').value
+    return {
+      type: document.getElementById('e-type').value,
+      is_published: document.getElementById('e-published').value === '1',
+      sort_order: Number(document.getElementById('e-sort').value || 0),
+      title: document.getElementById('e-title').value.trim(),
+      subtitle: document.getElementById('e-subtitle').value.trim(),
+      category_key: categoryKey,
+      category_name: document.getElementById('e-category-name').value.trim() || EXPERT_CATEGORY_LABEL[categoryKey] || '',
+      duration: document.getElementById('e-duration').value.trim(),
+      teacher: document.getElementById('e-teacher').value.trim(),
+      teacher_title: document.getElementById('e-teacher-title').value.trim(),
+      org: document.getElementById('e-org').value.trim(),
+      expert_avatar: document.getElementById('e-avatar').value.trim() || '👨‍🌾',
+      expert_tags: document.getElementById('e-tags').value.trim(),
+      students: Number(document.getElementById('e-students').value || 0),
+      intro: document.getElementById('e-intro').value.trim(),
+      content: document.getElementById('e-content').value.trim(),
+      cover_url: document.getElementById('e-cover').value.trim(),
+      video_url: document.getElementById('e-video').value.trim(),
+      price_type: document.getElementById('e-price-type').value,
+      price: Number(document.getElementById('e-price').value || 0),
+      quiz_text: document.getElementById('e-quiz').value.trim(),
+      ai_prompt: document.getElementById('e-ai-prompt').value.trim()
+    }
+  }
+
+  async function saveExpertContent() {
+    const id = document.getElementById('e-id').value
+    const body = collectExpertForm()
+    if (!body.title) return alert('请填写标题')
+    const r = await api(id ? 'PUT' : 'POST', id ? `/expert-contents/${id}` : '/expert-contents', body)
+    if (r?.code === 200) {
+      closeModal('modalExpert')
+      loadExpertContents()
+    } else {
+      alert(r?.msg || '保存失败')
+    }
+  }
+
+  async function toggleExpertPublish(id, isPublished) {
+    const r = await api('POST', `/expert-contents/${id}/toggle`, { is_published: !!isPublished })
+    if (r?.code === 200) loadExpertContents()
+    else alert(r?.msg || '操作失败')
+  }
+
+  async function deleteExpertContent(id, title) {
+    if (!confirm(`确定删除“${title || '该内容'}”？`)) return
+    const r = await api('DELETE', `/expert-contents/${id}`)
+    if (r?.code === 200) loadExpertContents()
+    else alert(r?.msg || '删除失败')
+  }
+
+  async function uploadExpertMedia(e, targetId) {
+    const file = e.target.files && e.target.files[0]
+    if (!file) return
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/admin/expert-upload', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + TOKEN },
+      body: fd
+    })
+    const r = await res.json()
+    if (r.code === 200) document.getElementById(targetId).value = r.data.url
+    else alert(r.msg || '上传失败')
   }
 
   // ── 佣金费率 ─────────────────────────────────
