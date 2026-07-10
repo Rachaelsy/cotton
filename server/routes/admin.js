@@ -1,4 +1,4 @@
-// server/routes/admin.js — 后台管理 API
+﻿// server/routes/admin.js — 后台管理 API
 const express  = require('express')
 const router   = express.Router()
 const bcrypt   = require('bcryptjs')
@@ -7,6 +7,7 @@ const multer   = require('multer')
 const path     = require('path')
 const fs       = require('fs')
 const db       = require('../db/database')
+const wxpay    = require('../utils/wechat-pay')
 const { broadcastAnnouncement } = require('../utils/notify')
 
 // ── 图片上传配置 ─────────────────────────────────────────
@@ -28,6 +29,54 @@ const upload = multer({
 
 const JWT_SECRET  = process.env.JWT_SECRET
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d'
+
+function parsePayload(raw) {
+  if (!raw) return null
+  if (typeof raw === 'object') return raw
+  try { return JSON.parse(raw) } catch { return null }
+}
+
+function makeBusinessCode(prefix, ownerId) {
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)
+  return `${prefix}_${ownerId}_${stamp}_${Math.floor(Math.random() * 9000 + 1000)}`
+}
+
+function buildMerchantApplymentPayload(merchant) {
+  const draft = parsePayload(merchant.wechat_applyment_payload) || {}
+  const businessCode = merchant.wechat_business_code || draft.business_code || makeBusinessCode('COTTON_MERCHANT', merchant.id)
+  if (draft.raw_applyment && typeof draft.raw_applyment === 'object') {
+    return { business_code: businessCode, ...draft.raw_applyment }
+  }
+  const { business_code, ...rest } = draft
+  if (rest && (rest.contact_info || rest.subject_info || rest.business_info || rest.settlement_info || rest.bank_account_info)) {
+    return { business_code: businessCode, ...rest }
+  }
+  return null
+}
+
+async function submitMerchantApplyment(merchant) {
+  const cfg = wxpay.getNotifyConfig()
+  if (!cfg) throw new Error('微信支付服务商未配置，无法自动提交进件')
+  const payload = buildMerchantApplymentPayload(merchant)
+  if (!payload) throw new Error('商户尚未保存可提交的进件资料')
+  const result = await wxpay.submitApplyment(cfg, payload)
+  const state = result.applyment_state || result.state || (result.sub_mchid ? 'APPLYMENT_STATE_FINISHED' : 'APPLYMENT_STATE_AUDITING')
+  const message = result.applyment_state_msg || result.applyment_state_desc || result.reject_reason || result.message || ''
+  await db.query(
+    `UPDATE merchants SET wechat_applyment_id=?, wechat_business_code=?,
+     wechat_applyment_state=?, wechat_applyment_msg=?, sub_mchid=COALESCE(?, sub_mchid),
+     wechat_applyment_updated_at=NOW() WHERE id=?`,
+    [
+      result.applyment_id || null,
+      payload.business_code || null,
+      state,
+      message,
+      result.sub_mchid || null,
+      merchant.id
+    ]
+  )
+  return { payload, result, state, message }
+}
 
 // ── 管理员身份验证中间件 ──────────────────────────────────
 const R_OK   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -230,7 +279,8 @@ router.get('/applications', adminAuth, async (req, res) => {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.created_at,
              m.id AS merchant_id, m.company_name, m.business_license,
-             m.product_category, m.apply_status, m.reject_reason
+             m.product_category, m.apply_status, m.reject_reason,
+             m.sub_mchid, m.wechat_applyment_state, m.wechat_applyment_payload
       FROM users u LEFT JOIN merchants m ON m.user_id = u.id
       WHERE u.role = 'merchant' AND m.apply_status = 'pending'
       ORDER BY u.created_at ASC
@@ -245,11 +295,39 @@ router.get('/applications', adminAuth, async (req, res) => {
 router.post('/applications/:id/approve', adminAuth, async (req, res) => {
   try {
     const userId = req.params.id
+    const [[merchant]] = await db.query(
+      'SELECT id, sub_mchid, wechat_applyment_state, wechat_applyment_payload, wechat_business_code FROM merchants WHERE user_id=? LIMIT 1',
+      [userId]
+    )
+    if (!merchant) return res.status(404).json({ code: 404, msg: '申请不存在' })
     await db.query('UPDATE merchants SET apply_status="approved" WHERE user_id=?', [userId])
     await db.query('UPDATE users SET is_active=1 WHERE id=?', [userId])
-    res.json({ code: 200, msg: '已批准入驻申请' })
+    let submitMsg = ''
+    try {
+      const submitResult = await submitMerchantApplyment(merchant)
+      submitMsg = submitResult.result.applyment_state_msg || submitResult.message || '已自动提交微信进件'
+    } catch (submitErr) {
+      submitMsg = submitErr.message || '已批准入驻，但微信进件尚未自动提交'
+    }
+    res.json({ code: 200, msg: submitMsg || '已批准入驻申请' })
   } catch (e) {
     console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+router.post('/applications/:id/submit-applyment', adminAuth, async (req, res) => {
+  try {
+    const userId = req.params.id
+    const [[merchant]] = await db.query(
+      'SELECT id, company_name, business_license, product_category, sub_mchid, wechat_applyment_state, wechat_applyment_payload, wechat_business_code FROM merchants WHERE user_id=? LIMIT 1',
+      [userId]
+    )
+    if (!merchant) return res.status(404).json({ code: 404, msg: '申请不存在' })
+    const submitResult = await submitMerchantApplyment(merchant)
+    res.json({ code: 200, msg: '微信进件已提交', data: submitResult.result })
+  } catch (e) {
+    console.error('[admin-submit-applyment]', e)
+    res.status(500).json({ code: 500, msg: e.message || '微信进件提交失败' })
   }
 })
 
@@ -433,11 +511,27 @@ router.patch('/users/:id/status', adminAuth, async (req, res) => {
 // ── POST /api/admin/apply（公开）商户入驻申请 ─────────────
 router.post('/apply', async (req, res) => {
   try {
-    const { phone, password, real_name, company_name, business_license, product_category } = req.body
+    const {
+      phone, password, real_name, company_name, business_license, product_category,
+      contact_mobile, contact_email, subject_type, legal_person, id_card_name, id_card_number,
+      merchant_shortname, service_phone, mini_program_appid, account_bank, account_name, account_number,
+      license_copy_url, id_card_copy_url, id_card_national_url, mini_program_pic_url
+    } = req.body
     if (!/^1\d{10}$/.test(phone))        return res.status(400).json({ code: 400, msg: '手机号格式不正确' })
     if (!password || password.length < 6) return res.status(400).json({ code: 400, msg: '密码不能少于6位' })
     if (!real_name || !real_name.trim())  return res.status(400).json({ code: 400, msg: '请填写联系人姓名' })
     if (!company_name || !company_name.trim()) return res.status(400).json({ code: 400, msg: '请填写店铺/企业名称' })
+    if (!/^1\d{10}$/.test(String(contact_mobile || '').trim())) return res.status(400).json({ code: 400, msg: '请填写正确的联系人手机号' })
+    if (!String(merchant_shortname || '').trim()) return res.status(400).json({ code: 400, msg: '请填写商户简称' })
+    if (!String(service_phone || '').trim()) return res.status(400).json({ code: 400, msg: '请填写客服电话' })
+    if (!String(mini_program_appid || '').trim()) return res.status(400).json({ code: 400, msg: '请填写小程序 AppID' })
+    if (!String(account_bank || '').trim()) return res.status(400).json({ code: 400, msg: '请填写开户银行' })
+    if (!String(account_name || '').trim()) return res.status(400).json({ code: 400, msg: '请填写开户人' })
+    if (!String(account_number || '').trim()) return res.status(400).json({ code: 400, msg: '请填写结算账号' })
+    if (!String(license_copy_url || '').trim()) return res.status(400).json({ code: 400, msg: '请上传营业执照图片' })
+    if (!String(id_card_copy_url || '').trim()) return res.status(400).json({ code: 400, msg: '请上传身份证人像面图片' })
+    if (!String(id_card_national_url || '').trim()) return res.status(400).json({ code: 400, msg: '请上传身份证国徽面图片' })
+    if (!String(mini_program_pic_url || '').trim()) return res.status(400).json({ code: 400, msg: '请上传经营页面截图' })
 
     const [exist] = await db.query('SELECT id FROM users WHERE phone=?', [phone])
     if (exist.length > 0) return res.status(400).json({ code: 400, msg: '该手机号已注册' })
@@ -449,8 +543,53 @@ router.post('/apply', async (req, res) => {
     )
     const userId = result.insertId
     await db.query(
-      'INSERT INTO merchants (user_id,company_name,business_license,product_category,apply_status) VALUES (?,?,?,?,?)',
-      [userId, company_name.trim(), business_license || '', product_category || '', 'pending']
+      'INSERT INTO merchants (user_id,company_name,business_license,product_category,apply_status,wechat_applyment_state,wechat_applyment_payload) VALUES (?,?,?,?,?,?,?)',
+      [userId, company_name.trim(), business_license || '', product_category || '', 'pending', 'DRAFT', JSON.stringify({
+        source: 'portal_register',
+        attachments: {
+          license_copy_url: String(license_copy_url || '').trim(),
+          id_card_copy_url: String(id_card_copy_url || '').trim(),
+          id_card_national_url: String(id_card_national_url || '').trim(),
+          mini_program_pic_url: String(mini_program_pic_url || '').trim()
+        },
+        raw_applyment: {
+          contact_info: {
+            contact_type: 'LEGAL',
+            contact_name: String(real_name || '').trim(),
+            mobile_phone: String(contact_mobile || '').trim(),
+            contact_email: String(contact_email || '').trim()
+          },
+          subject_info: {
+            subject_type: String(subject_type || 'SUBJECT_TYPE_INDIVIDUAL').trim(),
+            business_license_info: {
+              license_number: String(business_license || '').trim(),
+              merchant_name: String(company_name || '').trim(),
+              legal_person: String(legal_person || real_name || '').trim()
+            },
+            identity_info: {
+              id_card_info: {
+                id_card_name: String(id_card_name || real_name || '').trim(),
+                id_card_number: String(id_card_number || '').trim()
+              }
+            }
+          },
+          business_info: {
+            merchant_shortname: String(merchant_shortname || company_name || '').trim(),
+            service_phone: String(service_phone || contact_mobile || '').trim(),
+            sales_info: {
+              sales_scenes_type: ['SALES_SCENES_MINI_PROGRAM'],
+              mini_program_info: {
+                mini_program_appid: String(mini_program_appid || '').trim()
+              }
+            }
+          },
+          bank_account_info: {
+            account_bank: String(account_bank || '').trim(),
+            account_name: String(account_name || '').trim(),
+            account_number: String(account_number || '').trim()
+          }
+        }
+      })]
     )
     res.json({ code: 200, msg: '申请已提交，请等待管理员审核（1-3个工作日）' })
   } catch (e) {

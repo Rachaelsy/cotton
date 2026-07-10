@@ -200,6 +200,7 @@
       width: 100%; padding: 9px 12px; border: 1.5px solid #E0E0E0; border-radius: 9px; font-size: 13px; outline: none;
     }
     .form-field input:focus, .form-field textarea:focus { border-color: #16A34A; }
+    .is-hidden { display: none !important; }
 
     /* ── 微信收款进件 ── */
     .pay-layout { display: grid; grid-template-columns: 320px 1fr; gap: 16px; align-items: start; }
@@ -213,6 +214,7 @@
     .pay-form-section:last-child { border-bottom: none; }
     .pay-form-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; color: #1F2937; }
     .pay-help { font-size: 12px; color: #8A5A16; background: #FFF8E6; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; line-height: 1.5; }
+    .pay-help strong { color: #5F3E0A; }
     .pay-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
     .media-field { display: flex; gap: 8px; align-items: stretch; }
     .media-field input { flex: 1; min-width: 0; }
@@ -301,13 +303,14 @@
           <div class="card-head"><span class="card-title">🏪 店铺状态</span></div>
           <div class="card-body">
             <table style="width:100%">
-              <tr><td style="color:#888;font-size:13px;padding:6px 0">审核状态</td><td><span class="badge badge-on" id="shop-status">已通过</span></td></tr>
+              <tr><td style="color:#888;font-size:13px;padding:6px 0">审核状态</td><td><span class="badge badge-pending" id="shop-status">待审核</span></td></tr>
               <tr><td style="color:#888;font-size:13px;padding:6px 0">主营品类</td><td style="font-size:13px;font-weight:600" id="shop-cat">—</td></tr>
               <tr><td style="color:#888;font-size:13px;padding:6px 0">在售商品</td><td style="font-size:13px;font-weight:600" id="shop-prods">—</td></tr>
               <tr><td style="color:#888;font-size:13px;padding:6px 0">低库存商品</td><td><span class="badge badge-low" id="shop-low">0件</span></td></tr>
               <tr><td style="color:#888;font-size:13px;padding:6px 0">本月销售额</td><td style="font-size:13px;font-weight:700;color:#C8902E" id="shop-monthly">—</td></tr>
               <tr><td style="color:#888;font-size:13px;padding:6px 0">累计客户数</td><td style="font-size:13px;font-weight:600" id="shop-customers">—</td></tr>
             </table>
+            <div id="shop-status-note" style="margin-top:10px;font-size:12px;color:#888;line-height:1.5"></div>
           </div>
         </div>
         <!-- 近7日销售趋势 -->
@@ -784,9 +787,55 @@
 ════════════════════════════════════════════ */
 const T_KEY = 'merchant_token'
 const U_KEY = 'merchant_user'
+const MERCHANT_PAY_DEFAULTS = { mini_program_appid: '', settlement_id: '719' }
+const MERCHANT_PAY_HIDE_FIELDS = [
+  'business_code',
+  'subject_type',
+  'license_number',
+  'merchant_name',
+  'legal_person',
+  'mini_program_appid',
+  'settlement_id',
+  'qualification_type',
+  'bank_address_code',
+  'bank_branch_id',
+  'bank_name',
+  'sub_mchid'
+]
+var merchantPayConfig = { ...MERCHANT_PAY_DEFAULTS }
+var merchantPayState = {}
 
 function getToken() { return localStorage.getItem(T_KEY) || '' }
 function getUser()  { try { return JSON.parse(localStorage.getItem(U_KEY)) || {} } catch { return {} } }
+
+function createMerchantBusinessCode() {
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)
+  return `COTTON_MERCHANT_${stamp}_${Math.floor(Math.random() * 9000 + 1000)}`
+}
+
+function hideMerchantPayField(name) {
+  const el = document.getElementById('m-pay-' + name)
+  const wrap = el && el.closest('.form-field')
+  if (wrap) wrap.classList.add('is-hidden')
+}
+
+function hideMerchantPayFields() {
+  MERCHANT_PAY_HIDE_FIELDS.forEach(hideMerchantPayField)
+  document.querySelectorAll('#panel-pay .form-row').forEach(row => {
+    const visible = Array.from(row.children).filter(child => child.classList && child.classList.contains('form-field') && !child.classList.contains('is-hidden'))
+    if (visible.length === 0) row.classList.add('is-hidden')
+  })
+}
+
+async function loadMerchantPayConfig() {
+  const r = await applymentApi('GET', '/config').catch(() => null)
+  if (r && r.code === 200 && r.data) {
+    merchantPayConfig = {
+      mini_program_appid: r.data.mini_program_appid || '',
+      settlement_id: r.data.settlement_id || '719'
+    }
+  }
+}
 
 async function api(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
@@ -890,6 +939,7 @@ function getOrderStatus(status) {
   document.getElementById('sidebar-name').textContent  = u.company_name || u.real_name || '——'
   document.getElementById('sidebar-phone').textContent = u.phone || '——'
   document.getElementById('topbar-shop').textContent   = u.company_name || ''
+  hideMerchantPayFields()
   setInterval(() => {
     document.getElementById('topbar-time').textContent = new Date().toLocaleString('zh-CN', { hour12: false })
   }, 1000)
@@ -949,9 +999,24 @@ async function loadStats() {
     document.getElementById('ship-count').textContent = '(' + d.pending_ship + ')'
   }
 
-  // 加载商品品类到店铺状态
   const prof = await api('GET', '/profile')
-  if (prof?.data) document.getElementById('shop-cat').textContent = prof.data.product_category || '未设置'
+  if (prof?.data) {
+    document.getElementById('shop-cat').textContent = prof.data.product_category || '未设置'
+    const statusEl = document.getElementById('shop-status')
+    const statusMap = {
+      pending:  { text: '待审核', cls: 'badge-pending', note: '当前账号待审核，请等待管理员处理' },
+      approved: { text: '已通过', cls: 'badge-on',      note: '当前账号已通过审核，可正常使用' },
+      rejected: { text: '已拒绝', cls: 'badge-refund',   note: prof.data.reject_reason ? `审核拒绝：${prof.data.reject_reason}` : '当前账号已被拒绝' }
+    }
+    const s = statusMap[prof.data.apply_status] || statusMap.pending
+    if (statusEl) {
+      statusEl.textContent = s.text
+      statusEl.className = `badge ${s.cls}`
+      statusEl.title = s.note
+    }
+    const noteEl = document.getElementById('shop-status-note')
+    if (noteEl) noteEl.textContent = s.note
+  }
 
   // 绘制近7日销售趋势柱状图（真实数据）
   if (d.weekly_trend && d.weekly_trend.length) {
@@ -1411,14 +1476,14 @@ function buildMerchantRawApplyment() {
       sales_info: {
         sales_scenes_type: ['SALES_SCENES_MINI_PROGRAM'],
         mini_program_info: {
-          mini_program_appid: payVal('mini_program_appid'),
+          mini_program_appid: payVal('mini_program_appid') || merchantPayConfig.mini_program_appid || '',
           mini_program_pics: payVal('mini_program_pic') ? [payVal('mini_program_pic')] : []
         }
       }
     },
     settlement_info: {
-      settlement_id: payVal('settlement_id'),
-      qualification_type: payVal('qualification_type')
+      settlement_id: payVal('settlement_id') || merchantPayConfig.settlement_id || '719',
+      qualification_type: payVal('qualification_type') || merchantPayState.product_category || ''
     },
     bank_account_info: {
       bank_account_type: payVal('bank_account_type') || 'BANK_ACCOUNT_TYPE_PERSONAL',
@@ -1434,6 +1499,7 @@ function buildMerchantRawApplyment() {
 }
 
 function fillMerchantPayForm(data) {
+  merchantPayState = data || {}
   const draft = (data && data.draft) || {}
   const raw = draft.raw_applyment || {}
   const contact = raw.contact_info || {}
@@ -1446,29 +1512,30 @@ function fillMerchantPayForm(data) {
   const miniProgram = sales.mini_program_info || {}
   const settlement = raw.settlement_info || {}
   const bank = raw.bank_account_info || {}
+  const attachments = draft.attachments || {}
   const user = getUser()
 
-  setPayVal('business_code', data.business_code || draft.business_code || '')
+  setPayVal('business_code', data.business_code || draft.business_code || createMerchantBusinessCode())
   setPayVal('contact_name', contact.contact_name || user.real_name || '')
   setPayVal('contact_mobile', contact.mobile_phone || user.phone || '')
   setPayVal('contact_email', contact.contact_email || '')
   setPayVal('subject_type', subject.subject_type || 'SUBJECT_TYPE_INDIVIDUAL')
-  setPayVal('license_copy', license.license_copy || '')
+  setPayVal('license_copy', license.license_copy || attachments.license_copy_url || '')
   setPayVal('license_number', license.license_number || data.business_license || user.business_license || '')
   setPayVal('merchant_name', license.merchant_name || data.company_name || user.company_name || '')
   setPayVal('legal_person', license.legal_person || contact.contact_name || user.real_name || '')
-  setPayVal('id_card_copy', idCard.id_card_copy || '')
-  setPayVal('id_card_national', idCard.id_card_national || '')
+  setPayVal('id_card_copy', idCard.id_card_copy || attachments.id_card_copy_url || '')
+  setPayVal('id_card_national', idCard.id_card_national || attachments.id_card_national_url || '')
   setPayVal('id_card_name', idCard.id_card_name || license.legal_person || contact.contact_name || user.real_name || '')
   setPayVal('id_card_number', idCard.id_card_number || '')
   setPayVal('card_period_begin', idCard.card_period_begin || '')
   setPayVal('card_period_end', idCard.card_period_end || '')
   setPayVal('merchant_shortname', business.merchant_shortname || data.company_name || user.company_name || '')
   setPayVal('service_phone', business.service_phone || contact.mobile_phone || user.phone || '')
-  setPayVal('mini_program_appid', (miniProgram && miniProgram.mini_program_appid) || '')
-  setPayVal('mini_program_pic', (miniProgram.mini_program_pics && miniProgram.mini_program_pics[0]) || '')
-  setPayVal('settlement_id', settlement.settlement_id || '')
-  setPayVal('qualification_type', settlement.qualification_type || '')
+  setPayVal('mini_program_appid', (miniProgram && miniProgram.mini_program_appid) || attachments.mini_program_appid || merchantPayConfig.mini_program_appid || '')
+  setPayVal('mini_program_pic', (miniProgram.mini_program_pics && miniProgram.mini_program_pics[0]) || attachments.mini_program_pic_url || '')
+  setPayVal('settlement_id', settlement.settlement_id || merchantPayConfig.settlement_id || '719')
+  setPayVal('qualification_type', settlement.qualification_type || data.product_category || user.product_category || '')
   setPayVal('bank_account_type', bank.bank_account_type || 'BANK_ACCOUNT_TYPE_PERSONAL')
   setPayVal('account_bank', bank.account_bank || '')
   setPayVal('bank_address_code', bank.bank_address_code || '')
@@ -1477,6 +1544,7 @@ function fillMerchantPayForm(data) {
   setPayVal('account_name', bank.account_name || idCard.id_card_name || user.real_name || '')
   setPayVal('account_number', bank.account_number || '')
   setPayVal('sub_mchid', data.sub_mchid || '')
+  hideMerchantPayFields()
 }
 
 function validateMerchantApplyment(strict) {
@@ -1511,6 +1579,7 @@ function validateMerchantApplyment(strict) {
 }
 
 async function loadMerchantApplyment() {
+  await loadMerchantPayConfig().catch(() => {})
   const r = await applymentApi('GET', '/mine').catch(() => null)
   if (!r || r.code !== 200) { alert(r?.msg || '获取微信支付状态失败'); return }
   const d = r.data || {}
@@ -1527,8 +1596,10 @@ async function loadMerchantApplyment() {
 
 async function saveMerchantPayDraft(silent = false) {
   if (!validateMerchantApplyment(false)) return false
+  const businessCode = payVal('business_code') || createMerchantBusinessCode()
+  setPayVal('business_code', businessCode)
   const r = await applymentApi('POST', '/draft', {
-    business_code: payVal('business_code'),
+    business_code: businessCode,
     raw_applyment: buildMerchantRawApplyment()
   }).catch(() => null)
   if (r && r.code === 200) {

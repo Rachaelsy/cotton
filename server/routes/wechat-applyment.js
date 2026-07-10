@@ -136,6 +136,13 @@ function publicApplyment(actor, owner) {
   }
 }
 
+router.get('/config', (_req, res) => {
+  return ok(res, {
+    mini_program_appid: process.env.WECHAT_PAY_SP_APPID || process.env.WECHAT_APPID || process.env.WX_APPID || '',
+    settlement_id: '719'
+  })
+})
+
 function stateLabel(state) {
   const map = {
     DRAFT: '资料草稿',

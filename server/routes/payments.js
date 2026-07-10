@@ -25,6 +25,16 @@ function fen(amount) {
   return Math.round(Number(amount || 0) * 100)
 }
 
+function isWechatPayTestMode() {
+  return String(process.env.WECHAT_PAY_TEST_MODE || '').trim().toLowerCase() === 'small_amount'
+}
+
+function getWechatPayChargeFen(order) {
+  const forcedFen = Number(process.env.WECHAT_PAY_FORCE_TEST_FEN || 0)
+  if (isWechatPayTestMode() && Number.isInteger(forcedFen) && forcedFen > 0) return forcedFen
+  return fen(order.amount)
+}
+
 function outTradeNo(orderType, order) {
   return `${orderType.toUpperCase()}_${order.orderNo}_${order.id}`
 }
@@ -226,7 +236,7 @@ async function markPaidByNotify(type, orderId, paidFen, transactionSubMchid) {
   const receiver = validateReceiver(order)
   if (!receiver.ok) return { ok: false, message: receiver.msg }
   if (transactionSubMchid && transactionSubMchid !== order.subMchid) return { ok: false, message: 'sub_mchid mismatch' }
-  if (fen(order.amount) !== Number(paidFen)) return { ok: false, message: 'order amount mismatch' }
+  if (getWechatPayChargeFen(order) !== Number(paidFen)) return { ok: false, message: 'order amount mismatch' }
 
   if (type === 'machine') {
     if (order.status === 'paid') return { ok: true, order }
@@ -271,12 +281,14 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
       order: {
         description: orderDescription(orderType, order),
         outTradeNo: tradeNo,
-        amountFen: fen(order.amount),
+        amountFen: getWechatPayChargeFen(order),
         attach: {
           orderType,
           orderId: order.id,
           subMchid: order.subMchid,
-          paymentMode: order.isSelfOperated ? 'self_operated' : 'partner'
+          paymentMode: order.isSelfOperated ? 'self_operated' : 'partner',
+          testMode: isWechatPayTestMode() ? 'small_amount' : 'off',
+          expectedPaidFen: getWechatPayChargeFen(order)
         }
       }
     }
@@ -290,7 +302,13 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
       privateKey: cfg.privateKey,
       prepayId: prepay.prepay_id
     })
-    return ok(res, { orderType, orderId: order.id, payParams })
+    return ok(res, {
+      orderType,
+      orderId: order.id,
+      payParams,
+      testMode: isWechatPayTestMode() ? 'small_amount' : 'off',
+      chargeFen: getWechatPayChargeFen(order)
+    })
   } catch (error) {
     console.error('[wechat-prepay]', error)
     return fail(res, error.message || '微信支付预下单失败', 500)
@@ -325,7 +343,7 @@ router.post('/wechat/confirm', farmerAuth, async (req, res) => {
     }
     if (transaction.sub_mchid && transaction.sub_mchid !== order.subMchid) return fail(res, '微信支付子商户号与订单不一致', 400)
     const paidFen = transaction.amount && (transaction.amount.payer_total || transaction.amount.total)
-    if (fen(order.amount) !== Number(paidFen)) return fail(res, '微信支付金额与订单金额不一致', 400)
+    if (getWechatPayChargeFen(order) !== Number(paidFen)) return fail(res, '微信支付金额与订单金额不一致', 400)
 
     const changed = await markPaid(orderType, orderId, req.user.id)
     if (changed && orderType === 'supply' && shouldUseProfitSharing(order)) {

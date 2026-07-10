@@ -135,7 +135,7 @@ router.post('/login', async (req, res) => {
       if (rows2.length) profile = rows2[0]
     } else {
       const [rows2] = await db.query(
-        'SELECT company_name,business_license,product_category,apply_status,reject_reason FROM merchants WHERE user_id=?', [user.id]
+        'SELECT company_name,business_license,product_category,apply_status,reject_reason,sub_mchid,wechat_applyment_state FROM merchants WHERE user_id=?', [user.id]
       )
       if (rows2.length) {
         const m = rows2[0]

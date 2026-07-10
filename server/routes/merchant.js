@@ -54,14 +54,14 @@ router.post('/login', async (req, res) => {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.password, u.real_name, u.is_active,
              m.id AS merchant_id, m.company_name, m.product_category,
-             m.business_license, m.apply_status, m.reject_reason
+             m.business_license, m.apply_status, m.reject_reason,
+             m.sub_mchid, m.wechat_applyment_state
       FROM users u JOIN merchants m ON m.user_id = u.id
       WHERE u.phone = ? AND u.role = 'merchant'
     `, [phone])
     if (!rows.length) return fail(res, '账号不存在，请确认为商户账号', 404)
     const u = rows[0]
     if (!u.is_active) return fail(res, '账号已被禁用，请联系平台客服', 403)
-    if (u.apply_status === 'pending')  return fail(res, '入驻申请正在审核中，请耐心等待', 403)
     if (u.apply_status === 'rejected') return fail(res, `入驻申请已被拒绝：${u.reject_reason || '不符合条件'}`, 403)
     if (!await bcrypt.compare(password, u.password)) return fail(res, '密码错误')
     const token = jwt.sign(
@@ -71,7 +71,11 @@ router.post('/login', async (req, res) => {
     return ok(res, {
       token, id: u.id, phone: u.phone, real_name: u.real_name,
       company_name: u.company_name, merchant_id: u.merchant_id,
-      product_category: u.product_category
+      product_category: u.product_category,
+      apply_status: u.apply_status,
+      reject_reason: u.reject_reason || '',
+      wechat_applyment_state: u.wechat_applyment_state || '',
+      sub_mchid: u.sub_mchid || ''
     }, '登录成功')
   } catch(e) { console.error('[m-login]', e); return fail(res, '服务器错误', 500) }
 })
@@ -85,7 +89,8 @@ router.get('/profile', merchantAuth, async (req, res) => {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.is_verified,
              m.id AS merchant_id, m.company_name, m.business_license,
-             m.product_category, m.apply_status, m.wechat_id,
+             m.product_category, m.apply_status, m.reject_reason,
+             m.sub_mchid, m.wechat_applyment_state, m.wechat_id,
              m.latitude, m.longitude, m.location_name, m.delivery_radius
       FROM users u JOIN merchants m ON m.user_id = u.id WHERE u.id = ?
     `, [req.merchant.id])

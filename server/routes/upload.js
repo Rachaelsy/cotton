@@ -1,4 +1,4 @@
-// server/routes/upload.js — 文件上传接口
+﻿// server/routes/upload.js — 文件上传接口
 const express = require('express')
 const multer  = require('multer')
 const path    = require('path')
@@ -26,6 +26,11 @@ function anyAuth(req, res, next) {
 }
 
 router.post('/', anyAuth, upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ code: 400, msg: '未收到文件', data: null })
+  res.json({ code: 200, msg: 'ok', data: { url: '/uploads/' + req.file.filename } })
+})
+
+router.post('/public', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ code: 400, msg: '未收到文件', data: null })
   res.json({ code: 200, msg: 'ok', data: { url: '/uploads/' + req.file.filename } })
 })

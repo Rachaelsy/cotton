@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -252,8 +252,8 @@
           <span class="table-title">商户入驻申请</span>
           <span class="badge badge-warn" id="app-count">0 条待审批</span>
         </div>
-        <table><thead><tr><th>ID</th><th>手机号</th><th>联系人</th><th>店铺名称</th><th>经营品类</th><th>申请时间</th><th>操作</th></tr></thead>
-        <tbody id="appTable"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody></table>
+        <table><thead><tr><th>ID</th><th>手机号</th><th>联系人</th><th>店铺名称</th><th>经营品类</th><th>支付状态</th><th>申请时间</th><th>操作</th></tr></thead>
+        <tbody id="appTable"><tr class="empty-row"><td colspan="8">加载中...</td></tr></tbody></table>
       </div>
     </div>
 
@@ -547,7 +547,7 @@
     <div class="mbtns">
       <button class="mbtn cancel" onclick="closeModal('modalApprove')">取消</button>
       <button class="mbtn danger" id="rejectBtn" onclick="toggleRejectArea()">拒绝入驻</button>
-      <button class="mbtn save" id="approveConfirmBtn" onclick="submitApproval()">批准入驻</button>
+      <button class="mbtn save" id="approveConfirmBtn" onclick="submitApproval()">批准并提交进件</button>
     </div>
   </div>
 </div>
@@ -650,25 +650,28 @@
       <tr>
         <td>${u.id}</td><td>${u.phone}</td><td>${u.real_name||'—'}</td>
         <td>${u.company_name||'—'}</td><td>${u.product_category||'—'}</td>
+        <td>${u.sub_mchid ? '已开通' : (u.wechat_applyment_state || '草稿')}</td>
         <td>${fmt(u.created_at)}</td>
         <td>
-          <button class="act-btn approve" onclick="openApprove(${u.id},'${esc(u.company_name)}','${esc(u.phone)}','${esc(u.real_name)}','${esc(u.business_license)}','${esc(u.product_category)}')">审批</button>
+          <button class="act-btn approve" onclick="openApprove(${u.id},'${esc(u.company_name)}','${esc(u.phone)}','${esc(u.real_name)}','${esc(u.business_license)}','${esc(u.product_category)}','${esc(u.wechat_applyment_state || '')}','${esc(u.sub_mchid || '')}')">审批</button>
         </td>
-      </tr>`).join('') : '<tr class="empty-row"><td colspan="7">暂无待审批申请 🎉</td></tr>'
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="8">暂无待审批申请</td></tr>'
   }
 
-  function openApprove(id, company, phone, name, license, cat) {
+  function openApprove(id, company, phone, name, license, cat, payState, subMchid) {
     currentEditId = id; rejectMode = false; approvalType = 'merchant'
     document.getElementById('approve-title').textContent = '商户入驻审批'
     document.getElementById('approve-info').innerHTML = `
       <b>店铺名称：</b>${company||'—'}<br>
       <b>联系人：</b>${name||'—'}&nbsp;&nbsp;<b>手机：</b>${phone}<br>
       <b>营业执照：</b>${license||'—'}<br>
-      <b>经营品类：</b>${cat||'—'}
+      <b>经营品类：</b>${cat||'—'}<br>
+      <b>微信进件状态：</b>${payState || 'DRAFT'}${subMchid ? `（子商户号：${subMchid}）` : ''}<br>
+      <span style="color:#16a34a">管理员批准后，系统会直接使用这里保存的资料提交微信进件。</span>
     `
     document.getElementById('reject-area').style.display = 'none'
     document.getElementById('reject-reason').value = ''
-    document.getElementById('approveConfirmBtn').textContent = '批准入驻'
+    document.getElementById('approveConfirmBtn').textContent = '批准并提交进件'
     document.getElementById('approveConfirmBtn').onclick = submitApproval
     document.getElementById('rejectBtn').textContent = '拒绝入驻'
     rejectMode = false
@@ -679,7 +682,9 @@
     rejectMode = !rejectMode
     document.getElementById('reject-area').style.display = rejectMode ? 'block' : 'none'
     document.getElementById('rejectBtn').textContent = rejectMode ? '取消拒绝' : '拒绝入驻'
-    document.getElementById('approveConfirmBtn').textContent = rejectMode ? '确认拒绝' : '批准入驻'
+    document.getElementById('approveConfirmBtn').textContent = rejectMode
+      ? '确认拒绝'
+      : (approvalType === 'merchant' ? '批准并提交进件' : '批准入驻')
     document.getElementById('approveConfirmBtn').onclick = rejectMode ? submitRejection : submitApproval
   }
 

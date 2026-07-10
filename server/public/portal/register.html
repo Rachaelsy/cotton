@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -383,6 +383,57 @@
       text-decoration: none;
     }
 
+    .attach-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .attach-card {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfefb;
+    }
+
+    .attach-card label {
+      margin-bottom: 8px;
+    }
+
+    .attach-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .attach-row input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .attach-btn {
+      flex: 0 0 auto;
+      height: 48px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #2f9657, #1b6a3e);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .attach-preview {
+      display: block;
+      width: 100%;
+      max-height: 120px;
+      margin-top: 8px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #eef4ee;
+    }
+
     .hidden { display: none; }
 
     @media (max-width: 980px) {
@@ -423,6 +474,7 @@
         margin-bottom: 18px;
       }
       .form-grid { grid-template-columns: 1fr; }
+      .attach-grid { grid-template-columns: 1fr; }
       .geo-box { grid-template-columns: 1fr; }
     }
   </style>
@@ -525,6 +577,46 @@
             <input id="product_category" placeholder="如：化肥、农药、种子">
           </div>
         </div>
+
+        <div id="mcUploads" class="field full hidden">
+          <div class="field full" style="margin-top:8px">
+            <label>进件材料 *</label>
+            <div class="attach-grid">
+              <div class="attach-card">
+                <label for="license_copy_url">营业执照图片</label>
+                <div class="attach-row">
+                  <input id="license_copy_url" readonly placeholder="上传后自动填写">
+                  <button type="button" class="attach-btn" onclick="uploadPublicImage('license_copy_url', 'license_copy_preview')">上传</button>
+                </div>
+                <img id="license_copy_preview" class="attach-preview hidden" alt="营业执照预览">
+              </div>
+              <div class="attach-card">
+                <label for="id_card_copy_url">身份证人像面</label>
+                <div class="attach-row">
+                  <input id="id_card_copy_url" readonly placeholder="上传后自动填写">
+                  <button type="button" class="attach-btn" onclick="uploadPublicImage('id_card_copy_url', 'id_card_copy_preview')">上传</button>
+                </div>
+                <img id="id_card_copy_preview" class="attach-preview hidden" alt="身份证人像面预览">
+              </div>
+              <div class="attach-card">
+                <label for="id_card_national_url">身份证国徽面</label>
+                <div class="attach-row">
+                  <input id="id_card_national_url" readonly placeholder="上传后自动填写">
+                  <button type="button" class="attach-btn" onclick="uploadPublicImage('id_card_national_url', 'id_card_national_preview')">上传</button>
+                </div>
+                <img id="id_card_national_preview" class="attach-preview hidden" alt="身份证国徽面预览">
+              </div>
+              <div class="attach-card">
+                <label for="mini_program_pic_url">经营页面截图</label>
+                <div class="attach-row">
+                  <input id="mini_program_pic_url" readonly placeholder="上传后自动填写">
+                  <button type="button" class="attach-btn" onclick="uploadPublicImage('mini_program_pic_url', 'mini_program_pic_preview')">上传</button>
+                </div>
+                <img id="mini_program_pic_preview" class="attach-preview hidden" alt="经营页面截图预览">
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <button class="submit-btn" id="submitBtn" onclick="submitApply()">提交入驻申请</button>
@@ -546,7 +638,7 @@
         cls: 'mc',
         kicker: '商户入驻',
         title: '商户入驻申请',
-        sub: '填写店铺和经营信息，审核通过后即可进入商户工作台。'
+        sub: '填写店铺和经营信息，审核通过后系统会自动提交微信进件。'
       }
     }
 
@@ -560,6 +652,7 @@
       document.querySelectorAll('.role-btn').forEach(b => b.classList.toggle('active', b.dataset.role === r))
       document.getElementById('opFields').classList.toggle('hidden', r !== 'operator')
       document.getElementById('mcFields').classList.toggle('hidden', r !== 'merchant')
+      document.getElementById('mcUploads').classList.toggle('hidden', r !== 'merchant')
       document.getElementById('msg').textContent = ''
     }
 
@@ -586,6 +679,39 @@
         },
         { enableHighAccuracy: true, timeout: 8000 }
       )
+    }
+
+    async function uploadPublicImage(fieldId, previewId) {
+      const picker = document.createElement('input')
+      picker.type = 'file'
+      picker.accept = 'image/*'
+      picker.onchange = async () => {
+        const file = picker.files && picker.files[0]
+        if (!file) return
+        const form = new FormData()
+        form.append('file', file)
+        const target = document.getElementById(fieldId)
+        const preview = document.getElementById(previewId)
+        if (target) target.placeholder = '上传中...'
+        try {
+          const res = await fetch('/api/upload/public', {
+            method: 'POST',
+            body: form
+          })
+          const data = await res.json()
+          if (data.code !== 200 || !data.data || !data.data.url) throw new Error(data.msg || '上传失败')
+          if (target) target.value = data.data.url
+          if (preview) {
+            preview.src = data.data.url
+            preview.classList.remove('hidden')
+          }
+        } catch (err) {
+          alert(err.message || '图片上传失败')
+        } finally {
+          if (target) target.placeholder = '上传后自动填写'
+        }
+      }
+      picker.click()
     }
 
     async function submitApply() {
@@ -627,6 +753,17 @@
           msg.textContent = '请填写店铺名称和联系人'
           return
         }
+        const required = [
+          'company_name', 'real_name', 'contact_mobile', 'merchant_shortname',
+          'service_phone', 'mini_program_appid', 'account_bank', 'account_name', 'account_number',
+          'license_copy_url', 'id_card_copy_url', 'id_card_national_url', 'mini_program_pic_url'
+        ]
+        const missing = required.filter(f => !v(f))
+        if (missing.length > 0) {
+          msg.className = 'msg err'
+          msg.textContent = '请把商户资料补全后再提交'
+          return
+        }
         api = '/api/admin/apply'
         body = {
           phone,
@@ -634,7 +771,23 @@
           real_name: v('real_name'),
           company_name: v('company_name'),
           business_license: v('business_license'),
-          product_category: v('product_category')
+          product_category: v('product_category'),
+          contact_mobile: v('contact_mobile'),
+          contact_email: v('contact_email'),
+          subject_type: v('subject_type') || 'SUBJECT_TYPE_INDIVIDUAL',
+          legal_person: v('legal_person') || v('real_name'),
+          id_card_name: v('id_card_name') || v('real_name'),
+          id_card_number: v('id_card_number'),
+          merchant_shortname: v('merchant_shortname'),
+          service_phone: v('service_phone'),
+          mini_program_appid: v('mini_program_appid'),
+          account_bank: v('account_bank'),
+          account_name: v('account_name'),
+          account_number: v('account_number'),
+          license_copy_url: v('license_copy_url'),
+          id_card_copy_url: v('id_card_copy_url'),
+          id_card_national_url: v('id_card_national_url'),
+          mini_program_pic_url: v('mini_program_pic_url')
         }
       }
 
