@@ -21,6 +21,34 @@
     <view wx:elif="{{loadError}}" class="notice-card weak">{{loadError}}</view>
 
     <view class="section">
+      <view class="section-head"><text class="section-title">互动学习</text><text class="section-more" bindtap="onAskExpert">向专家提问</text></view>
+      <view class="interact-grid">
+        <view class="interact-card main" bindtap="onAskExpert">
+          <text class="interact-icon">问</text>
+          <view class="interact-text">
+            <text class="interact-title">问平台专家</text>
+            <text class="interact-desc">种植、病虫害、水肥问题都可以提交</text>
+          </view>
+        </view>
+        <view class="interact-card" bindtap="onAskExpertAi">
+          <text class="interact-icon">AI</text>
+          <view class="interact-text">
+            <text class="interact-title">AI 陪练</text>
+            <text class="interact-desc">边学边问，快速复习课程要点</text>
+          </view>
+        </view>
+      </view>
+      <view class="quick-wrap">
+        <text class="quick-title">常见问题</text>
+        <view class="quick-list">
+          <view class="quick-chip" wx:for="{{quickQuestions}}" wx:key="*this" bindtap="onQuickQuestion" data-question="{{item}}">
+            <text>{{item}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
       <view class="section-head"><text class="section-title">{{copy.onlineExperts}}</text><text class="section-more" bindtap="onAskExpert">{{copy.askNow}}</text></view>
       <scroll-view class="expert-row" scroll-x enhanced show-scrollbar="{{false}}">
         <view class="expert-card" wx:for="{{experts}}" wx:key="id" bindtap="onExpertTap" data-id="{{item.id}}">
@@ -33,6 +61,24 @@
           <text class="expert-online {{item.online ? 'on' : ''}}">{{item.online ? copy.online : copy.offline}}</text>
         </view>
       </scroll-view>
+    </view>
+
+    <view class="section" wx:if="{{myQuestions.length}}">
+      <view class="section-head"><text class="section-title">我的提问</text><text class="section-more" bindtap="loadMyQuestions">刷新</text></view>
+      <view class="question-card" wx:for="{{myQuestions}}" wx:key="id">
+        <view class="question-row">
+          <text class="question-category">{{item.category}}</text>
+          <text class="question-status status-{{item.status}}">{{item.statusLabel}}</text>
+        </view>
+        <text class="question-text">{{item.question}}</text>
+        <view class="question-record-images" wx:if="{{item.images && item.images.length}}">
+          <image wx:for="{{item.images}}" wx:key="url" src="{{item.src}}" mode="aspectFill" bindtap="previewRecordImage" data-url="{{item.src}}"></image>
+        </view>
+        <view class="answer-box" wx:if="{{item.reply}}">
+          <text class="answer-label">专家回复</text>
+          <text class="answer-text">{{item.reply}}</text>
+        </view>
+      </view>
     </view>
 
     <view class="section">
@@ -71,4 +117,47 @@
     </view>
     <view class="bottom-gap"></view>
   </scroll-view>
+
+  <view class="question-modal-mask" wx:if="{{showQuestionModal}}" catchtap="closeQuestionModal" style="padding-top: {{statusBarHeight + 72}}px;">
+    <view class="question-modal" catchtap="noop">
+      <view class="question-modal-head">
+        <text class="question-modal-title">向专家提问</text>
+        <text class="question-modal-close" bindtap="closeQuestionModal">×</text>
+      </view>
+      <view class="question-modal-body">
+        <view class="question-category-list">
+          <view class="question-category-chip {{questionForm.category === item ? 'on' : ''}}" wx:for="{{questionCategories}}" wx:key="*this" data-category="{{item}}" bindtap="onQuestionCategoryTap">
+            <text>{{item}}</text>
+          </view>
+        </view>
+        <picker mode="selector" range="{{plotOptions}}" value="{{plotIndex}}" bindchange="onQuestionPlotChange">
+          <view class="question-picker">
+            <text>{{plotOptions[plotIndex] || '选择地块'}}</text>
+            <text class="question-picker-arrow">›</text>
+          </view>
+        </picker>
+        <input class="question-input" value="{{questionForm.cropStage}}" data-field="cropStage" bindinput="onQuestionInput" placeholder="棉花生育期，如：蕾期、花铃期（选填）" />
+        <textarea class="question-textarea" value="{{questionForm.question}}" data-field="question" bindinput="onQuestionInput" maxlength="1000" placeholder="请描述你遇到的问题，例如叶片症状、天气、用药或浇水情况"></textarea>
+        <view class="question-image-block">
+          <view class="question-image-head">
+            <text>现场图片</text>
+            <text class="question-image-tip">最多3张，选填</text>
+          </view>
+          <view class="question-image-list">
+            <view class="question-image-item" wx:for="{{questionImages}}" wx:key="url">
+              <image src="{{item.src}}" mode="aspectFill" bindtap="previewQuestionImage" data-url="{{item.src}}"></image>
+              <text class="question-image-remove" bindtap="removeQuestionImage" data-index="{{index}}">×</text>
+            </view>
+            <view class="question-image-add" wx:if="{{questionImages.length < 3}}" bindtap="chooseQuestionImages">
+              <text>{{uploadingQuestionImages ? '上传中' : '+ 图片'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="question-modal-actions">
+        <button class="question-btn plain" bindtap="closeQuestionModal">取消</button>
+        <button class="question-btn primary" loading="{{questionSubmitting}}" bindtap="submitQuestion">提交给管理员</button>
+      </view>
+    </view>
+  </view>
 </view>

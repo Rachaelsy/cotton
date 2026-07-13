@@ -7,6 +7,8 @@ const db       = require('../db/database')
 const multer   = require('multer')
 const path     = require('path')
 const fs       = require('fs')
+const profitSharing = require('../utils/profit-sharing')
+const refunds = require('../utils/refunds')
 const router   = express.Router()
 
 // ── 图片上传配置 ─────────────────────────────────────────────
@@ -149,8 +151,21 @@ router.get('/aftersale', merchantAuth, async (req, res) => {
   try {
     const { status } = req.query
     const mid = req.merchant.merchant_id
+    await refunds.syncPendingSupplyRefunds({ merchantId: mid }).catch(error => {
+      console.error('[refund-sync-merchant-aftersale]', error.message)
+    })
     let sql = `
-      SELECT a.*, o.total AS order_total
+      SELECT a.*, o.total AS order_total,
+             (
+               SELECT wr.status FROM wechat_refunds wr
+               WHERE wr.order_type='supply' AND wr.aftersale_id=a.id
+               ORDER BY wr.id DESC LIMIT 1
+             ) AS refund_status,
+             (
+               SELECT wr.out_refund_no FROM wechat_refunds wr
+               WHERE wr.order_type='supply' AND wr.aftersale_id=a.id
+               ORDER BY wr.id DESC LIMIT 1
+             ) AS out_refund_no
       FROM aftersale_requests a
       LEFT JOIN orders o ON o.id = a.order_id
       WHERE a.merchant_id = ?
@@ -169,18 +184,36 @@ router.patch('/aftersale/:id/handle', merchantAuth, async (req, res) => {
   if (!['approved', 'rejected'].includes(action)) return fail(res, '操作类型无效')
   try {
     const [rows] = await db.query(
-      'SELECT id FROM aftersale_requests WHERE id=? AND merchant_id=?',
+      'SELECT id, order_id, reason, other_reason FROM aftersale_requests WHERE id=? AND merchant_id=?',
       [id, req.merchant.merchant_id]
     )
     if (!rows.length) return fail(res, '记录不存在或无权限', 404)
+    const ar = rows[0]
+    if (action === 'approved') {
+      const reason = handle_note || ar.other_reason || ar.reason || '商户同意售后退款'
+      const refund = await refunds.createSupplyRefund({
+        orderId: ar.order_id,
+        merchantId: req.merchant.merchant_id,
+        aftersaleId: Number(id),
+        reason
+      })
+      await db.query(
+        'UPDATE aftersale_requests SET status=?, handle_note=? WHERE id=?',
+        ['approved', handle_note || '已发起微信退款', id]
+      )
+      return ok(res, {
+        out_refund_no: refund.refund?.out_refund_no || '',
+        refund_status: refund.status || ''
+      }, refund.status === 'SUCCESS' ? '退款成功' : '微信退款已提交，等待微信处理结果')
+    }
+
     await db.query(
       'UPDATE aftersale_requests SET status=?, handle_note=? WHERE id=?',
-      [action, handle_note || '', id]
+      ['rejected', handle_note || '', id]
     )
-    const [[ar]] = await db.query('SELECT order_id FROM aftersale_requests WHERE id=?', [id])
-    if (ar) await db.query("UPDATE orders SET status='refunded' WHERE id=?", [ar.order_id])
-    return ok(res, null, action === 'approved' ? '已同意售后' : '已拒绝申请')
-  } catch(e) { console.error('[merchant-aftersale-handle]', e); return fail(res, '服务器错误', 500) }
+    await db.query("UPDATE orders SET status='completed' WHERE id=?", [ar.order_id])
+    return ok(res, null, '已拒绝申请')
+  } catch(e) { console.error('[merchant-aftersale-handle]', e); return fail(res, e.message || '服务器错误', e.statusCode || 500) }
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -274,7 +307,7 @@ router.get('/finance', merchantAuth, async (req, res) => {
     const commissionRate = parseFloat(merchantInfo?.commission_rate || 5) / 100
     const keepRate = parseFloat((1 - commissionRate).toFixed(4))
 
-    // 可提现余额（扣除佣金后）
+    // 已解冻资金（扣除佣金后，提现在微信支付商户平台操作）
     const [[avail]] = await db.query(`
       SELECT IFNULL(SUM(o.total * ?), 0) AS amount
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
@@ -293,7 +326,7 @@ router.get('/finance', merchantAuth, async (req, res) => {
       SELECT
         COUNT(*) AS monthly_orders,
         IFNULL(SUM(o.total), 0) AS monthly_sales,
-        IFNULL(SUM(CASE WHEN o.status='refund' THEN o.total ELSE 0 END), 0) AS monthly_refund
+        IFNULL(SUM(CASE WHEN o.status='refunded' THEN o.total ELSE 0 END), 0) AS monthly_refund
       FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
       WHERE DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')
     `, [mid])
@@ -302,21 +335,23 @@ router.get('/finance', merchantAuth, async (req, res) => {
     const [settleRows] = await db.query(`
       SELECT o.id, o.order_no, o.total, o.created_at,
              o.fund_status, o.confirmed_at, o.auto_confirmed,
+             ps.state AS profit_sharing_state,
+             ps.amount_fen AS profit_sharing_amount_fen,
+             ps.error_msg AS profit_sharing_error,
+             ps.wechat_order_id AS profit_sharing_wechat_order_id,
              GROUP_CONCAT(i.name ORDER BY i.id SEPARATOR '、') AS prod_names
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      FROM orders o
+      JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      LEFT JOIN wechat_profit_sharing_orders ps ON ps.order_type='supply' AND ps.order_id=o.id
       WHERE o.status='completed'
       GROUP BY o.id ORDER BY o.created_at DESC LIMIT 100
     `, [mid])
 
-    // 提现记录
-    const [wdRows] = await db.query(
-      'SELECT * FROM withdrawals WHERE merchant_id=? ORDER BY created_at DESC LIMIT 30',
-      [mid]
-    )
-
     const now = Date.now()
     const commissionPct = parseFloat((commissionRate * 100).toFixed(2))
+    const freezeDays = profitSharing.getProfitSharingFreezeDays()
     return ok(res, {
+      settlement_freeze_days: freezeDays,
       commission_rate:   commissionPct,
       available_balance: parseFloat(avail.amount).toFixed(2),
       frozen_balance:    parseFloat(frozen.amount).toFixed(2),
@@ -327,10 +362,10 @@ router.get('/finance', merchantAuth, async (req, res) => {
         const amount     = parseFloat(s.total)
         const commission = parseFloat((amount * commissionRate).toFixed(2))
         const actual     = parseFloat((amount * keepRate).toFixed(2))
-        // 距解冻剩余天数（确认收货后 7 天）
+        // 距解冻剩余天数（确认收货后按当前分账冻结配置）
         let daysLeft = null
         if (s.fund_status === 'frozen' && s.confirmed_at) {
-          const releaseAt = new Date(s.confirmed_at).getTime() + 7 * 24 * 3600 * 1000
+          const releaseAt = new Date(s.confirmed_at).getTime() + freezeDays * 24 * 3600 * 1000
           daysLeft = Math.max(0, Math.ceil((releaseAt - now) / (24 * 3600 * 1000)))
         }
         return {
@@ -341,71 +376,27 @@ router.get('/finance', merchantAuth, async (req, res) => {
           commission,
           actual,
           fund_status:  s.fund_status,
+          profit_sharing_state: s.profit_sharing_state || '',
+          profit_sharing_amount: s.profit_sharing_amount_fen == null
+            ? commission
+            : parseFloat((Number(s.profit_sharing_amount_fen || 0) / 100).toFixed(2)),
+          profit_sharing_error: s.profit_sharing_error || '',
+          profit_sharing_wechat_order_id: s.profit_sharing_wechat_order_id || '',
           days_left:    daysLeft,
           confirmed_at: s.confirmed_at ? String(s.confirmed_at).slice(0, 10) : null,
           auto_confirmed: !!s.auto_confirmed,
           date:         String(s.created_at).slice(0, 10)
         }
-      }),
-      withdrawals: wdRows.map(w => ({
-        id:         'WD' + String(w.id).padStart(4, '0'),
-        amount:     parseFloat(w.amount),
-        status:     w.status === 'paid' ? '已到账' : w.status === 'rejected' ? '已拒绝' : '处理中',
-        note:       w.note || '',
-        apply_date: String(w.created_at).slice(0, 10),
-        arrive_date: w.paid_at ? String(w.paid_at).slice(0, 10) : '—'
-      }))
+      })
     })
   } catch(e) { console.error('[merchant-finance]', e); return fail(res, '服务器错误', 500) }
 })
 
 // ─────────────────────────────────────────────────────────────
-// POST /api/merchant/withdraw — 发起提现
+// POST /api/merchant/withdraw — 已停用：资金提现统一在微信支付商户平台处理
 // ─────────────────────────────────────────────────────────────
 router.post('/withdraw', merchantAuth, async (req, res) => {
-  const mid = req.merchant.merchant_id
-  const amount = parseFloat(req.body.amount)
-  if (!amount || amount < 1) return fail(res, '提现金额不能少于 1 元')
-  try {
-    const [[pending]] = await db.query(
-      "SELECT id FROM withdrawals WHERE merchant_id=? AND status='pending' LIMIT 1",
-      [mid]
-    )
-    if (pending) return fail(res, '已有提现申请处理中，请等待审核完成后再申请')
-
-    const [[merchantInfo]] = await db.query(
-      'SELECT commission_rate FROM merchants WHERE id=?', [mid]
-    )
-    const commissionRate = parseFloat(merchantInfo?.commission_rate || 5) / 100
-    const keepRate = parseFloat((1 - commissionRate).toFixed(4))
-
-    // 查询可提现余额
-    const [[avail]] = await db.query(`
-      SELECT IFNULL(SUM(o.total * ?), 0) AS amount
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
-      WHERE o.fund_status='available'
-    `, [keepRate, mid])
-    const available = parseFloat(avail.amount)
-    if (amount > available + 0.01) return fail(res, `可提现余额不足，当前可提现 ¥${available.toFixed(2)}`)
-    if (Math.abs(amount - available) > 0.01) return fail(res, '当前仅支持全额提现，请刷新后按可提现余额发起')
-
-    // 提交申请后先锁定为提现中，审核通过才转为已提现；拒绝会退回可提现
-    const [oRows] = await db.query(`
-      SELECT o.id, ROUND(o.total * ?, 2) AS net
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
-      WHERE o.fund_status='available'
-      GROUP BY o.id ORDER BY o.confirmed_at ASC
-    `, [keepRate, mid])
-    const toWithdraw = oRows.map(row => row.id)
-    if (!toWithdraw.length) return fail(res, '当前没有可提现订单')
-    if (toWithdraw.length) {
-      const ph = toWithdraw.map(() => '?').join(',')
-      await db.query(`UPDATE orders SET fund_status='withdrawing' WHERE id IN (${ph})`, toWithdraw)
-    }
-    await db.query('INSERT INTO withdrawals (merchant_id, amount) VALUES (?, ?)',
-      [mid, amount.toFixed(2)])
-    return ok(res, null, `提现申请已提交，¥${amount.toFixed(2)} 将在 1-3 个工作日内到账`)
-  } catch(e) { console.error('[merchant-withdraw]', e); return fail(res, '服务器错误', 500) }
+  return fail(res, '平台内提现已停用，请到微信支付商户平台提现', 410)
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -585,6 +576,9 @@ router.get('/orders', merchantAuth, async (req, res) => {
   try {
     const { status } = req.query
     const mid = req.merchant.merchant_id
+    await refunds.syncPendingSupplyRefunds({ merchantId: mid }).catch(error => {
+      console.error('[refund-sync-merchant-orders]', error.message)
+    })
     let sql = `
       SELECT o.id, o.order_no, o.farmer_name, o.farmer_phone,
              o.receiver_name, o.receiver_phone, o.address,
@@ -645,9 +639,16 @@ router.patch('/orders/:id/refund', merchantAuth, async (req, res) => {
       [req.params.id, mid]
     )
     if (!rows.length) return fail(res, '订单不存在', 404)
-    await db.query(`UPDATE orders SET status='completed' WHERE id=?`, [req.params.id])
-    return ok(res, null, '退款已处理')
-  } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
+    const refund = await refunds.createSupplyRefund({
+      orderId: Number(req.params.id),
+      merchantId: mid,
+      reason: req.body.reason || '商户后台发起退款'
+    })
+    return ok(res, {
+      out_refund_no: refund.refund?.out_refund_no || '',
+      refund_status: refund.status || ''
+    }, refund.status === 'SUCCESS' ? '退款成功' : '微信退款已提交，等待微信处理结果')
+  } catch(e) { console.error(e); return fail(res, e.message || '服务器错误', e.statusCode || 500) }
 })
 
 router.delete('/orders/:id', merchantAuth, async (req, res) => {
@@ -701,7 +702,7 @@ router.get('/orders/export', async (req, res) => {
     const [rows] = await db.query(sql, params)
 
     const header = ['订单编号','买家姓名','买家电话','收货人','收货电话','收货地址','商品明细','商品小计','运费','实付','支付方式','订单状态','物流单号','下单时间']
-    const statusMap = { pending_ship: '待发货', shipped: '已发货', completed: '已完成', aftersale: '售后中', refund: '退款中' }
+    const statusMap = { pending_ship: '待发货', shipped: '已发货', completed: '已完成', aftersale: '售后中', refund: '退款中', refunded: '退款成功' }
     const payMap   = { wechat: '微信支付', transfer: '银行转账', cod: '货到付款' }
 
     const escCsv = v => {

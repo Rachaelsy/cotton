@@ -21,14 +21,38 @@ function buildProfitSharingOutOrderNo(orderType, orderId) {
   return `PS_${String(orderType || 'ORDER').toUpperCase()}_${orderId}`
 }
 
+function getPlatformReceiverAccount(cfg = {}) {
+  return String(process.env.WECHAT_PAY_PROFIT_SHARING_RECEIVER_MCH_ID || cfg.spMchid || '').trim()
+}
+
+function getPlatformReceiverName() {
+  const value = String(process.env.WECHAT_PAY_PROFIT_SHARING_RECEIVER_NAME || '').trim()
+  return /^(TODO|your_|xxx)/i.test(value) ? '' : value
+}
+
+function getProfitSharingFreezeDays() {
+  const days = Number(process.env.WECHAT_PAY_PROFIT_SHARING_FREEZE_DAYS == null
+    ? 7
+    : process.env.WECHAT_PAY_PROFIT_SHARING_FREEZE_DAYS)
+  return Number.isFinite(days) && days >= 0 ? days : 7
+}
+
+function getProfitSharingCutoffDate() {
+  const days = getProfitSharingFreezeDays()
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+}
+
 function buildPlatformReceiver({ cfg, subMchid }) {
-  return {
+  const receiver = {
     sub_mchid: subMchid,
     appid: cfg.spAppid,
     type: 'MERCHANT_ID',
-    account: cfg.spMchid,
+    account: getPlatformReceiverAccount(cfg),
     relation_type: 'SERVICE_PROVIDER'
   }
+  const receiverName = getPlatformReceiverName()
+  if (receiverName) receiver.name = wxpay.encryptSensitive(receiverName, cfg)
+  return receiver
 }
 
 function buildSupplyProfitSharingBody({ cfg, order }) {
@@ -42,7 +66,7 @@ function buildSupplyProfitSharingBody({ cfg, order }) {
     out_order_no: order.outOrderNo || buildProfitSharingOutOrderNo(order.orderType || 'supply', order.orderId),
     receivers: [{
       type: 'MERCHANT_ID',
-      account: cfg.spMchid,
+      account: getPlatformReceiverAccount(cfg),
       amount,
       description: 'Cotton platform service fee'
     }],
@@ -68,8 +92,13 @@ function isReceiverAlreadyExists(error) {
 }
 
 async function ensurePlatformReceiver(cfg, subMchid) {
+  const sensitiveCfg = wxpay.getNotifyConfig() || cfg
+  const receiver = buildPlatformReceiver({ cfg: sensitiveCfg, subMchid })
+  if (!receiver.name) {
+    throw new Error('WECHAT_PAY_PROFIT_SHARING_RECEIVER_NAME is required for MERCHANT_ID profit-sharing receiver')
+  }
   try {
-    return await wxpay.addProfitSharingReceiver(cfg, buildPlatformReceiver({ cfg, subMchid }))
+    return await wxpay.addProfitSharingReceiver(sensitiveCfg, receiver)
   } catch (error) {
     if (isReceiverAlreadyExists(error)) return { existed: true }
     throw error
@@ -84,6 +113,7 @@ async function savePendingSupplyOrder({ order, transaction }) {
   if (!transactionId) throw new Error('Missing WeChat Pay transaction_id for profit sharing')
 
   const db = getDb()
+  const cfg = wxpay.getServiceProviderConfig() || {}
   const outOrderNo = buildProfitSharingOutOrderNo('supply', order.id)
   await db.query(`
     INSERT INTO wechat_profit_sharing_orders
@@ -105,7 +135,7 @@ async function savePendingSupplyOrder({ order, transaction }) {
     outOrderNo,
     transactionId,
     order.subMchid,
-    process.env.WECHAT_PAY_SP_MCH_ID || process.env.WECHAT_PAY_MCH_ID || '',
+    getPlatformReceiverAccount(cfg),
     amountFen,
     Number(order.commissionRate || 0)
   ])
@@ -195,7 +225,7 @@ async function releaseEligibleSupplyProfitSharing() {
         JOIN orders o ON o.id=ps.order_id AND ps.order_type='supply'
        WHERE o.fund_status='frozen'
          AND o.confirmed_at IS NOT NULL
-         AND o.confirmed_at <= DATE_SUB(NOW(), INTERVAL 7 DAY)
+         AND o.confirmed_at <= ?
          AND ps.state IN ('PENDING', 'FAILED', 'PROCESSING')
          AND NOT EXISTS (
            SELECT 1 FROM aftersale_requests a
@@ -203,7 +233,7 @@ async function releaseEligibleSupplyProfitSharing() {
          )
        ORDER BY ps.id ASC
        LIMIT 20
-    `)
+    `, [getProfitSharingCutoffDate()])
     rows = result[0]
   } catch (error) {
     if (error.code === 'ER_NO_SUCH_TABLE') return { total: 0, success: 0, skipped: true }
@@ -225,6 +255,10 @@ async function releaseEligibleSupplyProfitSharing() {
 module.exports = {
   calculateCommissionFen,
   buildProfitSharingOutOrderNo,
+  getPlatformReceiverAccount,
+  getPlatformReceiverName,
+  getProfitSharingFreezeDays,
+  getProfitSharingCutoffDate,
   buildPlatformReceiver,
   buildSupplyProfitSharingBody,
   normalizeState,

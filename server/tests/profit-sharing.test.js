@@ -37,6 +37,18 @@ async function run() {
     relation_type: 'SERVICE_PROVIDER'
   })
 
+  process.env.WECHAT_PAY_PROFIT_SHARING_RECEIVER_MCH_ID = '1900000200'
+  assert.strictEqual(profitSharing.getPlatformReceiverAccount(cfg), '1900000200')
+  assert.strictEqual(
+    profitSharing.buildPlatformReceiver({ cfg, subMchid: '1700000001' }).account,
+    '1900000200'
+  )
+  delete process.env.WECHAT_PAY_PROFIT_SHARING_RECEIVER_MCH_ID
+
+  process.env.WECHAT_PAY_PROFIT_SHARING_FREEZE_DAYS = '0'
+  assert.strictEqual(profitSharing.getProfitSharingFreezeDays(), 0)
+  delete process.env.WECHAT_PAY_PROFIT_SHARING_FREEZE_DAYS
+
   assert.strictEqual(profitSharing.normalizeState({ state: 'finished' }), 'FINISHED')
   assert.strictEqual(profitSharing.normalizeState({ status: 'processing' }), 'PROCESSING')
   assert.strictEqual(profitSharing.isFinishedState('SUCCESS'), true)

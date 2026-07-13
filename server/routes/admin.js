@@ -8,6 +8,7 @@ const path     = require('path')
 const fs       = require('fs')
 const db       = require('../db/database')
 const wxpay    = require('../utils/wechat-pay')
+const profitSharing = require('../utils/profit-sharing')
 const { broadcastAnnouncement } = require('../utils/notify')
 
 // ── 图片上传配置 ─────────────────────────────────────────
@@ -156,6 +157,40 @@ function normalizeExpertContentBody(body = {}) {
   }
 }
 
+const EXPERT_QUESTION_STATUS = {
+  pending: '待回复',
+  replied: '已回复',
+  closed: '已关闭'
+}
+
+function parseJson(value, fallback) {
+  if (!value) return fallback
+  if (Array.isArray(value)) return value
+  try { return JSON.parse(value) } catch { return fallback }
+}
+
+function normalizeExpertQuestion(row = {}) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    farmerName: row.farmer_name || '农户',
+    farmerPhone: row.farmer_phone || '',
+    category: row.category || '种植咨询',
+    cropStage: row.crop_stage || '',
+    plotId: row.plot_id || null,
+    plotName: row.plot_name || '',
+    question: row.question || '',
+    images: parseJson(row.images, []),
+    status: row.status || 'pending',
+    statusLabel: EXPERT_QUESTION_STATUS[row.status] || '待回复',
+    reply: row.reply || '',
+    repliedBy: row.replied_by || null,
+    repliedAt: row.replied_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
 // ── 管理员身份验证中间件 ──────────────────────────────────
 const R_OK   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const R_FAIL = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
@@ -201,6 +236,106 @@ router.post('/upload', adminAuth, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ code: 400, msg: '未选择图片' })
   res.json({ code: 200, data: { url: `/uploads/products/${req.file.filename}` } })
 })
+
+// ── 专家账号管理：管理员只管理账号，不直接处理专家业务 ─────────
+function parseExpertSpecialties(value) {
+  if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean)
+  return String(value || '')
+    .split(/[,，、\n]/)
+    .map(v => v.trim())
+    .filter(Boolean)
+}
+
+router.get('/experts', adminAuth, async (_req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT id,phone,name,title,org,avatar,specialties,bio,is_active,created_at,updated_at
+       FROM experts ORDER BY id DESC`
+    )
+    return R_OK(res, rows)
+  } catch (e) {
+    console.error('[admin-experts-list]', e)
+    return R_FAIL(res, '专家账号加载失败', 500)
+  }
+})
+
+router.post('/experts', adminAuth, async (req, res) => {
+  try {
+    const phone = String(req.body.phone || '').trim()
+    const password = String(req.body.password || '').trim()
+    const name = String(req.body.name || '').trim()
+    const title = String(req.body.title || '').trim()
+    const org = String(req.body.org || 'Cotton 棉花平台').trim()
+    const avatar = String(req.body.avatar || '专').trim()
+    const specialties = JSON.stringify(parseExpertSpecialties(req.body.specialties))
+    const bio = String(req.body.bio || '').trim()
+    if (!/^1\d{10}$/.test(phone)) return R_FAIL(res, '请填写正确的专家手机号')
+    if (!password || password.length < 6) return R_FAIL(res, '专家密码不能少于6位')
+    if (!name) return R_FAIL(res, '请填写专家姓名')
+    const [exist] = await db.query('SELECT id FROM experts WHERE phone=?', [phone])
+    if (exist.length) return R_FAIL(res, '该专家手机号已存在')
+    const hash = await bcrypt.hash(password, 10)
+    await db.query(
+      `INSERT INTO experts (phone,password,name,title,org,avatar,specialties,bio,is_active)
+       VALUES (?,?,?,?,?,?,?,?,1)`,
+      [phone, hash, name, title, org, avatar, specialties, bio]
+    )
+    return R_OK(res, null, '专家账号已创建')
+  } catch (e) {
+    console.error('[admin-experts-create]', e)
+    return R_FAIL(res, '专家账号创建失败', 500)
+  }
+})
+
+router.put('/experts/:id', adminAuth, async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim()
+    const title = String(req.body.title || '').trim()
+    const org = String(req.body.org || 'Cotton 棉花平台').trim()
+    const avatar = String(req.body.avatar || '专').trim()
+    const specialties = JSON.stringify(parseExpertSpecialties(req.body.specialties))
+    const bio = String(req.body.bio || '').trim()
+    const password = String(req.body.password || '').trim()
+    if (!name) return R_FAIL(res, '请填写专家姓名')
+    const fields = ['name=?', 'title=?', 'org=?', 'avatar=?', 'specialties=?', 'bio=?']
+    const params = [name, title, org, avatar, specialties, bio]
+    if (password) {
+      if (password.length < 6) return R_FAIL(res, '专家密码不能少于6位')
+      fields.push('password=?')
+      params.push(await bcrypt.hash(password, 10))
+    }
+    params.push(req.params.id)
+    const [result] = await db.query(`UPDATE experts SET ${fields.join(',')} WHERE id=?`, params)
+    if (!result.affectedRows) return R_FAIL(res, '专家账号不存在', 404)
+    return R_OK(res, null, '专家账号已保存')
+  } catch (e) {
+    console.error('[admin-experts-update]', e)
+    return R_FAIL(res, '专家账号保存失败', 500)
+  }
+})
+
+router.patch('/experts/:id/status', adminAuth, async (req, res) => {
+  try {
+    const isActive = req.body.is_active ? 1 : 0
+    const [result] = await db.query('UPDATE experts SET is_active=? WHERE id=?', [isActive, req.params.id])
+    if (!result.affectedRows) return R_FAIL(res, '专家账号不存在', 404)
+    return R_OK(res, null, isActive ? '专家账号已启用' : '专家账号已停用')
+  } catch (e) {
+    console.error('[admin-experts-status]', e)
+    return R_FAIL(res, '专家账号状态更新失败', 500)
+  }
+})
+
+function expertMoved(req, res) {
+  return R_FAIL(res, '专家回复和课程上架已迁移到专家后台，请使用专家账号登录 /expert/login.html', 410)
+}
+router.all('/expert-upload', adminAuth, expertMoved)
+router.all('/expert-contents', adminAuth, expertMoved)
+router.all('/expert-contents/:id', adminAuth, expertMoved)
+router.all('/expert-contents/:id/toggle', adminAuth, expertMoved)
+router.all('/expert-questions', adminAuth, expertMoved)
+router.all('/expert-questions/:id/reply', adminAuth, expertMoved)
+router.all('/expert-questions/:id/status', adminAuth, expertMoved)
 
 // ── POST /api/admin/expert-upload（专家讲堂素材上传）────────
 router.post('/expert-upload', adminAuth, expertUpload.single('file'), (req, res) => {
@@ -282,6 +417,52 @@ router.delete('/expert-contents/:id', adminAuth, async (req, res) => {
     return R_OK(res, null, '已删除')
   } catch (e) {
     return R_FAIL(res, '删除失败', 500)
+  }
+})
+
+router.get('/expert-questions', adminAuth, async (req, res) => {
+  try {
+    const status = ['pending', 'replied', 'closed'].includes(req.query.status) ? req.query.status : ''
+    const sql = status
+      ? 'SELECT * FROM expert_questions WHERE status=? ORDER BY created_at DESC LIMIT 200'
+      : 'SELECT * FROM expert_questions ORDER BY created_at DESC LIMIT 200'
+    const params = status ? [status] : []
+    const [rows] = await db.query(sql, params)
+    return R_OK(res, rows.map(normalizeExpertQuestion))
+  } catch (e) {
+    console.error('[admin-expert-question-list]', e)
+    return R_FAIL(res, '专家提问加载失败', 500)
+  }
+})
+
+router.patch('/expert-questions/:id/reply', adminAuth, async (req, res) => {
+  try {
+    const reply = String(req.body.reply || '').trim()
+    if (reply.length < 2) return R_FAIL(res, '请填写回复内容')
+    const [result] = await db.query(
+      `UPDATE expert_questions
+       SET reply=?, status='replied', replied_by=?, replied_at=NOW()
+       WHERE id=?`,
+      [reply, req.admin.id, req.params.id]
+    )
+    if (!result.affectedRows) return R_FAIL(res, '提问不存在', 404)
+    return R_OK(res, null, '已回复农户')
+  } catch (e) {
+    console.error('[admin-expert-question-reply]', e)
+    return R_FAIL(res, '回复失败', 500)
+  }
+})
+
+router.patch('/expert-questions/:id/status', adminAuth, async (req, res) => {
+  try {
+    const status = ['pending', 'replied', 'closed'].includes(req.body.status) ? req.body.status : ''
+    if (!status) return R_FAIL(res, '状态不正确')
+    const [result] = await db.query('UPDATE expert_questions SET status=? WHERE id=?', [status, req.params.id])
+    if (!result.affectedRows) return R_FAIL(res, '提问不存在', 404)
+    return R_OK(res, null, '状态已更新')
+  } catch (e) {
+    console.error('[admin-expert-question-status]', e)
+    return R_FAIL(res, '状态更新失败', 500)
   }
 })
 
@@ -822,9 +1003,7 @@ router.get('/finance', adminAuth, async (req, res) => {
         m.id AS merchant_id, m.company_name, m.commission_rate, u.phone,
         COALESCE(cs.total_sales,  0) AS total_sales,
         COALESCE(av.available,    0) AS available_amount,
-        COALESCE(fr.frozen,       0) AS frozen_amount,
-        COALESCE(wp.withdrawn,    0) AS withdrawn_amount,
-        COALESCE(pw.pending_cnt,  0) AS pending_withdrawals
+        COALESCE(fr.frozen,       0) AS frozen_amount
       FROM merchants m
       LEFT JOIN users u ON u.id = m.user_id
       LEFT JOIN (
@@ -842,84 +1021,24 @@ router.get('/finance', adminAuth, async (req, res) => {
         FROM order_items oi JOIN orders o ON o.id = oi.order_id
         WHERE o.fund_status = 'frozen' GROUP BY oi.merchant_id
       ) fr ON fr.merchant_id = m.id
-      LEFT JOIN (
-        SELECT merchant_id, SUM(amount) AS withdrawn
-        FROM withdrawals WHERE status = 'paid' GROUP BY merchant_id
-      ) wp ON wp.merchant_id = m.id
-      LEFT JOIN (
-        SELECT merchant_id, COUNT(*) AS pending_cnt
-        FROM withdrawals WHERE status = 'pending' GROUP BY merchant_id
-      ) pw ON pw.merchant_id = m.id
       WHERE m.apply_status = 'approved'
       ORDER BY total_sales DESC
     `)
-    return R_OK(res, rows)
+    const freezeDays = profitSharing.getProfitSharingFreezeDays()
+    return R_OK(res, rows.map(row => ({ ...row, settlement_freeze_days: freezeDays })))
   } catch (e) {
     console.error('[admin-finance]', e); return R_FAIL(res, '服务器错误', 500)
   }
 })
 
-// ── GET /api/admin/withdrawals — 全平台提现申请列表 ─────────
+// ── GET /api/admin/withdrawals — 已停用：提现统一在微信支付商户平台处理 ─────────
 router.get('/withdrawals', adminAuth, async (req, res) => {
-  try {
-    const { status } = req.query
-    let sql = `
-      SELECT w.id, w.amount, w.status, w.note, w.created_at, w.paid_at,
-             m.company_name, u.phone
-      FROM withdrawals w
-      LEFT JOIN merchants m ON m.id = w.merchant_id
-      LEFT JOIN users u ON u.id = m.user_id
-    `
-    const params = []
-    if (status && status !== 'all') { sql += ' WHERE w.status = ?'; params.push(status) }
-    sql += ' ORDER BY w.created_at DESC'
-    const [rows] = await db.query(sql, params)
-    return R_OK(res, rows)
-  } catch (e) {
-    console.error('[admin-withdrawals]', e); return R_FAIL(res, '服务器错误', 500)
-  }
+  return R_OK(res, [])
 })
 
-// ── PATCH /api/admin/withdrawals/:id/handle — 审批提现 ──────
+// ── PATCH /api/admin/withdrawals/:id/handle — 已停用 ──────
 router.patch('/withdrawals/:id/handle', adminAuth, async (req, res) => {
-  try {
-    const { action, note } = req.body
-    if (!['approve', 'reject'].includes(action)) return R_FAIL(res, '无效操作')
-    const id = req.params.id
-    const [[withdrawal]] = await db.query(
-      "SELECT id, merchant_id FROM withdrawals WHERE id=? AND status='pending'",
-      [id]
-    )
-    if (!withdrawal) return R_FAIL(res, '提现申请不存在或已处理', 404)
-    if (action === 'approve') {
-      await db.query(
-        "UPDATE withdrawals SET status='paid', note=?, paid_at=NOW() WHERE id=? AND status='pending'",
-        [note || '', id]
-      )
-      await db.query(
-        `UPDATE orders o
-         JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
-         SET o.fund_status='withdrawn'
-         WHERE o.fund_status='withdrawing'`,
-        [withdrawal.merchant_id]
-      )
-    } else {
-      await db.query(
-        "UPDATE withdrawals SET status='rejected', note=? WHERE id=? AND status='pending'",
-        [note || '', id]
-      )
-      await db.query(
-        `UPDATE orders o
-         JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
-         SET o.fund_status='available'
-         WHERE o.fund_status='withdrawing'`,
-        [withdrawal.merchant_id]
-      )
-    }
-    return R_OK(res, null, action === 'approve' ? '已批准提现' : '已拒绝提现')
-  } catch (e) {
-    console.error('[admin-withdrawals-handle]', e); return R_FAIL(res, '服务器错误', 500)
-  }
+  return R_FAIL(res, '平台内提现已停用，请到微信支付商户平台处理', 410)
 })
 
 module.exports = router

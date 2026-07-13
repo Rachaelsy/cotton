@@ -56,7 +56,10 @@ node db/migrate_order_delete.js       2>/dev/null || true
 node db/migrate_delivery_range.js     2>/dev/null || true
 node db/migrate_wechat_service_provider.js 2>/dev/null || true
 node db/migrate_profit_sharing.js     2>/dev/null || true
+node db/migrate_wechat_refunds.js     2>/dev/null || true
+node db/migrate_experts.js            2>/dev/null || true
 node db/migrate_expert_contents.js    2>/dev/null || true
+node db/migrate_expert_questions.js   2>/dev/null || true
 node db/seed.js                       2>/dev/null || true
 node db/seed_machines.js              2>/dev/null || true
 echo "✅ 数据库初始化完成"

@@ -3,6 +3,7 @@ const express  = require('express')
 const jwt      = require('jsonwebtoken')
 const db       = require('../db/database')
 const { notifyNewOrder, notifyAftersale } = require('../utils/notify')
+const refunds  = require('../utils/refunds')
 const router   = express.Router()
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -248,6 +249,9 @@ async function _cancelAndReleaseStock(orderId) {
 // ─────────────────────────────────────────────
 router.get('/my', farmerAuth, async (req, res) => {
   try {
+    await refunds.syncPendingSupplyRefunds({ userId: req.user.id }).catch(error => {
+      console.error('[refund-sync-farmer-orders]', error.message)
+    })
     const { status } = req.query
     let sql = `
       SELECT o.id, o.order_no, o.subtotal, o.delivery_fee, o.total,

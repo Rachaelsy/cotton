@@ -39,15 +39,17 @@
 .fund-lbl { font-size: 22rpx; color: #8A948B; }
 .fund-divider { width: 1rpx; height: 60rpx; background: #E3E9DE; }
 
-.withdraw-btn {
-  background: linear-gradient(135deg, #B9852F, #C9973A);
+.settle-note {
+  background: #F6F8F3;
+  border: 1rpx solid #E3E9DE;
   border-radius: 16rpx;
-  height: 88rpx;
+  min-height: 72rpx;
+  padding: 0 24rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.withdraw-text { font-size: 30rpx; font-weight: 700; color: #fff; }
+.settle-note-text { font-size: 24rpx; font-weight: 600; color: #647067; }
 
 /* Records */
 .section-title {

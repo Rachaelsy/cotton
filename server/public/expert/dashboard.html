@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>专家后台 - Cotton 棉花平台</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; color: #15251c; background: #f4f7f1; }
+    .layout { min-height: 100vh; display: grid; grid-template-columns: 250px 1fr; }
+    .side { background: #203629; color: #fff; padding: 24px 18px; display: flex; flex-direction: column; }
+    .brand { padding: 8px 8px 24px; border-bottom: 1px solid rgba(255,255,255,.14); }
+    .brand-mark { width: 46px; height: 46px; border-radius: 16px; display: grid; place-items: center; background: #eef8ed; color: #203629; font-weight: 900; font-size: 22px; margin-bottom: 12px; }
+    .brand h1 { font-size: 22px; line-height: 1.2; }
+    .brand p { margin-top: 6px; color: rgba(255,255,255,.68); font-size: 13px; }
+    .nav { display: grid; gap: 10px; margin-top: 24px; }
+    .nav button { border: 0; border-radius: 12px; padding: 14px 16px; text-align: left; color: rgba(255,255,255,.78); background: transparent; font-size: 16px; font-weight: 800; cursor: pointer; }
+    .nav button.active { color: #fff; background: #2b8048; }
+    .side-foot { margin-top: auto; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.72); }
+    .side-foot strong { display: block; color: #fff; margin-bottom: 10px; }
+    .logout { width: 100%; border: 0; border-radius: 10px; padding: 11px 12px; background: rgba(255,255,255,.13); color: #fff; font-weight: 800; cursor: pointer; }
+    .main { min-width: 0; }
+    .top { height: 70px; padding: 0 34px; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,.86); border-bottom: 1px solid #e4eadf; position: sticky; top: 0; z-index: 5; backdrop-filter: blur(12px); }
+    .top h2 { font-size: 23px; }
+    .top-right { color: #6d776f; font-size: 14px; }
+    .content { padding: 28px 34px 50px; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .stat { background: #fff; border-radius: 16px; padding: 20px; border: 1px solid #e7ece2; box-shadow: 0 12px 24px rgba(33,55,39,.05); }
+    .stat span { color: #758071; font-size: 13px; }
+    .stat strong { display: block; margin-top: 8px; font-size: 30px; color: #1f7f43; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card { background: #fff; border-radius: 18px; border: 1px solid #e7ece2; box-shadow: 0 12px 26px rgba(33,55,39,.06); overflow: hidden; margin-bottom: 18px; }
+    .card-head { min-height: 66px; padding: 16px 20px; display: flex; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid #eef2eb; }
+    .card-title { font-size: 19px; font-weight: 900; }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    select, input, textarea { border: 1.5px solid #dce5d9; border-radius: 10px; padding: 10px 12px; font: inherit; outline: none; background: #fff; }
+    select:focus, input:focus, textarea:focus { border-color: #2b8048; box-shadow: 0 0 0 4px rgba(43,128,72,.1); }
+    textarea { min-height: 110px; resize: vertical; line-height: 1.65; }
+    .btn { border: 0; border-radius: 10px; padding: 10px 14px; background: #2b8048; color: #fff; font-weight: 900; cursor: pointer; }
+    .btn.gray { background: #eef2eb; color: #48584c; }
+    .btn.warn { background: #b98122; }
+    .btn.danger { background: #c94b3f; }
+    .btn:disabled { opacity: .65; cursor: not-allowed; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid #eef2eb; text-align: left; vertical-align: top; font-size: 14px; }
+    th { background: #fbfcfa; color: #657267; font-size: 13px; }
+    tr:last-child td { border-bottom: 0; }
+    .muted { color: #7b867c; }
+    .empty { padding: 42px 18px; text-align: center; color: #8a948a; }
+    .badge { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px; font-weight: 800; font-size: 12px; background: #eef7ee; color: #248548; }
+    .badge.gold { background: #fff4da; color: #a56f16; }
+    .badge.red { background: #fdeceb; color: #c0392b; }
+    .badge.gray { background: #eef0ef; color: #68736b; }
+    .thumb { width: 72px; height: 50px; object-fit: cover; border-radius: 8px; background: #f0f3ee; }
+    .question-text { max-width: 420px; line-height: 1.65; white-space: pre-wrap; }
+    .q-images { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .q-images img { width: 62px; height: 62px; border-radius: 10px; object-fit: cover; border: 1px solid #e1e7df; cursor: pointer; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .modal-mask { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(18,31,23,.42); }
+    .modal-mask.show { display: flex; }
+    .modal { width: min(880px, 96vw); max-height: 90vh; overflow: auto; background: #fff; border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,.22); }
+    .modal-head { position: sticky; top: 0; z-index: 1; background: #fff; padding: 20px 24px; border-bottom: 1px solid #eef2eb; display: flex; justify-content: space-between; align-items: center; }
+    .modal-head h3 { font-size: 21px; }
+    .modal-body { padding: 22px 24px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .field { display: grid; gap: 8px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-weight: 900; color: #334439; }
+    .input-row { display: flex; gap: 8px; }
+    .input-row input { flex: 1; min-width: 0; }
+    .modal-foot { padding: 16px 24px 24px; display: flex; justify-content: flex-end; gap: 10px; }
+    .preview { margin-top: 8px; color: #657267; word-break: break-all; font-size: 13px; }
+    .reply-box { background: #f5f8f4; border-radius: 14px; padding: 14px; margin-top: 12px; color: #405246; line-height: 1.65; white-space: pre-wrap; }
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      .side { position: static; }
+      .stats, .form-grid { grid-template-columns: 1fr; }
+      .top, .content { padding-left: 16px; padding-right: 16px; }
+      table { min-width: 760px; }
+      .table-scroll { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="side">
+      <div class="brand">
+        <div class="brand-mark">专</div>
+        <h1>专家后台</h1>
+        <p>Cotton 棉花平台</p>
+      </div>
+      <nav class="nav">
+        <button class="active" data-panel="questions" onclick="switchPanel('questions')">农户提问</button>
+        <button data-panel="contents" onclick="switchPanel('contents')">培训内容</button>
+      </nav>
+      <div class="side-foot">
+        <strong id="expertName">平台专家</strong>
+        <button class="logout" onclick="logout()">退出登录</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="top">
+        <h2 id="pageTitle">农户提问</h2>
+        <div class="top-right" id="nowTime"></div>
+      </header>
+
+      <section class="content">
+        <div class="stats">
+          <div class="stat"><span>待回复问题</span><strong id="statPending">0</strong></div>
+          <div class="stat"><span>已回复问题</span><strong id="statReplied">0</strong></div>
+          <div class="stat"><span>已上架课程</span><strong id="statPublished">0</strong></div>
+          <div class="stat"><span>付费内容</span><strong id="statPaid">0</strong></div>
+        </div>
+
+        <div class="panel active" id="panel-questions">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">农户向专家提问</div>
+              <div class="toolbar">
+                <select id="questionStatus" onchange="loadQuestions()">
+                  <option value="">全部状态</option>
+                  <option value="pending">待回复</option>
+                  <option value="replied">已回复</option>
+                  <option value="closed">已关闭</option>
+                </select>
+                <button class="btn gray" onclick="loadQuestions()">刷新</button>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>农户</th><th>问题内容</th><th>地块/阶段</th><th>状态</th><th>提交时间</th><th>操作</th></tr></thead>
+                <tbody id="questionTable"><tr><td colspan="6" class="empty">加载中...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="panel-contents">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">专家培训内容</div>
+              <div class="toolbar">
+                <button class="btn" onclick="openContentModal()">新增内容</button>
+                <button class="btn gray" onclick="loadContents()">刷新</button>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>封面</th><th>标题</th><th>类型</th><th>分类</th><th>价格</th><th>互动</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="contentTable"><tr><td colspan="8" class="empty">加载中...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-mask" id="replyModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>回复农户提问</h3>
+        <button class="btn gray" onclick="closeModal('replyModal')">关闭</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="replyId">
+        <div id="replyQuestion"></div>
+        <div class="field" style="margin-top:16px">
+          <label for="replyText">专家回复</label>
+          <textarea id="replyText" placeholder="请填写给农户看的回复内容"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn gray" onclick="closeModal('replyModal')">取消</button>
+        <button class="btn" onclick="submitReply()">提交回复</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-mask" id="contentModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="contentModalTitle">新增培训内容</h3>
+        <button class="btn gray" onclick="closeModal('contentModal')">关闭</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="contentId">
+        <div class="form-grid">
+          <div class="field">
+            <label for="cType">内容类型</label>
+            <select id="cType">
+              <option value="video">视频课</option>
+              <option value="article">图文课</option>
+              <option value="qa">问答课</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="cCategoryKey">分类</label>
+            <select id="cCategoryKey" onchange="syncCategoryName()">
+              <option value="planting">种植技术</option>
+              <option value="pest">病虫害防治</option>
+              <option value="water_fertilizer">水肥管理</option>
+              <option value="machine">农机作业</option>
+              <option value="policy">政策咨询</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="cTitle">标题</label>
+            <input id="cTitle" placeholder="如：棉花播种前准备与出苗管理">
+          </div>
+          <div class="field full">
+            <label for="cSubtitle">简介</label>
+            <input id="cSubtitle" placeholder="展示在小程序课程列表里的简短说明">
+          </div>
+          <div class="field">
+            <label for="cTeacher">讲师</label>
+            <input id="cTeacher" placeholder="平台专家">
+          </div>
+          <div class="field">
+            <label for="cDuration">时长</label>
+            <input id="cDuration" placeholder="如：35分钟">
+          </div>
+          <div class="field">
+            <label for="cPriceType">收费方式</label>
+            <select id="cPriceType" onchange="togglePriceInput()">
+              <option value="free">免费</option>
+              <option value="paid">付费</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="cPrice">价格（元）</label>
+            <input id="cPrice" type="number" min="0" step="0.01" value="0">
+          </div>
+          <div class="field">
+            <label>封面图片</label>
+            <div class="input-row">
+              <input id="cCover" placeholder="/uploads/expert/cover.jpg">
+              <button class="btn gray" onclick="pickUpload('coverFile')">上传</button>
+            </div>
+            <input id="coverFile" type="file" accept="image/*" style="display:none" onchange="uploadMedia(this,'cCover')">
+            <div class="preview" id="coverPreview"></div>
+          </div>
+          <div class="field">
+            <label>视频文件</label>
+            <div class="input-row">
+              <input id="cVideo" placeholder="/uploads/expert/video.mp4">
+              <button class="btn gray" onclick="pickUpload('videoFile')">上传</button>
+            </div>
+            <input id="videoFile" type="file" accept="video/*" style="display:none" onchange="uploadMedia(this,'cVideo')">
+            <div class="preview" id="videoPreview"></div>
+          </div>
+          <div class="field full">
+            <label for="cIntro">课程介绍</label>
+            <textarea id="cIntro" placeholder="写给农户看的课程介绍"></textarea>
+          </div>
+          <div class="field full">
+            <label for="cContent">图文内容</label>
+            <textarea id="cContent" placeholder="图文课正文，视频课可填写课程要点"></textarea>
+          </div>
+          <div class="field full">
+            <label for="cQuiz">互动练习题</label>
+            <textarea id="cQuiz" placeholder="每行一道题：题目|选项A|选项B|选项C|正确选项序号|解析"></textarea>
+          </div>
+          <div class="field full">
+            <label for="cAiPrompt">AI 陪练提示词</label>
+            <textarea id="cAiPrompt" placeholder="例如：围绕本课内容，用简单汉语向农户追问并纠正错误理解。"></textarea>
+          </div>
+          <div class="field">
+            <label for="cSort">排序</label>
+            <input id="cSort" type="number" value="0">
+          </div>
+          <div class="field">
+            <label for="cPublished">上架状态</label>
+            <select id="cPublished">
+              <option value="1">立即上架</option>
+              <option value="0">保存草稿</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn gray" onclick="closeModal('contentModal')">取消</button>
+        <button class="btn" onclick="saveContent()">保存内容</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/expert-admin'
+    const token = localStorage.getItem('expert_token')
+    let questions = []
+    let contents = []
+
+    if (!token) location.href = '/expert/login.html'
+    document.getElementById('expertName').textContent = localStorage.getItem('expert_name') || '平台专家'
+
+    function authHeaders(extra = {}) {
+      return { Authorization: `Bearer ${token}`, ...extra }
+    }
+
+    async function api(method, path, body) {
+      const options = { method, headers: authHeaders() }
+      if (body !== undefined) {
+        options.headers['Content-Type'] = 'application/json'
+        options.body = JSON.stringify(body)
+      }
+      const res = await fetch(`${API}${path}`, options)
+      const data = await res.json().catch(() => ({ code: res.status, msg: '响应解析失败' }))
+      if (res.status === 401) {
+        logout()
+        throw new Error('登录已过期')
+      }
+      if (data.code !== 200) throw new Error(data.msg || '请求失败')
+      return data.data
+    }
+
+    function esc(value) {
+      return String(value ?? '').replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]))
+    }
+
+    function parseMaybeJson(value, fallback) {
+      if (!value) return fallback
+      if (Array.isArray(value)) return value
+      try { return JSON.parse(value) } catch { return fallback }
+    }
+
+    function fmtTime(value) {
+      if (!value) return '-'
+      const d = new Date(value)
+      if (Number.isNaN(d.getTime())) return String(value).slice(0, 16)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+    }
+
+    function typeLabel(type) {
+      return ({ video: '视频课', article: '图文课', qa: '问答课' })[type] || '视频课'
+    }
+
+    function statusBadge(status) {
+      if (status === 'replied') return '<span class="badge">已回复</span>'
+      if (status === 'closed') return '<span class="badge gray">已关闭</span>'
+      return '<span class="badge gold">待回复</span>'
+    }
+
+    function priceHtml(item) {
+      return item.price_type === 'paid'
+        ? `<span class="badge gold">￥${Number(item.price || 0).toFixed(2)}</span>`
+        : '<span class="badge">免费</span>'
+    }
+
+    function updateClock() {
+      document.getElementById('nowTime').textContent = new Date().toLocaleString()
+    }
+
+    function switchPanel(panel) {
+      document.querySelectorAll('.nav button').forEach(btn => btn.classList.toggle('active', btn.dataset.panel === panel))
+      document.querySelectorAll('.panel').forEach(el => el.classList.toggle('active', el.id === `panel-${panel}`))
+      document.getElementById('pageTitle').textContent = panel === 'contents' ? '培训内容' : '农户提问'
+      if (panel === 'contents') loadContents()
+      if (panel === 'questions') loadQuestions()
+    }
+
+    function logout() {
+      localStorage.removeItem('expert_token')
+      localStorage.removeItem('expert_name')
+      location.href = '/expert/login.html'
+    }
+
+    async function loadQuestions() {
+      const tbody = document.getElementById('questionTable')
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">加载中...</td></tr>'
+      try {
+        const status = document.getElementById('questionStatus').value
+        questions = await api('GET', `/questions${status ? `?status=${encodeURIComponent(status)}` : ''}`)
+        renderQuestions()
+        updateStats()
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty">${esc(error.message)}</td></tr>`
+      }
+    }
+
+    function renderQuestions() {
+      const tbody = document.getElementById('questionTable')
+      if (!questions.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">暂无农户提问</td></tr>'
+        return
+      }
+
+      tbody.innerHTML = questions.map(item => {
+        const images = parseMaybeJson(item.images, [])
+        const imageHtml = images.length
+          ? `<div class="q-images">${images.map(url => `<img src="${esc(url)}" onclick="window.open('${esc(url)}','_blank')">`).join('')}</div>`
+          : ''
+        const reply = item.reply ? `<div class="reply-box"><b>已回复：</b>${esc(item.reply)}</div>` : ''
+        return `
+          <tr>
+            <td><b>${esc(item.farmerName)}</b><br><span class="muted">${esc(item.farmerPhone || '-')}</span></td>
+            <td>
+              <span class="badge gold">${esc(item.category)}</span>
+              <div class="question-text">${esc(item.question)}</div>
+              ${imageHtml}
+              ${reply}
+            </td>
+            <td>${esc(item.plotName || '-')}<br><span class="muted">${esc(item.cropStage || '-')}</span></td>
+            <td>${statusBadge(item.status)}</td>
+            <td>${fmtTime(item.createdAt)}</td>
+            <td>
+              <div class="actions">
+                <button class="btn" onclick="openReply(${item.id})">回复</button>
+                ${item.status !== 'closed' ? `<button class="btn gray" onclick="closeQuestion(${item.id})">关闭</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `
+      }).join('')
+    }
+
+    async function loadContents() {
+      const tbody = document.getElementById('contentTable')
+      tbody.innerHTML = '<tr><td colspan="8" class="empty">加载中...</td></tr>'
+      try {
+        contents = await api('GET', '/contents')
+        renderContents()
+        updateStats()
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="8" class="empty">${esc(error.message)}</td></tr>`
+      }
+    }
+
+    function renderContents() {
+      const tbody = document.getElementById('contentTable')
+      if (!contents.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无培训内容</td></tr>'
+        return
+      }
+      tbody.innerHTML = contents.map(item => {
+        const quiz = parseMaybeJson(item.quiz_json, [])
+        const cover = item.cover_url ? `<img class="thumb" src="${esc(item.cover_url)}">` : '<span class="muted">无封面</span>'
+        return `
+          <tr>
+            <td>${cover}</td>
+            <td><b>${esc(item.title)}</b><br><span class="muted">${esc(item.subtitle || '')}</span></td>
+            <td>${typeLabel(item.type)}<br><span class="muted">${esc(item.duration || '-')}</span></td>
+            <td>${esc(item.category_name || '-')}</td>
+            <td>${priceHtml(item)}</td>
+            <td>${quiz.length} 题<br><span class="muted">${item.ai_prompt ? '有 AI 陪练' : '无 AI 陪练'}</span></td>
+            <td>${item.is_published ? '<span class="badge">已上架</span>' : '<span class="badge gray">草稿</span>'}</td>
+            <td>
+              <div class="actions">
+                <button class="btn gray" onclick="editContent(${item.id})">编辑</button>
+                <button class="btn warn" onclick="toggleContent(${item.id}, ${item.is_published ? 0 : 1})">${item.is_published ? '下架' : '上架'}</button>
+                <button class="btn danger" onclick="deleteContent(${item.id})">删除</button>
+              </div>
+            </td>
+          </tr>
+        `
+      }).join('')
+    }
+
+    function updateStats() {
+      const pending = questions.filter(item => item.status === 'pending').length
+      const replied = questions.filter(item => item.status === 'replied').length
+      const published = contents.filter(item => Number(item.is_published) === 1).length
+      const paid = contents.filter(item => item.price_type === 'paid').length
+      document.getElementById('statPending').textContent = pending
+      document.getElementById('statReplied').textContent = replied
+      document.getElementById('statPublished').textContent = published
+      document.getElementById('statPaid').textContent = paid
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('show')
+    }
+
+    function openReply(id) {
+      const item = questions.find(q => Number(q.id) === Number(id))
+      if (!item) return
+      document.getElementById('replyId').value = item.id
+      const images = parseMaybeJson(item.images, [])
+      const imageHtml = images.length
+        ? `<div class="q-images">${images.map(url => `<img src="${esc(url)}" onclick="window.open('${esc(url)}','_blank')">`).join('')}</div>`
+        : ''
+      document.getElementById('replyQuestion').innerHTML = `
+        <p><b>${esc(item.category)}</b> · ${esc(item.plotName || '未选择地块')}</p>
+        <div class="reply-box">${esc(item.question)}</div>
+        ${imageHtml}
+      `
+      document.getElementById('replyText').value = item.reply || ''
+      document.getElementById('replyModal').classList.add('show')
+    }
+
+    async function submitReply() {
+      const id = document.getElementById('replyId').value
+      const reply = document.getElementById('replyText').value.trim()
+      if (reply.length < 2) return alert('请填写回复内容')
+      try {
+        await api('PATCH', `/questions/${id}/reply`, { reply })
+        closeModal('replyModal')
+        await loadQuestions()
+      } catch (error) {
+        alert(error.message)
+      }
+    }
+
+    async function closeQuestion(id) {
+      if (!confirm('确认关闭这个问题？')) return
+      try {
+        await api('PATCH', `/questions/${id}/status`, { status: 'closed' })
+        await loadQuestions()
+      } catch (error) {
+        alert(error.message)
+      }
+    }
+
+    function syncCategoryName() {
+      const map = {
+        planting: '种植技术',
+        pest: '病虫害防治',
+        water_fertilizer: '水肥管理',
+        machine: '农机作业',
+        policy: '政策咨询'
+      }
+      return map[document.getElementById('cCategoryKey').value] || '种植技术'
+    }
+
+    function togglePriceInput() {
+      const isPaid = document.getElementById('cPriceType').value === 'paid'
+      const input = document.getElementById('cPrice')
+      input.disabled = !isPaid
+      if (!isPaid) input.value = '0'
+    }
+
+    function openContentModal() {
+      document.getElementById('contentModalTitle').textContent = '新增培训内容'
+      document.getElementById('contentId').value = ''
+      document.getElementById('cType').value = 'video'
+      document.getElementById('cCategoryKey').value = 'planting'
+      document.getElementById('cTitle').value = ''
+      document.getElementById('cSubtitle').value = ''
+      document.getElementById('cTeacher').value = localStorage.getItem('expert_name') || '平台专家'
+      document.getElementById('cDuration').value = ''
+      document.getElementById('cPriceType').value = 'free'
+      document.getElementById('cPrice').value = '0'
+      document.getElementById('cCover').value = ''
+      document.getElementById('cVideo').value = ''
+      document.getElementById('cIntro').value = ''
+      document.getElementById('cContent').value = ''
+      document.getElementById('cQuiz').value = ''
+      document.getElementById('cAiPrompt').value = ''
+      document.getElementById('cSort').value = '0'
+      document.getElementById('cPublished').value = '1'
+      document.getElementById('coverPreview').textContent = ''
+      document.getElementById('videoPreview').textContent = ''
+      togglePriceInput()
+      document.getElementById('contentModal').classList.add('show')
+    }
+
+    function quizToText(value) {
+      const quiz = parseMaybeJson(value, [])
+      return quiz.map(item => {
+        const options = Array.isArray(item.options) ? item.options : []
+        return [item.question, ...options, Number(item.answer || 0) + 1, item.explanation || ''].join('|')
+      }).join('\n')
+    }
+
+    function editContent(id) {
+      const item = contents.find(x => Number(x.id) === Number(id))
+      if (!item) return
+      openContentModal()
+      document.getElementById('contentModalTitle').textContent = '编辑培训内容'
+      document.getElementById('contentId').value = item.id
+      document.getElementById('cType').value = item.type || 'video'
+      document.getElementById('cCategoryKey').value = item.category_key || 'planting'
+      document.getElementById('cTitle').value = item.title || ''
+      document.getElementById('cSubtitle').value = item.subtitle || ''
+      document.getElementById('cTeacher').value = item.teacher || localStorage.getItem('expert_name') || '平台专家'
+      document.getElementById('cDuration').value = item.duration || ''
+      document.getElementById('cPriceType').value = item.price_type || 'free'
+      document.getElementById('cPrice').value = item.price || 0
+      document.getElementById('cCover').value = item.cover_url || ''
+      document.getElementById('cVideo').value = item.video_url || ''
+      document.getElementById('cIntro').value = item.intro || ''
+      document.getElementById('cContent').value = item.content || ''
+      document.getElementById('cQuiz').value = quizToText(item.quiz_json)
+      document.getElementById('cAiPrompt').value = item.ai_prompt || ''
+      document.getElementById('cSort').value = item.sort_order || 0
+      document.getElementById('cPublished').value = String(item.is_published ? 1 : 0)
+      document.getElementById('coverPreview').textContent = item.cover_url || ''
+      document.getElementById('videoPreview').textContent = item.video_url || ''
+      togglePriceInput()
+    }
+
+    function pickUpload(id) {
+      document.getElementById(id).click()
+    }
+
+    async function uploadMedia(input, targetId) {
+      const file = input.files && input.files[0]
+      if (!file) return
+      const form = new FormData()
+      form.append('file', file)
+      const previewId = targetId === 'cCover' ? 'coverPreview' : 'videoPreview'
+      document.getElementById(previewId).textContent = '正在上传...'
+      try {
+        const res = await fetch(`${API}/upload`, { method: 'POST', headers: authHeaders(), body: form })
+        const data = await res.json()
+        if (data.code !== 200) throw new Error(data.msg || '上传失败')
+        document.getElementById(targetId).value = data.data.url
+        document.getElementById(previewId).textContent = data.data.url
+      } catch (error) {
+        document.getElementById(previewId).textContent = error.message
+      } finally {
+        input.value = ''
+      }
+    }
+
+    function collectContentBody() {
+      const categoryKey = document.getElementById('cCategoryKey').value
+      return {
+        type: document.getElementById('cType').value,
+        title: document.getElementById('cTitle').value.trim(),
+        subtitle: document.getElementById('cSubtitle').value.trim(),
+        category_key: categoryKey,
+        category_name: syncCategoryName(),
+        teacher: document.getElementById('cTeacher').value.trim() || localStorage.getItem('expert_name') || '平台专家',
+        teacher_title: '棉花平台答疑',
+        org: 'Cotton 棉花平台',
+        expert_avatar: '问',
+        expert_tags: syncCategoryName(),
+        duration: document.getElementById('cDuration').value.trim(),
+        price_type: document.getElementById('cPriceType').value,
+        price: document.getElementById('cPrice').value || 0,
+        cover_url: document.getElementById('cCover').value.trim(),
+        video_url: document.getElementById('cVideo').value.trim(),
+        intro: document.getElementById('cIntro').value.trim(),
+        content: document.getElementById('cContent').value.trim(),
+        quiz_text: document.getElementById('cQuiz').value.trim(),
+        ai_prompt: document.getElementById('cAiPrompt').value.trim(),
+        sort_order: document.getElementById('cSort').value || 0,
+        is_published: document.getElementById('cPublished').value === '1'
+      }
+    }
+
+    async function saveContent() {
+      const id = document.getElementById('contentId').value
+      const body = collectContentBody()
+      if (!body.title) return alert('请填写标题')
+      try {
+        await api(id ? 'PUT' : 'POST', id ? `/contents/${id}` : '/contents', body)
+        closeModal('contentModal')
+        await loadContents()
+      } catch (error) {
+        alert(error.message)
+      }
+    }
+
+    async function toggleContent(id, isPublished) {
+      try {
+        await api('POST', `/contents/${id}/toggle`, { is_published: !!isPublished })
+        await loadContents()
+      } catch (error) {
+        alert(error.message)
+      }
+    }
+
+    async function deleteContent(id) {
+      if (!confirm('确认删除这个内容？')) return
+      try {
+        await api('DELETE', `/contents/${id}`)
+        await loadContents()
+      } catch (error) {
+        alert(error.message)
+      }
+    }
+
+    updateClock()
+    setInterval(updateClock, 1000)
+    Promise.all([loadQuestions(), loadContents()]).catch(() => {})
+  </script>
+</body>
+</html>

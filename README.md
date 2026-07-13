@@ -56,6 +56,9 @@ node db/migrate_order_delete.js       # 订单按角色软删除字段（farmer/
 node db/migrate_delivery_range.js     # 可配送范围（machines.service_radius、merchants 定位+delivery_radius）
 node db/migrate_wechat_service_provider.js # 微信支付服务商字段（sub_mchid、进件状态、素材表）
 node db/migrate_profit_sharing.js     # 微信支付分账记录表
+node db/migrate_wechat_refunds.js     # 微信支付真实退款记录表
+node db/migrate_experts.js            # 专家账号表
+node db/migrate_expert_questions.js   # 专家提问表
 node db/seed.js                       # 插入测试用户账号
 node db/seed_machines.js              # 农机演示数据（机主 13800000003 + 4 台机具）
 
@@ -176,7 +179,11 @@ node -e "require('dotenv').config(); const { fetchQweatherWeather } = require('.
 
 服务商自营测试店铺也必须绑定一个自营特约商户号 `sub_mchid`，不能直接用服务商商户号作为普通商户收款。可在 `server/.env` 填写 `SELF_MERCHANT_SUB_MCHID`，再运行 `node db/create_self_merchant.js` 绑定到平台自营店铺。
 
-农资订单已接入微信支付服务商分账：下单时会按商户 `commission_rate` 标记为可分账订单；微信支付成功后记录待分账；确认收货并过 7 天售后冻结期后，由定时任务调用微信分账接口把平台服务费分到服务商商户号，并解冻剩余资金给特约商户。测试基础支付但暂未开通分账权限时，可在 `server/.env` 设置 `WECHAT_PAY_PROFIT_SHARING_ENABLED=false`，等微信支付分账产品和特约商户授权都开通后再改回 `true`。
+农资订单已接入微信支付服务商分账：下单时会按商户 `commission_rate` 标记为可分账订单；微信支付成功后记录待分账；确认收货并过售后冻结期后，由定时任务调用微信分账接口把平台服务费分到服务商商户号，并解冻剩余资金给特约商户。测试基础支付但暂未开通分账权限时，可在 `server/.env` 设置 `WECHAT_PAY_PROFIT_SHARING_ENABLED=false`，等微信支付分账产品和特约商户授权都开通后再改回 `true`。
+
+分账开通后还需要在 `server/.env` 填 `WECHAT_PAY_PROFIT_SHARING_RECEIVER_NAME`，值必须是微信支付商户平台里的接收方商户全称；`WECHAT_PAY_PROFIT_SHARING_RECEIVER_MCH_ID` 留空时默认用服务商商户号收平台佣金；`WECHAT_PAY_PROFIT_SHARING_FREEZE_DAYS` 正式环境建议 `7`，联调可临时设为 `0`。填好后进入 `server` 目录运行 `node db/ensure_profit_sharing_receivers.js`，提前登记分账接收方并验证特约商户最大分账比例。
+
+真实退款已接入微信支付服务商退款接口。商户同意售后或在订单退款入口发起后，后端会创建 `wechat_refunds` 退款单并调用微信退款；退款成功以微信退款回调 `/api/pay/wechat/refund-notify` 为准。`WECHAT_PAY_REFUND_NOTIFY_URL` 可显式配置，不填时会由 `WECHAT_PAY_NOTIFY_URL` 自动推导。
 
 > 不要把真实 `server/.env` 提交到 GitHub。真实密钥只应保存在本地开发机、服务器环境变量或安全的密钥管理服务中。
 
@@ -264,7 +271,9 @@ http://localhost:3000/
 | 商品管理 | 全量商品列表、新增（选择所属商户）、编辑（名称/价格/库存/状态等）、删除 |
 | 订单管理 | 全量订单列表，按状态筛选，在线修改订单状态 |
 | 售后管理 | 全平台售后申请列表，按状态筛选，查看申请详情（描述+凭证图片） |
-| 财务管理 | 商户财务汇总（销售额/佣金/可提现/冻结/已提现）；提现申请列表，支持批准/拒绝操作 |
+| 财务管理 | 商户财务汇总（销售额/佣金/已解冻/冻结）；提现统一在微信支付商户平台处理 |
+| 专家账号 | 管理专家账号，专家与管理员分离，专家可独立登录专家后台 |
+| 专家讲堂 | 管理课程、图文内容、付费/免费标记，并查看农户专家提问 |
 
 **商户 / 农机手入驻申请（公开页面）：**
 ```
@@ -286,7 +295,7 @@ http://localhost:3000/admin/login.html
 | 商品管理 | CRUD + 图片上传 + 简介/详情字段 |
 | 订单管理 | 全部/待发货/已发货/已完成/售后，发货填单号，支持导出 CSV |
 | 售后管理 | 售后申请列表（分 Tab），查看详情（描述+凭证图片），一键同意/拒绝 |
-| 财务结算 | 结算明细、提现记录 |
+| 财务结算 | 结算明细、分账状态、冻结/已解冻金额；提现在微信支付商户平台操作 |
 | 店铺设置 | 基础信息 + 客服微信号 + 修改密码 |
 
 ---
@@ -462,9 +471,9 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | GET  | `/api/merchant/stats` | 商户 | 店铺统计（今日订单/本月销售额等）|
 | GET  | `/api/merchant/orders` | 商户 | 本店订单列表 |
 | PATCH | `/api/merchant/orders/:id/ship` | 商户 | 发货（填写物流单号） |
-| PATCH | `/api/merchant/orders/:id/refund` | 商户 | 退款/售后处理 |
-| GET  | `/api/merchant/finance` | 商户 | 财务明细（可提现余额、冻结余额、结算列表） |
-| POST | `/api/merchant/withdraw` | 商户 | 发起提现申请 |
+| PATCH | `/api/merchant/orders/:id/refund` | 商户 | 发起真实微信退款 |
+| GET  | `/api/merchant/finance` | 商户 | 财务明细（已解冻金额、冻结金额、分账状态、结算列表） |
+| POST | `/api/merchant/withdraw` | 商户 | 已停用，提现请到微信支付商户平台处理 |
 | GET  | `/api/merchant/messages` | 商户 | 消息中心列表 |
 | PATCH | `/api/merchant/messages/read-all` | 商户 | 全部标为已读 |
 | PATCH | `/api/merchant/messages/:id/read` | 商户 | 单条标为已读 |
@@ -486,9 +495,9 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | GET   | `/api/merchant/reviews` | 商户 | 获取本店全部评价（匿名评价屏蔽真实姓名）|
 | PATCH | `/api/merchant/reviews/:id/reply` | 商户 | 回复买家评价 |
 | GET   | `/api/admin/aftersales` | 管理员 | 全平台售后申请列表（可按 status 筛选） |
-| GET   | `/api/admin/finance` | 管理员 | 各商户财务汇总（销售额、佣金、可提现、冻结、已提现） |
-| GET   | `/api/admin/withdrawals` | 管理员 | 全平台提现申请列表（可按 status 筛选） |
-| PATCH | `/api/admin/withdrawals/:id/handle` | 管理员 | 审批提现申请（approve 批准 / reject 拒绝） |
+| GET   | `/api/admin/finance` | 管理员 | 各商户财务汇总（销售额、佣金、已解冻、冻结） |
+| GET   | `/api/admin/withdrawals` | 管理员 | 已停用，提现统一在微信支付商户平台处理 |
+| PATCH | `/api/admin/withdrawals/:id/handle` | 管理员 | 已停用，提现统一在微信支付商户平台处理 |
 | GET   | `/api/plots` | 农户 | 获取本人全部地块 |
 | POST  | `/api/plots` | 农户 | 新建地块（含坐标、面积、基础信息） |
 | GET   | `/api/plots/:id` | 农户 | 获取单个地块详情 |
@@ -579,9 +588,11 @@ login_logs           → user_id, ip, created_at
 
 订单状态流转：`pending_payment`（待付款，含30分钟超时）→ `pending_ship`（待发货）→ `shipped`（已发货）→ `completed`（已完成）；已完成后可申请售后 → `refund`（售后中）→ 商家处理后 → `refunded`（售后完成）；超时/主动取消 → `cancelled`（库存自动释放）
 
-资金状态流转：`pending` → 确认收货后 `frozen`（冻结 7 天）→ 无售后后 `available`（可提现）→ `withdrawn`（已提现）
+资金状态流转：`pending` → 确认收货后 `frozen`（按 `WECHAT_PAY_PROFIT_SHARING_FREEZE_DAYS` 配置等待）→ 无售后后分账并进入 `available`（已解冻，提现在微信支付商户平台操作）→ 退款成功时 `refunded`
 
 售后状态流转：`pending`（待处理）→ `approved`（已同意）/ `rejected`（已拒绝）
+
+真实退款流转：商户同意售后或在订单入口发起退款 → 写入 `wechat_refunds` → 已分账订单先执行分账回退 → 调用微信服务商退款接口 → 微信退款回调或列表同步查询确认成功 → 订单状态更新为 `refunded`。
 
 ---
 

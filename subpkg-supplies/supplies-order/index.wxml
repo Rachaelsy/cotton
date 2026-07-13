@@ -126,7 +126,7 @@
         </view>
         <view class="kv-row">
           <text class="kv-k">处理状态</text>
-          <text class="kv-v {{aftersale.status === 'approved' ? 'text-green' : aftersale.status === 'rejected' ? 'text-red' : 'text-orange'}}">{{aftersale.statusLabel}}</text>
+          <text class="kv-v {{aftersale.displayStatus === 'approved' ? 'text-green' : aftersale.displayStatus === 'rejected' ? 'text-red' : 'text-orange'}}">{{aftersale.statusLabel}}</text>
         </view>
         <view wx:if="{{aftersale.handle_note}}" class="kv-row">
           <text class="kv-k">商家回复</text>

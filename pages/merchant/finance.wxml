@@ -25,8 +25,8 @@
           <text class="fund-lbl">冻结中</text>
         </view>
       </view>
-      <view class="withdraw-btn" bindtap="onWithdraw">
-        <text class="withdraw-text">申请提现</text>
+      <view class="settle-note">
+        <text class="settle-note-text">提现请在微信支付商户平台操作</text>
       </view>
     </view>
 

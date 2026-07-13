@@ -12,7 +12,10 @@ app.set('trust proxy', true)
 app.use(cors())
 app.use(express.json({
   verify: (req, _res, buf) => {
-    if (req.originalUrl && req.originalUrl.startsWith('/api/pay/wechat/notify')) {
+    if (req.originalUrl && (
+      req.originalUrl.startsWith('/api/pay/wechat/notify') ||
+      req.originalUrl.startsWith('/api/pay/wechat/refund-notify')
+    )) {
       req.rawBody = Buffer.from(buf)
     }
   }
@@ -32,6 +35,7 @@ const noCache = (_req, res, next) => {
   next()
 }
 app.use('/admin',    noCache, express.static(path.join(__dirname, 'public/admin')))
+app.use('/expert',   noCache, express.static(path.join(__dirname, 'public/expert')))
 app.use('/merchant', noCache, express.static(path.join(__dirname, 'public/merchant')))
 app.use('/operator', noCache, express.static(path.join(__dirname, 'public/operator')))
 app.use('/portal',   noCache, express.static(path.join(__dirname, 'public/portal')))
@@ -55,6 +59,7 @@ app.use('/api/machines',       require('./routes/machines'))
 app.use('/api/machine-orders', require('./routes/machine-orders'))
 app.use('/api/ai',       require('./routes/ai'))
 app.use('/api/admin',    require('./routes/admin'))
+app.use('/api/expert-admin', require('./routes/expert-admin'))
 app.use('/api/merchant', require('./routes/merchant'))
 app.use('/api/upload',  require('./routes/upload'))
 

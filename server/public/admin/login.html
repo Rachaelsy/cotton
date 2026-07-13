@@ -17,6 +17,9 @@
       --gold: #b67824;
       --gold-dark: #80511b;
       --gold-soft: #fff7e8;
+      --expert: #4c4335;
+      --expert-dark: #2f291f;
+      --expert-soft: #f5f2eb;
       --ink: #253126;
       --muted: #687668;
       --line: #dfe8dc;
@@ -183,7 +186,7 @@
 
     .role-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
       margin-bottom: 20px;
     }
@@ -229,6 +232,12 @@
       box-shadow: 0 12px 26px rgba(182, 120, 36, 0.14);
     }
 
+    .role-card[data-role="expert"].active {
+      border-color: rgba(76, 67, 53, 0.58);
+      background: var(--expert-soft);
+      box-shadow: 0 12px 26px rgba(76, 67, 53, 0.14);
+    }
+
     .role-icon {
       display: inline-flex;
       align-items: center;
@@ -245,6 +254,7 @@
 
     .role-card[data-role="operator"] .role-icon { background: var(--blue); }
     .role-card[data-role="admin"] .role-icon { background: var(--gold); }
+    .role-card[data-role="expert"] .role-icon { background: var(--expert); }
 
     .role-name {
       display: block;
@@ -292,6 +302,7 @@
 
     body.role-operator .input-icon { background: var(--blue); }
     body.role-admin .input-icon { background: var(--gold); }
+    body.role-expert .input-icon { background: var(--expert); }
 
     input {
       width: 100%;
@@ -324,6 +335,11 @@
       box-shadow: 0 0 0 4px rgba(182, 120, 36, 0.12);
     }
 
+    body.role-expert input:focus {
+      border-color: rgba(76, 67, 53, 0.72);
+      box-shadow: 0 0 0 4px rgba(76, 67, 53, 0.12);
+    }
+
     .login-note {
       display: flex;
       justify-content: space-between;
@@ -341,6 +357,7 @@
 
     body.role-operator .login-note strong { color: var(--blue-dark); }
     body.role-admin .login-note strong { color: var(--gold-dark); }
+    body.role-expert .login-note strong { color: var(--expert-dark); }
 
     .login-btn {
       width: 100%;
@@ -364,6 +381,11 @@
     body.role-admin .login-btn {
       background: linear-gradient(135deg, #c58932, #8a5a20);
       box-shadow: 0 14px 30px rgba(182, 120, 36, 0.24);
+    }
+
+    body.role-expert .login-btn {
+      background: linear-gradient(135deg, #5a4f3e, #342d22);
+      box-shadow: 0 14px 30px rgba(76, 67, 53, 0.24);
     }
 
     .login-btn:hover {
@@ -554,6 +576,13 @@
             <span class="role-desc">机具、接单、作业</span>
           </span>
         </button>
+        <button type="button" class="role-card" data-role="expert" onclick="selectRole('expert')">
+          <span class="role-icon">专</span>
+          <span>
+            <span class="role-name">专家</span>
+            <span class="role-desc">答疑、课程、练习</span>
+          </span>
+        </button>
       </div>
 
       <div class="field">
@@ -610,6 +639,22 @@
         save(data) {
           localStorage.setItem(this.tokenKey, data.token)
           localStorage.setItem(this.infoKey, data.real_name || '管理员')
+        }
+      },
+      expert: {
+        bodyClass: 'role-expert',
+        phoneLabel: '专家账号',
+        noteTitle: '专家登录',
+        noteDesc: '进入专家后台，回复农户提问并上架培训内容。',
+        btnText: '进入专家后台',
+        loadingText: '正在登录...',
+        api: '/api/expert-admin/login',
+        tokenKey: 'expert_token',
+        infoKey: 'expert_name',
+        dashboard: '/expert/dashboard.html',
+        save(data) {
+          localStorage.setItem(this.tokenKey, data.token)
+          localStorage.setItem(this.infoKey, data.name || '平台专家')
         }
       },
       merchant: {
@@ -707,7 +752,7 @@
     }
 
     const q = new URLSearchParams(location.search).get('role')
-    if (q === 'admin' || q === 'operator' || q === 'merchant') {
+    if (q === 'admin' || q === 'operator' || q === 'merchant' || q === 'expert') {
       selectRole(q)
     }
   </script>

@@ -184,7 +184,14 @@ function wechatRequest(method, urlPath, body, cfg, options = {}) {
         let json = {}
         try { json = raw ? JSON.parse(raw) : {} } catch {}
         if (response.statusCode < 200 || response.statusCode >= 300) {
-          return reject(new Error(json.message || json.code || `微信支付 HTTP ${response.statusCode}`))
+          const detail = Array.isArray(json.detail)
+            ? json.detail.map(item => item.issue || item.field || item.location).filter(Boolean).join('; ')
+            : ''
+          const text = [json.code, json.message, detail].filter(Boolean).join(': ')
+          const error = new Error(text || `WeChat Pay HTTP ${response.statusCode}`)
+          error.statusCode = response.statusCode
+          error.wxpay = json
+          return reject(error)
         }
         resolve(json)
       })
@@ -330,11 +337,15 @@ function queryApplymentById(cfg, applymentId) {
 }
 
 function addProfitSharingReceiver(cfg, receiver) {
-  return wechatRequest('POST', '/v3/profitsharing/receivers/add', receiver, cfg)
+  return wechatRequest('POST', '/v3/profitsharing/receivers/add', receiver, cfg, receiver && receiver.name ? { wechatpaySerial: true } : {})
 }
 
 function requestProfitSharing(cfg, payload) {
   return wechatRequest('POST', '/v3/profitsharing/orders', payload, cfg)
+}
+
+function requestProfitSharingReturn(cfg, payload) {
+  return wechatRequest('POST', '/v3/profitsharing/return-orders', payload, cfg)
 }
 
 function queryProfitSharingOrder(cfg, { subMchid, transactionId, outOrderNo }) {
@@ -344,6 +355,37 @@ function queryProfitSharingOrder(cfg, { subMchid, transactionId, outOrderNo }) {
     out_order_no: outOrderNo
   })
   return wechatRequest('GET', `/v3/profitsharing/orders?${query.toString()}`, null, cfg)
+}
+
+function queryProfitSharingMerchantConfig(cfg, subMchid) {
+  return wechatRequest('GET', `/v3/profitsharing/merchant-configs/${encodeURIComponent(subMchid)}`, null, cfg)
+}
+
+function buildPartnerRefundBody({ refund }) {
+  const body = {
+    sub_mchid: refund.subMchid,
+    out_refund_no: refund.outRefundNo,
+    reason: String(refund.reason || '').slice(0, 80),
+    amount: {
+      refund: Number(refund.refundFen),
+      total: Number(refund.totalFen),
+      currency: refund.currency || 'CNY'
+    }
+  }
+  if (refund.transactionId) body.transaction_id = refund.transactionId
+  else body.out_trade_no = refund.outTradeNo
+  if (refund.notifyUrl) body.notify_url = refund.notifyUrl
+  if (refund.fundsAccount) body.funds_account = refund.fundsAccount
+  return body
+}
+
+function partnerRefund({ cfg, refund }) {
+  return wechatRequest('POST', '/v3/refund/domestic/refunds', buildPartnerRefundBody({ refund }), cfg)
+}
+
+function queryPartnerRefund({ cfg, subMchid, outRefundNo }) {
+  const query = new URLSearchParams({ sub_mchid: subMchid })
+  return wechatRequest('GET', `/v3/refund/domestic/refunds/${encodeURIComponent(outRefundNo)}?${query.toString()}`, null, cfg)
 }
 
 module.exports = {
@@ -371,5 +413,10 @@ module.exports = {
   uploadMediaImage,
   addProfitSharingReceiver,
   requestProfitSharing,
-  queryProfitSharingOrder
+  requestProfitSharingReturn,
+  queryProfitSharingOrder,
+  queryProfitSharingMerchantConfig,
+  buildPartnerRefundBody,
+  partnerRefund,
+  queryPartnerRefund
 }

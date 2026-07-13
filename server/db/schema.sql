@@ -81,8 +81,25 @@ CREATE TABLE IF NOT EXISTS login_logs (
 -- -------------------------------------------------------
 -- 专家讲堂内容
 -- -------------------------------------------------------
+CREATE TABLE IF NOT EXISTS experts (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  phone VARCHAR(20) NOT NULL UNIQUE,
+  password VARCHAR(100) NOT NULL,
+  name VARCHAR(64) NOT NULL,
+  title VARCHAR(64) DEFAULT '',
+  org VARCHAR(128) DEFAULT 'Cotton 棉花平台',
+  avatar VARCHAR(16) DEFAULT '专',
+  specialties VARCHAR(512) DEFAULT '[]',
+  bio TEXT,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_experts_active (is_active)
+) ENGINE=InnoDB COMMENT='专家后台账号';
+
 CREATE TABLE IF NOT EXISTS expert_contents (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  expert_id INT UNSIGNED DEFAULT NULL,
   type ENUM('video','article','qa') NOT NULL DEFAULT 'video',
   title VARCHAR(160) NOT NULL,
   subtitle VARCHAR(255) DEFAULT '',
@@ -109,5 +126,62 @@ CREATE TABLE IF NOT EXISTS expert_contents (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_expert_type (type),
   INDEX idx_expert_category (category_key),
+  INDEX idx_expert_contents_expert (expert_id),
   INDEX idx_expert_publish_sort (is_published, sort_order, id)
 ) ENGINE=InnoDB COMMENT='专家讲堂内容';
+
+CREATE TABLE IF NOT EXISTS expert_questions (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED DEFAULT NULL,
+  farmer_name VARCHAR(64) DEFAULT '',
+  farmer_phone VARCHAR(32) DEFAULT '',
+  category VARCHAR(64) DEFAULT '',
+  crop_stage VARCHAR(64) DEFAULT '',
+  plot_id INT UNSIGNED DEFAULT NULL,
+  plot_name VARCHAR(128) DEFAULT '',
+  question TEXT NOT NULL,
+  images TEXT DEFAULT NULL,
+  status ENUM('pending','replied','closed') NOT NULL DEFAULT 'pending',
+  reply TEXT,
+  replied_by INT UNSIGNED DEFAULT NULL,
+  replied_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_expert_questions_user_created (user_id, created_at),
+  INDEX idx_expert_questions_status_created (status, created_at)
+) ENGINE=InnoDB COMMENT='专家讲堂农户提问';
+
+CREATE TABLE IF NOT EXISTS wechat_refunds (
+  id                    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_type            VARCHAR(20) NOT NULL DEFAULT 'supply',
+  order_id              INT UNSIGNED NOT NULL,
+  aftersale_id          INT UNSIGNED DEFAULT NULL,
+  out_trade_no          VARCHAR(64) NOT NULL DEFAULT '',
+  out_refund_no         VARCHAR(64) NOT NULL,
+  wechat_refund_id      VARCHAR(64) NOT NULL DEFAULT '',
+  transaction_id        VARCHAR(64) NOT NULL DEFAULT '',
+  sub_mchid             VARCHAR(32) NOT NULL DEFAULT '',
+  amount_fen            INT UNSIGNED NOT NULL DEFAULT 0,
+  total_fen             INT UNSIGNED NOT NULL DEFAULT 0,
+  currency              VARCHAR(8) NOT NULL DEFAULT 'CNY',
+  reason                VARCHAR(255) NOT NULL DEFAULT '',
+  status                VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+  channel               VARCHAR(32) NOT NULL DEFAULT '',
+  user_received_account VARCHAR(128) NOT NULL DEFAULT '',
+  success_time          DATETIME DEFAULT NULL,
+  request_payload       MEDIUMTEXT,
+  result_payload        MEDIUMTEXT,
+  notify_payload        MEDIUMTEXT,
+  profit_sharing_return_no      VARCHAR(64) NOT NULL DEFAULT '',
+  profit_sharing_return_state   VARCHAR(32) NOT NULL DEFAULT '',
+  profit_sharing_return_payload MEDIUMTEXT,
+  error_code            VARCHAR(64) NOT NULL DEFAULT '',
+  error_msg             VARCHAR(512) NOT NULL DEFAULT '',
+  created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_out_refund_no (out_refund_no),
+  INDEX idx_order (order_type, order_id),
+  INDEX idx_aftersale (aftersale_id),
+  INDEX idx_status (status),
+  INDEX idx_sub_mchid (sub_mchid)
+) ENGINE=InnoDB COMMENT='微信支付退款单';

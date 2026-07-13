@@ -210,8 +210,8 @@
     <div class="nav-item" data-panel="announcements" onclick="switchPanel(this)">
       <span class="nav-icon">📢</span> 平台公告
     </div>
-    <div class="nav-item" data-panel="experts" onclick="switchPanel(this)">
-      <span class="nav-icon">🎓</span> 专家讲堂
+    <div class="nav-item" data-panel="expertAccounts" onclick="switchPanel(this)">
+      <span class="nav-icon">🎓</span> 专家账号
     </div>
     <div class="nav-item" data-panel="aftersale" onclick="switchPanel(this)">
       <span class="nav-icon">🔄</span> 售后管理
@@ -328,6 +328,24 @@
       </div>
     </div>
 
+    <!-- ══ 专家账号面板 ══ -->
+    <div class="panel" id="panel-expertAccounts">
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">专家账号管理</span>
+          <span class="badge" id="expert-account-count">0 位专家</span>
+          <button class="act-btn approve" onclick="openExpertAccountAdd()">+ 新增专家</button>
+          <button class="act-btn" onclick="loadExpertAccounts()" style="background:#F0F0F0;color:#555">刷新</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>手机号</th><th>专家姓名</th><th>职称/单位</th><th>擅长领域</th><th>状态</th><th>创建时间</th><th>操作</th></tr>
+          </thead>
+          <tbody id="expertAccountTable"><tr class="empty-row"><td colspan="8">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- ══ 专家讲堂面板 ══ -->
     <div class="panel" id="panel-experts">
       <div class="table-wrap">
@@ -342,6 +360,27 @@
             <tr><th>封面</th><th>标题</th><th>类型</th><th>分类</th><th>讲师</th><th>价格</th><th>互动</th><th>状态</th><th>操作</th></tr>
           </thead>
           <tbody id="expertTable"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-wrap" style="margin-top:18px">
+        <div class="table-head" style="flex-wrap:wrap;gap:10px">
+          <span class="table-title">农户专家提问</span>
+          <span class="badge badge-warn" id="expert-question-count">0 条待回复</span>
+          <div style="display:flex;gap:6px;margin-left:auto">
+            <select id="expert-question-status-filter" style="padding:5px 10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;outline:none" onchange="loadExpertQuestions()">
+              <option value="">全部提问</option>
+              <option value="pending">待回复</option>
+              <option value="replied">已回复</option>
+              <option value="closed">已关闭</option>
+            </select>
+            <button class="act-btn" onclick="loadExpertQuestions()" style="background:#F0F0F0;color:#555">刷新</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>农户</th><th>分类</th><th>问题</th><th>状态</th><th>提交时间</th><th>操作</th></tr>
+          </thead>
+          <tbody id="expertQuestionTable"><tr class="empty-row"><td colspan="6">加载中...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -404,8 +443,8 @@
       <div class="stats-grid" id="finance-stats" style="margin-bottom:20px">
         <div class="stat-card gold"><div class="stat-label">平台总销售额</div><div class="stat-value" id="fin-total-sales">—</div><div class="stat-sub">已完成订单</div></div>
         <div class="stat-card green"><div class="stat-label">平台总佣金</div><div class="stat-value" id="fin-total-commission">—</div><div class="stat-sub">按各商户佣金率计算</div></div>
-        <div class="stat-card blue"><div class="stat-label">待审批提现</div><div class="stat-value" id="fin-pending-wd">—</div><div class="stat-sub">笔</div></div>
-        <div class="stat-card red"><div class="stat-label">冻结资金</div><div class="stat-value" id="fin-total-frozen">—</div><div class="stat-sub">7天售后期</div></div>
+        <div class="stat-card blue"><div class="stat-label">商户可结算资金</div><div class="stat-value" id="fin-total-available">—</div><div class="stat-sub">提现在微信支付商户平台处理</div></div>
+        <div class="stat-card red"><div class="stat-label">冻结资金</div><div class="stat-value" id="fin-total-frozen">—</div><div class="stat-sub" id="fin-freeze-sub">按当前配置</div></div>
       </div>
       <!-- 商户财务汇总 -->
       <div class="table-wrap" style="margin-bottom:20px">
@@ -419,35 +458,10 @@
             <tr>
               <th>商户名称</th><th>手机号</th><th>佣金率</th>
               <th>完成销售额</th><th>平台佣金</th>
-              <th>可提现</th><th>冻结中</th><th>已提现</th><th>待审批提现</th>
+              <th>可结算</th><th>冻结中</th>
             </tr>
           </thead>
-          <tbody id="financeTable"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody>
-        </table>
-      </div>
-      <!-- 提现申请记录 -->
-      <div class="table-wrap">
-        <div class="table-head" style="flex-wrap:wrap;gap:10px">
-          <span class="table-title">提现申请记录</span>
-          <span class="badge" id="withdrawal-count">0</span>
-          <div style="display:flex;gap:6px;margin-left:auto">
-            <select id="withdrawal-status-filter" style="padding:5px 10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;outline:none" onchange="loadWithdrawals()">
-              <option value="">全部状态</option>
-              <option value="pending">待审批</option>
-              <option value="paid">已到账</option>
-              <option value="rejected">已拒绝</option>
-            </select>
-            <button class="act-btn" onclick="loadWithdrawals()" style="background:#F0F0F0;color:#555">刷新</button>
-          </div>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th><th>商户名称</th><th>手机号</th><th>提现金额</th>
-              <th>状态</th><th>备注</th><th>申请时间</th><th>到账时间</th><th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="withdrawalTable"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody>
+          <tbody id="financeTable"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -559,6 +573,32 @@
   </div>
 </div>
 
+<!-- ══ 弹窗：专家账号（新增/编辑）══ -->
+<div class="modal-mask" id="modalExpertAccount">
+  <div class="modal">
+    <h3 id="expertAccountModalTitle">新增专家账号</h3>
+    <input type="hidden" id="xa-id">
+    <div class="mrow">
+      <div class="mfield"><label>手机号 <span class="req">*</span></label><input id="xa-phone" placeholder="专家登录账号"></div>
+      <div class="mfield"><label>登录密码 <span class="req" id="xa-pwd-req">*</span></label><input id="xa-password" placeholder="新增必填，编辑时留空表示不修改"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>专家姓名 <span class="req">*</span></label><input id="xa-name" placeholder="如：阿不都农艺师"></div>
+      <div class="mfield"><label>职称</label><input id="xa-title" placeholder="如：高级农艺师"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>单位</label><input id="xa-org" placeholder="如：喀什地区农技推广站"></div>
+      <div class="mfield"><label>头像文字</label><input id="xa-avatar" maxlength="2" placeholder="专"></div>
+    </div>
+    <div class="mfield"><label>擅长领域</label><input id="xa-specialties" placeholder="种植技术, 病虫害防治, 水肥管理"></div>
+    <div class="mfield"><label>专家简介</label><textarea id="xa-bio" rows="4" placeholder="显示给农户看的专家介绍"></textarea></div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalExpertAccount')">取消</button>
+      <button class="mbtn save" onclick="saveExpertAccount()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 弹窗：专家讲堂内容（新增/编辑）══ -->
 <div class="modal-mask" id="modalExpert">
   <div class="modal expert-form-modal">
@@ -642,6 +682,23 @@
   </div>
 </div>
 
+<!-- ══ 弹窗：回复农户专家提问 ══ -->
+<div class="modal-mask" id="modalExpertQuestion">
+  <div class="modal">
+    <h3>回复农户提问</h3>
+    <input type="hidden" id="eq-id">
+    <div class="approve-info" id="eq-detail"></div>
+    <div class="mfield">
+      <label>回复内容 <span class="req">*</span></label>
+      <textarea id="eq-reply" rows="6" placeholder="请给出清楚、可执行的处理建议"></textarea>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalExpertQuestion')">取消</button>
+      <button class="mbtn save" onclick="saveExpertQuestionReply()">发送回复</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 弹窗：审批 ══ -->
 <div class="modal-mask" id="modalApprove">
   <div class="modal">
@@ -683,7 +740,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', experts: '专家讲堂', aftersale: '售后管理', finance: '财务管理' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -703,9 +760,9 @@
     else if (panel === 'products')    loadProducts()
     else if (panel === 'orders')      loadAdminOrders()
     else if (panel === 'announcements') loadAnnouncements()
-    else if (panel === 'experts')       loadExpertContents()
+    else if (panel === 'expertAccounts') loadExpertAccounts()
     else if (panel === 'aftersale')     loadAftersales()
-    else if (panel === 'finance')       { loadFinance(); loadWithdrawals() }
+    else if (panel === 'finance')       loadFinance()
   }
 
   function fmt(dt) {
@@ -1216,7 +1273,8 @@
     pending_ship: { label:'待发货',    cls:'badge-warn'    },
     shipped:      { label:'配送中',    cls:'badge-info'    },
     completed:    { label:'已完成',    cls:'badge-ok'      },
-    refund:       { label:'售后/退款', cls:'badge-danger'  }
+    refund:       { label:'售后/退款', cls:'badge-danger'  },
+    refunded:     { label:'退款成功',  cls:'badge-danger'  }
   }
   let adminOrdersData = []
 
@@ -1277,6 +1335,112 @@
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
   function logout() { localStorage.clear(); window.location.href = '/admin/login.html' }
+
+  // ── 专家账号管理 ─────────────────────────────
+  let expertAccountData = []
+
+  function expertSpecialtiesText(value) {
+    const list = parseMaybeJson(value, [])
+    return Array.isArray(list) ? list.join('、') : String(value || '')
+  }
+
+  async function loadExpertAccounts() {
+    const tbody = document.getElementById('expertAccountTable')
+    if (!tbody) return
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">加载中...</td></tr>'
+    const r = await api('GET', '/experts')
+    if (!r || r.code !== 200) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="8">加载失败</td></tr>'
+      return
+    }
+    expertAccountData = r.data || []
+    document.getElementById('expert-account-count').textContent = `${expertAccountData.length} 位专家`
+    if (!expertAccountData.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="8">暂无专家账号</td></tr>'
+      return
+    }
+    tbody.innerHTML = expertAccountData.map(item => `
+      <tr>
+        <td>${item.id}</td>
+        <td>${esc(item.phone)}</td>
+        <td><strong>${esc(item.name)}</strong><br><span style="color:#888;font-size:12px">${esc(item.avatar || '专')}</span></td>
+        <td>${esc(item.title || '—')}<br><span style="color:#888;font-size:12px">${esc(item.org || '—')}</span></td>
+        <td>${esc(expertSpecialtiesText(item.specialties) || '—')}</td>
+        <td><span class="${item.is_active ? 'status-on' : 'status-off'}">${item.is_active ? '启用' : '停用'}</span></td>
+        <td>${fmt(item.created_at)}</td>
+        <td style="white-space:nowrap">
+          <button class="act-btn edit" onclick="openExpertAccountEdit(${item.id})">编辑</button>
+          <button class="act-btn ${item.is_active ? 'disable' : 'enable'}" onclick="toggleExpertAccount(${item.id}, ${!!item.is_active})">${item.is_active ? '停用' : '启用'}</button>
+        </td>
+      </tr>
+    `).join('')
+  }
+
+  function openExpertAccountAdd() {
+    document.getElementById('expertAccountModalTitle').textContent = '新增专家账号'
+    document.getElementById('xa-id').value = ''
+    document.getElementById('xa-phone').value = ''
+    document.getElementById('xa-phone').disabled = false
+    document.getElementById('xa-password').value = ''
+    document.getElementById('xa-pwd-req').style.display = 'inline'
+    document.getElementById('xa-name').value = ''
+    document.getElementById('xa-title').value = ''
+    document.getElementById('xa-org').value = 'Cotton 棉花平台'
+    document.getElementById('xa-avatar').value = '专'
+    document.getElementById('xa-specialties').value = '种植技术, 病虫害防治, 水肥管理'
+    document.getElementById('xa-bio').value = ''
+    document.getElementById('modalExpertAccount').classList.add('show')
+  }
+
+  function openExpertAccountEdit(id) {
+    const item = expertAccountData.find(x => Number(x.id) === Number(id))
+    if (!item) return alert('专家账号不存在')
+    document.getElementById('expertAccountModalTitle').textContent = '编辑专家账号'
+    document.getElementById('xa-id').value = item.id
+    document.getElementById('xa-phone').value = item.phone || ''
+    document.getElementById('xa-phone').disabled = true
+    document.getElementById('xa-password').value = ''
+    document.getElementById('xa-pwd-req').style.display = 'none'
+    document.getElementById('xa-name').value = item.name || ''
+    document.getElementById('xa-title').value = item.title || ''
+    document.getElementById('xa-org').value = item.org || 'Cotton 棉花平台'
+    document.getElementById('xa-avatar').value = item.avatar || '专'
+    document.getElementById('xa-specialties').value = expertSpecialtiesText(item.specialties)
+    document.getElementById('xa-bio').value = item.bio || ''
+    document.getElementById('modalExpertAccount').classList.add('show')
+  }
+
+  async function saveExpertAccount() {
+    const id = document.getElementById('xa-id').value
+    const body = {
+      phone: document.getElementById('xa-phone').value.trim(),
+      password: document.getElementById('xa-password').value.trim(),
+      name: document.getElementById('xa-name').value.trim(),
+      title: document.getElementById('xa-title').value.trim(),
+      org: document.getElementById('xa-org').value.trim(),
+      avatar: document.getElementById('xa-avatar').value.trim() || '专',
+      specialties: document.getElementById('xa-specialties').value.trim(),
+      bio: document.getElementById('xa-bio').value.trim()
+    }
+    if (!body.name) return alert('请填写专家姓名')
+    if (!id && (!/^1\d{10}$/.test(body.phone) || body.password.length < 6)) {
+      return alert('请填写正确手机号，并设置至少6位密码')
+    }
+    const r = await api(id ? 'PUT' : 'POST', id ? `/experts/${id}` : '/experts', body)
+    if (r?.code === 200) {
+      closeModal('modalExpertAccount')
+      loadExpertAccounts()
+    } else {
+      alert(r?.msg || '保存失败')
+    }
+  }
+
+  async function toggleExpertAccount(id, isActive) {
+    if (!confirm(`确定要${isActive ? '停用' : '启用'}这个专家账号吗？`)) return
+    const r = await api('PATCH', `/experts/${id}/status`, { is_active: !isActive })
+    if (r?.code === 200) loadExpertAccounts()
+    else alert(r?.msg || '操作失败')
+  }
 
   // ── 平台公告 ────────────────────────────────
   async function loadAnnouncements() {
@@ -1513,6 +1677,89 @@
     else alert(r.msg || '上传失败')
   }
 
+  let expertQuestionsData = []
+  const EXPERT_QUESTION_STATUS = {
+    pending: { label: '待回复', cls: 'badge-warn' },
+    replied: { label: '已回复', cls: 'badge-ok' },
+    closed: { label: '已关闭', cls: 'badge-info' }
+  }
+
+  async function loadExpertQuestions() {
+    const tbody = document.getElementById('expertQuestionTable')
+    if (!tbody) return
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">加载中...</td></tr>'
+    const status = document.getElementById('expert-question-status-filter')?.value || ''
+    const r = await api('GET', `/expert-questions${status ? `?status=${encodeURIComponent(status)}` : ''}`)
+    if (!r || r.code !== 200) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">加载失败</td></tr>'
+      return
+    }
+    expertQuestionsData = r.data || []
+    const pendingCount = expertQuestionsData.filter(item => item.status === 'pending').length
+    document.getElementById('expert-question-count').textContent = status ? `${expertQuestionsData.length} 条提问` : `${pendingCount} 条待回复`
+    if (!expertQuestionsData.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无农户提问</td></tr>'
+      return
+    }
+    tbody.innerHTML = expertQuestionsData.map(item => {
+      const statusInfo = EXPERT_QUESTION_STATUS[item.status] || EXPERT_QUESTION_STATUS.pending
+      const detail = [item.cropStage, item.plotName].filter(Boolean).join(' / ')
+      const images = Array.isArray(item.images) ? item.images : []
+      const imageHtml = images.length
+        ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${images.map(url => `<img src="${esc(url)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #EEE">`).join('')}</div>`
+        : ''
+      return `<tr>
+        <td><strong>${esc(item.farmerName || '农户')}</strong><br><span style="color:#888;font-size:12px">${esc(item.farmerPhone || '')}</span></td>
+        <td>${esc(item.category || '种植咨询')}<br><span style="color:#888;font-size:12px">${esc(detail || '未填写')}</span></td>
+        <td style="max-width:420px">${esc(item.question || '')}${imageHtml}${item.reply ? `<br><span style="color:#16A34A;font-size:12px">已回复：${esc(item.reply)}</span>` : ''}</td>
+        <td><span class="badge ${statusInfo.cls}">${statusInfo.label}</span></td>
+        <td>${fmt(item.createdAt)}</td>
+        <td style="white-space:nowrap">
+          <button class="act-btn edit" onclick="openExpertQuestionReply(${item.id})">${item.status === 'replied' ? '修改回复' : '回复'}</button>
+          ${item.status !== 'closed' ? `<button class="act-btn disable" onclick="closeExpertQuestion(${item.id})">关闭</button>` : ''}
+        </td>
+      </tr>`
+    }).join('')
+  }
+
+  function openExpertQuestionReply(id) {
+    const item = expertQuestionsData.find(x => Number(x.id) === Number(id))
+    if (!item) return alert('提问不存在')
+    document.getElementById('eq-id').value = item.id
+    document.getElementById('eq-reply').value = item.reply || ''
+    const images = Array.isArray(item.images) ? item.images : []
+    const imageHtml = images.length
+      ? `<p><strong>图片：</strong></p><div style="display:flex;gap:8px;flex-wrap:wrap">${images.map(url => `<a href="${esc(url)}" target="_blank"><img src="${esc(url)}" style="width:86px;height:86px;object-fit:cover;border-radius:10px;border:1px solid #EEE"></a>`).join('')}</div>`
+      : ''
+    document.getElementById('eq-detail').innerHTML = `
+      <p><strong>农户：</strong>${esc(item.farmerName || '农户')} ${esc(item.farmerPhone || '')}</p>
+      <p><strong>分类：</strong>${esc(item.category || '种植咨询')} ${item.cropStage ? `｜${esc(item.cropStage)}` : ''} ${item.plotName ? `｜${esc(item.plotName)}` : ''}</p>
+      <p><strong>问题：</strong>${esc(item.question || '')}</p>
+      ${imageHtml}
+    `
+    document.getElementById('modalExpertQuestion').classList.add('show')
+  }
+
+  async function saveExpertQuestionReply() {
+    const id = document.getElementById('eq-id').value
+    const reply = document.getElementById('eq-reply').value.trim()
+    if (!reply) return alert('请填写回复内容')
+    const r = await api('PATCH', `/expert-questions/${id}/reply`, { reply })
+    if (r?.code === 200) {
+      closeModal('modalExpertQuestion')
+      loadExpertQuestions()
+    } else {
+      alert(r?.msg || '回复失败')
+    }
+  }
+
+  async function closeExpertQuestion(id) {
+    if (!confirm('确定关闭这条提问吗？')) return
+    const r = await api('PATCH', `/expert-questions/${id}/status`, { status: 'closed' })
+    if (r?.code === 200) loadExpertQuestions()
+    else alert(r?.msg || '操作失败')
+  }
+
   // ── 佣金费率 ─────────────────────────────────
   let _commissionUserId = null
 
@@ -1631,45 +1878,39 @@
   }
 
   // ── 财务管理 ─────────────────────────────────
-  const WD_STATUS = {
-    pending:  { label: '待审批', cls: 'badge-warn'   },
-    paid:     { label: '已到账', cls: 'badge-ok'     },
-    rejected: { label: '已拒绝', cls: 'badge-danger' }
-  }
-  let withdrawalData = []
-
   async function loadFinance() {
     const tbody = document.getElementById('financeTable')
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">加载中...</td></tr>'
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载中...</td></tr>'
     try {
       const r = await api('GET', '/finance')
-      if (!r || r.code !== 200) { tbody.innerHTML = '<tr class="empty-row"><td colspan="9">加载失败</td></tr>'; return }
+      if (!r || r.code !== 200) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载失败</td></tr>'; return }
       const list = r.data || []
+      const freezeDays = Number((list[0] && list[0].settlement_freeze_days) || 0)
+      const freezeSub = document.getElementById('fin-freeze-sub')
+      if (freezeSub) freezeSub.textContent = freezeDays > 0 ? `${freezeDays}天售后期` : '确认收货后可立即分账'
       document.getElementById('finance-merchant-count').textContent = `${list.length} 家商户`
       // 汇总统计
-      let totalSales = 0, totalCommission = 0, totalFrozen = 0, pendingWdCount = 0
+      let totalSales = 0, totalCommission = 0, totalFrozen = 0, totalAvailable = 0
       list.forEach(m => {
         const sales = parseFloat(m.total_sales) || 0
         const rate  = parseFloat(m.commission_rate) || 5
         totalSales      += sales
         totalCommission += sales * rate / 100
         totalFrozen     += parseFloat(m.frozen_amount) || 0
-        pendingWdCount  += parseInt(m.pending_withdrawals) || 0
+        totalAvailable  += parseFloat(m.available_amount) || 0
       })
       document.getElementById('fin-total-sales').textContent       = '¥' + totalSales.toFixed(2)
       document.getElementById('fin-total-commission').textContent  = '¥' + totalCommission.toFixed(2)
       document.getElementById('fin-total-frozen').textContent      = '¥' + totalFrozen.toFixed(2)
-      document.getElementById('fin-pending-wd').textContent        = pendingWdCount
+      document.getElementById('fin-total-available').textContent   = '¥' + totalAvailable.toFixed(2)
 
-      if (!list.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="9">暂无已批准商户</td></tr>'; return }
+      if (!list.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无已批准商户</td></tr>'; return }
       tbody.innerHTML = list.map(m => {
         const rate       = parseFloat(m.commission_rate) || 5
         const sales      = parseFloat(m.total_sales) || 0
         const commission = (sales * rate / 100).toFixed(2)
         const available  = parseFloat(m.available_amount) || 0
         const frozen     = parseFloat(m.frozen_amount) || 0
-        const withdrawn  = parseFloat(m.withdrawn_amount) || 0
-        const pendingWd  = parseInt(m.pending_withdrawals) || 0
         return `<tr>
           <td style="font-weight:600">${esc(m.company_name||'—')}</td>
           <td style="color:#888;font-size:12px">${esc(m.phone||'—')}</td>
@@ -1678,71 +1919,11 @@
           <td style="color:#888">¥${commission}</td>
           <td style="color:#16A34A;font-weight:600">¥${available.toFixed(2)}</td>
           <td style="color:#D97706">¥${frozen.toFixed(2)}</td>
-          <td style="color:#555">¥${withdrawn.toFixed(2)}</td>
-          <td>${pendingWd > 0 ? `<span class="badge badge-warn">${pendingWd} 笔待审</span>` : '<span style="color:#BBB">—</span>'}</td>
         </tr>`
       }).join('')
     } catch (e) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="9">加载失败：${esc(e.message)}</td></tr>`
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="7">加载失败：${esc(e.message)}</td></tr>`
     }
-  }
-
-  async function loadWithdrawals() {
-    const tbody = document.getElementById('withdrawalTable')
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">加载中...</td></tr>'
-    try {
-      const status = document.getElementById('withdrawal-status-filter').value
-      const qs = status ? '?status=' + status : ''
-      const r = await api('GET', '/withdrawals' + qs)
-      if (!r) return
-      withdrawalData = r.data || []
-      document.getElementById('withdrawal-count').textContent = withdrawalData.length
-      if (!withdrawalData.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="9">暂无提现记录</td></tr>'
-        return
-      }
-      tbody.innerHTML = withdrawalData.map(w => {
-        const st = WD_STATUS[w.status] || { label: w.status, cls: 'badge' }
-        const isPending = w.status === 'pending'
-        const applyTime = w.created_at ? String(w.created_at).slice(0,16).replace('T',' ') : '—'
-        const paidTime  = w.paid_at    ? String(w.paid_at).slice(0,16).replace('T',' ')    : '—'
-        return `<tr>
-          <td style="color:#888;font-size:12px">${w.id}</td>
-          <td style="font-weight:600">${esc(w.company_name||'—')}</td>
-          <td style="color:#888;font-size:12px">${esc(w.phone||'—')}</td>
-          <td style="font-weight:700;color:#C8902E">¥${parseFloat(w.amount).toFixed(2)}</td>
-          <td><span class="badge ${st.cls}">${st.label}</span></td>
-          <td style="color:#888;font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(w.note||'—')}</td>
-          <td style="font-size:12px;color:#888">${applyTime}</td>
-          <td style="font-size:12px;color:#888">${paidTime}</td>
-          <td style="white-space:nowrap">
-            ${isPending
-              ? `<button class="act-btn approve" onclick="handleWithdrawal(${w.id},'approve')">批准</button>
-                 <button class="act-btn reject"  onclick="handleWithdrawal(${w.id},'reject')">拒绝</button>`
-              : '<span style="color:#BBB;font-size:12px">已处理</span>'}
-          </td>
-        </tr>`
-      }).join('')
-    } catch (e) {
-      tbody.innerHTML = `<tr class="empty-row"><td colspan="9">加载失败：${esc(e.message)}</td></tr>`
-    }
-  }
-
-  async function handleWithdrawal(id, action) {
-    const w = withdrawalData.find(x => x.id === id)
-    const label = action === 'approve' ? '批准' : '拒绝'
-    const merchant = w ? w.company_name : ''
-    const amount   = w ? '¥' + parseFloat(w.amount).toFixed(2) : ''
-    let note = ''
-    if (action === 'reject') {
-      note = prompt(`拒绝 ${merchant} ${amount} 的提现申请，请填写拒绝原因（可选）：`, '')
-      if (note === null) return  // 取消
-    } else {
-      if (!confirm(`确认批准 ${merchant} ${amount} 的提现申请？此操作将标记为已到账。`)) return
-    }
-    const r = await api('PATCH', `/withdrawals/${id}/handle`, { action, note: note || '' })
-    if (r?.code === 200) { alert(r.msg || label + '成功'); loadWithdrawals(); loadFinance() }
-    else alert(r?.msg || '操作失败')
   }
 
   // 初始加载

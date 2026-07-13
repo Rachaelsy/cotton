@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>专家后台登录 - Cotton 棉花平台</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      color: #173725;
+      background:
+        linear-gradient(90deg, rgba(241,248,242,.94), rgba(241,248,242,.58)),
+        url("/admin/assets/cotton-field-sky.png") center/cover no-repeat;
+    }
+    .page { min-height: 100vh; display: grid; grid-template-columns: minmax(320px, 1fr) 440px; gap: 48px; align-items: center; padding: 64px 10vw; }
+    .brand { max-width: 560px; }
+    .badge { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 999px; background: rgba(255,255,255,.76); box-shadow: 0 12px 30px rgba(23,55,37,.12); font-weight: 800; }
+    .cotton { width: 34px; height: 34px; border-radius: 50%; background: #fff; position: relative; box-shadow: inset 0 -8px 0 #e8f2e8; }
+    .cotton::before, .cotton::after { content: ""; position: absolute; border-radius: 999px; background: #fff; box-shadow: 0 8px 18px rgba(0,0,0,.08); }
+    .cotton::before { width: 20px; height: 20px; left: 2px; top: 4px; }
+    .cotton::after { width: 18px; height: 18px; right: 2px; top: 7px; }
+    h1 { margin-top: 30px; font-size: 48px; line-height: 1.16; letter-spacing: 0; }
+    .brand p { margin-top: 18px; font-size: 19px; line-height: 1.9; color: #48614f; }
+    .chips { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; }
+    .chip { padding: 10px 16px; border-radius: 999px; background: rgba(255,255,255,.78); color: #1d6b41; font-weight: 800; }
+    .card { background: rgba(255,255,255,.92); border: 1px solid rgba(45,103,65,.16); border-radius: 22px; padding: 34px; box-shadow: 0 24px 70px rgba(18,51,35,.18); backdrop-filter: blur(10px); }
+    .card h2 { font-size: 28px; margin-bottom: 10px; }
+    .desc { color: #6a7a6f; line-height: 1.7; margin-bottom: 26px; }
+    .field { margin-bottom: 18px; }
+    label { display: block; font-weight: 800; margin-bottom: 8px; }
+    input { width: 100%; height: 50px; border: 1.5px solid #d7e2d9; border-radius: 12px; padding: 0 15px; font-size: 16px; outline: none; background: #fbfdfb; }
+    input:focus { border-color: #248548; box-shadow: 0 0 0 4px rgba(36,133,72,.12); }
+    button { width: 100%; height: 52px; border: 0; border-radius: 13px; background: #1f7f43; color: #fff; font-size: 18px; font-weight: 900; cursor: pointer; box-shadow: 0 16px 30px rgba(31,127,67,.22); }
+    button:disabled { opacity: .72; cursor: not-allowed; }
+    .err { min-height: 24px; margin-top: 14px; color: #c0392b; font-weight: 700; }
+    .hint { margin-top: 18px; padding: 14px; border-radius: 12px; background: #f1f7ef; color: #46604c; line-height: 1.7; }
+    .back { display: block; text-align: center; margin-top: 18px; color: #1f7f43; font-weight: 800; text-decoration: none; }
+    @media (max-width: 900px) {
+      .page { grid-template-columns: 1fr; padding: 36px 18px; gap: 24px; }
+      h1 { font-size: 34px; }
+      .brand p { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="brand">
+      <div class="badge"><span class="cotton"></span><span>Cotton 棉花平台</span></div>
+      <h1>专家后台</h1>
+      <p>回复农户提交的问题，发布培训视频、图文课程和练习题。专家账号由管理员单独创建，和管理员账号互不混用。</p>
+      <div class="chips">
+        <span class="chip">农户提问</span>
+        <span class="chip">课程上架</span>
+        <span class="chip">互动练习</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>登录专家后台</h2>
+      <p class="desc">登录后可以处理专家讲堂里的提问和培训内容。</p>
+      <div class="field">
+        <label for="phone">专家账号</label>
+        <input id="phone" type="text" placeholder="请输入管理员手机号" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="pwd">登录密码</label>
+        <input id="pwd" type="password" placeholder="请输入密码" autocomplete="current-password">
+      </div>
+      <button id="loginBtn" onclick="login()">进入专家后台</button>
+      <div class="err" id="err"></div>
+      <div class="hint">提示：请使用管理员在后台创建的专家账号登录。</div>
+      <a class="back" href="/admin/login.html">返回统一登录入口</a>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById('pwd').addEventListener('keydown', e => {
+      if (e.key === 'Enter') login()
+    })
+
+    async function login() {
+      const phone = document.getElementById('phone').value.trim()
+      const password = document.getElementById('pwd').value
+      const err = document.getElementById('err')
+      const btn = document.getElementById('loginBtn')
+      if (!phone || !password) {
+        err.textContent = '请填写专家账号和登录密码'
+        return
+      }
+
+      btn.disabled = true
+      btn.textContent = '正在登录...'
+      err.textContent = ''
+      try {
+        const res = await fetch('/api/expert-admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        })
+        const data = await res.json()
+        if (data.code === 200) {
+          localStorage.setItem('expert_token', data.data.token)
+          localStorage.setItem('expert_name', data.data.name || '平台专家')
+          location.href = '/expert/dashboard.html'
+          return
+        }
+        err.textContent = data.msg || '登录失败'
+      } catch (error) {
+        err.textContent = '网络错误，请检查后端服务'
+      } finally {
+        btn.disabled = false
+        btn.textContent = '进入专家后台'
+      }
+    }
+  </script>
+</body>
+</html>

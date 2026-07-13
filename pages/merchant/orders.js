@@ -5,7 +5,8 @@ const STATUS_MAP = {
   shipped:      { label: '已发货', cls: 'shipped' },
   completed:    { label: '已完成', cls: 'done' },
   aftersale:    { label: '售后中', cls: 'refund' },
-  refund:       { label: '售后中', cls: 'refund' }
+  refund:       { label: '售后中', cls: 'refund' },
+  refunded:     { label: '退款成功', cls: 'refund' }
 }
 
 Page({

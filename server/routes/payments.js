@@ -5,6 +5,7 @@ const db = require('../db/database')
 const { notifyNewOrder } = require('../utils/notify')
 const wxpay = require('../utils/wechat-pay')
 const profitSharing = require('../utils/profit-sharing')
+const refunds = require('../utils/refunds')
 
 const router = express.Router()
 const ok = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -391,6 +392,26 @@ router.post('/wechat/notify', async (req, res) => {
   } catch (error) {
     console.error('[wechat-notify]', error)
     return res.status(500).json({ code: 'FAIL', message: 'wechat pay notify failed' })
+  }
+})
+
+router.post('/wechat/refund-notify', async (req, res) => {
+  try {
+    const cfg = wxpay.getNotifyConfig()
+    if (!cfg) return res.status(500).json({ code: 'FAIL', message: 'wechat pay notify is not configured' })
+
+    const rawBody = getRawBody(req)
+    if (!rawBody || !wxpay.verifyNotifySignature(req, rawBody, cfg)) {
+      return res.status(401).json({ code: 'FAIL', message: 'invalid wechat pay signature' })
+    }
+
+    const body = JSON.parse(rawBody)
+    const refund = wxpay.decryptNotifyResource(body.resource, cfg.apiV3Key)
+    await refunds.handleRefundNotify(refund)
+    return res.json({ code: 'SUCCESS', message: 'success' })
+  } catch (error) {
+    console.error('[wechat-refund-notify]', error)
+    return res.status(error.statusCode || 500).json({ code: 'FAIL', message: error.message || 'wechat refund notify failed' })
   }
 })
 

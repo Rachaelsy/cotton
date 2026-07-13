@@ -5,14 +5,23 @@ const layout = require('../../utils/layout')
 
 // DB status → 中文状态
 const DB_STATUS_MAP = {
+  pending_payment: '待付款',
   pending_ship: '待发货',
   shipped:      '已发货',
   completed:    '已完成',
   refund:       '售后中',
-  refunded:     '售后完成'
+  refunded:     '售后完成',
+  cancelled:    '已取消'
 }
 
 const STATUS_CONFIG = {
+  '待付款': {
+    icon: '¥',
+    label: '待付款',
+    sub: '订单尚未完成支付',
+    stepIndex: 0,
+    shipped: false
+  },
   '待发货': {
     icon: '📦',
     label: '待发货',
@@ -47,10 +56,36 @@ const STATUS_CONFIG = {
     sub: '售后已处理完毕',
     stepIndex: 3,
     shipped: true
+  },
+  '已取消': {
+    icon: '✕',
+    label: '已取消',
+    sub: '订单已取消',
+    stepIndex: 0,
+    shipped: false
   }
 }
 
 const STEPS = ['已下单', '待发货', '已发货', '已完成']
+
+function normalizeStatus(status) {
+  if (!status) return '待发货'
+  if (DB_STATUS_MAP[status]) return DB_STATUS_MAP[status]
+  if (STATUS_CONFIG[status]) return status
+  return '待发货'
+}
+
+function aftersaleStatusLabel(aftersaleStatus, orderStatus) {
+  if (orderStatus === '售后完成') return '退款成功'
+  const map = { pending: '待处理', approved: '已同意', rejected: '已拒绝' }
+  return map[aftersaleStatus] || aftersaleStatus || ''
+}
+
+function aftersaleStatusClass(aftersaleStatus, orderStatus) {
+  if (orderStatus === '售后完成' || aftersaleStatus === 'approved') return 'approved'
+  if (aftersaleStatus === 'rejected') return 'rejected'
+  return 'pending'
+}
 
 Page({
   data: {
@@ -92,7 +127,7 @@ Page({
         if (res.code === 200 && Array.isArray(res.data)) {
           const fresh = res.data.find(o => String(o.id) === String(saved.orderId))
           if (fresh) {
-            order.status       = DB_STATUS_MAP[fresh.status] || '待发货'
+            order.status       = normalizeStatus(fresh.status)
             order.logisticsNo  = fresh.logistics_no || ''
             order.has_reviewed = fresh.has_reviewed
           }
@@ -107,7 +142,8 @@ Page({
       || (order.orderId ? String(order.orderId).slice(-10).toUpperCase()
                         : 'MG' + Date.now().toString().slice(-10))
 
-    const status = order.status || '待发货'
+    const status = normalizeStatus(order.status)
+    order.status = status
     const cfg = STATUS_CONFIG[status] || STATUS_CONFIG['待发货']
 
     const stepIndex = cfg.stepIndex
@@ -136,11 +172,11 @@ Page({
       try {
         const ar = await auth.request('GET', `/api/orders/${saved.orderId}/aftersale`)
         if (ar.code === 200 && ar.data) {
-          const statusMap = { pending: '待处理', approved: '已同意', rejected: '已拒绝' }
           this.setData({
             aftersale: {
               ...ar.data,
-              statusLabel: statusMap[ar.data.status] || ar.data.status
+              statusLabel: aftersaleStatusLabel(ar.data.status, status),
+              displayStatus: aftersaleStatusClass(ar.data.status, status)
             }
           })
         } else {

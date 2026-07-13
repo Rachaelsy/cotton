@@ -2,11 +2,11 @@ const auth = require('../../utils/auth')
 
 const STATUS_CLS = {
   pending_ship: 'pending', shipped: 'pending',
-  completed: 'done', aftersale: 'refund', refund: 'refund'
+  completed: 'done', aftersale: 'refund', refund: 'refund', refunded: 'refund'
 }
 const STATUS_LBL = {
   pending_ship: '待发货', shipped: '已发货',
-  completed: '已完成', aftersale: '售后中', refund: '售后中'
+  completed: '已完成', aftersale: '售后中', refund: '售后中', refunded: '退款成功'
 }
 
 Page({
