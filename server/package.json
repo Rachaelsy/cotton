@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node tests/plots.test.js && node tests/weather.test.js && node tests/qweather.test.js && node tests/weather-model.test.js && node tests/ai.test.js && node tests/miniapp-voice.test.js && node tests/miniapp-markdown.test.js && node tests/home-ui.test.js && node tests/client-config.test.js && node tests/root-redirect.test.js && node tests/admin-login-ui.test.js && node tests/portal-register-ui.test.js && node tests/wechat-applyment-ui.test.js && node tests/wechat-pay.test.js && node tests/wechat-applyment.test.js && node tests/payments.test.js && node tests/profit-sharing.test.js && node tests/refunds.test.js"
+    "test": "node tests/plots.test.js && node tests/weather.test.js && node tests/qweather.test.js && node tests/weather-model.test.js && node tests/ai.test.js && node tests/miniapp-voice.test.js && node tests/miniapp-markdown.test.js && node tests/home-ui.test.js && node tests/client-config.test.js && node tests/root-redirect.test.js && node tests/admin-login-ui.test.js && node tests/portal-register-ui.test.js && node tests/wechat-applyment-ui.test.js && node tests/wechat-pay.test.js && node tests/wechat-applyment.test.js && node tests/applyment-registration.test.js && node tests/payments.test.js && node tests/profit-sharing.test.js && node tests/refunds.test.js && node tests/logistics.test.js && node tests/commission-requests.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

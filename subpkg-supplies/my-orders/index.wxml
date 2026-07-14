@@ -44,6 +44,14 @@
             </view>
             <text wx:if="{{item.moreCount > 0}}" class="goods-more">+{{item.moreCount}}件</text>
           </view>
+          <view wx:if="{{item.logisticsNo && (item.status === 'shipped' || item.status === 'completed')}}" class="logistics-preview">
+            <text class="logistics-preview-icon">🚚</text>
+            <view class="logistics-preview-info">
+              <text class="logistics-preview-status">{{item.logisticsStatus || '已发货'}}</text>
+              <text class="logistics-preview-text">{{item.logisticsLatest || item.logisticsFallback}}</text>
+            </view>
+            <text class="logistics-preview-arrow">›</text>
+          </view>
           <view class="card-foot">
             <text class="order-time">{{item.createDate}}</text>
             <view class="amount-row">

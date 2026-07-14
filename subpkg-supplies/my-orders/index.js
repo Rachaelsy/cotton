@@ -86,6 +86,11 @@ Page({
           total: o.total,
           firstItem,
           moreCount: o.items && o.items.length > 1 ? o.items.length - 1 : 0,
+          logisticsLatest: o.logistics_latest || '',
+          logisticsStatus: o.logistics_status || '',
+          logisticsCompanyName: o.logistics_company_name || '',
+          logisticsNo: o.logistics_no || '',
+          logisticsFallback: [o.logistics_company_name, o.logistics_no].filter(Boolean).join(' '),
           createDate: fmtDate(o.created_at),
           _ts: o.created_at ? new Date(o.created_at).getTime() : 0,
           canDelete: o.status === 'completed' || o.status === 'refunded' || o.status === 'cancelled'
@@ -141,6 +146,9 @@ Page({
       subtotal: o.subtotal, deliveryFee: o.delivery_fee, total: o.total,
       payMethod: o.pay_method, status: this._dbStatusToLabel(o.status),
       address: o.address, receiverName: o.receiver_name, receiverPhone: o.receiver_phone,
+      logisticsNo: o.logistics_no || '', logisticsCompany: o.logistics_company || '',
+      logisticsCompanyName: o.logistics_company_name || '', logisticsStatus: o.logistics_status || '',
+      logisticsLatest: o.logistics_latest || '', logisticsUpdatedAt: o.logistics_updated_at || '',
       merchantPhone: firstItem.merchantPhone || '', merchantWechat: firstItem.merchantWechat || ''
     }
     wx.navigateTo({ url: '/subpkg-supplies/supplies-order/index' })

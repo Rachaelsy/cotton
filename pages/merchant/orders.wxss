@@ -110,6 +110,9 @@
 .ship-modal { background: #fff; border-radius: 22rpx; padding: 48rpx 40rpx 36rpx; width: 600rpx; }
 .ship-title { display: block; font-size: 32rpx; font-weight: 700; color: #18231A; margin-bottom: 12rpx; text-align: center; }
 .ship-desc { display: block; font-size: 24rpx; color: #8A948B; margin-bottom: 32rpx; text-align: center; }
+.ship-picker { border: 2rpx solid #E5E7EB; border-radius: 12rpx; padding: 20rpx 24rpx; margin-bottom: 18rpx; display: flex; align-items: center; justify-content: space-between; font-size: 28rpx; color: #18231A; }
+.ship-picker.placeholder { color: #9CA3AF; }
+.ship-picker-arrow { color: #687468; font-size: 30rpx; }
 .ship-input { border: 2rpx solid #E5E7EB; border-radius: 12rpx; padding: 20rpx 24rpx; font-size: 28rpx; color: #18231A; margin-bottom: 36rpx; }
 .ship-actions { display: flex; flex-direction: row; gap: 20rpx; }
 .ship-btn { flex: 1; height: 80rpx; border-radius: 16rpx; display: flex; align-items: center; justify-content: center; font-size: 28rpx; }

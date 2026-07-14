@@ -1,4 +1,4 @@
-// pages/machine/pay.js — 农机预约支付（模拟）
+// pages/machine/pay.js — 农机预约微信支付
 const app  = getApp()
 const auth = require('../../utils/auth')
 
@@ -28,7 +28,8 @@ Page({
     try {
       const prepay = await auth.request('POST', '/api/pay/wechat/prepay', {
         orderType: 'machine',
-        orderId: this.data.orderId
+        orderId: this.data.orderId,
+        payMode: this.data.payMode
       })
       if (prepay.code !== 200 || !(prepay.data && prepay.data.payParams)) {
         throw new Error(prepay.msg || '微信支付暂不可用')

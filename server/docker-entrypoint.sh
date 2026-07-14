@@ -40,6 +40,7 @@ node db/migrate_merchant_approval.js  2>/dev/null || true
 node db/migrate_openid.js             2>/dev/null || true
 node db/migrate_product_image.js      2>/dev/null || true
 node db/migrate_orders.js             2>/dev/null || true
+node db/migrate_logistics.js          2>/dev/null || true
 node db/migrate_product_detail.js     2>/dev/null || true
 node db/migrate_merchant_wechat.js    2>/dev/null || true
 node db/migrate_aftersale.js          2>/dev/null || true
@@ -56,6 +57,7 @@ node db/migrate_order_delete.js       2>/dev/null || true
 node db/migrate_delivery_range.js     2>/dev/null || true
 node db/migrate_wechat_service_provider.js 2>/dev/null || true
 node db/migrate_profit_sharing.js     2>/dev/null || true
+node db/migrate_commission_requests.js 2>/dev/null || true
 node db/migrate_wechat_refunds.js     2>/dev/null || true
 node db/migrate_experts.js            2>/dev/null || true
 node db/migrate_expert_contents.js    2>/dev/null || true

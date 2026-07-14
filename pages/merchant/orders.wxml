@@ -91,7 +91,13 @@
   <view wx:if="{{showShipModal}}" class="ship-overlay" catchtap="onCancelShip">
     <view class="ship-modal" catchtap="">
       <text class="ship-title">确认发货</text>
-      <text class="ship-desc">请填写物流单号，农户将收到发货通知</text>
+      <text class="ship-desc">选择快递公司并填写单号，农户可自动查看真实物流轨迹</text>
+      <picker mode="selector" range="{{carrierNames}}" value="{{carrierIndex}}" bindchange="onCarrierChange">
+        <view class="ship-picker {{carrierName ? '' : 'placeholder'}}">
+          <text>{{carrierName || '请选择快递公司'}}</text>
+          <text class="ship-picker-arrow">⌄</text>
+        </view>
+      </picker>
       <input
         class="ship-input"
         placeholder="输入物流单号"

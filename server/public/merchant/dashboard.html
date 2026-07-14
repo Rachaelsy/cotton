@@ -415,6 +415,17 @@
 
     <!-- ══ 5. 财务结算 ══ -->
     <div class="panel" id="panel-finance">
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-head"><span class="card-title">平台佣金比例</span><span id="merchantCommissionCurrent" class="badge badge-on">--%</span></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:180px minmax(260px,1fr) auto;gap:12px;align-items:end">
+            <div class="form-field"><label>申请调整为（%）</label><input id="merchantCommissionRequested" type="number" min="0" max="100" step="0.01"></div>
+            <div class="form-field"><label>调整理由（必填）</label><input id="merchantCommissionReason" maxlength="255" placeholder="请说明经营成本、服务范围等调整原因"></div>
+            <button class="btn btn-primary" onclick="submitMerchantCommission()">提交管理员审核</button>
+          </div>
+          <div id="merchantCommissionStatus" style="font-size:13px;color:#777;margin-top:12px">暂无调整申请</div>
+        </div>
+      </div>
       <!-- 余额卡片 -->
       <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
         <div class="withdraw-card" style="flex:1;min-width:260px">
@@ -735,8 +746,12 @@
     <input type="hidden" id="ship-order-id">
     <div class="mfield"><label>快递公司</label>
       <select id="ship-carrier">
-        <option>中通快递</option><option>圆通快递</option><option>韵达快递</option>
-        <option>顺丰速运</option><option>邮政EMS</option><option>其他</option>
+        <option value="">请选择快递公司</option>
+        <option value="zhongtong">中通快递</option><option value="yuantong">圆通速递</option>
+        <option value="yunda">韵达快递</option><option value="shunfeng">顺丰速运</option>
+        <option value="shentong">申通快递</option><option value="jtexpress">极兔速递</option>
+        <option value="jd">京东物流</option><option value="ems">邮政EMS</option>
+        <option value="youzhengguonei">邮政快递包裹</option><option value="debangwuliu">德邦物流</option>
       </select>
     </div>
     <div class="mfield"><label>运单号 <span class="req">*</span></label><input id="ship-no" placeholder="请输入快递单号"></div>
@@ -1254,27 +1269,30 @@ function showOrderDetail(id) {
       </div>
     </div>
     ${o.note ? `<div style="background:#FFF3E0;border-radius:8px;padding:10px 12px;font-size:13px;color:#D97706">买家备注：${esc(o.note)}</div>` : ''}
-    ${o.logistics_no ? `<div style="margin-top:10px;font-size:13px;color:#555">物流单号：<strong>${esc(o.logistics_no)}</strong></div>` : ''}
+    ${o.logistics_no ? `<div style="margin-top:10px;font-size:13px;color:#555">物流：<strong>${esc(o.logistics_company_name || '')} ${esc(o.logistics_no)}</strong>${o.logistics_latest ? `<div style="margin-top:6px;color:#777">${esc(o.logistics_latest)}</div>` : ''}</div>` : ''}
   `
   showModal('modalOrder')
 }
 
 function openShip(id) {
   document.getElementById('ship-order-id').value = id
+  document.getElementById('ship-carrier').value = ''
   document.getElementById('ship-no').value = ''
   showModal('modalShip')
 }
 
 async function confirmShip() {
   const id = document.getElementById('ship-order-id').value
+  const company = document.getElementById('ship-carrier').value
   const no = document.getElementById('ship-no').value.trim()
+  if (!company) { alert('请选择快递公司'); return }
   if (!no) { alert('请输入运单号'); return }
   try {
-    const r = await api('PATCH', '/orders/' + id + '/ship', { logistics_no: no })
+    const r = await api('PATCH', '/orders/' + id + '/ship', { logistics_no: no, logistics_company: company })
     if (!r) return
     closeModal('modalShip')
     loadOrders(currentOrderTab)
-    alert('发货成功！运单号：' + no)
+    alert((r.msg || '发货成功') + '\n运单号：' + no)
   } catch(e) { alert('发货失败：' + e.message) }
 }
 
@@ -1298,6 +1316,7 @@ function exportOrders() { alert('订单导出功能开发中，敬请期待') }
 ════════════════════════════════════════════ */
 async function loadFinance() {
   try {
+    loadMerchantCommission()
     const r = await api('GET', '/finance')
     if (!r || r.code !== 200) return
     financeData = r.data
@@ -1332,6 +1351,30 @@ async function loadFinance() {
     document.getElementById('settle-commission-th').textContent = `佣金(${pct}%)`
     loadSettleTable(financeData.settlements)
   } catch(e) { console.error('[loadFinance]', e) }
+}
+
+async function loadMerchantCommission() {
+  const r = await api('GET', '/commission')
+  if (!r || r.code !== 200) return
+  const d = r.data || {}
+  document.getElementById('merchantCommissionCurrent').textContent = `${Number(d.current_rate || 0).toFixed(2)}%`
+  const latest = d.latest_request
+  const labels = { pending:'待管理员审核', approved:'已通过', rejected:'已拒绝', cancelled:'已取消' }
+  document.getElementById('merchantCommissionStatus').textContent = latest
+    ? `最近申请：${Number(latest.current_rate).toFixed(2)}% → ${Number(latest.requested_rate).toFixed(2)}%，${labels[latest.status] || latest.status}${latest.review_note ? '；审核说明：' + latest.review_note : ''}`
+    : '暂无调整申请'
+}
+
+async function submitMerchantCommission() {
+  const requestedRate = Number(document.getElementById('merchantCommissionRequested').value)
+  const reason = document.getElementById('merchantCommissionReason').value.trim()
+  if (!Number.isFinite(requestedRate) || requestedRate < 0 || requestedRate > 100) return alert('请输入 0 到 100 的佣金比例')
+  if (reason.length < 5) return alert('请详细说明调整理由')
+  const r = await api('POST', '/commission-change-requests', { requested_rate: requestedRate, reason })
+  if (!r || r.code !== 200) return alert((r && r.msg) || '提交失败')
+  document.getElementById('merchantCommissionReason').value = ''
+  alert('已提交管理员审核')
+  loadMerchantCommission()
 }
 
 function loadSettleTable(data) {

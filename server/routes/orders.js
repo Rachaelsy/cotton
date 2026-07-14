@@ -255,7 +255,9 @@ router.get('/my', farmerAuth, async (req, res) => {
     const { status } = req.query
     let sql = `
       SELECT o.id, o.order_no, o.subtotal, o.delivery_fee, o.total,
-             o.pay_method, o.status, o.logistics_no, o.address,
+             o.pay_method, o.status, o.logistics_no, o.logistics_company,
+             o.logistics_company_name, o.logistics_state, o.logistics_status,
+             o.logistics_latest, o.logistics_arrival_time, o.logistics_updated_at, o.address,
              o.receiver_name, o.receiver_phone, o.created_at, o.pay_expires_at,
              (SELECT COUNT(*) FROM reviews rv WHERE rv.order_id = o.id) AS has_reviewed,
              GROUP_CONCAT(

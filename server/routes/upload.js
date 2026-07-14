@@ -17,6 +17,15 @@ const storage = multer.diskStorage({
   }
 })
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } })
+const publicApplymentUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/bmp'])
+    if (allowed.has(file.mimetype)) return cb(null, true)
+    cb(new Error('进件材料仅支持 JPG、PNG、BMP，且单张不超过 5MB'))
+  }
+})
 
 function anyAuth(req, res, next) {
   const auth = req.headers.authorization || ''
@@ -30,9 +39,12 @@ router.post('/', anyAuth, upload.single('file'), (req, res) => {
   res.json({ code: 200, msg: 'ok', data: { url: '/uploads/' + req.file.filename } })
 })
 
-router.post('/public', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ code: 400, msg: '未收到文件', data: null })
-  res.json({ code: 200, msg: 'ok', data: { url: '/uploads/' + req.file.filename } })
+router.post('/public', (req, res) => {
+  publicApplymentUpload.single('file')(req, res, error => {
+    if (error) return res.status(400).json({ code: 400, msg: error.message, data: null })
+    if (!req.file) return res.status(400).json({ code: 400, msg: '未收到文件', data: null })
+    res.json({ code: 200, msg: 'ok', data: { url: '/uploads/' + req.file.filename } })
+  })
 })
 
 module.exports = router

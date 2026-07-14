@@ -2,7 +2,7 @@
 <view class="page">
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
     <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
-    <text class="nav-title">支付定金</text>
+      <text class="nav-title">微信支付</text>
     <view style="width:60rpx"></view>
   </view>
 
@@ -42,7 +42,7 @@
       </view>
     </view>
 
-    <view class="trust">🛡️ 资金托管保障：款项由平台托管，作业完成后结算给机手。如机手爽约，定金原路退回并赔偿违约金。</view>
+    <view class="trust">🛡️ 微信支付保障：款项支付至农机手特约商户，作业完成后平台按审核通过的佣金比例分账。</view>
   </view>
 
   <view class="action-bar">

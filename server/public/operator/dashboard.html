@@ -207,6 +207,29 @@
 
       <!-- 微信收款 -->
       <div class="panel" id="panel-pay">
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-head">
+            <div class="card-title">农机服务结算</div>
+            <span class="pay-state enabled" id="opCommissionRate">平台佣金 --%</span>
+          </div>
+          <div class="stats-grid" style="margin:14px 0 18px">
+            <div class="stat-card"><div class="stat-label">累计实收</div><div class="stat-value" id="opFinancePaid">¥0.00</div></div>
+            <div class="stat-card"><div class="stat-label">平台佣金</div><div class="stat-value" id="opFinanceCommission">¥0.00</div></div>
+            <div class="stat-card"><div class="stat-label">农机手收入</div><div class="stat-value" id="opFinanceNet">¥0.00</div></div>
+          </div>
+          <div class="form-row" style="align-items:flex-end">
+            <div class="form-group"><label>申请调整为（%）</label><input id="opCommissionRequested" type="number" min="0" max="100" step="0.01"></div>
+            <div class="form-group" style="flex:2"><label>调整理由（必填）</label><input id="opCommissionReason" maxlength="255" placeholder="请说明希望调整佣金比例的原因"></div>
+            <button class="btn btn-primary" onclick="submitOperatorCommission()">提交管理员审核</button>
+          </div>
+          <div id="opCommissionStatus" class="help-text" style="margin:10px 0 16px">暂无调整申请</div>
+          <div style="overflow:auto">
+            <table>
+              <thead><tr><th>订单号</th><th>机具</th><th>实付</th><th>平台佣金</th><th>农机手收入</th><th>分账状态</th></tr></thead>
+              <tbody id="opFinanceTable"><tr class="empty-row"><td colspan="6">暂无结算记录</td></tr></tbody>
+            </table>
+          </div>
+        </div>
         <div class="pay-layout">
           <div class="card pay-status-card">
             <div class="card-title">微信支付入驻状态</div>
@@ -420,7 +443,7 @@
       if (name === 'dashboard') loadDashboard()
       if (name === 'machines') loadMachines()
       if (name === 'orders') loadOrders()
-      if (name === 'pay') loadApplyment()
+      if (name === 'pay') { loadApplyment(); loadOperatorFinance() }
       if (name === 'profile') loadProfile()
     }
 
@@ -613,6 +636,40 @@
       document.getElementById('payApplymentId').textContent = d.applyment_id || '-'
       document.getElementById('payMessage').textContent = d.message || '-'
       fillOperatorPayForm(d)
+    }
+    async function loadOperatorFinance() {
+      const [finance, commission] = await Promise.all([api('/operator/finance'), api('/operator/commission')])
+      if (finance.code === 200) {
+        const d = finance.data || {}
+        document.getElementById('opCommissionRate').textContent = `平台佣金 ${Number(d.commission_rate || 0).toFixed(2)}%`
+        document.getElementById('opFinancePaid').textContent = `¥${Number(d.total_paid || 0).toFixed(2)}`
+        document.getElementById('opFinanceCommission').textContent = `¥${Number(d.total_commission || 0).toFixed(2)}`
+        document.getElementById('opFinanceNet').textContent = `¥${Number(d.total_net || 0).toFixed(2)}`
+        const labels = { PENDING:'待分账', PROCESSING:'分账中', FINISHED:'已分账', FAILED:'分账失败' }
+        const rows = d.settlements || []
+        document.getElementById('opFinanceTable').innerHTML = rows.length ? rows.map(x => `<tr>
+          <td>${x.order_no || '-'}</td><td>${x.machine_name || '-'}</td><td>¥${Number(x.paid_amount || 0).toFixed(2)}</td>
+          <td>¥${Number(x.commission_amount || 0).toFixed(2)}</td><td>¥${Number(x.net_amount || 0).toFixed(2)}</td>
+          <td>${labels[String(x.profit_sharing_state || '').toUpperCase()] || '待订单完成'}</td></tr>`).join('') : '<tr class="empty-row"><td colspan="6">暂无结算记录</td></tr>'
+      }
+      if (commission.code === 200) {
+        const latest = commission.data && commission.data.latest_request
+        const labels = { pending:'待管理员审核', approved:'已通过', rejected:'已拒绝', cancelled:'已取消' }
+        document.getElementById('opCommissionStatus').textContent = latest
+          ? `最近申请：${Number(latest.current_rate).toFixed(2)}% → ${Number(latest.requested_rate).toFixed(2)}%，${labels[latest.status] || latest.status}${latest.review_note ? '；审核说明：' + latest.review_note : ''}`
+          : '暂无调整申请'
+      }
+    }
+    async function submitOperatorCommission() {
+      const requestedRate = Number(document.getElementById('opCommissionRequested').value)
+      const reason = document.getElementById('opCommissionReason').value.trim()
+      if (!Number.isFinite(requestedRate) || requestedRate < 0 || requestedRate > 100) return toast('请输入 0 到 100 的佣金比例')
+      if (reason.length < 5) return toast('请详细说明调整理由')
+      const r = await api('/operator/commission-change-requests', { method:'POST', body:JSON.stringify({ requested_rate: requestedRate, reason }) })
+      if (r.code !== 200) return toast(r.msg || '提交失败')
+      document.getElementById('opCommissionReason').value = ''
+      toast('已提交管理员审核')
+      loadOperatorFinance()
     }
     async function saveOperatorPayDraft(silent = false) {
       if (!validateOperatorApplyment(false)) return false

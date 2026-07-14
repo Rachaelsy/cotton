@@ -16,6 +16,21 @@ const mockDb = {
     if (/SELECT openid FROM users WHERE id=\?/i.test(sql)) {
       return [[{ openid: 'openid-under-sp-appid' }], []]
     }
+    if (/UPDATE machine_orders SET pay_mode=\?/i.test(compact)) return [{ affectedRows: 1 }]
+    if (/FROM machine_orders mo JOIN operators op/i.test(compact)) {
+      return [[{
+        id: 18,
+        order_no: 'MO202607140001',
+        machine_name: '采棉机',
+        total_price: '800.00',
+        deposit: '80.00',
+        operator_id: 3,
+        pay_mode: params[0] === 18 ? 'full' : 'deposit',
+        pay_status: 'unpaid',
+        sub_mchid: '1700000003',
+        commission_rate: '7.50'
+      }], []]
+    }
     if (/COUNT\(DISTINCT i\.merchant_id\).*FROM orders o/i.test(compact)) {
       if (orderMode === 'missingSub') {
         return [[{
@@ -183,6 +198,16 @@ async function run() {
     const selfMissingSub = await request(baseUrl, token, { orderType: 'supply', orderId: 9 })
     assert.strictEqual(selfMissingSub.status, 409)
     assert.match(selfMissingSub.json.msg, /自营.*子商户号|sub_mchid/)
+
+    calls.length = 0
+    const machine = await request(baseUrl, token, { orderType: 'machine', orderId: 18, payMode: 'full' })
+    assert.strictEqual(machine.status, 200)
+    const machinePrepay = calls.find(item => item.type === 'partnerJsapiPrepay')
+    assert(machinePrepay, 'machine order should call partner JSAPI prepay')
+    assert.strictEqual(machinePrepay.order.subMchid, '1700000003')
+    assert.strictEqual(machinePrepay.order.amountFen, 80000)
+    assert.strictEqual(machinePrepay.order.profitSharing, true)
+    assert.strictEqual(machinePrepay.order.attach.orderType, 'machine')
 
     console.log('payments route tests passed')
   } finally {

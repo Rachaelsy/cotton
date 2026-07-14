@@ -1,7 +1,7 @@
 # 棉花智能体 · 接口文档
 
 > 本文档记录所有后端 API 接口，包含认证、商品和管理后台三个模块。
-> 最后更新：2026-07-09
+> 最后更新：2026-07-14
 
 ---
 
@@ -836,3 +836,78 @@ const r = await fetch('/api/admin/merchants', {
   }
 }
 ```
+
+---
+
+## 八、订单物流 `/api/logistics`（微信物流助手，待绑定快递账号后联调）
+
+### 8.1 已绑定快递账号
+
+**GET** `/api/logistics/carriers`
+
+- 鉴权：无需登录。
+- 从微信物流助手读取当前小程序已绑定且可用的快递公司、月结账号和服务类型。
+
+### 8.2 商户确认发货
+
+**PATCH** `/api/merchant/orders/:id/ship`
+
+- 鉴权：商户 JWT。
+- 使用微信物流助手创建电子面单，成功后订单进入 `shipped`。
+
+```json
+{
+  "delivery_id": "ZTO",
+  "biz_id": "微信后台绑定的月结账号",
+  "service_type": 0
+}
+```
+
+### 8.3 农户查看物流
+
+**GET** `/api/logistics/orders/:id`
+
+- 鉴权：农户 JWT，只能查看自己的订单。
+- 可选参数：`refresh=1` 请求从微信物流助手刷新真实轨迹。
+- 返回 `company_name / number / state_label / latest / arrival_time / events`。
+- `enabled=false` 表示服务端尚未配置微信 AppID/AppSecret；不会返回模拟轨迹。
+
+---
+
+## 九、农机微信支付、分账与佣金审核
+
+### 9.0 商户与农机手自动进件
+
+- 统一入驻页要求提交主体证照、负责人身份证有效期、经营场景、结算账户及四类图片材料。
+- 小程序 AppID 和默认结算规则由服务端配置，不要求申请人填写。
+- 管理员批准商户或农机手后，后端自动上传图片获取微信 `media_id`、加密敏感字段并调用特约商户进件接口。
+- 自动提交失败时，本地记录 `SUBMIT_FAILED` 和微信/配置错误原因；管理员或申请人补正资料后可以重新提交。
+
+### 9.1 农机订单预支付
+
+**POST** `/api/pay/wechat/prepay`
+
+```json
+{ "orderType": "machine", "orderId": 18, "payMode": "deposit" }
+```
+
+- `payMode` 支持 `deposit`（定金）或 `full`（全款）。
+- 农机手必须已绑定有效 `sub_mchid`，否则返回 409。
+- 开启分账时，支付成功会按农机手当前佣金率创建待分账记录；作业完成并达到冻结期后自动执行微信分账。
+
+### 9.2 农机手结算
+
+- **GET** `/api/operator/finance`：订单实付、平台佣金、农机手收入、分账状态。
+- **GET** `/api/operator/commission`：当前佣金率及历史申请。
+- **POST** `/api/operator/commission-change-requests`：提交目标比例和调整理由。
+
+### 9.3 商户佣金调整
+
+- **GET** `/api/merchant/commission`：当前佣金率及历史申请。
+- **POST** `/api/merchant/commission-change-requests`：提交目标比例和调整理由。
+
+### 9.4 管理员审核
+
+- **GET** `/api/admin/commission-change-requests?status=pending`：查看待审申请。
+- **PATCH** `/api/admin/commission-change-requests/:id`：请求体为 `{ "decision":"approved|rejected", "review_note":"审核说明" }`。
+- 只有管理员通过后新佣金比例才生效；拒绝时必须填写原因。

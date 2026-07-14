@@ -191,6 +191,36 @@
   color: #18231A;
 }
 
+/* ===== 真实物流 ===== */
+.logistics-card { padding-bottom: 20rpx; }
+.logistics-head { justify-content: space-between; }
+.logistics-title-wrap { display: flex; align-items: center; gap: 12rpx; }
+.logistics-refresh { font-size: 22rpx; color: #2F8A52; padding: 8rpx 12rpx; }
+.logistics-refresh.disabled { color: #9CA3AF; }
+.logistics-summary { padding: 4rpx 0 20rpx; }
+.logistics-status-row { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-bottom: 10rpx; }
+.logistics-status { font-size: 30rpx; font-weight: 800; color: #23844A; }
+.logistics-arrival { font-size: 21rpx; color: #B9852F; }
+.logistics-latest { display: block; font-size: 25rpx; line-height: 1.55; color: #26352B; }
+.logistics-updated { display: block; margin-top: 8rpx; font-size: 20rpx; color: #9AA49B; }
+.logistics-number-row { display: flex; align-items: center; min-width: 0; padding: 18rpx 0; border-top: 1rpx solid #EAF0E6; }
+.logistics-company { font-size: 23rpx; color: #58655B; margin-right: 14rpx; flex-shrink: 0; }
+.logistics-number { min-width: 0; flex: 1; font-size: 23rpx; color: #18231A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logistics-copy { font-size: 21rpx; color: #2F8A52; padding-left: 14rpx; }
+.logistics-notice { padding: 16rpx 18rpx; margin-bottom: 12rpx; border-radius: 10rpx; background: #FFF7E8; color: #9A6700; font-size: 22rpx; line-height: 1.5; }
+.logistics-timeline { padding-top: 10rpx; border-top: 1rpx solid #EAF0E6; }
+.logistics-event { display: flex; align-items: stretch; min-height: 108rpx; }
+.logistics-axis { width: 30rpx; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.logistics-dot { width: 14rpx; height: 14rpx; margin-top: 9rpx; border-radius: 50%; background: #C7CEC8; border: 4rpx solid #F1F4F1; }
+.logistics-event.current .logistics-dot { background: #2F8A52; border-color: #DDF2E4; }
+.logistics-line { width: 2rpx; flex: 1; background: #E1E6E2; }
+.logistics-event-body { flex: 1; min-width: 0; padding: 0 0 24rpx 12rpx; }
+.logistics-event-context { display: block; font-size: 23rpx; line-height: 1.5; color: #687468; }
+.logistics-event.current .logistics-event-context { color: #18231A; font-weight: 600; }
+.logistics-event-time { display: block; margin-top: 8rpx; font-size: 20rpx; line-height: 1.4; color: #A1AAA2; }
+.logistics-empty { padding: 30rpx 0; text-align: center; font-size: 23rpx; color: #8A948B; }
+.logistics-expand { display: flex; align-items: center; justify-content: center; gap: 12rpx; padding-top: 16rpx; color: #2F8A52; font-size: 23rpx; font-weight: 600; }
+
 /* ===== 地址 ===== */
 .addr-row {
   display: flex;

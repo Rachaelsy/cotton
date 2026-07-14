@@ -39,6 +39,7 @@ node db/migrate_admin.js              # 添加 is_admin 字段 + 创建管理员
 node db/migrate_merchant_approval.js  # 添加 apply_status/reject_reason 字段
 node db/migrate_product_image.js      # 添加 image_url 字段
 node db/migrate_orders.js             # 创建 orders 和 order_items 表
+node db/migrate_logistics.js          # 订单物流公司、真实轨迹和订阅状态
 node db/migrate_product_detail.js     # 添加 detail 字段（商品详细介绍）
 node db/migrate_merchant_wechat.js    # 添加 wechat_id 字段（商家客服微信号）
 node db/migrate_aftersale.js          # 创建 aftersale_requests 表
@@ -57,6 +58,7 @@ node db/migrate_delivery_range.js     # 可配送范围（machines.service_radiu
 node db/migrate_wechat_service_provider.js # 微信支付服务商字段（sub_mchid、进件状态、素材表）
 node db/migrate_profit_sharing.js     # 微信支付分账记录表
 node db/migrate_wechat_refunds.js     # 微信支付真实退款记录表
+node db/migrate_commission_requests.js # 农机支付字段 + 商户/农机手佣金调整审核表
 node db/migrate_experts.js            # 专家账号表
 node db/migrate_expert_questions.js   # 专家提问表
 node db/seed.js                       # 插入测试用户账号
@@ -179,11 +181,43 @@ node -e "require('dotenv').config(); const { fetchQweatherWeather } = require('.
 
 服务商自营测试店铺也必须绑定一个自营特约商户号 `sub_mchid`，不能直接用服务商商户号作为普通商户收款。可在 `server/.env` 填写 `SELF_MERCHANT_SUB_MCHID`，再运行 `node db/create_self_merchant.js` 绑定到平台自营店铺。
 
-农资订单已接入微信支付服务商分账：下单时会按商户 `commission_rate` 标记为可分账订单；微信支付成功后记录待分账；确认收货并过售后冻结期后，由定时任务调用微信分账接口把平台服务费分到服务商商户号，并解冻剩余资金给特约商户。测试基础支付但暂未开通分账权限时，可在 `server/.env` 设置 `WECHAT_PAY_PROFIT_SHARING_ENABLED=false`，等微信支付分账产品和特约商户授权都开通后再改回 `true`。
+农资订单和农机租赁订单均已接入微信支付服务商分账：下单时按商户或农机手当前生效的 `commission_rate` 标记为可分账订单；微信支付成功后记录待分账；农资订单确认收货、农机订单完成作业并过冻结期后，定时任务调用微信分账接口把平台佣金分到服务商商户号。测试基础支付但暂未开通分账权限时，可在 `server/.env` 设置 `WECHAT_PAY_PROFIT_SHARING_ENABLED=false`，等微信支付分账产品和特约商户授权都开通后再改回 `true`。
+
+商户和农机手不能直接修改正在生效的佣金比例。两类后台均需填写目标比例和调整理由并提交申请，管理员在“佣金审核”中通过后新比例才生效；审核前创建的订单仍按支付时记录的比例分账。
 
 分账开通后还需要在 `server/.env` 填 `WECHAT_PAY_PROFIT_SHARING_RECEIVER_NAME`，值必须是微信支付商户平台里的接收方商户全称；`WECHAT_PAY_PROFIT_SHARING_RECEIVER_MCH_ID` 留空时默认用服务商商户号收平台佣金；`WECHAT_PAY_PROFIT_SHARING_FREEZE_DAYS` 正式环境建议 `7`，联调可临时设为 `0`。填好后进入 `server` 目录运行 `node db/ensure_profit_sharing_receivers.js`，提前登记分账接收方并验证特约商户最大分账比例。
 
 真实退款已接入微信支付服务商退款接口。商户同意售后或在订单退款入口发起后，后端会创建 `wechat_refunds` 退款单并调用微信退款；退款成功以微信退款回调 `/api/pay/wechat/refund-notify` 为准。`WECHAT_PAY_REFUND_NOTIFY_URL` 可显式配置，不填时会由 `WECHAT_PAY_NOTIFY_URL` 自动推导。
+
+### 真实快递物流配置
+
+农资订单物流已切换为微信物流助手接入骨架，当前暂停在“读取小程序已绑定快递账号”阶段。继续联调前需先在微信小程序后台确认公司已绑定的快递公司和月结账号；系统不会生成模拟物流轨迹。
+
+1. 在[快递100 API 开放平台](https://api.kuaidi100.com/)注册企业账号，开通“实时快递查询”和“快递信息推送”。
+2. 在快递100控制台取得 `customer`（授权码）和 `key`。
+3. 在 `server/.env` 填写：
+
+```env
+PUBLIC_BASE_URL=https://cyaia.cn
+WECHAT_LOGISTICS_SENDER_NAME=默认发件人姓名
+WECHAT_LOGISTICS_SENDER_MOBILE=默认发件手机号
+WECHAT_LOGISTICS_SENDER_COMPANY=公司全称
+WECHAT_LOGISTICS_SENDER_ADDRESS=省市区加详细地址
+WECHAT_LOGISTICS_TIMEOUT_MS=10000
+```
+
+4. 快递100订阅回调默认只支持 HTTP；项目使用 HTTPS 回调时，需要联系快递100技术人员为账号开通 HTTPS 回调兼容。
+5. 本地首次运行执行 `node db/migrate_logistics.js`；Docker 部署会在容器启动时自动执行该迁移。
+6. 云服务器重建容器后检查：
+
+```bash
+docker compose exec app sh -lc 'printenv WX_APPID WECHAT_LOGISTICS_SENDER_NAME'
+curl https://cyaia.cn/api/logistics/carriers
+```
+
+物流联调目前暂停；先在微信公众平台确认小程序已绑定的快递公司、月结账号和可用服务类型，再继续测试电子面单与轨迹查询。
+
+上线前还要在小程序《用户隐私保护指引》和平台隐私政策中披露：为查询快递轨迹，会向快递100提供快递公司、运单号、收件手机号及收货地区。不要在前端保存 `customer`、`key` 或回调盐值，这些凭据只能放在服务端环境变量中。
 
 > 不要把真实 `server/.env` 提交到 GitHub。真实密钥只应保存在本地开发机、服务器环境变量或安全的密钥管理服务中。
 
@@ -246,10 +280,15 @@ netsh advfirewall firewall add rule name="Cotton 3000" dir=in action=allow proto
 | 商户 | `/` 或 `/admin/login.html?role=merchant` | `/portal/register.html?role=merchant` | `/merchant/dashboard.html` |
 | 农机手 | `/` 或 `/admin/login.html?role=operator` | `/portal/register.html?role=operator` | `/operator/dashboard.html` |
 | 管理员 | `/` 或 `/admin/login.html?role=admin` | — | `/admin/dashboard.html` |
+| 专家 | `/` 或 `/admin/login.html?role=expert` | 管理员后台创建专家账号 | `/expert/dashboard.html` |
 
-访问根路径（例如 `https://cyaia.cn/` 或本地 `http://localhost:3000/`）会进入统一身份选择登录页，页面提供管理员、商户、农机手三个身份入口。网页后台登录目前只保留手机号 + 密码登录，不再提供手机号验证码登录。
+访问根路径（例如 `https://cyaia.cn/` 或本地 `http://localhost:3000/`）会进入统一身份选择登录页，页面提供管理员、商户、农机手、专家四个身份入口。网页后台登录目前只保留手机号 + 密码登录，不再提供手机号验证码登录。
 
-新农机手 / 商户在统一入驻页 `/portal/register.html` 提交资料 → 管理员在后台「机主审批」/「商户审批」面板审核 → 通过后即可登录各自工作台。
+新农机手 / 商户在统一入驻页 `/portal/register.html` 一次性提交平台资料和微信支付进件材料 → 管理员在后台「机主审批」/「商户审批」审核 → 通过后系统自动把本地证照上传微信换取 `media_id`，加密身份证、银行卡等敏感字段并提交微信支付进件。微信审核完成并返回 `sub_mchid` 后才具备真实收款条件；自动提交失败时后台会保存明确原因，可重新提交。
+
+申请人不需要理解或填写小程序 AppID、微信结算规则 ID。小程序 AppID 读取 `WX_APPID`；微信支付进件结算规则按主体类型自动选择：个体工商户默认 `719`、企业默认 `716`、其他组织默认 `727`。商户经营种子、化肥、农药等农资，农机手出租自有农机，当前统一归入微信支付通用经营类目「零售批发/生活娱乐/其他」；正式上线前仍应按实际营业执照经营范围、农药/种子等资质要求和微信支付审核意见核对。
+
+> 部署提醒：统一登录页、专家后台等网页静态文件在 Docker 镜像内。服务器 `git pull` 后如果看不到新入口，通常是容器还在跑旧镜像，需要执行 `docker compose up -d --build --remove-orphans` 重建并启动容器。
 
 ## 管理后台
 
@@ -470,9 +509,11 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | POST | `/api/merchant/login` | 公开 | 商户登录 |
 | GET  | `/api/merchant/stats` | 商户 | 店铺统计（今日订单/本月销售额等）|
 | GET  | `/api/merchant/orders` | 商户 | 本店订单列表 |
-| PATCH | `/api/merchant/orders/:id/ship` | 商户 | 发货（填写物流单号） |
+| PATCH | `/api/merchant/orders/:id/ship` | 商户 | 发货（选择快递公司并填写物流单号，自动订阅轨迹） |
+| GET | `/api/logistics/orders/:id` | 农户 | 查看本人订单的真实物流轨迹；`refresh=1` 请求刷新 |
 | PATCH | `/api/merchant/orders/:id/refund` | 商户 | 发起真实微信退款 |
 | GET  | `/api/merchant/finance` | 商户 | 财务明细（已解冻金额、冻结金额、分账状态、结算列表） |
+| GET/POST | `/api/merchant/commission` `/api/merchant/commission-change-requests` | 商户 | 查看佣金比例 / 提交带理由的调整申请 |
 | POST | `/api/merchant/withdraw` | 商户 | 已停用，提现请到微信支付商户平台处理 |
 | GET  | `/api/merchant/messages` | 商户 | 消息中心列表 |
 | PATCH | `/api/merchant/messages/read-all` | 商户 | 全部标为已读 |
@@ -496,6 +537,7 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | PATCH | `/api/merchant/reviews/:id/reply` | 商户 | 回复买家评价 |
 | GET   | `/api/admin/aftersales` | 管理员 | 全平台售后申请列表（可按 status 筛选） |
 | GET   | `/api/admin/finance` | 管理员 | 各商户财务汇总（销售额、佣金、已解冻、冻结） |
+| GET/PATCH | `/api/admin/commission-change-requests[/:id]` | 管理员 | 查询并审核商户/农机手佣金调整申请 |
 | GET   | `/api/admin/withdrawals` | 管理员 | 已停用，提现统一在微信支付商户平台处理 |
 | PATCH | `/api/admin/withdrawals/:id/handle` | 管理员 | 已停用，提现统一在微信支付商户平台处理 |
 | GET   | `/api/plots` | 农户 | 获取本人全部地块 |
@@ -513,6 +555,8 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | GET/PUT | `/api/operator/profile` | 机主 | 机主资料 / 基地定位 |
 | GET/POST/PUT/DELETE | `/api/operator/machines[/:id]` | 机主 | 机具管理（含坐标校验）|
 | GET   | `/api/operator/orders` | 机主 | 接单列表（可按状态筛选）|
+| GET   | `/api/operator/finance` | 机主 | 农机订单实付、平台佣金、预计收入和微信分账状态 |
+| GET/POST | `/api/operator/commission` `/api/operator/commission-change-requests` | 机主 | 查看佣金比例 / 提交带理由的调整申请 |
 | PATCH | `/api/operator/orders/:id/accept` `.../reject` `.../status` | 机主 | 接单 / 拒单 / 推进作业状态 |
 | DELETE | `/api/operator/orders/:id` | 机主 | 删除（隐藏）订单 |
 | GET   | `/api/machines?lat=&lng=&category=&sort=` | 公开 | 农机列表（真实距离排序）|
@@ -520,7 +564,8 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | POST  | `/api/machine-orders` | 农户 | 提交预约（含作业地址）|
 | GET   | `/api/machine-orders/my` | 农户 | 我的农机预约（可按状态）|
 | GET   | `/api/machine-orders/:id` | 农户 | 订单跟踪详情 |
-| PATCH | `/api/machine-orders/:id/pay` `.../cancel` | 农户 | 支付 / 取消 |
+| POST  | `/api/pay/wechat/prepay` | 农户 | 农资或农机订单真实微信服务商 JSAPI 预支付（农机传 `orderType=machine`） |
+| PATCH | `/api/machine-orders/:id/cancel` | 农户 | 取消未支付农机订单 |
 | POST  | `/api/machine-orders/:id/review` | 农户 | 分项评价（及时/质量/态度/价格）|
 | DELETE | `/api/machine-orders/:id` | 农户 | 删除（隐藏）订单 |
 | GET   | `/api/admin/operator-applications` | 管理员 | 待审批机主列表 |

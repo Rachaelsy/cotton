@@ -27,6 +27,12 @@ async function run() {
     amount: 129,
     description: 'Cotton platform service fee'
   }])
+  const machineBody = profitSharing.buildProfitSharingBody({
+    cfg,
+    order: { ...order, orderType: 'machine', orderId: 18, commissionRate: 7.5 }
+  })
+  assert.strictEqual(machineBody.out_order_no, 'PS_MACHINE_18')
+  assert.strictEqual(machineBody.receivers[0].amount, 194)
 
   const receiver = profitSharing.buildPlatformReceiver({ cfg, subMchid: '1700000001' })
   assert.deepStrictEqual(receiver, {

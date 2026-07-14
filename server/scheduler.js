@@ -29,7 +29,7 @@ async function autoConfirmReceipt() {
 // 确认收货并经过配置的冻结期后，且无未拒绝的售后申请 → 资金解冻为可提现
 async function releaseFunds() {
   try {
-    const sharing = await profitSharing.releaseEligibleSupplyProfitSharing()
+    const sharing = await profitSharing.releaseEligibleProfitSharing()
     if (sharing.total) {
       console.log(`[scheduler] profit sharing release: ${sharing.success}/${sharing.total}`)
     }

@@ -103,7 +103,10 @@ Page({
     isCompleted: false,
     hasReviewed: false,
     showSuccessPopup: false,
-    aftersale: null
+    aftersale: null,
+    logistics: null,
+    logisticsLoading: false,
+    logisticsExpanded: false
   },
 
   onLoad() {
@@ -129,6 +132,11 @@ Page({
           if (fresh) {
             order.status       = normalizeStatus(fresh.status)
             order.logisticsNo  = fresh.logistics_no || ''
+            order.logisticsCompany = fresh.logistics_company || ''
+            order.logisticsCompanyName = fresh.logistics_company_name || ''
+            order.logisticsStatus = fresh.logistics_status || ''
+            order.logisticsLatest = fresh.logistics_latest || ''
+            order.logisticsUpdatedAt = fresh.logistics_updated_at || ''
             order.has_reviewed = fresh.has_reviewed
           }
         }
@@ -183,6 +191,46 @@ Page({
           this.setData({ aftersale: null })
         }
       } catch {}
+    }
+
+    if (order.logisticsNo && cfg.shipped) {
+      await this._loadLogistics(false)
+    } else {
+      this.setData({ logistics: null, logisticsExpanded: false })
+    }
+  },
+
+  async _loadLogistics(refresh) {
+    const orderId = this.data.order.orderId || app.globalData.currentOrder?.orderId
+    if (!orderId) return
+    this.setData({ logisticsLoading: true })
+    try {
+      const path = `/api/logistics/orders/${orderId}${refresh ? '?refresh=1' : ''}`
+      const result = await auth.request('GET', path)
+      if (result.code !== 200) {
+        this.setData({ logisticsLoading: false })
+        wx.showToast({ title: result.msg || '物流加载失败', icon: 'none' })
+        return
+      }
+      const data = result.data || {}
+      const events = (data.events || []).map((event, index) => ({
+        ...event,
+        current: index === 0,
+        timeText: String(event.time || '').replace('T', ' ').slice(0, 16)
+      }))
+      this.setData({
+        logistics: {
+          ...data,
+          events,
+          latestText: data.latest || events[0]?.context || '商家已发货，等待快递公司揽收',
+          updatedText: String(data.updated_at || data.queried_at || '').replace('T', ' ').slice(0, 16)
+        },
+        logisticsLoading: false
+      })
+      if (refresh) wx.showToast({ title: events.length ? '物流已更新' : '暂无新轨迹', icon: 'none' })
+    } catch (error) {
+      this.setData({ logisticsLoading: false })
+      wx.showToast({ title: '物流服务暂时不可用', icon: 'none' })
     }
   },
 
@@ -269,19 +317,21 @@ Page({
       wx.showToast({ title: '商家尚未发货', icon: 'none', duration: 1500 })
       return
     }
-    const no = this.data.order.logisticsNo
-    if (no) {
-      wx.showModal({
-        title: '物流信息',
-        content: `物流单号：${no}\n\n可复制单号至快递平台查询物流详情`,
-        confirmText: '复制单号',
-        cancelText: '关闭',
-        success: (r) => {
-          if (r.confirm) wx.setClipboardData({ data: no })
-        }
-      })
-    } else {
+    if (!this.data.order.logisticsNo) {
       wx.showToast({ title: '商家暂未填写物流单号', icon: 'none' })
+      return
     }
+    this.setData({ logisticsExpanded: !this.data.logisticsExpanded })
+    if (!this.data.logistics && !this.data.logisticsLoading) this._loadLogistics(false)
+  },
+
+  onRefreshLogistics() {
+    if (this.data.logisticsLoading) return
+    this._loadLogistics(true)
+  },
+
+  onCopyLogisticsNo() {
+    const no = this.data.order.logisticsNo
+    if (no) wx.setClipboardData({ data: no })
   }
 })

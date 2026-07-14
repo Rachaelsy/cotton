@@ -87,7 +87,7 @@ function validateReceiver(order) {
 }
 
 function shouldUseProfitSharing(order) {
-  if (!order || order.kind !== 'supply') return false
+  if (!order || !['supply', 'machine'].includes(order.kind)) return false
   if (order.isSelfOperated) return false
   if (String(process.env.WECHAT_PAY_PROFIT_SHARING_ENABLED || 'true') === 'false') return false
   return profitSharing.calculateCommissionFen(order.amount, order.commissionRate) > 0
@@ -161,8 +161,8 @@ async function loadSupplyOrderForNotify(orderId) {
 async function loadMachineOrder(orderId, userId, statuses = ['unpaid']) {
   const placeholders = statuses.map(() => '?').join(',')
   const [[order]] = await db.query(
-    `SELECT mo.id, mo.order_no, mo.machine_name, mo.total_price, mo.deposit,
-            mo.pay_mode, mo.pay_status, op.sub_mchid
+    `SELECT mo.id, mo.order_no, mo.machine_name, mo.total_price, mo.deposit, mo.operator_id,
+            mo.pay_mode, mo.pay_status, op.sub_mchid, op.commission_rate
      FROM machine_orders mo
      JOIN operators op ON op.id=mo.operator_id
      WHERE mo.id=? AND mo.farmer_id=? AND mo.pay_status IN (${placeholders})`,
@@ -177,7 +177,10 @@ async function loadMachineOrder(orderId, userId, statuses = ['unpaid']) {
     name: order.machine_name,
     amount,
     status: order.pay_status,
-    subMchid: order.sub_mchid || ''
+    subMchid: order.sub_mchid || '',
+    operatorId: order.operator_id,
+    commissionRate: Number(order.commission_rate || 0),
+    isSelfOperated: false
   }
 }
 
@@ -188,7 +191,7 @@ async function loadAnyMachineOrder(orderId, userId) {
 async function loadMachineOrderForNotify(orderId) {
   const [[order]] = await db.query(
     `SELECT mo.id, mo.order_no, mo.machine_name, mo.total_price, mo.deposit,
-            mo.pay_mode, mo.pay_status, op.sub_mchid
+            mo.pay_mode, mo.pay_status, mo.operator_id, op.sub_mchid, op.commission_rate
      FROM machine_orders mo
      JOIN operators op ON op.id=mo.operator_id
      WHERE mo.id=?`,
@@ -203,15 +206,20 @@ async function loadMachineOrderForNotify(orderId) {
     name: order.machine_name,
     amount,
     status: order.pay_status,
-    subMchid: order.sub_mchid || ''
+    subMchid: order.sub_mchid || '',
+    operatorId: order.operator_id,
+    commissionRate: Number(order.commission_rate || 0),
+    isSelfOperated: false
   }
 }
 
-async function markPaid(type, orderId, userId) {
+async function markPaid(type, orderId, userId, transaction = null, amount = 0) {
   if (type === 'machine') {
     const [r] = await db.query(
-      "UPDATE machine_orders SET pay_status='paid' WHERE id=? AND farmer_id=? AND pay_status='unpaid'",
-      [orderId, userId]
+      `UPDATE machine_orders SET pay_status='paid', paid_amount=?, transaction_id=?,
+       paid_at=NOW(), fund_status='frozen'
+       WHERE id=? AND farmer_id=? AND pay_status='unpaid'`,
+      [Number(amount || 0), transaction?.transaction_id || '', orderId, userId]
     )
     return r.affectedRows > 0
   }
@@ -228,7 +236,7 @@ async function markPaid(type, orderId, userId) {
   return r.affectedRows > 0
 }
 
-async function markPaidByNotify(type, orderId, paidFen, transactionSubMchid) {
+async function markPaidByNotify(type, orderId, paidFen, transaction) {
   const order = type === 'machine'
     ? await loadMachineOrderForNotify(orderId)
     : await loadSupplyOrderForNotify(orderId)
@@ -236,12 +244,16 @@ async function markPaidByNotify(type, orderId, paidFen, transactionSubMchid) {
 
   const receiver = validateReceiver(order)
   if (!receiver.ok) return { ok: false, message: receiver.msg }
-  if (transactionSubMchid && transactionSubMchid !== order.subMchid) return { ok: false, message: 'sub_mchid mismatch' }
+  if (transaction.sub_mchid && transaction.sub_mchid !== order.subMchid) return { ok: false, message: 'sub_mchid mismatch' }
   if (getWechatPayChargeFen(order) !== Number(paidFen)) return { ok: false, message: 'order amount mismatch' }
 
   if (type === 'machine') {
     if (order.status === 'paid') return { ok: true, order }
-    await db.query("UPDATE machine_orders SET pay_status='paid' WHERE id=? AND pay_status='unpaid'", [orderId])
+    await db.query(
+      `UPDATE machine_orders SET pay_status='paid',paid_amount=?,transaction_id=?,
+       paid_at=NOW(),fund_status='frozen' WHERE id=? AND pay_status='unpaid'`,
+      [Number(paidFen || 0) / 100, transaction.transaction_id || '', orderId]
+    )
     return { ok: true, order }
   }
 
@@ -262,6 +274,12 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
   if (!orderId) return fail(res, '缺少订单编号')
 
   try {
+    if (orderType === 'machine' && ['deposit', 'full'].includes(req.body.payMode)) {
+      await db.query(
+        "UPDATE machine_orders SET pay_mode=? WHERE id=? AND farmer_id=? AND pay_status='unpaid'",
+        [req.body.payMode, orderId, req.user.id]
+      )
+    }
     const [[user]] = await db.query('SELECT openid FROM users WHERE id=?', [req.user.id])
     if (!user || !user.openid) return fail(res, '请先使用微信登录绑定 openid 后再支付', 409)
 
@@ -346,10 +364,10 @@ router.post('/wechat/confirm', farmerAuth, async (req, res) => {
     const paidFen = transaction.amount && (transaction.amount.payer_total || transaction.amount.total)
     if (getWechatPayChargeFen(order) !== Number(paidFen)) return fail(res, '微信支付金额与订单金额不一致', 400)
 
-    const changed = await markPaid(orderType, orderId, req.user.id)
-    if (changed && orderType === 'supply' && shouldUseProfitSharing(order)) {
+    const changed = await markPaid(orderType, orderId, req.user.id, transaction, order.amount)
+    if (changed && shouldUseProfitSharing(order)) {
       try {
-        await profitSharing.savePendingSupplyOrder({ order, transaction })
+        await profitSharing.savePendingOrder({ order, transaction })
       } catch (error) {
         console.error('[profit-sharing-record]', error.message)
       }
@@ -379,11 +397,11 @@ router.post('/wechat/notify', async (req, res) => {
     const { orderType, orderId } = parseNotifyOrder(transaction)
     if (!orderId) return res.status(400).json({ code: 'FAIL', message: 'invalid order info' })
     const paidFen = transaction.amount && (transaction.amount.payer_total || transaction.amount.total)
-    const result = await markPaidByNotify(orderType, orderId, paidFen, transaction.sub_mchid)
+    const result = await markPaidByNotify(orderType, orderId, paidFen, transaction)
     if (!result.ok) return res.status(400).json({ code: 'FAIL', message: result.message })
-    if (orderType === 'supply' && result.order && shouldUseProfitSharing(result.order)) {
+    if (result.order && shouldUseProfitSharing(result.order)) {
       try {
-        await profitSharing.savePendingSupplyOrder({ order: result.order, transaction })
+        await profitSharing.savePendingOrder({ order: result.order, transaction })
       } catch (error) {
         console.error('[profit-sharing-record]', error.message)
       }

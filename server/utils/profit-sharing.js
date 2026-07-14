@@ -55,7 +55,7 @@ function buildPlatformReceiver({ cfg, subMchid }) {
   return receiver
 }
 
-function buildSupplyProfitSharingBody({ cfg, order }) {
+function buildProfitSharingBody({ cfg, order }) {
   const amount = order.amountFen != null
     ? Number(order.amountFen)
     : calculateCommissionFen(order.amount, order.commissionRate)
@@ -105,7 +105,7 @@ async function ensurePlatformReceiver(cfg, subMchid) {
   }
 }
 
-async function savePendingSupplyOrder({ order, transaction }) {
+async function savePendingOrder({ order, transaction }) {
   const amountFen = calculateCommissionFen(order.amount, order.commissionRate)
   if (!amountFen) return null
 
@@ -114,12 +114,13 @@ async function savePendingSupplyOrder({ order, transaction }) {
 
   const db = getDb()
   const cfg = wxpay.getServiceProviderConfig() || {}
-  const outOrderNo = buildProfitSharingOutOrderNo('supply', order.id)
+  const orderType = order.kind === 'machine' ? 'machine' : 'supply'
+  const outOrderNo = buildProfitSharingOutOrderNo(orderType, order.id)
   await db.query(`
     INSERT INTO wechat_profit_sharing_orders
       (order_type, order_id, out_order_no, transaction_id, sub_mchid, receiver_account,
        amount_fen, commission_rate, state, result_payload, error_msg)
-    VALUES ('supply', ?, ?, ?, ?, ?, ?, ?, 'PENDING', '', '')
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', '', '')
     ON DUPLICATE KEY UPDATE
       out_order_no=VALUES(out_order_no),
       transaction_id=VALUES(transaction_id),
@@ -131,6 +132,7 @@ async function savePendingSupplyOrder({ order, transaction }) {
       error_msg='',
       updated_at=NOW()
   `, [
+    orderType,
     order.id,
     outOrderNo,
     transactionId,
@@ -160,9 +162,7 @@ async function syncProcessingRow(row, cfg, db) {
     JSON.stringify(result || {}),
     row.id
   ])
-  if (isFinishedState(state)) {
-    await db.query("UPDATE orders SET fund_status='available' WHERE id=? AND fund_status='frozen'", [row.order_id])
-  }
+  if (isFinishedState(state)) await markOrderFundsAvailable(db, row)
   return result
 }
 
@@ -174,7 +174,7 @@ async function settleProfitSharingRow(row, cfg = wxpay.getServiceProviderConfig(
     return syncProcessingRow(row, cfg, db)
   }
 
-  const body = buildSupplyProfitSharingBody({
+  const body = buildProfitSharingBody({
     cfg,
     order: {
       orderType: row.order_type,
@@ -200,9 +200,7 @@ async function settleProfitSharingRow(row, cfg = wxpay.getServiceProviderConfig(
     JSON.stringify(result || {}),
     row.id
   ])
-  if (isFinishedState(state)) {
-    await db.query("UPDATE orders SET fund_status='available' WHERE id=? AND fund_status='frozen'", [row.order_id])
-  }
+  if (isFinishedState(state)) await markOrderFundsAvailable(db, row)
   return result
 }
 
@@ -215,25 +213,38 @@ async function markProfitSharingFailed(row, error) {
   `, [String(error.message || error).slice(0, 500), row.id])
 }
 
-async function releaseEligibleSupplyProfitSharing() {
+async function markOrderFundsAvailable(db, row) {
+  if (row.order_type === 'machine') {
+    await db.query("UPDATE machine_orders SET fund_status='available' WHERE id=? AND fund_status='frozen'", [row.order_id])
+  } else {
+    await db.query("UPDATE orders SET fund_status='available' WHERE id=? AND fund_status='frozen'", [row.order_id])
+  }
+}
+
+async function releaseEligibleProfitSharing() {
   const db = getDb()
   let rows = []
   try {
     const result = await db.query(`
-      SELECT ps.*
-        FROM wechat_profit_sharing_orders ps
-        JOIN orders o ON o.id=ps.order_id AND ps.order_type='supply'
-       WHERE o.fund_status='frozen'
-         AND o.confirmed_at IS NOT NULL
-         AND o.confirmed_at <= ?
-         AND ps.state IN ('PENDING', 'FAILED', 'PROCESSING')
-         AND NOT EXISTS (
-           SELECT 1 FROM aftersale_requests a
-            WHERE a.order_id=o.id AND a.status != 'rejected'
+      SELECT ps.* FROM wechat_profit_sharing_orders ps
+      LEFT JOIN orders o ON ps.order_type='supply' AND o.id=ps.order_id
+      LEFT JOIN machine_orders mo ON ps.order_type='machine' AND mo.id=ps.order_id
+       WHERE ps.state IN ('PENDING', 'FAILED', 'PROCESSING')
+         AND (
+           (ps.order_type='supply' AND o.fund_status='frozen'
+             AND o.confirmed_at IS NOT NULL AND o.confirmed_at <= ?
+             AND NOT EXISTS (
+               SELECT 1 FROM aftersale_requests a
+                WHERE a.order_id=o.id AND a.status != 'rejected'
+             ))
+           OR
+           (ps.order_type='machine' AND mo.fund_status='frozen'
+             AND mo.pay_status='paid' AND mo.status='completed'
+             AND mo.completed_at IS NOT NULL AND mo.completed_at <= ?)
          )
        ORDER BY ps.id ASC
        LIMIT 20
-    `, [getProfitSharingCutoffDate()])
+    `, [getProfitSharingCutoffDate(), getProfitSharingCutoffDate()])
     rows = result[0]
   } catch (error) {
     if (error.code === 'ER_NO_SUCH_TABLE') return { total: 0, success: 0, skipped: true }
@@ -260,12 +271,15 @@ module.exports = {
   getProfitSharingFreezeDays,
   getProfitSharingCutoffDate,
   buildPlatformReceiver,
-  buildSupplyProfitSharingBody,
+  buildProfitSharingBody,
+  buildSupplyProfitSharingBody: buildProfitSharingBody,
   normalizeState,
   isFinishedState,
   ensurePlatformReceiver,
-  savePendingSupplyOrder,
+  savePendingOrder,
+  savePendingSupplyOrder: savePendingOrder,
   settleProfitSharingRow,
-  releaseEligibleSupplyProfitSharing,
+  releaseEligibleProfitSharing,
+  releaseEligibleSupplyProfitSharing: releaseEligibleProfitSharing,
   __setDbForTest
 }

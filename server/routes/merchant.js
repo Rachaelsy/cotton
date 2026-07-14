@@ -9,6 +9,8 @@ const path     = require('path')
 const fs       = require('fs')
 const profitSharing = require('../utils/profit-sharing')
 const refunds = require('../utils/refunds')
+const logistics = require('../utils/logistics')
+const commissionRequests = require('../utils/commission-requests')
 const router   = express.Router()
 
 // ── 图片上传配置 ─────────────────────────────────────────────
@@ -45,6 +47,21 @@ function merchantAuth(req, res, next) {
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
+
+router.get('/commission', merchantAuth, async (req, res) => {
+  try {
+    return ok(res, await commissionRequests.getSummary('merchant', req.merchant.merchant_id))
+  } catch (error) { return fail(res, error.message || '佣金信息加载失败', 500) }
+})
+
+router.post('/commission-change-requests', merchantAuth, async (req, res) => {
+  try {
+    const data = await commissionRequests.submit(
+      'merchant', req.merchant.merchant_id, req.body.requested_rate, req.body.reason
+    )
+    return ok(res, data, '佣金调整申请已提交，等待管理员审核')
+  } catch (error) { return fail(res, error.message || '申请提交失败', 400) }
+})
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/merchant/login — 商户登录
@@ -583,7 +600,9 @@ router.get('/orders', merchantAuth, async (req, res) => {
       SELECT o.id, o.order_no, o.farmer_name, o.farmer_phone,
              o.receiver_name, o.receiver_phone, o.address,
              o.subtotal, o.delivery_fee, o.total,
-             o.pay_method, o.status, o.logistics_no, o.note,
+             o.pay_method, o.status, o.logistics_no, o.logistics_company,
+             o.logistics_company_name, o.logistics_status, o.logistics_latest,
+             o.logistics_updated_at, o.note,
              o.created_at,
              GROUP_CONCAT(
                CONCAT(i.icon,'|',i.name,'|',i.spec,'|',i.price,'|',i.qty)
@@ -614,20 +633,57 @@ router.get('/orders', merchantAuth, async (req, res) => {
 })
 
 router.patch('/orders/:id/ship', merchantAuth, async (req, res) => {
-  const { logistics_no } = req.body
-  if (!logistics_no) return fail(res, '请填写物流单号')
+  const deliveryId = String(req.body.delivery_id || req.body.logistics_company || '').trim()
+  const bizId = String(req.body.biz_id || '').trim()
+  const serviceType = Number(req.body.service_type)
+  if (!deliveryId || !bizId || !Number.isFinite(serviceType)) return fail(res, '请选择已绑定的微信快递账号')
   try {
     const mid = req.merchant.merchant_id
     const [rows] = await db.query(
-      `SELECT o.id FROM orders o JOIN order_items i ON i.order_id=o.id
+      `SELECT o.id, o.order_no, o.receiver_name, o.receiver_phone, o.address, o.note,
+              u.openid, m.id AS merchant_id, m.company_name AS sender_company,
+              m.location_name AS sender_address, mu.real_name AS sender_name,
+              mu.phone AS sender_mobile
+       FROM orders o
+       JOIN order_items i ON i.order_id=o.id
+       JOIN merchants m ON m.id=i.merchant_id
+       JOIN users mu ON mu.id=m.user_id
+       LEFT JOIN users u ON u.id=o.user_id
        WHERE o.id=? AND i.merchant_id=? AND o.status='pending_ship' LIMIT 1`,
       [req.params.id, mid]
     )
     if (!rows.length) return fail(res, '订单不存在或无法发货', 404)
-    await db.query(`UPDATE orders SET status='shipped', logistics_no=?, shipped_at=NOW() WHERE id=?`,
-      [logistics_no, req.params.id])
-    return ok(res, null, '发货成功')
-  } catch(e) { console.error(e); return fail(res, '服务器错误', 500) }
+    const order = rows[0]
+    const accounts = await logistics.listDeliveryAccounts()
+    const account = accounts.find(item => item.delivery_id === deliveryId && item.biz_id === bizId)
+    if (!account) return fail(res, '该快递账号未绑定、审核未通过或已失效', 409)
+    const service = account.services.find(item => Number(item.service_type) === serviceType)
+    if (!service) return fail(res, '所选快递服务类型不可用', 409)
+    const [items] = await db.query(
+      'SELECT name, qty FROM order_items WHERE order_id=? AND merchant_id=? ORDER BY id',
+      [order.id, mid]
+    )
+    const waybill = await logistics.createWaybill({ ...order, items }, account, service)
+    const logisticsNo = String(waybill.result.waybill_id)
+    await db.query(
+      `UPDATE orders SET status='shipped', logistics_no=?, logistics_company=?,
+       logistics_company_name=?, logistics_status='等待揽收', logistics_latest='商家已发货，等待快递公司揽收',
+       logistics_error='', logistics_subscribed=1, logistics_subscribe_attempted_at=NOW(),
+       wechat_logistics_order_id=?, wechat_logistics_biz_id=?, wechat_logistics_waybill_data=?,
+       logistics_updated_at=NOW(), shipped_at=NOW() WHERE id=?`,
+      [logisticsNo, account.delivery_id, account.name,
+        waybill.request.order_id, account.biz_id, JSON.stringify(waybill.result.waybill_data || []), req.params.id]
+    )
+    return ok(res, {
+      logistics_no: logisticsNo,
+      logistics_company: account.delivery_id,
+      logistics_company_name: account.name,
+      subscribed: true
+    }, '微信电子面单创建成功，农户将收到物流状态通知')
+  } catch(e) {
+    console.error('[wechat-logistics-ship]', e)
+    return fail(res, e.message || '微信物流发货失败', 502)
+  }
 })
 
 router.patch('/orders/:id/refund', merchantAuth, async (req, res) => {

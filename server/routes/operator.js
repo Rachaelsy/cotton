@@ -4,6 +4,8 @@ const express = require('express')
 const bcrypt  = require('bcryptjs')
 const jwt     = require('jsonwebtoken')
 const db      = require('../db/database')
+const commissionRequests = require('../utils/commission-requests')
+const applymentRegistration = require('../utils/applyment-registration')
 const router  = express.Router()
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -29,6 +31,67 @@ function parseJSON(str, fallback) {
   try { return str ? JSON.parse(str) : fallback } catch { return fallback }
 }
 
+router.get('/commission', operatorAuth, async (req, res) => {
+  try {
+    return ok(res, await commissionRequests.getSummary('operator', req.operator.operator_id))
+  } catch (error) { return fail(res, error.message || '佣金信息加载失败', 500) }
+})
+
+router.post('/commission-change-requests', operatorAuth, async (req, res) => {
+  try {
+    const data = await commissionRequests.submit(
+      'operator', req.operator.operator_id, req.body.requested_rate, req.body.reason
+    )
+    return ok(res, data, '佣金调整申请已提交，等待管理员审核')
+  } catch (error) { return fail(res, error.message || '申请提交失败', 400) }
+})
+
+router.get('/finance', operatorAuth, async (req, res) => {
+  try {
+    const operatorId = req.operator.operator_id
+    const [[operator]] = await db.query('SELECT commission_rate FROM operators WHERE id=?', [operatorId])
+    const [orders] = await db.query(`
+      SELECT mo.id,mo.order_no,mo.machine_name,mo.paid_amount,mo.total_price,mo.pay_mode,
+             mo.fund_status,mo.paid_at,mo.completed_at,
+             ps.amount_fen AS profit_sharing_amount_fen,ps.state AS profit_sharing_state,
+             ps.error_msg AS profit_sharing_error,ps.wechat_order_id
+      FROM machine_orders mo
+      LEFT JOIN wechat_profit_sharing_orders ps
+        ON ps.order_type='machine' AND ps.order_id=mo.id
+      WHERE mo.operator_id=? AND mo.pay_status='paid'
+      ORDER BY mo.paid_at DESC,mo.id DESC LIMIT 100
+    `, [operatorId])
+    const commissionRate = Number(operator?.commission_rate || 0)
+    const rows = orders.map(order => {
+      const paid = Number(order.paid_amount || 0)
+      const commission = order.profit_sharing_amount_fen == null
+        ? Number((paid * commissionRate / 100).toFixed(2))
+        : Number((Number(order.profit_sharing_amount_fen) / 100).toFixed(2))
+      return {
+        ...order,
+        paid_amount: paid,
+        commission,
+        commission_amount: commission,
+        net_amount: Number((paid - commission).toFixed(2))
+      }
+    })
+    const paidTotal = Number(rows.reduce((sum, row) => sum + row.paid_amount, 0).toFixed(2))
+    const commissionTotal = Number(rows.reduce((sum, row) => sum + row.commission, 0).toFixed(2))
+    const netTotal = Number(rows.reduce((sum, row) => sum + row.net_amount, 0).toFixed(2))
+    return ok(res, {
+      commission_rate: commissionRate,
+      paid_total: paidTotal,
+      commission_total: commissionTotal,
+      net_total: netTotal,
+      total_paid: paidTotal,
+      total_commission: commissionTotal,
+      total_net: netTotal,
+      orders: rows,
+      settlements: rows
+    })
+  } catch (error) { console.error('[operator-finance]', error); return fail(res, '结算信息加载失败', 500) }
+})
+
 // 经纬度合法性校验（中国范围，可防止经纬度填反）
 // 返回错误信息字符串，或 null 表示通过
 function geoError(lat, lng) {
@@ -46,11 +109,24 @@ function geoError(lat, lng) {
 router.post('/apply', async (req, res) => {
   const {
     phone, password, org_name, contact = '', id_card = '',
-    service_area = '', latitude = null, longitude = null, location_name = ''
+    service_area = '', latitude = null, longitude = null, location_name = '',
+    business_license = '', contact_mobile = '', merchant_shortname = '', service_phone = '',
+    id_card_number = '', card_period_begin = '', card_period_end = '',
+    account_bank = '', account_name = '', account_number = '',
+    license_copy_url = '', id_card_copy_url = '', id_card_national_url = '', mini_program_pic_url = ''
   } = req.body
   if (!phone || !/^1\d{10}$/.test(phone)) return fail(res, '请输入正确的手机号')
   if (!password || password.length < 6) return fail(res, '密码至少 6 位')
   if (!org_name || !org_name.trim()) return fail(res, '请填写合作社/机队名称')
+  if (!String(business_license).trim()) return fail(res, '请填写营业执照号')
+  if (!/^1\d{10}$/.test(String(contact_mobile || phone).trim())) return fail(res, '请填写正确的联系人手机号')
+  if (!String(id_card_number || id_card).trim()) return fail(res, '请填写身份证号')
+  if (!String(card_period_begin).trim() || !String(card_period_end).trim()) return fail(res, '请填写身份证有效期')
+  if (!String(merchant_shortname).trim() || !String(service_phone).trim()) return fail(res, '请填写商户简称和客服电话')
+  if (!String(account_bank).trim() || !String(account_name).trim() || !String(account_number).trim()) return fail(res, '请补全结算账户信息')
+  if (![license_copy_url, id_card_copy_url, id_card_national_url, mini_program_pic_url].every(value => String(value || '').trim())) {
+    return fail(res, '请上传营业执照、身份证正反面和经营页面截图')
+  }
   const conn = await db.getConnection()
   try {
     const [exist] = await conn.query('SELECT id FROM users WHERE phone=?', [phone])
@@ -61,12 +137,19 @@ router.post('/apply', async (req, res) => {
       'INSERT INTO users (phone,password,role,real_name) VALUES (?,?,?,?)',
       [phone, hash, 'operator', contact || org_name.trim()]
     )
+    const applymentDraft = applymentRegistration.buildRegistrationDraft(req.body, {
+      companyName: org_name,
+      businessLicense: business_license,
+      realName: contact,
+      qualificationType: '零售批发/生活娱乐/其他'
+    })
     await conn.query(
       `INSERT INTO operators
-       (user_id,org_name,contact,phone,id_card,service_area,latitude,longitude,location_name,apply_status)
-       VALUES (?,?,?,?,?,?,?,?,?,'pending')`,
+       (user_id,org_name,contact,phone,id_card,service_area,latitude,longitude,location_name,
+        apply_status,wechat_applyment_state,wechat_applyment_payload)
+       VALUES (?,?,?,?,?,?,?,?,?,'pending','DRAFT',?)`,
       [u.insertId, org_name.trim(), contact, phone, id_card, service_area,
-       latitude || null, longitude || null, location_name]
+       latitude || null, longitude || null, location_name, JSON.stringify(applymentDraft)]
     )
     await conn.commit()
     return ok(res, null, '入驻申请已提交，请等待平台审核')

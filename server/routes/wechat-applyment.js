@@ -146,6 +146,7 @@ router.get('/config', (_req, res) => {
 function stateLabel(state) {
   const map = {
     DRAFT: '资料草稿',
+    SUBMIT_FAILED: '提交微信失败',
     FINISH: '已完成',
     APPLYMENT_STATE_EDITTING: '编辑中',
     APPLYMENT_STATE_AUDITING: '审核中',

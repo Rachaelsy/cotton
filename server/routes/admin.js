@@ -9,6 +9,8 @@ const fs       = require('fs')
 const db       = require('../db/database')
 const wxpay    = require('../utils/wechat-pay')
 const profitSharing = require('../utils/profit-sharing')
+const commissionRequests = require('../utils/commission-requests')
+const applymentRegistration = require('../utils/applyment-registration')
 const { broadcastAnnouncement } = require('../utils/notify')
 
 // ── 图片上传配置 ─────────────────────────────────────────
@@ -59,12 +61,11 @@ function makeBusinessCode(prefix, ownerId) {
   return `${prefix}_${ownerId}_${stamp}_${Math.floor(Math.random() * 9000 + 1000)}`
 }
 
-function buildMerchantApplymentPayload(merchant) {
+async function buildMerchantApplymentPayload(merchant, cfg) {
   const draft = parsePayload(merchant.wechat_applyment_payload) || {}
   const businessCode = merchant.wechat_business_code || draft.business_code || makeBusinessCode('COTTON_MERCHANT', merchant.id)
-  if (draft.raw_applyment && typeof draft.raw_applyment === 'object') {
-    return { business_code: businessCode, ...draft.raw_applyment }
-  }
+  if (draft.source === 'portal_register') return applymentRegistration.prepareApplymentPayload(cfg, draft, businessCode)
+  if (draft.raw_applyment && typeof draft.raw_applyment === 'object') return { business_code: businessCode, ...draft.raw_applyment }
   const { business_code, ...rest } = draft
   if (rest && (rest.contact_info || rest.subject_info || rest.business_info || rest.settlement_info || rest.bank_account_info)) {
     return { business_code: businessCode, ...rest }
@@ -75,7 +76,7 @@ function buildMerchantApplymentPayload(merchant) {
 async function submitMerchantApplyment(merchant) {
   const cfg = wxpay.getNotifyConfig()
   if (!cfg) throw new Error('微信支付服务商未配置，无法自动提交进件')
-  const payload = buildMerchantApplymentPayload(merchant)
+  const payload = await buildMerchantApplymentPayload(merchant, cfg)
   if (!payload) throw new Error('商户尚未保存可提交的进件资料')
   const result = await wxpay.submitApplyment(cfg, payload)
   const state = result.applyment_state || result.state || (result.sub_mchid ? 'APPLYMENT_STATE_FINISHED' : 'APPLYMENT_STATE_AUDITING')
@@ -92,6 +93,26 @@ async function submitMerchantApplyment(merchant) {
       result.sub_mchid || null,
       merchant.id
     ]
+  )
+  return { payload, result, state, message }
+}
+
+async function submitOperatorApplyment(operator) {
+  const cfg = wxpay.getNotifyConfig()
+  if (!cfg) throw new Error('微信支付服务商未配置，无法自动提交进件')
+  const draft = parsePayload(operator.wechat_applyment_payload) || {}
+  const businessCode = operator.wechat_business_code || draft.business_code || makeBusinessCode('COTTON_OPERATOR', operator.id)
+  const payload = draft.source === 'portal_register'
+    ? await applymentRegistration.prepareApplymentPayload(cfg, draft, businessCode)
+    : await buildMerchantApplymentPayload(operator, cfg)
+  if (!payload) throw new Error('农机手尚未保存可提交的进件资料')
+  const result = await wxpay.submitApplyment(cfg, payload)
+  const state = result.applyment_state || result.state || (result.sub_mchid ? 'APPLYMENT_STATE_FINISHED' : 'APPLYMENT_STATE_AUDITING')
+  const message = result.applyment_state_msg || result.applyment_state_desc || result.reject_reason || result.message || ''
+  await db.query(
+    `UPDATE operators SET wechat_applyment_id=?,wechat_business_code=?,wechat_applyment_state=?,
+     wechat_applyment_msg=?,sub_mchid=COALESCE(?,sub_mchid),wechat_applyment_updated_at=NOW() WHERE id=?`,
+    [result.applyment_id || null, payload.business_code, state, message, result.sub_mchid || null, operator.id]
   )
   return { payload, result, state, message }
 }
@@ -245,6 +266,21 @@ function parseExpertSpecialties(value) {
     .map(v => v.trim())
     .filter(Boolean)
 }
+
+router.get('/commission-change-requests', adminAuth, async (req, res) => {
+  try {
+    return R_OK(res, await commissionRequests.list(String(req.query.status || '')))
+  } catch (error) { return R_FAIL(res, error.message || '佣金申请加载失败', 500) }
+})
+
+router.patch('/commission-change-requests/:id', adminAuth, async (req, res) => {
+  try {
+    const data = await commissionRequests.review(
+      Number(req.params.id), String(req.body.decision || ''), req.body.review_note, req.admin.id
+    )
+    return R_OK(res, data, req.body.decision === 'approved' ? '佣金比例已审核生效' : '佣金调整申请已拒绝')
+  } catch (error) { return R_FAIL(res, error.message || '审核失败', 400) }
+})
 
 router.get('/experts', adminAuth, async (_req, res) => {
   try {
@@ -650,6 +686,10 @@ router.post('/applications/:id/approve', adminAuth, async (req, res) => {
       submitMsg = submitResult.result.applyment_state_msg || submitResult.message || '已自动提交微信进件'
     } catch (submitErr) {
       submitMsg = submitErr.message || '已批准入驻，但微信进件尚未自动提交'
+      await db.query(
+        `UPDATE merchants SET wechat_applyment_state='SUBMIT_FAILED',wechat_applyment_msg=?,
+         wechat_applyment_updated_at=NOW() WHERE id=?`, [submitMsg.slice(0, 500), merchant.id]
+      )
     }
     res.json({ code: 200, msg: submitMsg || '已批准入驻申请' })
   } catch (e) {
@@ -694,7 +734,8 @@ router.get('/operator-applications', adminAuth, async (req, res) => {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.created_at,
              o.id AS operator_id, o.org_name, o.contact, o.id_card,
-             o.service_area, o.location_name, o.apply_status, o.reject_reason
+             o.service_area, o.location_name, o.apply_status, o.reject_reason,
+             o.sub_mchid, o.wechat_applyment_state, o.wechat_applyment_msg
       FROM users u JOIN operators o ON o.user_id = u.id
       WHERE u.role = 'operator' AND o.apply_status = 'pending'
       ORDER BY u.created_at ASC
@@ -709,11 +750,44 @@ router.get('/operator-applications', adminAuth, async (req, res) => {
 router.post('/operator-applications/:id/approve', adminAuth, async (req, res) => {
   try {
     const userId = req.params.id
+    const [[operator]] = await db.query(
+      `SELECT id,org_name AS company_name,id_card AS business_license,wechat_applyment_payload,
+              wechat_business_code,sub_mchid,wechat_applyment_state
+       FROM operators WHERE user_id=? LIMIT 1`, [userId]
+    )
+    if (!operator) return res.status(404).json({ code: 404, msg: '申请不存在' })
     await db.query('UPDATE operators SET apply_status="approved" WHERE user_id=?', [userId])
     await db.query('UPDATE users SET is_active=1 WHERE id=?', [userId])
-    res.json({ code: 200, msg: '已批准农机手入驻' })
+    let submitMsg = ''
+    try {
+      const submitResult = await submitOperatorApplyment(operator)
+      submitMsg = submitResult.result.applyment_state_msg || submitResult.message || '已自动提交微信进件'
+    } catch (submitErr) {
+      submitMsg = submitErr.message || '已批准入驻，但微信进件尚未自动提交'
+      await db.query(
+        `UPDATE operators SET wechat_applyment_state='SUBMIT_FAILED',wechat_applyment_msg=?,
+         wechat_applyment_updated_at=NOW() WHERE id=?`, [submitMsg.slice(0, 500), operator.id]
+      )
+    }
+    res.json({ code: 200, msg: submitMsg || '已批准农机手入驻' })
   } catch (e) {
     console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+router.post('/operator-applications/:id/submit-applyment', adminAuth, async (req, res) => {
+  try {
+    const [[operator]] = await db.query(
+      `SELECT id,org_name AS company_name,id_card AS business_license,wechat_applyment_payload,
+              wechat_business_code,sub_mchid,wechat_applyment_state
+       FROM operators WHERE user_id=? LIMIT 1`, [req.params.id]
+    )
+    if (!operator) return res.status(404).json({ code: 404, msg: '申请不存在' })
+    const submitted = await submitOperatorApplyment(operator)
+    res.json({ code: 200, msg: '农机手微信进件已提交', data: submitted.result })
+  } catch (e) {
+    console.error('[admin-operator-submit-applyment]', e)
+    res.status(500).json({ code: 500, msg: e.message || '微信进件提交失败' })
   }
 })
 
@@ -856,7 +930,9 @@ router.post('/apply', async (req, res) => {
     const {
       phone, password, real_name, company_name, business_license, product_category,
       contact_mobile, contact_email, subject_type, legal_person, id_card_name, id_card_number,
-      merchant_shortname, service_phone, mini_program_appid, account_bank, account_name, account_number,
+      card_period_begin, card_period_end, merchant_shortname, service_phone, settlement_id,
+      qualification_type, bank_account_type, account_bank, bank_address_code, bank_branch_id,
+      bank_name, account_name, account_number,
       license_copy_url, id_card_copy_url, id_card_national_url, mini_program_pic_url
     } = req.body
     if (!/^1\d{10}$/.test(phone))        return res.status(400).json({ code: 400, msg: '手机号格式不正确' })
@@ -866,7 +942,9 @@ router.post('/apply', async (req, res) => {
     if (!/^1\d{10}$/.test(String(contact_mobile || '').trim())) return res.status(400).json({ code: 400, msg: '请填写正确的联系人手机号' })
     if (!String(merchant_shortname || '').trim()) return res.status(400).json({ code: 400, msg: '请填写商户简称' })
     if (!String(service_phone || '').trim()) return res.status(400).json({ code: 400, msg: '请填写客服电话' })
-    if (!String(mini_program_appid || '').trim()) return res.status(400).json({ code: 400, msg: '请填写小程序 AppID' })
+    if (!String(business_license || '').trim()) return res.status(400).json({ code: 400, msg: '请填写营业执照号' })
+    if (!String(id_card_number || '').trim()) return res.status(400).json({ code: 400, msg: '请填写身份证号' })
+    if (!String(card_period_begin || '').trim() || !String(card_period_end || '').trim()) return res.status(400).json({ code: 400, msg: '请填写身份证有效期' })
     if (!String(account_bank || '').trim()) return res.status(400).json({ code: 400, msg: '请填写开户银行' })
     if (!String(account_name || '').trim()) return res.status(400).json({ code: 400, msg: '请填写开户人' })
     if (!String(account_number || '').trim()) return res.status(400).json({ code: 400, msg: '请填写结算账号' })
@@ -884,54 +962,12 @@ router.post('/apply', async (req, res) => {
       [phone, hash, 'merchant', real_name.trim()]
     )
     const userId = result.insertId
+    const applymentDraft = applymentRegistration.buildRegistrationDraft(req.body, {
+      qualificationType: '零售批发/生活娱乐/其他'
+    })
     await db.query(
       'INSERT INTO merchants (user_id,company_name,business_license,product_category,apply_status,wechat_applyment_state,wechat_applyment_payload) VALUES (?,?,?,?,?,?,?)',
-      [userId, company_name.trim(), business_license || '', product_category || '', 'pending', 'DRAFT', JSON.stringify({
-        source: 'portal_register',
-        attachments: {
-          license_copy_url: String(license_copy_url || '').trim(),
-          id_card_copy_url: String(id_card_copy_url || '').trim(),
-          id_card_national_url: String(id_card_national_url || '').trim(),
-          mini_program_pic_url: String(mini_program_pic_url || '').trim()
-        },
-        raw_applyment: {
-          contact_info: {
-            contact_type: 'LEGAL',
-            contact_name: String(real_name || '').trim(),
-            mobile_phone: String(contact_mobile || '').trim(),
-            contact_email: String(contact_email || '').trim()
-          },
-          subject_info: {
-            subject_type: String(subject_type || 'SUBJECT_TYPE_INDIVIDUAL').trim(),
-            business_license_info: {
-              license_number: String(business_license || '').trim(),
-              merchant_name: String(company_name || '').trim(),
-              legal_person: String(legal_person || real_name || '').trim()
-            },
-            identity_info: {
-              id_card_info: {
-                id_card_name: String(id_card_name || real_name || '').trim(),
-                id_card_number: String(id_card_number || '').trim()
-              }
-            }
-          },
-          business_info: {
-            merchant_shortname: String(merchant_shortname || company_name || '').trim(),
-            service_phone: String(service_phone || contact_mobile || '').trim(),
-            sales_info: {
-              sales_scenes_type: ['SALES_SCENES_MINI_PROGRAM'],
-              mini_program_info: {
-                mini_program_appid: String(mini_program_appid || '').trim()
-              }
-            }
-          },
-          bank_account_info: {
-            account_bank: String(account_bank || '').trim(),
-            account_name: String(account_name || '').trim(),
-            account_number: String(account_number || '').trim()
-          }
-        }
-      })]
+      [userId, company_name.trim(), business_license || '', product_category || '', 'pending', 'DRAFT', JSON.stringify(applymentDraft)]
     )
     res.json({ code: 200, msg: '申请已提交，请等待管理员审核（1-3个工作日）' })
   } catch (e) {

@@ -1,5 +1,18 @@
 const auth = require('../../utils/auth')
 
+const CARRIERS = [
+  { code: 'zhongtong', name: '中通快递' },
+  { code: 'yuantong', name: '圆通速递' },
+  { code: 'yunda', name: '韵达快递' },
+  { code: 'shunfeng', name: '顺丰速运' },
+  { code: 'shentong', name: '申通快递' },
+  { code: 'jtexpress', name: '极兔速递' },
+  { code: 'jd', name: '京东物流' },
+  { code: 'ems', name: '邮政EMS' },
+  { code: 'youzhengguonei', name: '邮政快递包裹' },
+  { code: 'debangwuliu', name: '德邦物流' }
+]
+
 const STATUS_MAP = {
   pending_ship: { label: '待发货', cls: 'pending' },
   shipped:      { label: '已发货', cls: 'shipped' },
@@ -24,7 +37,11 @@ Page({
     loading: false,
     showShipModal: false,
     pendingShipId: null,
-    logisticsInput: ''
+    logisticsInput: '',
+    carriers: CARRIERS,
+    carrierNames: CARRIERS.map(item => item.name),
+    carrierIndex: -1,
+    carrierName: ''
   },
 
   onLoad() {
@@ -59,6 +76,7 @@ Page({
             statusLabel: st.label,
             statusCls:   st.cls,
             logisticsNo: o.logistics_no || '',
+            logisticsCompanyName: o.logistics_company_name || '',
             address:     o.address || '',
             receiverName:  o.receiver_name || '',
             receiverPhone: o.receiver_phone || ''
@@ -88,7 +106,7 @@ Page({
     if (!o) return
     wx.showModal({
       title: `订单 ${o.orderNo}`,
-      content: `买家：${o.buyer}${o.buyerPhone ? '（' + o.buyerPhone + '）' : ''}\n收货：${o.receiverName} ${o.receiverPhone}\n地址：${o.address}\n商品：${o.goods}\n状态：${o.statusLabel}${o.logisticsNo ? '\n物流：' + o.logisticsNo : ''}`,
+      content: `买家：${o.buyer}${o.buyerPhone ? '（' + o.buyerPhone + '）' : ''}\n收货：${o.receiverName} ${o.receiverPhone}\n地址：${o.address}\n商品：${o.goods}\n状态：${o.statusLabel}${o.logisticsNo ? `\n物流：${o.logisticsCompanyName} ${o.logisticsNo}` : ''}`,
       showCancel: false,
       confirmText: '关闭'
     })
@@ -96,7 +114,18 @@ Page({
 
   // 发货：打开弹窗填写物流单号
   onShip(e) {
-    this.setData({ showShipModal: true, pendingShipId: e.currentTarget.dataset.id, logisticsInput: '' })
+    this.setData({
+      showShipModal: true,
+      pendingShipId: e.currentTarget.dataset.id,
+      logisticsInput: '',
+      carrierIndex: -1,
+      carrierName: ''
+    })
+  },
+
+  onCarrierChange(e) {
+    const carrierIndex = Number(e.detail.value)
+    this.setData({ carrierIndex, carrierName: CARRIERS[carrierIndex]?.name || '' })
   },
 
   onLogisticsInput(e) {
@@ -104,19 +133,22 @@ Page({
   },
 
   onCancelShip() {
-    this.setData({ showShipModal: false, pendingShipId: null, logisticsInput: '' })
+    this.setData({ showShipModal: false, pendingShipId: null, logisticsInput: '', carrierIndex: -1, carrierName: '' })
   },
 
   async onConfirmShip() {
-    const { logisticsInput, pendingShipId } = this.data
+    const { logisticsInput, pendingShipId, carrierIndex } = this.data
+    const carrier = CARRIERS[carrierIndex]
+    if (!carrier) { wx.showToast({ title: '请选择快递公司', icon: 'none' }); return }
     if (!logisticsInput.trim()) { wx.showToast({ title: '请填写物流单号', icon: 'none' }); return }
     try {
       const res = await auth.request('PATCH', `/api/merchant/orders/${pendingShipId}/ship`, {
-        logistics_no: logisticsInput.trim()
+        logistics_no: logisticsInput.trim(),
+        logistics_company: carrier.code
       })
       if (res.code === 200) {
-        wx.showToast({ title: '发货成功', icon: 'success' })
-        this.setData({ showShipModal: false, pendingShipId: null, logisticsInput: '' })
+        wx.showToast({ title: res.data?.subscribed ? '发货并订阅成功' : '发货成功', icon: 'success' })
+        this.setData({ showShipModal: false, pendingShipId: null, logisticsInput: '', carrierIndex: -1, carrierName: '' })
         this._loadOrders()
       } else {
         wx.showToast({ title: res.msg || '发货失败', icon: 'none' })

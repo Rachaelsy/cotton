@@ -48,7 +48,7 @@
       <view class="dc-line"><text class="dc-k">作业面积</text><text class="dc-v">{{order.work_area}} 亩</text></view>
       <view class="dc-line"><text class="dc-k">作业日期</text><text class="dc-v">{{order.work_date}}</text></view>
       <view class="dc-line"><text class="dc-k">作业总价</text><text class="dc-v">¥{{order.total_price}}</text></view>
-      <view class="dc-line"><text class="dc-k">已付定金</text><text class="dc-v hl">¥{{order.deposit}}</text></view>
+      <view class="dc-line"><text class="dc-k">已支付</text><text class="dc-v hl">¥{{order.paid_amount || (order.pay_mode === 'full' ? order.total_price : order.deposit)}}</text></view>
       <view class="dc-line"><text class="dc-k">支付状态</text><text class="dc-v">{{order.pay_status === 'paid' ? '已支付' : '未支付'}}</text></view>
     </view>
 

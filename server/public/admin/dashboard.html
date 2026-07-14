@@ -219,6 +219,10 @@
     <div class="nav-item" data-panel="finance" onclick="switchPanel(this)">
       <span class="nav-icon">💰</span> 财务管理
     </div>
+    <div class="nav-item" data-panel="commissionRequests" onclick="switchPanel(this)">
+      <span class="nav-icon">%</span> 佣金审核
+      <span class="nav-badge" id="commissionRequestBadge" style="display:none">0</span>
+    </div>
   </nav>
   <div class="sidebar-foot">
     <div class="admin-info">当前登录</div>
@@ -462,6 +466,22 @@
             </tr>
           </thead>
           <tbody id="financeTable"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-commissionRequests">
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">平台佣金调整申请</span>
+          <select id="commissionRequestFilter" onchange="loadCommissionRequests()" style="margin-left:auto;width:140px">
+            <option value="pending">待审核</option><option value="approved">已通过</option><option value="rejected">已拒绝</option><option value="">全部</option>
+          </select>
+          <button class="act-btn" onclick="loadCommissionRequests()" style="background:#F0F0F0;color:#555">刷新</button>
+        </div>
+        <table>
+          <thead><tr><th>申请方</th><th>账号</th><th>当前比例</th><th>申请比例</th><th>申请理由</th><th>状态</th><th>申请时间</th><th>操作</th></tr></thead>
+          <tbody id="commissionRequestTable"><tr class="empty-row"><td colspan="8">加载中...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -740,7 +760,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -763,6 +783,7 @@
     else if (panel === 'expertAccounts') loadExpertAccounts()
     else if (panel === 'aftersale')     loadAftersales()
     else if (panel === 'finance')       loadFinance()
+    else if (panel === 'commissionRequests') loadCommissionRequests()
   }
 
   function fmt(dt) {
@@ -849,7 +870,7 @@
     document.getElementById('rejectBtn').textContent = rejectMode ? '取消拒绝' : '拒绝入驻'
     document.getElementById('approveConfirmBtn').textContent = rejectMode
       ? '确认拒绝'
-      : (approvalType === 'merchant' ? '批准并提交进件' : '批准入驻')
+      : '批准并提交进件'
     document.getElementById('approveConfirmBtn').onclick = rejectMode ? submitRejection : submitApproval
   }
 
@@ -859,7 +880,7 @@
     if (r?.code === 200) {
       closeModal('modalApprove'); loadOverview()
       approvalType === 'operator' ? loadOperatorApps() : loadApplications()
-      alert('已批准入驻')
+      alert(r.msg || '已批准入驻并提交微信进件')
     } else alert(r?.msg || '操作失败')
   }
 
@@ -891,12 +912,12 @@
         <td>${u.org_name||'—'}</td><td>${u.service_area||'—'}</td>
         <td>${fmt(u.created_at)}</td>
         <td>
-          <button class="act-btn approve" onclick="openApproveOp(${u.id},'${esc(u.org_name)}','${esc(u.phone)}','${esc(u.contact)}','${esc(u.id_card)}','${esc(u.service_area)}','${esc(u.location_name)}')">审批</button>
+          <button class="act-btn approve" onclick="openApproveOp(${u.id},'${esc(u.org_name)}','${esc(u.phone)}','${esc(u.contact)}','${esc(u.id_card)}','${esc(u.service_area)}','${esc(u.location_name)}','${esc(u.wechat_applyment_state || '')}')">审批</button>
         </td>
       </tr>`).join('') : '<tr class="empty-row"><td colspan="7">暂无待审批申请 🎉</td></tr>'
   }
 
-  function openApproveOp(id, org, phone, contact, idCard, area, loc) {
+  function openApproveOp(id, org, phone, contact, idCard, area, loc, payState) {
     currentEditId = id; rejectMode = false; approvalType = 'operator'
     document.getElementById('approve-title').textContent = '农机手入驻审批'
     document.getElementById('approve-info').innerHTML = `
@@ -904,11 +925,13 @@
       <b>联系人：</b>${contact||'—'}&nbsp;&nbsp;<b>手机：</b>${phone}<br>
       <b>资质/身份证：</b>${idCard||'—'}<br>
       <b>服务区域：</b>${area||'—'}<br>
-      <b>基地地址：</b>${loc||'—'}
+      <b>基地地址：</b>${loc||'—'}<br>
+      <b>微信进件状态：</b>${payState || 'DRAFT'}<br>
+      <span style="color:#16a34a">管理员批准后，系统会上传材料并自动提交微信支付进件。</span>
     `
     document.getElementById('reject-area').style.display = 'none'
     document.getElementById('reject-reason').value = ''
-    document.getElementById('approveConfirmBtn').textContent = '批准入驻'
+    document.getElementById('approveConfirmBtn').textContent = '批准并提交进件'
     document.getElementById('approveConfirmBtn').onclick = submitApproval
     document.getElementById('rejectBtn').textContent = '拒绝入驻'
     document.getElementById('modalApprove').classList.add('show')
@@ -1924,6 +1947,40 @@
     } catch (e) {
       tbody.innerHTML = `<tr class="empty-row"><td colspan="7">加载失败：${esc(e.message)}</td></tr>`
     }
+  }
+
+  async function loadCommissionRequests() {
+    const tbody = document.getElementById('commissionRequestTable')
+    const status = document.getElementById('commissionRequestFilter').value
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">加载中...</td></tr>'
+    const r = await api('GET', '/commission-change-requests' + (status ? `?status=${status}` : ''))
+    if (!r || r.code !== 200) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="8">加载失败</td></tr>'
+      return
+    }
+    const list = r.data || []
+    const pendingCount = list.filter(x => x.status === 'pending').length
+    const badge = document.getElementById('commissionRequestBadge')
+    badge.textContent = pendingCount
+    badge.style.display = pendingCount ? '' : 'none'
+    const statusLabels = { pending:'待审核', approved:'已通过', rejected:'已拒绝', cancelled:'已取消' }
+    tbody.innerHTML = list.length ? list.map(x => `<tr>
+      <td><b>${x.applicant_type === 'operator' ? '农机手' : '商户'}</b><br><span style="color:#777">${esc(x.applicant_name || '-')}</span></td>
+      <td>${esc(x.phone || '-')}</td><td>${Number(x.current_rate).toFixed(2)}%</td><td style="font-weight:700;color:#C8902E">${Number(x.requested_rate).toFixed(2)}%</td>
+      <td style="max-width:300px;white-space:normal">${esc(x.reason || '-')}</td><td>${statusLabels[x.status] || x.status}</td><td>${fmt(x.created_at)}</td>
+      <td>${x.status === 'pending' ? `<button class="act-btn approve" onclick="reviewCommissionRequest(${x.id},'approved')">通过</button> <button class="act-btn reject" onclick="reviewCommissionRequest(${x.id},'rejected')">拒绝</button>` : esc(x.review_note || '-')}</td>
+    </tr>`).join('') : '<tr class="empty-row"><td colspan="8">暂无申请</td></tr>'
+  }
+
+  async function reviewCommissionRequest(id, decision) {
+    const promptText = decision === 'approved' ? '审核说明（可选）' : '请输入拒绝原因（必填）'
+    const reviewNote = prompt(promptText, '')
+    if (reviewNote === null) return
+    if (decision === 'rejected' && !reviewNote.trim()) return alert('拒绝时必须说明原因')
+    const r = await api('PATCH', `/commission-change-requests/${id}`, { decision, review_note: reviewNote.trim() })
+    if (!r || r.code !== 200) return alert((r && r.msg) || '审核失败')
+    alert(decision === 'approved' ? '已通过，新的佣金比例已生效' : '已拒绝')
+    loadCommissionRequests()
   }
 
   // 初始加载
