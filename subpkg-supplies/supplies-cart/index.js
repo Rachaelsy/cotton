@@ -1,6 +1,12 @@
 ﻿// pages/supplies-cart/index.js — 购物车
 const app = getApp()
 const layout = require('../../utils/layout')
+const i18n = require('../../utils/i18n')
+
+const COPY = {
+  zh: { title:'购物车',piece:'件',done:'完成',manage:'管理',empty:'购物车是空的',browse:'去逛逛',verified:'认证',all:'全选',discount:'已优惠',checkout:'去结算',toggleAll:'全选/取消',delete:'删除',other:'其他商家',max:'最多购买',deleted:'已删除' },
+  ug: { title:'ھارۋا',piece:'دانە',done:'تامام',manage:'باشقۇرۇش',empty:'ھارۋا بوش',browse:'مال كۆرۈش',verified:'دەلىللەنگەن',all:'ھەممىنى تاللاش',discount:'ئېتىبار',checkout:'ھېسابلاش',toggleAll:'ھەممىنى تاللاش/بىكار',delete:'ئۆچۈرۈش',other:'باشقا ساتقۇچى',max:'ئەڭ كۆپ سېتىۋالغىلى بولىدۇ',deleted:'ئۆچۈرۈلدى' }
+}
 
 Page({
   data: {
@@ -12,6 +18,8 @@ Page({
     cartTotal: '0',
     manage: false,
     selectedIds: [],
+    lang: 'zh',
+    copy: COPY.zh,
   },
 
   onLoad() {
@@ -20,6 +28,8 @@ Page({
   },
 
   onShow() {
+    const lang = i18n.getLanguage()
+    this.setData({ lang, copy: COPY[lang] || COPY.zh })
     this._loadCart()
   },
 
@@ -33,7 +43,7 @@ Page({
     // 按店铺分组
     const groupMap = {}
     cart.forEach(item => {
-      const k = item.store || '其他商家'
+      const k = item.store || this.data.copy.other
       if (!groupMap[k]) {
         groupMap[k] = {
           store: k,
@@ -90,7 +100,7 @@ Page({
     if (!item) return
     const maxStock = item.stock != null ? item.stock : 9999
     if (item.qty >= maxStock) {
-      wx.showToast({ title: `最多购买 ${maxStock} ${item.unit || '件'}`, icon: 'none' })
+      wx.showToast({ title: `${this.data.copy.max} ${maxStock} ${item.unit || this.data.copy.piece}`, icon: 'none' })
       return
     }
     item.qty++
@@ -150,7 +160,7 @@ Page({
     app.saveCart()
     this.setData({ selectedIds: [], manage: false })
     this._loadCart()
-    wx.showToast({ title: `已删除${n}件商品`, icon: 'none' })
+    wx.showToast({ title: `${this.data.copy.deleted}${n}${this.data.copy.piece}`, icon: 'none' })
   },
 
   // 去结算

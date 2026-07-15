@@ -36,6 +36,17 @@ const mockDb = {
         note: ''
       }], []]
     }
+    if (/INSERT INTO weather_observations/i.test(sql)) return [{ affectedRows: 1 }]
+    if (/FROM weather_observations/i.test(sql)) {
+      return [[{
+        observation_hours: 72,
+        coverage_days: 3,
+        rainfall_mm: '4.5',
+        growing_degree_days: '31.2',
+        first_observed_at: '2026-07-04 10:00:00',
+        last_observed_at: '2026-07-07 09:00:00'
+      }], []]
+    }
     throw new Error(`Unexpected SQL in test: ${sql}`)
   }
 }
@@ -94,6 +105,29 @@ function qweatherJson(url) {
     }
   }
 
+  if (currentUrl.pathname === '/weatheralert/v1/current/39.47/75.99') {
+    return {
+      metadata: {
+        zeroResult: false,
+        attributions: ['https://developer.qweather.com/attribution.html']
+      },
+      alerts: [{
+        id: 'alert-1',
+        senderName: '喀什地区气象台',
+        issuedTime: '2026-07-07T09:30+08:00',
+        messageType: { code: 'alert' },
+        eventType: { name: '大风', code: '1006' },
+        severity: 'moderate',
+        color: { code: 'yellow' },
+        onsetTime: '2026-07-07T10:00+08:00',
+        expireTime: '2026-07-08T10:00+08:00',
+        headline: '喀什地区气象台发布大风黄色预警',
+        description: '预计未来24小时有大风天气。',
+        instruction: '停止无人机作业。'
+      }]
+    }
+  }
+
   return null
 }
 
@@ -134,13 +168,19 @@ async function runRouteTest() {
     assert.strictEqual(success.json.data.weather.source, 'abc1234xyz.qweatherapi.com')
     assert.strictEqual(success.json.data.weather.hourly.time.length, 3)
     assert.strictEqual(success.json.data.weather.daily.time.length, 2)
+    assert.strictEqual(success.json.data.weather.warning.available, true)
+    assert.strictEqual(success.json.data.weather.warning.alerts[0].title, '喀什地区气象台发布大风黄色预警')
+    assert.strictEqual(success.json.data.weather.warning.alerts[0].sender, '喀什地区气象台')
+    assert.strictEqual(success.json.data.weather.warning.alerts[0].type, '大风')
+    assert.strictEqual(success.json.data.statistics.growingDegreeDays, 31.2)
 
     const qweatherRequests = fetchedRequests.filter(item => item.url.includes('qweatherapi.com'))
-    assert.strictEqual(qweatherRequests.length, 3)
+    assert.strictEqual(qweatherRequests.length, 4)
     assert(qweatherRequests.some(item => new URL(item.url).pathname === '/v7/grid-weather/now'))
     assert(qweatherRequests.some(item => new URL(item.url).pathname === '/v7/grid-weather/24h'))
     assert(qweatherRequests.some(item => new URL(item.url).pathname === '/v7/grid-weather/7d'))
-    assert(qweatherRequests.every(item => new URL(item.url).searchParams.get('location') === '75.99,39.47'))
+    assert(qweatherRequests.some(item => new URL(item.url).pathname === '/weatheralert/v1/current/39.47/75.99'))
+    assert(qweatherRequests.filter(item => new URL(item.url).pathname.startsWith('/v7/')).every(item => new URL(item.url).searchParams.get('location') === '75.99,39.47'))
     assert(qweatherRequests.every(item => item.headers['X-QW-Api-Key'] === 'test-qweather-api-key'))
 
     const invalidLocation = await request(baseUrl, '', '/api/weather/location?lat=x&lng=75.99')
@@ -153,8 +193,8 @@ async function runRouteTest() {
     assert.strictEqual(locationSuccess.json.data.weather.provider, 'qweather')
 
     const allQweatherRequests = fetchedRequests.filter(item => item.url.includes('qweatherapi.com'))
-    assert.strictEqual(allQweatherRequests.length, 6)
-    assert(allQweatherRequests.slice(3).every(item => new URL(item.url).searchParams.get('location') === '75.99,39.47'))
+    assert.strictEqual(allQweatherRequests.length, 8)
+    assert(allQweatherRequests.slice(4).filter(item => new URL(item.url).pathname.startsWith('/v7/')).every(item => new URL(item.url).searchParams.get('location') === '75.99,39.47'))
     assert(fetchedRequests.every(item => !item.url.includes('api.open-meteo.com')), 'qweather provider should not request Open-Meteo')
   } finally {
     await new Promise(resolve => server.close(resolve))

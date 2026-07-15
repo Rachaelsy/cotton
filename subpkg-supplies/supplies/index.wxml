@@ -4,7 +4,7 @@
   <!-- ===== 顶部渐变头部 ===== -->
   <view class="sup-header" style="padding-top: {{statusBarHeight}}px">
     <view class="topbar" style="padding-right: {{capsuleSafeRight}}px">
-      <text class="page-title">🌾 农资供应</text>
+      <text class="page-title">{{copy.title}}</text>
     </view>
     <!-- 搜索栏 + 购物车 -->
     <view class="search-row">
@@ -13,7 +13,7 @@
         <input
           class="search-input"
           value="{{searchKeyword}}"
-          placeholder="搜索农药、化肥、种子..."
+          placeholder="{{copy.search}}"
           placeholder-style="color:#BBBBBB;font-size:28rpx"
           confirm-type="search"
           bindinput="onSearchInput"
@@ -47,28 +47,28 @@
         <view class="cat-icon-wrap" style="background: {{item.bg}}">
           <text class="cat-icon">{{item.icon}}</text>
         </view>
-        <text class="cat-name {{catSel === item.name ? 'cat-name-on' : ''}}">{{item.name}}</text>
+        <text class="cat-name {{catSel === item.name ? 'cat-name-on' : ''}}">{{item.label}}</text>
       </view>
     </view>
 
     <!-- 活动横幅 -->
     <view class="banners-row">
       <view class="banner banner-spring" bindtap="onBanner">
-        <text class="banner-tag">春耕特惠</text>
-        <text class="banner-title">种子化肥</text>
-        <text class="banner-sub">全场8折起</text>
+        <text class="banner-tag">{{copy.spring}}</text>
+        <text class="banner-title">{{copy.seedFert}}</text>
+        <text class="banner-sub">{{copy.discount}}</text>
       </view>
       <view class="banner banner-cert" bindtap="onQualityBanner">
-        <text class="banner-tag">质量保证</text>
-        <text class="banner-title">认证农资</text>
-        <text class="banner-sub">假一赔十</text>
+        <text class="banner-tag">{{copy.quality}}</text>
+        <text class="banner-title">{{copy.certified}}</text>
+        <text class="banner-sub">{{copy.compensation}}</text>
       </view>
     </view>
 
     <!-- 商品列表 -->
     <view class="sec-header">
-      <text class="sec-title">棉农都在买</text>
-      <text class="sec-more">更多 ›</text>
+      <text class="sec-title">{{copy.popular}}</text>
+      <text class="sec-more">{{copy.more}}</text>
     </view>
 
     <view class="prod-grid">
@@ -86,13 +86,13 @@
           <block wx:else>
             <text class="prod-icon">{{item.icon || '📦'}}</text>
           </block>
-          <text wx:if="{{item.isNew}}" class="tag tag-new">新品</text>
-          <text wx:elif="{{item.hot}}" class="tag tag-hot">🔥热销</text>
-          <text wx:if="{{item.outOfRange}}" class="tag tag-out">超出配送范围</text>
+          <text wx:if="{{item.isNew}}" class="tag tag-new">{{copy.new}}</text>
+          <text wx:elif="{{item.hot}}" class="tag tag-hot">{{copy.hot}}</text>
+          <text wx:if="{{item.outOfRange}}" class="tag tag-out">{{copy.out}}</text>
         </view>
         <view class="prod-body">
           <text class="prod-name">{{item.name}}</text>
-          <text class="prod-store">🏪 {{item.company_name || item.store || '认证商家'}}</text>
+          <text class="prod-store">{{item.company_name || item.store || copy.merchant}}</text>
           <text class="prod-spec">{{item.unit ? item.unit : item.spec}}</text>
           <view class="prod-bottom">
             <view class="prod-price-wrap">
@@ -110,7 +110,7 @@
     <!-- 无商品提示 -->
     <view wx:if="{{displayProds.length === 0}}" class="empty-tip">
       <text class="empty-icon">🔍</text>
-      <text class="empty-text">{{searchKeyword ? '未找到"' + searchKeyword + '"相关商品' : '该分类暂无商品'}}</text>
+      <text class="empty-text">{{searchKeyword ? copy.notFound : copy.empty}}</text>
     </view>
 
     <view class="list-bottom"></view>
@@ -120,15 +120,15 @@
   <view wx:if="{{showQualityPopup}}" class="cs-overlay" bindtap="onCloseQualityPopup">
     <view class="cs-popup" catchtap="">
       <view class="cs-header">
-        <text class="cs-title">质量保证</text>
+      <text class="cs-title">{{copy.quality}}</text>
         <view class="cs-close" bindtap="onCloseQualityPopup"><text class="cs-close-icon">✕</text></view>
       </view>
-      <view class="quality-item"><text class="quality-icon">✅</text><view><text class="quality-title">正品保证</text><text class="quality-desc">所有商品均来自认证农资企业，假一赔十</text></view></view>
-      <view class="quality-item"><text class="quality-icon">🔄</text><view><text class="quality-title">7天退换</text><text class="quality-desc">收货后7天内，商品无质量问题可申请退换</text></view></view>
-      <view class="quality-item"><text class="quality-icon">🚚</text><view><text class="quality-title">运输保障</text><text class="quality-desc">运输途中损坏，凭照片全额赔偿</text></view></view>
-      <view class="quality-item"><text class="quality-icon">📋</text><view><text class="quality-title">合规认证</text><text class="quality-desc">农药、化肥等均持有合法登记证书</text></view></view>
+      <view class="quality-item"><text class="quality-icon">✅</text><view><text class="quality-title">{{copy.genuine}}</text><text class="quality-desc">{{copy.genuineDesc}}</text></view></view>
+      <view class="quality-item"><text class="quality-icon">🔄</text><view><text class="quality-title">{{copy.return7}}</text><text class="quality-desc">{{copy.returnDesc}}</text></view></view>
+      <view class="quality-item"><text class="quality-icon">🚚</text><view><text class="quality-title">{{copy.transport}}</text><text class="quality-desc">{{copy.transportDesc}}</text></view></view>
+      <view class="quality-item"><text class="quality-icon">📋</text><view><text class="quality-title">{{copy.compliance}}</text><text class="quality-desc">{{copy.complianceDesc}}</text></view></view>
       <view class="cs-copy-btn" bindtap="onCloseQualityPopup">
-        <text class="cs-copy-text">我知道了</text>
+        <text class="cs-copy-text">{{copy.know}}</text>
       </view>
     </view>
   </view>

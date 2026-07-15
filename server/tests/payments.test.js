@@ -8,6 +8,7 @@ const dbPath = require.resolve('../db/database')
 const wxpayPath = require.resolve('../utils/wechat-pay')
 const calls = []
 let orderMode = 'ready'
+let machineMode = 'full'
 
 const mockDb = {
   async query(sql, params = []) {
@@ -16,8 +17,12 @@ const mockDb = {
     if (/SELECT openid FROM users WHERE id=\?/i.test(sql)) {
       return [[{ openid: 'openid-under-sp-appid' }], []]
     }
-    if (/UPDATE machine_orders SET pay_mode=\?/i.test(compact)) return [{ affectedRows: 1 }]
+    if (/UPDATE machine_orders SET pay_mode=\?/i.test(compact)) {
+      machineMode = params[0]
+      return [{ affectedRows: 1 }]
+    }
     if (/FROM machine_orders mo JOIN operators op/i.test(compact)) {
+      const balance = machineMode === 'balance'
       return [[{
         id: 18,
         order_no: 'MO202607140001',
@@ -25,8 +30,16 @@ const mockDb = {
         total_price: '800.00',
         deposit: '80.00',
         operator_id: 3,
-        pay_mode: params[0] === 18 ? 'full' : 'deposit',
-        pay_status: 'unpaid',
+        status: balance ? 'completed' : 'pending',
+        pay_mode: machineMode === 'full' ? 'full' : 'deposit',
+        pay_status: balance ? 'partial' : 'unpaid',
+        paid_amount: balance ? '80.00' : '0.00',
+        deposit_status: balance ? 'paid' : 'unpaid',
+        balance_status: 'unpaid',
+        deposit_paid_amount: balance ? '80.00' : '0.00',
+        balance_paid_amount: '0.00',
+        deposit_transaction_id: balance ? 'wx-deposit-tx' : '',
+        balance_transaction_id: '',
         sub_mchid: '1700000003',
         commission_rate: '7.50'
       }], []]
@@ -200,6 +213,29 @@ async function run() {
     assert.match(selfMissingSub.json.msg, /自营.*子商户号|sub_mchid/)
 
     calls.length = 0
+    machineMode = 'deposit'
+    const machineDeposit = await request(baseUrl, token, {
+      orderType: 'machine', orderId: 18, paymentStage: 'deposit'
+    })
+    assert.strictEqual(machineDeposit.status, 200)
+    const depositPrepay = calls.find(item => item.type === 'partnerJsapiPrepay')
+    assert.strictEqual(depositPrepay.order.amountFen, 8000)
+    assert.strictEqual(depositPrepay.order.attach.paymentStage, 'deposit')
+    assert.match(depositPrepay.order.outTradeNo, /_DEPOSIT$/)
+
+    calls.length = 0
+    machineMode = 'balance'
+    const machineBalance = await request(baseUrl, token, {
+      orderType: 'machine', orderId: 18, paymentStage: 'balance'
+    })
+    assert.strictEqual(machineBalance.status, 200)
+    const balancePrepay = calls.find(item => item.type === 'partnerJsapiPrepay')
+    assert.strictEqual(balancePrepay.order.amountFen, 72000)
+    assert.strictEqual(balancePrepay.order.attach.paymentStage, 'balance')
+    assert.match(balancePrepay.order.outTradeNo, /_BALANCE$/)
+
+    calls.length = 0
+    machineMode = 'full'
     const machine = await request(baseUrl, token, { orderType: 'machine', orderId: 18, payMode: 'full' })
     assert.strictEqual(machine.status, 200)
     const machinePrepay = calls.find(item => item.type === 'partnerJsapiPrepay')

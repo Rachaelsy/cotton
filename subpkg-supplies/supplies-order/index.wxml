@@ -7,7 +7,7 @@
       <view class="ord-back" bindtap="onBack">
         <text class="ord-back-icon">‹</text>
       </view>
-      <text class="ord-nav-title">订单详情</text>
+      <text class="ord-nav-title">{{copy.title}}</text>
       <view style="width: 64rpx"></view>
     </view>
     <!-- 当前状态 -->
@@ -42,7 +42,7 @@
       <view class="section-card">
         <view class="section-head">
           <text class="section-icon">📍</text>
-          <text class="section-title">收货信息</text>
+          <text class="section-title">{{copy.address}}</text>
         </view>
         <view class="addr-row">
           <view class="addr-name-row">
@@ -57,7 +57,7 @@
       <view class="section-card">
         <view class="section-head">
           <text class="section-icon">📦</text>
-          <text class="section-title">订单商品</text>
+          <text class="section-title">{{copy.goods}}</text>
         </view>
         <view class="ord-item" wx:for="{{order.items}}" wx:key="id">
           <view class="ord-item-img" style="background: {{item.imgBg || '#FBF5EA'}}">
@@ -75,33 +75,33 @@
       <view class="section-card">
         <view class="section-head">
           <text class="section-icon">🧾</text>
-          <text class="section-title">订单信息</text>
+          <text class="section-title">{{copy.info}}</text>
         </view>
         <view class="kv-row">
-          <text class="kv-k">订单编号</text>
+          <text class="kv-k">{{copy.orderNo}}</text>
           <view class="kv-no-wrap" bindtap="onCopyNo">
             <text class="kv-v">{{orderNo}}</text>
-            <text class="kv-copy">复制</text>
+            <text class="kv-copy">{{copy.copy}}</text>
           </view>
         </view>
         <view class="kv-row">
-          <text class="kv-k">支付方式</text>
+          <text class="kv-k">{{copy.payMethod}}</text>
           <text class="kv-v">{{payMethodLabel}}</text>
         </view>
         <view wx:if="{{order.logisticsNo}}" class="kv-row">
-          <text class="kv-k">物流单号</text>
+          <text class="kv-k">{{copy.logisticsNo}}</text>
           <text class="kv-v">{{order.logisticsNo}}</text>
         </view>
         <view class="kv-row">
-          <text class="kv-k">商品合计</text>
+          <text class="kv-k">{{copy.subtotal}}</text>
           <text class="kv-v">¥{{order.subtotal}}</text>
         </view>
         <view class="kv-row">
-          <text class="kv-k">运费</text>
+          <text class="kv-k">{{copy.freight}}</text>
           <text class="kv-v">¥{{order.deliveryFee || 0}}</text>
         </view>
         <view class="kv-row kv-row-total">
-          <text class="kv-k-bold">实付金额</text>
+          <text class="kv-k-bold">{{copy.paid}}</text>
           <text class="kv-v-red">¥{{order.total}}</text>
         </view>
       </view>
@@ -111,52 +111,54 @@
         <view class="section-head logistics-head">
           <view class="logistics-title-wrap">
             <text class="section-icon">🚚</text>
-            <text class="section-title">物流动态</text>
+            <text class="section-title">{{copy.logistics}}</text>
           </view>
           <view class="logistics-refresh {{logisticsLoading ? 'disabled' : ''}}" bindtap="onRefreshLogistics">
-            <text>{{logisticsLoading ? '查询中' : '刷新'}}</text>
+            <text>{{logisticsLoading ? copy.querying : copy.refresh}}</text>
           </view>
         </view>
 
         <view class="logistics-summary">
           <view class="logistics-status-row">
-            <text class="logistics-status">{{logistics.state_label || order.logisticsStatus || '等待揽收'}}</text>
-            <text wx:if="{{logistics.arrival_time}}" class="logistics-arrival">预计 {{logistics.arrival_time}} 送达</text>
+            <text class="logistics-status">{{logistics.state_label || order.logisticsStatus || copy.waitingPickup}}</text>
+            <text wx:if="{{logistics.arrival_time}}" class="logistics-arrival">{{copy.arrivalPrefix}}{{logistics.arrival_time}}{{copy.arrivalSuffix}}</text>
           </view>
-          <text class="logistics-latest">{{logistics.latestText || order.logisticsLatest || '商家已发货，等待快递公司揽收'}}</text>
-          <text wx:if="{{logistics.updatedText}}" class="logistics-updated">更新于 {{logistics.updatedText}}</text>
+          <text class="logistics-latest">{{logistics.latestText || order.logisticsLatest || copy.shippedWaiting}}</text>
+          <text wx:if="{{logistics.updatedText}}" class="logistics-updated">{{copy.updatedAt}}{{logistics.updatedText}}</text>
         </view>
 
         <view class="logistics-number-row" bindtap="onCopyLogisticsNo">
           <text class="logistics-company">{{logistics.company_name || order.logisticsCompanyName}}</text>
           <text class="logistics-number">{{order.logisticsNo}}</text>
-          <text class="logistics-copy">复制</text>
+          <text class="logistics-copy">{{copy.copy}}</text>
         </view>
 
         <view wx:if="{{logistics && !logistics.enabled}}" class="logistics-notice">
-          <text>物流查询服务尚未配置，当前仅显示商家填写的发货信息。</text>
+          <text>{{copy.logisticsDisabled}}</text>
         </view>
         <view wx:elif="{{logistics && logistics.error && logistics.events.length === 0}}" class="logistics-notice">
           <text>{{logistics.error}}</text>
         </view>
 
         <view wx:if="{{logisticsExpanded}}" class="logistics-timeline">
-          <view wx:if="{{logisticsLoading && !logistics}}" class="logistics-empty">正在查询真实物流轨迹...</view>
-          <view wx:elif="{{!logistics || logistics.events.length === 0}}" class="logistics-empty">快递公司暂未返回轨迹，请稍后再看</view>
-          <view wx:else class="logistics-event {{item.current ? 'current' : ''}}" wx:for="{{logistics.events}}" wx:key="event_hash">
-            <view class="logistics-axis">
-              <view class="logistics-dot"></view>
-              <view wx:if="{{index < logistics.events.length - 1}}" class="logistics-line"></view>
+          <view wx:if="{{logisticsLoading && !logistics}}" class="logistics-empty">{{copy.queryingTrack}}</view>
+          <view wx:elif="{{!logistics || logistics.events.length === 0}}" class="logistics-empty">{{copy.noTrack}}</view>
+          <block wx:else>
+            <view class="logistics-event {{item.current ? 'current' : ''}}" wx:for="{{logistics.events}}" wx:key="event_hash">
+              <view class="logistics-axis">
+                <view class="logistics-dot"></view>
+                <view wx:if="{{index < logistics.events.length - 1}}" class="logistics-line"></view>
+              </view>
+              <view class="logistics-event-body">
+                <text class="logistics-event-context">{{item.context}}</text>
+                <text class="logistics-event-time">{{item.timeText}}{{item.location ? ' · ' + item.location : ''}}</text>
+              </view>
             </view>
-            <view class="logistics-event-body">
-              <text class="logistics-event-context">{{item.context}}</text>
-              <text class="logistics-event-time">{{item.timeText}}{{item.location ? ' · ' + item.location : ''}}</text>
-            </view>
-          </view>
+          </block>
         </view>
 
         <view class="logistics-expand" bindtap="onLogistics">
-          <text>{{logisticsExpanded ? '收起物流轨迹' : '查看全部物流轨迹'}}</text>
+          <text>{{logisticsExpanded ? copy.collapseTrack : copy.expandTrack}}</text>
           <text>{{logisticsExpanded ? '⌃' : '⌄'}}</text>
         </view>
       </view>
@@ -165,26 +167,26 @@
       <view wx:if="{{aftersale}}" class="section-card">
         <view class="section-head">
           <text class="section-icon">🔄</text>
-          <text class="section-title">售后申请详情</text>
+          <text class="section-title">{{copy.aftersaleDetail}}</text>
         </view>
         <view class="kv-row">
-          <text class="kv-k">售后类型</text>
-          <text class="kv-v">{{aftersale.aftersale_type}}</text>
+          <text class="kv-k">{{copy.aftersaleType}}</text>
+          <text class="kv-v">{{aftersale.aftersale_type_display}}</text>
         </view>
         <view class="kv-row">
-          <text class="kv-k">申请原因</text>
-          <text class="kv-v">{{aftersale.reason === '其他' ? aftersale.other_reason : aftersale.reason}}</text>
+          <text class="kv-k">{{copy.reason}}</text>
+          <text class="kv-v">{{aftersale.reason_display}}</text>
         </view>
         <view wx:if="{{aftersale.description}}" class="kv-row">
-          <text class="kv-k">问题描述</text>
+          <text class="kv-k">{{copy.description}}</text>
           <text class="kv-v">{{aftersale.description}}</text>
         </view>
         <view class="kv-row">
-          <text class="kv-k">处理状态</text>
+          <text class="kv-k">{{copy.handleStatus}}</text>
           <text class="kv-v {{aftersale.displayStatus === 'approved' ? 'text-green' : aftersale.displayStatus === 'rejected' ? 'text-red' : 'text-orange'}}">{{aftersale.statusLabel}}</text>
         </view>
         <view wx:if="{{aftersale.handle_note}}" class="kv-row">
-          <text class="kv-k">商家回复</text>
+          <text class="kv-k">{{copy.merchantReply}}</text>
           <text class="kv-v">{{aftersale.handle_note}}</text>
         </view>
       </view>
@@ -197,36 +199,36 @@
   <view wx:if="{{isCompleted}}" class="ord-bottom ord-bottom-row">
     <view class="c3btn c3btn-review" bindtap="onReview">
       <text class="c3btn-icon">{{hasReviewed ? '✅' : '⭐'}}</text>
-      <text class="c3btn-label">{{hasReviewed ? '已评价' : '去评价'}}</text>
+      <text class="c3btn-label">{{hasReviewed ? copy.reviewed : copy.review}}</text>
     </view>
     <view class="c3btn c3btn-contact" bindtap="onContact">
       <text class="c3btn-icon">💬</text>
-      <text class="c3btn-label">联系商家</text>
+      <text class="c3btn-label">{{copy.contactMerchant}}</text>
     </view>
     <view class="c3btn c3btn-aftersale" bindtap="onAfterSale">
       <text class="c3btn-icon">🔄</text>
-      <text class="c3btn-label">申请售后</text>
+      <text class="c3btn-label">{{copy.applyAftersale}}</text>
     </view>
   </view>
 
   <!-- 未完成底部：确认收货 + 三图标 -->
   <view wx:else class="ord-bottom">
     <view wx:if="{{canConfirmReceipt}}" class="confirm-receipt-btn" bindtap="onConfirmReceipt">
-      <text class="confirm-receipt-text">✓ 确认收货</text>
+      <text class="confirm-receipt-text">✓ {{copy.confirmReceipt}}</text>
     </view>
     <view class="action-row">
       <view class="action-btn action-contact" bindtap="onContact">
         <text class="action-icon">💬</text>
-        <text class="action-label">联系卖家</text>
+        <text class="action-label">{{copy.contactSeller}}</text>
       </view>
       <view class="action-btn action-refund" bindtap="onAfterSale">
         <text class="action-icon">🔄</text>
-        <text class="action-label">退款/售后</text>
+        <text class="action-label">{{copy.refundAftersale}}</text>
       </view>
       <view class="action-btn action-logistics {{!shipped ? 'action-disabled' : ''}}" bindtap="onLogistics">
         <text class="action-icon">🚚</text>
-        <text class="action-label">查看物流</text>
-        <text class="action-sub" wx:if="{{!shipped}}">未发货</text>
+        <text class="action-label">{{copy.viewLogistics}}</text>
+        <text class="action-sub" wx:if="{{!shipped}}">{{copy.notShipped}}</text>
         <text class="action-sub" wx:elif="{{order.logisticsStatus}}">{{order.logisticsStatus}}</text>
       </view>
     </view>
@@ -238,10 +240,10 @@
       <view class="success-icon-wrap">
         <text class="success-checkmark">✓</text>
       </view>
-      <text class="success-title">收货成功</text>
-      <text class="success-sub">交易已完成，感谢您的购买！</text>
+      <text class="success-title">{{copy.receiptSuccess}}</text>
+      <text class="success-sub">{{copy.receiptThanks}}</text>
       <view class="success-close-btn" bindtap="onCloseSuccessPopup">
-        <text class="success-close-text">完成</text>
+        <text class="success-close-text">{{copy.finish}}</text>
       </view>
     </view>
   </view>

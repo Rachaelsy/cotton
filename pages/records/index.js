@@ -1,6 +1,46 @@
 // pages/records/index.js — 农事记录（后端 API 驱动）
 const auth = require('../../utils/auth')
 const layout = require('../../utils/layout')
+const i18n = require('../../utils/i18n')
+
+const TYPE_LABELS = {
+  ug: { '全部': 'ھەممىسى', '灌溉': 'سۇغىرىش', '施肥': 'ئوغۇتلاش', '打药': 'دورا پۈركۈش', '无人机': 'ئۇچقۇچىسىز ئۈسكۈنە', '播种': 'تېرىش', '采收': 'يىغىش', '巡田': 'ئېتىز ئايلىنىش', '其他': 'باشقا' }
+}
+
+const COPY = {
+  zh: {
+    title: '农事记录', manage: '管理', done: '完成', countUnit: '次农事', plotUnit: '块地', costUnit: '元投入', list: '列表', calendar: '日历',
+    manageTip: '管理模式 · 点击记录选择，可多选后批量删除', viewPlot: '查看地块', switch: '切换 ›', allPlots: '全部地块',
+    loading: '加载中…', emptyAll: '还没有农事记录', emptyMatch: '暂无匹配记录', emptyAllDesc: '点击右下角 + 记录第一笔农事', emptyMatchDesc: '换个类型或地块筛选试试',
+    monthRecords: '本月农事记录', noRecords: '暂无记录', cancelSelectAll: '取消全选', selectAll: '全选', delete: '删除',
+    editRecord: '编辑农事记录', addRecord: '新增农事记录', chooseType: '选择农事类型', cancel: '取消', fillDetails: '填写详情信息',
+    plot: '地块', date: '日期', time: '时间', amount: '用量', amountPh: '如：用水量 800 方、尿素 5kg', cost: '成本', worker: '执行人', me: '本人',
+    note: '备注', notePh: '记录农事过程、药肥名称、田间情况…', prev: '上一步', update: '更新', save: '保存', type: '类型', deleteOne: '删除', edit: '编辑',
+    noCost: '未填写', completed: '记录完成', recordUpdated: '记录已更新', recordAdded: '记录已添加', loadFail: '加载失败', saveFail: '保存失败', network: '网络异常',
+    chooseTypeToast: '请先选择农事类型', chooseDate: '请选择日期', choosePlot: '请关联到具体地块后再保存', deleteTitle: '删除记录', deleted: '已删除记录', deleteFail: '删除失败',
+    batchDelete: '批量删除', loginExpired: '登录已过期，请重新登录', recordsSuffix: '条'
+  },
+  ug: {
+    title: 'دېھقانچىلىق خاتىرىسى', manage: 'باشقۇرۇش', done: 'تامام', countUnit: 'قېتىم ئىش', plotUnit: 'پارچە يەر', costUnit: 'يۈەن خىراجەت', list: 'تىزىملىك', calendar: 'كالېندار',
+    manageTip: 'باشقۇرۇش · خاتىرىنى تاللاپ تۈركۈملەپ ئۆچۈرەلەيسىز', viewPlot: 'يەر بويىچە كۆرۈش', switch: 'ئالماشتۇرۇش ›', allPlots: 'بارلىق يەر',
+    loading: 'يۈكلىنىۋاتىدۇ…', emptyAll: 'تېخى خاتىرە يوق', emptyMatch: 'ماس خاتىرە يوق', emptyAllDesc: 'ئوڭ ئاستىدىكى + نى بېسىپ تۇنجى خاتىرىنى قوشۇڭ', emptyMatchDesc: 'باشقا تۈر ياكى يەر تاللاپ سىناڭ',
+    monthRecords: 'بۇ ئايدىكى خاتىرىلەر', noRecords: 'خاتىرە يوق', cancelSelectAll: 'ھەممىنى تاللاشنى بىكار قىلىش', selectAll: 'ھەممىنى تاللاش', delete: 'ئۆچۈرۈش',
+    editRecord: 'خاتىرىنى تەھرىرلەش', addRecord: 'خاتىرە قوشۇش', chooseType: 'دېھقانچىلىق تۈرىنى تاللاش', cancel: 'بىكار قىلىش', fillDetails: 'تەپسىلاتنى تولدۇرۇش',
+    plot: 'يەر', date: 'چېسلا', time: 'ۋاقىت', amount: 'مىقدار', amountPh: 'مەسىلەن: 800 كۇب سۇ، 5kg ئۇرېيە', cost: 'خىراجەت', worker: 'ئىجرا قىلغۇچى', me: 'ئۆزۈم',
+    note: 'ئىزاھ', notePh: 'ئىش جەريانى، دورا-ئوغۇت نامى ۋە ئېتىز ئەھۋالى…', prev: 'ئالدىنقى', update: 'يېڭىلاش', save: 'ساقلاش', type: 'تۈرى', deleteOne: 'ئۆچۈرۈش', edit: 'تەھرىرلەش',
+    noCost: 'تولدۇرۇلمىغان', completed: 'خاتىرە تامام', recordUpdated: 'خاتىرە يېڭىلاندى', recordAdded: 'خاتىرە قوشۇلدى', loadFail: 'يۈكلەش مەغلۇپ', saveFail: 'ساقلاش مەغلۇپ', network: 'تور نورمال ئەمەس',
+    chooseTypeToast: 'ئالدى بىلەن تۈر تاللاڭ', chooseDate: 'چېسلا تاللاڭ', choosePlot: 'كونكرېت يەرنى باغلاڭ', deleteTitle: 'خاتىرىنى ئۆچۈرۈش', deleted: 'خاتىرە ئۆچۈرۈلدى', deleteFail: 'ئۆچۈرۈش مەغلۇپ',
+    batchDelete: 'تۈركۈملەپ ئۆچۈرۈش', loginExpired: 'كىرىش ۋاقتى ئۆتتى، قايتا كىرىڭ', recordsSuffix: 'دانە'
+  }
+}
+
+function typeLabel(type, lang) {
+  return lang === 'ug' ? (TYPE_LABELS.ug[type] || type) : type
+}
+
+function displayTypeOptions(lang) {
+  return typeOptions.map(item => ({ ...item, label: typeLabel(item.type, lang), displayTitle: i18n.localizeText(item.title, lang) }))
+}
 
 // 农事类型 → 图标 / 背景色 / 默认标题
 const typeOptions = [
@@ -52,17 +92,21 @@ function formatCost(cost) {
 Page({
   data: {
     statusBarHeight: 20,
+    lang: i18n.getLanguage(),
+    copy: COPY[i18n.getLanguage()],
     capsuleSafeRight: 0,
     viewMode: 'list',
     manageMode: false,
     typeFilter: '全部',
     fieldFilter: '全部地块',
     fieldPickerIndex: 0,
-    typeFilters: ['全部', '灌溉', '施肥', '打药', '无人机', '播种', '采收', '巡田', '其他'],
-    fieldFilters: ['全部地块'],
-    typeOptions,
+    typeFilters: ['全部', '灌溉', '施肥', '打药', '无人机', '播种', '采收', '巡田', '其他'].map(value => ({ value, label: typeLabel(value, i18n.getLanguage()) })),
+    fieldFilters: [{ value: '全部地块', label: COPY[i18n.getLanguage()].allPlots }],
+    typeOptions: displayTypeOptions(i18n.getLanguage()),
     fieldOptions: ['全部地块'],
-    weekDays: ['一', '二', '三', '四', '五', '六', '日'],
+    fieldDisplayOptions: [COPY[i18n.getLanguage()].allPlots],
+    fieldFilterLabel: COPY[i18n.getLanguage()].allPlots,
+    weekDays: i18n.getLanguage() === 'ug' ? ['د', 'س', 'چ', 'پ', 'ج', 'ش', 'ي'] : ['一', '二', '三', '四', '五', '六', '日'],
     records: [],            // 原始 API 数据
     displayRecords: [],
     calendarRecords: [],
@@ -111,7 +155,24 @@ Page({
   },
 
   onShow() {
+    const lang = i18n.getLanguage()
+    if (lang !== this.data.lang) this.applyLanguage(lang)
     if (this._inited) this.loadRecords()
+  },
+
+  applyLanguage(lang) {
+    const copy = COPY[lang]
+    const displayOptions = [copy.allPlots, ...this.plotList.map(p => `${p.name} · ${p.area}${lang === 'ug' ? ' مو' : '亩'}`)]
+    this.setData({
+      lang, copy,
+      typeFilters: ['全部', '灌溉', '施肥', '打药', '无人机', '播种', '采收', '巡田', '其他'].map(value => ({ value, label: typeLabel(value, lang) })),
+      typeOptions: displayTypeOptions(lang),
+      fieldDisplayOptions: displayOptions,
+      fieldFilters: this.data.fieldOptions.map((value, index) => ({ value, label: displayOptions[index] || value })),
+      fieldFilterLabel: displayOptions[this.data.fieldPickerIndex] || copy.allPlots,
+      weekDays: lang === 'ug' ? ['د', 'س', 'چ', 'پ', 'ج', 'ش', 'ي'] : ['一', '二', '三', '四', '五', '六', '日']
+    })
+    this.refreshView()
   },
 
   async initPage() {
@@ -127,7 +188,10 @@ Page({
       if (res.code === 200 && Array.isArray(res.data)) {
         this.plotList = res.data.map(p => ({
           id: p.id,
-          label: `${p.name} · ${Number(p.area || 0)}亩`
+          name: p.name,
+          area: Number(p.area || 0),
+          label: `${p.name} · ${Number(p.area || 0)}亩`,
+          displayLabel: `${p.name} · ${Number(p.area || 0)}${this.data.lang === 'ug' ? ' مو' : '亩'}`
         }))
       }
     } catch (e) {
@@ -141,8 +205,10 @@ Page({
     const initialIndex = initialPlot ? fieldOptions.indexOf(initialLabel) : 0
     this.setData({
       fieldOptions,
-      fieldFilters: fieldOptions,
+      fieldDisplayOptions: [this.data.copy.allPlots, ...this.plotList.map(p => p.displayLabel)],
+      fieldFilters: fieldOptions.map((value, index) => ({ value, label: index ? this.plotList[index - 1].displayLabel : this.data.copy.allPlots })),
       fieldFilter: initialLabel,
+      fieldFilterLabel: initialPlot ? initialPlot.displayLabel : this.data.copy.allPlots,
       fieldPickerIndex: initialIndex >= 0 ? initialIndex : 0,
       selectedFieldLabel: initialLabel,
       typeFilter: this.initialType || this.data.typeFilter,
@@ -167,7 +233,7 @@ Page({
         this.refreshView()
       } else {
         this.setData({ loading: false })
-        wx.showToast({ title: res.msg || '加载失败', icon: 'none' })
+        wx.showToast({ title: res.msg || this.data.copy.loadFail, icon: 'none' })
       }
     } catch (e) {
       this.setData({ loading: false })
@@ -213,6 +279,7 @@ Page({
     const index = this.data.fieldOptions.indexOf(field)
     this.setData({
       fieldFilter: field,
+      fieldFilterLabel: this.data.fieldFilters[index >= 0 ? index : 0]?.label || this.data.copy.allPlots,
       fieldPickerIndex: index >= 0 ? index : 0,
       selectedFieldLabel: field,
       selectedIds: []
@@ -225,6 +292,7 @@ Page({
     const field = this.data.fieldOptions[index] || '全部地块'
     this.setData({
       fieldFilter: field,
+      fieldFilterLabel: this.data.fieldDisplayOptions[index] || this.data.copy.allPlots,
       fieldPickerIndex: index,
       selectedFieldLabel: field,
       selectedIds: []
@@ -307,7 +375,7 @@ Page({
         fieldIndex,
         date: record.date,
         time: record.time,
-        amount: record.amount === '记录完成' ? '' : record.amount,
+        amount: record.amount === '记录完成' || record.amount === this.data.copy.completed ? '' : record.amount,
         cost: record.cost ? String(record.cost) : '',
         worker: record.worker,
         note: record.note
@@ -320,8 +388,8 @@ Page({
     if (!record) return
 
     wx.showModal({
-      title: '删除记录',
-      content: `确定删除「${record.title}」吗？`,
+      title: this.data.copy.deleteTitle,
+      content: this.data.lang === 'ug' ? `«${record.title}» ئۆچۈرۈلسۇنمۇ؟` : `确定删除「${record.title}」吗？`,
       confirmColor: '#DC2626',
       success: async res => {
         if (!res.confirm) return
@@ -329,10 +397,10 @@ Page({
           const r = await auth.request('DELETE', `/api/farm-records/${record.id}`)
           if (r.code === 200) {
             this.setData({ showDetail: false, currentRecord: null })
-            wx.showToast({ title: '已删除记录', icon: 'none' })
+            wx.showToast({ title: this.data.copy.deleted, icon: 'none' })
             this.loadRecords()
           } else {
-            wx.showToast({ title: r.msg || '删除失败', icon: 'none' })
+            wx.showToast({ title: r.msg || this.data.copy.deleteFail, icon: 'none' })
           }
         } catch (e) {
           this._showReqError(e)
@@ -357,7 +425,7 @@ Page({
         time: nowTimeValue(),
         amount: '',
         cost: '',
-        worker: '本人',
+        worker: this.data.copy.me,
         note: ''
       }
     })
@@ -422,17 +490,17 @@ Page({
     const { selectedTypeIndex, typeOptions: options, form, editingId } = this.data
     const typeInfo = options[selectedTypeIndex]
     if (!typeInfo) {
-      wx.showToast({ title: '请先选择农事类型', icon: 'none' })
+      wx.showToast({ title: this.data.copy.chooseTypeToast, icon: 'none' })
       return
     }
     if (!form.date) {
-      wx.showToast({ title: '请选择日期', icon: 'none' })
+      wx.showToast({ title: this.data.copy.chooseDate, icon: 'none' })
       return
     }
 
     const fieldIndex = this.getSafeFieldIndex(form.fieldIndex)
     if (this.initialPlotId && fieldIndex === 0) {
-      wx.showToast({ title: '请关联到具体地块后再保存', icon: 'none' })
+      wx.showToast({ title: this.data.copy.choosePlot, icon: 'none' })
       return
     }
     const plotLabel = this.data.fieldOptions[fieldIndex] || '全部地块'
@@ -447,7 +515,7 @@ Page({
       work_time: form.time || '08:00',
       amount: form.amount.trim(),
       cost: Number(form.cost || 0),
-      worker: form.worker.trim() || '本人',
+      worker: form.worker.trim() || this.data.copy.me,
       note: form.note.trim()
     }
     await this._submitRecord(payload, editingId)
@@ -466,10 +534,10 @@ Page({
           selectedType: null,
           editingId: null
         })
-        wx.showToast({ title: editingId ? '记录已更新' : '记录已添加', icon: 'none' })
+        wx.showToast({ title: editingId ? this.data.copy.recordUpdated : this.data.copy.recordAdded, icon: 'none' })
         this.loadRecords()
       } else {
-        wx.showToast({ title: r.msg || '保存失败', icon: 'none' })
+        wx.showToast({ title: r.msg || this.data.copy.saveFail, icon: 'none' })
       }
     } catch (e) {
       this._showReqError(e)
@@ -490,8 +558,8 @@ Page({
     if (!ids.length) return
 
     wx.showModal({
-      title: '批量删除',
-      content: `确定删除选中的 ${ids.length} 条农事记录吗？`,
+      title: this.data.copy.batchDelete,
+      content: this.data.lang === 'ug' ? `تاللانغان ${ids.length} خاتىرە ئۆچۈرۈلسۇنمۇ؟` : `确定删除选中的 ${ids.length} 条农事记录吗？`,
       confirmColor: '#DC2626',
       success: async res => {
         if (!res.confirm) return
@@ -499,10 +567,10 @@ Page({
           const r = await auth.request('POST', '/api/farm-records/batch-delete', { ids })
           if (r.code === 200) {
             this.setData({ selectedIds: [], manageMode: false })
-            wx.showToast({ title: r.msg || `已删除 ${ids.length} 条`, icon: 'none' })
+            wx.showToast({ title: r.msg || (this.data.lang === 'ug' ? `${ids.length} خاتىرە ئۆچۈرۈلدى` : `已删除 ${ids.length} 条`), icon: 'none' })
             this.loadRecords()
           } else {
-            wx.showToast({ title: r.msg || '删除失败', icon: 'none' })
+            wx.showToast({ title: r.msg || this.data.copy.deleteFail, icon: 'none' })
           }
         } catch (e) {
           this._showReqError(e)
@@ -566,20 +634,21 @@ Page({
       id: record.id,
       plot_id: record.plot_id,
       type: record.type,
-      title: record.title || meta.title,
+      title: i18n.localizeText(record.title || meta.title, this.data.lang),
       field: shortField(record.plot_name),
       fieldFull: record.plot_name || '全部地块',
       icon: meta.icon,
       bg: meta.bg,
       date: record.work_date,
       time,
-      amount: record.amount || '记录完成',
+      displayType: typeLabel(record.type, this.data.lang),
+      amount: record.amount || this.data.copy.completed,
       cost,
-      worker: record.worker || '本人',
-      note: record.note || `已完成${record.type}作业`,
+      worker: record.worker || this.data.copy.me,
+      note: record.note || (this.data.lang === 'ug' ? `${typeLabel(record.type, 'ug')} ئىشى تاماملاندى` : `已完成${record.type}作业`),
       dateText: `${formatDate(record.work_date)} ${time}`.trim(),
-      costText: cost ? `¥${cost}` : '未填写',
-      metaText: `${record.worker || '本人'} · ${formatDate(record.work_date)} ${time}`.trim()
+      costText: cost ? `¥${cost}` : this.data.copy.noCost,
+      metaText: `${record.worker || this.data.copy.me} · ${this.data.lang === 'ug' ? record.work_date : formatDate(record.work_date)} ${time}`.trim()
     }
   },
 
@@ -629,20 +698,20 @@ Page({
       ? records.filter(item => item.date === selectedDate)
       : records.filter(item => item.date && item.date.startsWith(monthPrefix))
     const listTitle = selectedDate
-      ? `${formatDate(selectedDate)}农事记录`
-      : '本月农事记录'
+      ? (this.data.lang === 'ug' ? `${selectedDate} خاتىرىلىرى` : `${formatDate(selectedDate)}农事记录`)
+      : this.data.copy.monthRecords
 
     return {
       days,
       records: calendarRecords,
-      label: `${year}年${month}月`,
-      listTitle: `${listTitle}（${calendarRecords.length}条）`
+      label: this.data.lang === 'ug' ? `${year}-${pad(month)}` : `${year}年${month}月`,
+      listTitle: `${listTitle}（${calendarRecords.length}${this.data.copy.recordsSuffix}）`
     }
   },
 
   _monthLabel(ym) {
     const [year, month] = ym.split('-').map(Number)
-    return `${year}年${month}月`
+    return this.data && this.data.lang === 'ug' ? `${year}-${pad(month)}` : `${year}年${month}月`
   },
 
   // 新增时默认选择当前上下文地块（例如从地块详情跳转进来）。
@@ -667,7 +736,7 @@ Page({
   // 统一请求错误提示：区分登录失效与网络异常
   _showReqError(e) {
     const expired = e && e.message === '未登录'
-    wx.showToast({ title: expired ? '登录已过期，请重新登录' : '网络异常', icon: 'none' })
+    wx.showToast({ title: expired ? this.data.copy.loginExpired : this.data.copy.network, icon: 'none' })
   },
 
   noop() {}

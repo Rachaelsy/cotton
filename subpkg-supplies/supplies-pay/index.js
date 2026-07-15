@@ -2,10 +2,18 @@
 const app  = getApp()
 const auth = require('../../utils/auth')
 const layout = require('../../utils/layout')
+const i18n = require('../../utils/i18n')
+
+const COPY = {
+  zh: { title:'待付款',countdown:'请在',countdownEnd:'内完成支付，超时自动取消',expired:'订单已超时，即将自动关闭',goods:'商品',items:'件',orderNo:'订单号',total:'合计应付',cancelling:'取消中…',cancel:'取消订单',paying:'支付中…',pay:'立即支付',unknown:'未知商家',timeoutTitle:'订单已超时',timeoutContent:'超过30分钟未付款，订单已自动取消，库存已释放',know:'知道了',unavailable:'微信支付暂不可用',syncFail:'支付状态同步失败',incomplete:'支付未完成',cancelContent:'确定取消所有订单吗？库存将立即恢复。',cancelConfirm:'确认取消' },
+  ug: { title:'تۆلەشنى كۈتۈش',countdown:'',countdownEnd:'ئىچىدە تۆلەڭ، ۋاقىت ئۆتسە ئاپتوماتىك بىكار بولىدۇ',expired:'زاكاز ۋاقتى ئۆتتى، ئاپتوماتىك تاقىلىدۇ',goods:'مەھسۇلات',items:'دانە',orderNo:'زاكاز نومۇرى',total:'جەمئىي تۆلەش',cancelling:'بىكار قىلىۋاتىدۇ…',cancel:'زاكازنى بىكار قىلىش',paying:'تۆلەۋاتىدۇ…',pay:'ھازىر تۆلەش',unknown:'نامەلۇم سودىگەر',timeoutTitle:'زاكاز ۋاقتى ئۆتتى',timeoutContent:'30 مىنۇت ئىچىدە تۆلەنمىگەچكە زاكاز بىكار قىلىندى ۋە مال سانى ئەسلىگە كەلدى',know:'بىلدىم',unavailable:'WeChat تۆلەشنى ئىشلەتكىلى بولمايدۇ',syncFail:'تۆلەش ھالىتى ماسلاشمىدى',incomplete:'تۆلەش تاماملانمىدى',cancelContent:'بارلىق زاكاز بىكار قىلىنسۇنمۇ؟ مال سانى ئەسلىگە كېلىدۇ.',cancelConfirm:'بىكار قىلىش' }
+}
 
 Page({
   data: {
     statusBarHeight: 20,
+    lang: i18n.getLanguage(),
+    copy: COPY[i18n.getLanguage()],
     capsuleSafeRight: 0,
     orders: [],
     grandTotal: '0',
@@ -29,7 +37,7 @@ Page({
     const orders = raw.map(o => ({
       orderId:   o.orderId,
       orderNo:   o.orderNo || '',
-      store:     o.store || '未知商家',
+      store:     o.store || this.data.copy.unknown,
       total:     String(o.total || 0),
       itemCount: (o.items || []).length,
       firstItem: (o.items || [])[0] || {}
@@ -67,10 +75,10 @@ Page({
         clearInterval(this._timer)
         this.setData({ secondsLeft: 0, countdownStr: '00:00', expired: true })
         wx.showModal({
-          title: '订单已超时',
-          content: '超过30分钟未付款，订单已自动取消，库存已释放',
+          title: this.data.copy.timeoutTitle,
+          content: this.data.copy.timeoutContent,
           showCancel: false,
-          confirmText: '知道了',
+          confirmText: this.data.copy.know,
           success: () => wx.redirectTo({ url: '/subpkg-supplies/my-orders/index' })
         })
         return
@@ -95,7 +103,7 @@ Page({
           orderId: o.orderId
         })
         if (prepay.code !== 200 || !(prepay.data && prepay.data.payParams)) {
-          wx.showToast({ title: prepay.msg || '微信支付暂不可用', icon: 'none' })
+          wx.showToast({ title: prepay.msg || this.data.copy.unavailable, icon: 'none' })
           allOk = false
           break
         }
@@ -104,9 +112,9 @@ Page({
           orderType: 'supply',
           orderId: o.orderId
         })
-        if (confirm.code !== 200) throw new Error(confirm.msg || '支付状态同步失败')
+        if (confirm.code !== 200) throw new Error(confirm.msg || this.data.copy.syncFail)
       } catch {
-        wx.showToast({ title: '支付未完成', icon: 'none' })
+        wx.showToast({ title: this.data.copy.incomplete, icon: 'none' })
         allOk = false
         break
       }
@@ -117,6 +125,11 @@ Page({
       if (this._timer) clearInterval(this._timer)
       wx.redirectTo({ url: '/subpkg-supplies/supplies-pay-success/index' })
     }
+  },
+
+  onShow() {
+    const lang = i18n.getLanguage()
+    if (lang !== this.data.lang) this.setData({ lang, copy: COPY[lang] })
   },
 
   _requestPayment(payParams) {
@@ -133,9 +146,9 @@ Page({
     if (this.data.cancelling) return
     const confirmed = await new Promise(resolve =>
       wx.showModal({
-        title: '取消订单',
-        content: '确定取消所有订单吗？库存将立即恢复。',
-        confirmText: '确认取消',
+        title: this.data.copy.cancel,
+        content: this.data.copy.cancelContent,
+        confirmText: this.data.copy.cancelConfirm,
         confirmColor: '#FF3B30',
         success: r => resolve(r.confirm)
       })

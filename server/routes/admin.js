@@ -11,6 +11,7 @@ const wxpay    = require('../utils/wechat-pay')
 const profitSharing = require('../utils/profit-sharing')
 const commissionRequests = require('../utils/commission-requests')
 const applymentRegistration = require('../utils/applyment-registration')
+const identityData = require('../utils/identity-data')
 const { broadcastAnnouncement } = require('../utils/notify')
 
 // ── 图片上传配置 ─────────────────────────────────────────
@@ -266,6 +267,72 @@ function parseExpertSpecialties(value) {
     .map(v => v.trim())
     .filter(Boolean)
 }
+
+// Farmer identity verification review.
+router.get('/farmer-verifications', adminAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT v.id,v.user_id,v.real_name,v.id_number_mask,v.status,v.reject_reason,
+              v.created_at,v.reviewed_at,u.phone
+         FROM farmer_verifications v JOIN users u ON u.id=v.user_id
+        ORDER BY (v.status='pending') DESC,v.created_at DESC LIMIT 200`
+    )
+    return R_OK(res, rows)
+  } catch (error) {
+    console.error('[admin-verifications]', error)
+    return R_FAIL(res, '实名认证列表加载失败', 500)
+  }
+})
+
+router.get('/farmer-verifications/:id/file/:side', adminAuth, async (req, res) => {
+  if (!['front', 'back'].includes(req.params.side)) return R_FAIL(res, '证件面参数错误')
+  try {
+    const [[row]] = await db.query(
+      'SELECT id_front_path,id_back_path FROM farmer_verifications WHERE id=?', [req.params.id]
+    )
+    if (!row) return R_FAIL(res, '审核记录不存在', 404)
+    const filename = path.basename(req.params.side === 'front' ? row.id_front_path : row.id_back_path)
+    const filePath = path.join(__dirname, '../private/identity', filename)
+    if (!fs.existsSync(filePath)) return R_FAIL(res, '证件图片不存在', 404)
+    res.set('Cache-Control', 'no-store')
+    return res.sendFile(filePath)
+  } catch (error) {
+    console.error('[admin-verification-file]', error)
+    return R_FAIL(res, '证件图片读取失败', 500)
+  }
+})
+
+router.patch('/farmer-verifications/:id/review', adminAuth, async (req, res) => {
+  const action = req.body.action === 'approve' ? 'approved' : 'rejected'
+  const reason = String(req.body.reason || '').trim()
+  if (action === 'rejected' && !reason) return R_FAIL(res, '拒绝时必须填写原因')
+  const connection = await db.getConnection()
+  try {
+    await connection.beginTransaction()
+    const [[row]] = await connection.query(
+      "SELECT * FROM farmer_verifications WHERE id=? AND status='pending' FOR UPDATE", [req.params.id]
+    )
+    if (!row) {
+      await connection.rollback()
+      return R_FAIL(res, '该申请不存在或已处理', 409)
+    }
+    // Decryption verifies that the stored sensitive data is intact before approval.
+    if (action === 'approved') identityData.decrypt(row.id_number)
+    await connection.query(
+      `UPDATE farmer_verifications SET status=?,reject_reason=?,reviewed_by=?,reviewed_at=NOW() WHERE id=?`,
+      [action, action === 'rejected' ? reason : '', req.admin.id, row.id]
+    )
+    if (action === 'approved') {
+      await connection.query('UPDATE users SET real_name=?,is_verified=1 WHERE id=?', [row.real_name, row.user_id])
+    }
+    await connection.commit()
+    return R_OK(res, { status: action }, action === 'approved' ? '实名认证已通过' : '实名认证已拒绝')
+  } catch (error) {
+    await connection.rollback()
+    console.error('[admin-verification-review]', error)
+    return R_FAIL(res, error.message || '实名认证审核失败', 500)
+  } finally { connection.release() }
+})
 
 router.get('/commission-change-requests', adminAuth, async (req, res) => {
   try {

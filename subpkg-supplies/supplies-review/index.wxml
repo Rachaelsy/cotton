@@ -7,7 +7,7 @@
       <view class="back-btn" bindtap="onBack">
         <text class="back-icon">‹</text>
       </view>
-      <text class="header-title">买家评价</text>
+      <text class="header-title">{{copy.title}}</text>
       <view style="width: 64rpx"></view>
     </view>
   </view>
@@ -18,10 +18,10 @@
       <!-- 提交成功态 -->
       <view wx:if="{{submitted}}" class="success-wrap">
         <text class="success-emoji">🎉</text>
-        <text class="success-title">评价成功！</text>
-        <text class="success-sub">感谢您的反馈，您的评价将帮助更多买家</text>
+        <text class="success-title">{{copy.success}}</text>
+        <text class="success-sub">{{copy.thanks}}</text>
         <view class="done-btn" bindtap="onDone">
-          <text class="done-text">返回订单</text>
+          <text class="done-text">{{copy.backOrder}}</text>
         </view>
       </view>
 
@@ -30,7 +30,7 @@
 
         <!-- 订单商品预览 -->
         <view class="items-card">
-          <text class="items-title">评价订单 {{orderNo}}</text>
+          <text class="items-title">{{copy.order}} {{orderNo}}</text>
           <view class="item-row" wx:for="{{items}}" wx:key="index">
             <view class="item-icon-wrap">
               <text class="item-icon">{{item.icon || '📦'}}</text>
@@ -41,7 +41,7 @@
 
         <!-- 星级评分 -->
         <view class="rate-card">
-          <text class="rate-label">整体评分</text>
+          <text class="rate-label">{{copy.overall}}</text>
           <view class="stars-row">
             <view
               class="star-btn"
@@ -53,21 +53,15 @@
               <text class="star {{rating >= item ? 'star-on' : 'star-off'}}">★</text>
             </view>
           </view>
-          <text class="rate-hint">
-            {{rating === 0 ? '点击星星评分' :
-              rating === 1 ? '非常差' :
-              rating === 2 ? '较差' :
-              rating === 3 ? '一般' :
-              rating === 4 ? '满意' : '非常满意 ✨'}}
-          </text>
+          <text class="rate-hint">{{ratingHint}}</text>
         </view>
 
         <!-- 文字评价 -->
         <view class="content-card">
-          <text class="content-label">评价内容（选填）</text>
+          <text class="content-label">{{copy.content}}</text>
           <textarea
             class="content-input"
-            placeholder="说说商品质量、发货速度、商家服务..."
+            placeholder="{{copy.placeholder}}"
             maxlength="300"
             bindinput="onContentInput"
             value="{{content}}"
@@ -77,7 +71,7 @@
 
         <!-- 匿名评价 -->
         <view class="anon-row">
-          <text class="anon-label">匿名评价（商家可见真实姓名，公开展示为"匿名用户"）</text>
+          <text class="anon-label">{{copy.anonymous}}</text>
           <switch checked="{{isAnonymous}}" bindchange="onAnonymousChange" color="#C8902E" />
         </view>
 
@@ -86,7 +80,7 @@
           class="submit-btn {{!rating || submitting ? 'submit-disabled' : ''}}"
           bindtap="onSubmit"
         >
-          <text class="submit-text">{{submitting ? '提交中...' : '提交评价'}}</text>
+          <text class="submit-text">{{submitting ? copy.submitting : copy.submit}}</text>
         </view>
 
       </view>

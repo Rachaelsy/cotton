@@ -1037,6 +1037,34 @@ function buildWeatherModelFromQweather(plot, payload, options = {}) {
     desc: '来自和风天气 QWeather 格点天气接口，按地块中心经纬度请求；无本地估算。'
   }
 
+  const warning = payload.warning || {}
+  const officialAlert = Array.isArray(warning.alerts) ? warning.alerts[0] : null
+  model.warningAvailable = warning.available !== false
+  if (officialAlert) {
+    const severity = officialAlert.severity || officialAlert.severityColor || ''
+    const typeText = `${officialAlert.type || ''}${officialAlert.title || ''}`
+    const officialActions = String(officialAlert.instruction || '')
+      .split(/\r?\n/)
+      .map(item => item.replace(/^\s*\d+[.、)]\s*/, '').trim())
+      .filter(Boolean)
+      .slice(0, 5)
+    model.alert = {
+      icon: /雷|暴雨/.test(typeText) ? '⛈️' : (/风/.test(typeText) ? '💨' : (/高温/.test(typeText) ? '🌡️' : '⚠️')),
+      title: officialAlert.title || officialAlert.type || '天气预警',
+      level: severity,
+      sub: officialAlert.text || '请关注官方天气预警并及时调整农事作业。',
+      agency: officialAlert.sender || '和风天气预警',
+      impactTime: [officialAlert.startTime, officialAlert.endTime].filter(Boolean).join(' 至 ') || officialAlert.pubTime || '当前',
+      impactArea: fieldName,
+      actions: officialActions.length ? officialActions : (/雷|暴雨/.test(typeText)
+        ? ['暂停喷药、无人机和高杆作业', '检查排水沟和低洼地块', '预警解除后再恢复露天作业']
+        : (/风/.test(typeText)
+          ? ['暂停无人机和喷药作业', '加固临时设施', '风力减弱后再恢复作业']
+          : ['关注官方预警变化', '调整露天农事安排', '巡查地块并做好应急准备']))
+    }
+  }
+  model.weatherStatistics = payload.statistics || null
+
   if (payload.current && payload.current.weather_text) {
     model.weather.desc = payload.current.weather_text
   }
@@ -1083,7 +1111,7 @@ function buildWeatherModelFromQweather(plot, payload, options = {}) {
     today
   })
   model.summary = `当前天气 ${model.weather.desc}，温度 ${model.weather.temp}°C，数据来自和风天气格点接口。`
-  model.tipText = `天气按 ${fieldName} 的中心经纬度请求和风格点接口；缺失的地温、紫外线和能见度不做本地估算。`
+  model.tipText = `天气按 ${fieldName} 的中心经纬度请求和风格点接口；灾害预警来自和风天气官方预警接口，缺失数据不做本地估算。`
 
   return model
 }

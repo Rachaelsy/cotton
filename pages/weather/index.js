@@ -56,6 +56,9 @@ Page({
     forecast: [],
     advices: [],
     alert: null,
+    warningAvailable: true,
+    weatherStatistics: null,
+    statsTruthText: '',
     showAlertDetail: false,
     alertDetail: null,
     summary: '',
@@ -182,6 +185,9 @@ Page({
       forecast: [],
       advices: [],
       alert: null,
+      warningAvailable: false,
+      weatherStatistics: null,
+      statsTruthText: '',
       summary: desc,
       tipText: this.textCopy.weatherDataEmptyDesc
     }
@@ -242,6 +248,11 @@ Page({
       forecast: weatherModel.forecast,
       advices: weatherModel.advices,
       alert: weatherModel.alert,
+      warningAvailable: weatherModel.warningAvailable !== false,
+      weatherStatistics: weatherModel.weatherStatistics || null,
+      statsTruthText: weatherModel.weatherStatistics
+        ? this.textCopy.statsTruth(weatherModel.weatherStatistics.observationHours)
+        : '',
       showAlertDetail: false,
       alertDetail: null,
       summary: weatherModel.summary,
@@ -267,7 +278,11 @@ Page({
 
     if (res.code === 200 && res.data && res.data.weather) {
       return {
-        model: buildWeatherFromApi(res.data.plot || plot, res.data.weather, { fieldCount, selectedIndex }),
+        model: buildWeatherFromApi(
+          res.data.plot || plot,
+          { ...res.data.weather, statistics: res.data.statistics || null },
+          { fieldCount, selectedIndex }
+        ),
         apiNotice: ''
       }
     }
@@ -293,6 +308,15 @@ Page({
   },
 
   buildSafeDetail() {
+    if (!this.data.warningAvailable) {
+      return {
+        icon: '⚠️', title: this.textCopy.warningUnavailable, level: '',
+        sub: this.textCopy.warningUnavailableDesc, agency: 'QWeather',
+        impactTime: this.textCopy.today,
+        impactArea: this.data.selectedFieldLabel || this.textCopy.currentField,
+        actions: [this.textCopy.warningUnavailableDesc]
+      }
+    }
     return {
       icon: '✅',
       title: this.textCopy.safeTitle,

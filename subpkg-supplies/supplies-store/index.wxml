@@ -9,7 +9,7 @@
       </view>
       <view class="store-info">
         <text class="store-name">{{storeName}}</text>
-        <text class="store-sub">共 {{displayProds.length}} 件商品</text>
+        <text class="store-sub">{{copy.goodsPrefix}} {{displayProds.length}} {{copy.goodsSuffix}}</text>
       </view>
       <view class="cart-btn" bindtap="onGoCart">
         <text class="cart-icon">🛒</text>
@@ -21,13 +21,13 @@
     <scroll-view scroll-x class="cat-scroll" wx:if="{{cats.length > 1}}">
       <view class="cat-row">
         <view
-          class="cat-item {{catSel === item ? 'cat-active' : ''}}"
+          class="cat-item {{catSel === item.value ? 'cat-active' : ''}}"
           wx:for="{{cats}}"
           wx:key="*this"
           bindtap="onCat"
-          data-cat="{{item}}"
+          data-cat="{{item.value}}"
         >
-          <text>{{item}}</text>
+          <text>{{item.label}}</text>
         </view>
       </view>
     </scroll-view>
@@ -35,13 +35,13 @@
 
   <!-- ② 加载中 -->
   <view wx:if="{{loading}}" class="center-wrap">
-    <text class="tip-text">加载中...</text>
+    <text class="tip-text">{{copy.loading}}</text>
   </view>
 
   <!-- ③ 暂无商品 -->
   <view wx:elif="{{!displayProds.length}}" class="center-wrap">
     <text class="empty-icon">📦</text>
-    <text class="tip-text">该店铺暂无商品</text>
+    <text class="tip-text">{{copy.empty}}</text>
   </view>
 
   <!-- ④ 商品列表 -->

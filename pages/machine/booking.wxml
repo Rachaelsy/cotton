@@ -2,7 +2,7 @@
 <view class="page">
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
     <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
-    <text class="nav-title">预约农机</text>
+    <text class="nav-title">{{copy.title}}</text>
     <view style="width:60rpx"></view>
   </view>
 
@@ -20,57 +20,57 @@
     <!-- 表单 -->
     <view class="form-card">
       <view class="form-row">
-        <text class="form-label">作业地块</text>
+        <text class="form-label">{{copy.plot}}</text>
         <picker mode="selector" range="{{plots}}" range-key="label" value="{{plotIndex}}" bindchange="onPlotChange">
           <view class="form-picker">{{plotLabel}} ›</view>
         </picker>
       </view>
       <view class="form-row form-row-col">
         <view class="addr-label-row">
-          <text class="form-label">作业地址 <text class="req-star">*</text></text>
-          <view class="addr-map-btn" bindtap="onChooseAddress"><text class="addr-map-text">📍 地图选点</text></view>
+          <text class="form-label">{{copy.address}} <text class="req-star">*</text></text>
+          <view class="addr-map-btn" bindtap="onChooseAddress"><text class="addr-map-text">{{copy.map}}</text></view>
         </view>
-        <input class="form-input-full" placeholder="点击「地图选点」或手动输入作业地点" value="{{workAddress}}" bindinput="onAddrInput" />
+        <input class="form-input-full" placeholder="{{copy.addressPh}}" value="{{workAddress}}" bindinput="onAddrInput" />
         <text wx:if="{{workAddrDetail && workAddrDetail !== workAddress}}" class="addr-detail">📍 {{workAddrDetail}}</text>
       </view>
       <view class="form-row">
-        <text class="form-label">作业日期</text>
+        <text class="form-label">{{copy.date}}</text>
         <picker mode="date" value="{{workDate}}" bindchange="onDateChange">
           <view class="form-picker">{{workDate}} ›</view>
         </picker>
       </view>
       <view class="form-row">
-        <text class="form-label">作业面积</text>
+        <text class="form-label">{{copy.area}}</text>
         <view class="area-input-wrap">
-          <input class="form-input" type="digit" placeholder="请输入亩数" value="{{workArea}}" bindinput="onAreaInput" />
-          <text class="area-unit">亩</text>
+          <input class="form-input" type="digit" placeholder="{{copy.areaPh}}" value="{{workArea}}" bindinput="onAreaInput" />
+          <text class="area-unit">{{copy.mu}}</text>
         </view>
       </view>
       <view class="form-row">
-        <text class="form-label">联系电话</text>
-        <input class="form-input" type="number" placeholder="便于机手联系" value="{{contactPhone}}" bindinput="onPhoneInput" />
+        <text class="form-label">{{copy.phone}}</text>
+        <input class="form-input" type="number" placeholder="{{copy.phonePh}}" value="{{contactPhone}}" bindinput="onPhoneInput" />
       </view>
       <view class="form-row form-row-col">
-        <text class="form-label">备注</text>
-        <textarea class="form-textarea" placeholder="地块位置说明、特殊要求等" value="{{note}}" bindinput="onNoteInput" />
+        <text class="form-label">{{copy.note}}</text>
+        <textarea class="form-textarea" placeholder="{{copy.notePh}}" value="{{note}}" bindinput="onNoteInput" />
       </view>
     </view>
 
     <!-- 费用预估 -->
     <view class="cost-card">
       <view class="cost-row">
-        <text class="cost-label">单价</text>
+        <text class="cost-label">{{copy.unitPrice}}</text>
         <text class="cost-val">¥{{machine.price}} / {{machine.unit}}</text>
       </view>
       <view class="cost-row">
-        <text class="cost-label">预估总价</text>
+        <text class="cost-label">{{copy.estimated}}</text>
         <text class="cost-total">¥{{totalPrice}}</text>
       </view>
       <view class="cost-row">
-        <text class="cost-label">需付定金（20%）</text>
+        <text class="cost-label">{{copy.deposit}}</text>
         <text class="cost-deposit">¥{{deposit}}</text>
       </view>
-      <view class="cost-tip">🛡️ 定金由平台托管，作业完成后结算给机手；机手爽约定金原路退回</view>
+      <view class="cost-tip">{{copy.trust}}</view>
     </view>
 
     <view style="height:180rpx"></view>
@@ -78,11 +78,11 @@
 
   <view class="action-bar">
     <view class="bar-cost">
-      <text class="bar-label">定金</text>
+      <text class="bar-label">{{copy.depositLabel}}</text>
       <text class="bar-num">¥{{deposit}}</text>
     </view>
     <view class="bar-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">
-      <text class="bar-btn-text">{{submitting ? '提交中…' : '提交预约'}}</text>
+      <text class="bar-btn-text">{{submitting ? copy.submitting : copy.submit}}</text>
     </view>
   </view>
 </view>

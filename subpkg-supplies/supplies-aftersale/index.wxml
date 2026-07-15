@@ -7,7 +7,7 @@
       <view class="as-back" bindtap="onBack">
         <text class="as-back-icon">‹</text>
       </view>
-      <text class="as-title">申请售后</text>
+      <text class="as-title">{{copy.title}}</text>
       <view style="width: 64rpx"></view>
     </view>
   </view>
@@ -19,20 +19,20 @@
     <view class="as-section">
       <view class="as-section-head">
         <text class="as-req">*</text>
-        <text class="as-section-title">售后类型</text>
+        <text class="as-section-title">{{copy.type}}</text>
       </view>
       <view class="type-row">
         <view
           wx:for="{{types}}"
           wx:key="index"
-          class="type-item {{aftersaleType === item ? 'type-item-on' : ''}}"
+          class="type-item {{aftersaleType === item.value ? 'type-item-on' : ''}}"
           bindtap="onSelectType"
-          data-type="{{item}}"
+          data-type="{{item.value}}"
         >
-          <view class="type-radio {{aftersaleType === item ? 'type-radio-on' : ''}}">
-            <view wx:if="{{aftersaleType === item}}" class="type-radio-dot"></view>
+          <view class="type-radio {{aftersaleType === item.value ? 'type-radio-on' : ''}}">
+            <view wx:if="{{aftersaleType === item.value}}" class="type-radio-dot"></view>
           </view>
-          <text class="type-label {{aftersaleType === item ? 'type-label-on' : ''}}">{{item}}</text>
+          <text class="type-label {{aftersaleType === item.value ? 'type-label-on' : ''}}">{{item.label}}</text>
         </view>
       </view>
     </view>
@@ -41,17 +41,17 @@
     <view class="as-section">
       <view class="as-section-head">
         <text class="as-req">*</text>
-        <text class="as-section-title">售后原因</text>
+        <text class="as-section-title">{{copy.reason}}</text>
       </view>
       <view class="reason-grid">
         <view
           wx:for="{{reasons}}"
           wx:key="index"
-          class="reason-item {{reason === item ? 'reason-item-on' : ''}}"
+          class="reason-item {{reason === item.value ? 'reason-item-on' : ''}}"
           bindtap="onSelectReason"
-          data-reason="{{item}}"
+          data-reason="{{item.value}}"
         >
-          <text class="reason-text {{reason === item ? 'reason-text-on' : ''}}">{{item}}</text>
+          <text class="reason-text {{reason === item.value ? 'reason-text-on' : ''}}">{{item.label}}</text>
         </view>
       </view>
     </view>
@@ -60,11 +60,11 @@
     <view wx:if="{{reason === '其他'}}" class="as-section">
       <view class="as-section-head">
         <text class="as-req">*</text>
-        <text class="as-section-title">具体原因</text>
+        <text class="as-section-title">{{copy.specific}}</text>
       </view>
       <input
         class="other-input"
-        placeholder="请描述您的具体原因"
+        placeholder="{{copy.specificPh}}"
         placeholder-class="input-placeholder"
         value="{{otherReason}}"
         bindinput="onOtherReasonInput"
@@ -75,13 +75,13 @@
     <!-- ④ 问题描述（选填） -->
     <view class="as-section">
       <view class="as-section-head">
-        <text class="as-section-title">问题描述</text>
-        <text class="as-optional">（选填）</text>
+        <text class="as-section-title">{{copy.description}}</text>
+        <text class="as-optional">{{copy.optional}}</text>
       </view>
       <view class="desc-wrap">
         <textarea
           class="desc-textarea"
-          placeholder="简单描述问题，方便商家快速处理（10–200字）"
+          placeholder="{{copy.descPh}}"
           placeholder-class="input-placeholder"
           value="{{description}}"
           bindinput="onDescInput"
@@ -95,10 +95,10 @@
     <!-- ⑤ 上传凭证（选填） -->
     <view class="as-section">
       <view class="as-section-head">
-        <text class="as-section-title">上传凭证</text>
-        <text class="as-optional">（选填，最多6张）</text>
+        <text class="as-section-title">{{copy.upload}}</text>
+        <text class="as-optional">{{copy.uploadOptional}}</text>
       </view>
-      <text class="upload-tip">建议上传商品问题、快递面单、破损照片</text>
+      <text class="upload-tip">{{copy.uploadTip}}</text>
       <view class="upload-grid">
         <!-- 已上传图片 -->
         <view
@@ -114,7 +114,7 @@
         <!-- 添加按钮 -->
         <view wx:if="{{images.length < 6}}" class="upload-add" bindtap="onChooseImage">
           <text class="upload-add-icon">+</text>
-          <text class="upload-add-label">上传图片</text>
+          <text class="upload-add-label">{{copy.uploadImage}}</text>
         </view>
       </view>
     </view>
@@ -128,7 +128,7 @@
       class="submit-btn {{canSubmit ? 'submit-btn-on' : 'submit-btn-off'}}"
       bindtap="onSubmit"
     >
-      <text class="submit-text">{{submitting ? '提交中...' : '提交申请'}}</text>
+      <text class="submit-text">{{submitting ? copy.submitting : copy.submit}}</text>
     </view>
   </view>
 

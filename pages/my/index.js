@@ -114,6 +114,11 @@ Page({
         wx.showToast({ title: this.data.copy.loginSuccess, icon: 'success' })
         this._refreshUser()
         this._refreshWxLoginCode()
+        if (res.data.role === 'farmer' && !res.data.is_verified) {
+          setTimeout(() => wx.navigateTo({ url: '/pages/verification/index' }), 500)
+        } else if (res.data.role === 'farmer' && !res.data.onboarding_completed) {
+          setTimeout(() => wx.navigateTo({ url: '/pages/onboarding/index' }), 500)
+        }
       } else if (res.code === 503) {
         // 微信登录未配置，引导手机号登录
         wx.showModal({
@@ -148,7 +153,7 @@ Page({
 
   onRealName() {
     if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
-    wx.showToast({ title: this.data.copy.realNameDone, icon: 'success' })
+    wx.navigateTo({ url: '/pages/verification/index' })
   },
 
   onFavorites() {

@@ -141,6 +141,32 @@ async function requestQweatherJson(pathname, center, extraParams = {}) {
   }
 }
 
+async function requestQweatherAlert(center) {
+  const host = normalizeHost(process.env.QWEATHER_API_HOST)
+  const lat = formatCoordinate(center && center.latitude)
+  const lng = formatCoordinate(center && center.longitude)
+  const url = `https://${host}/weatheralert/v1/current/${encodeURIComponent(lat)}/${encodeURIComponent(lng)}?lang=zh`
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'cotton-miniapp-qweather/1.0', Accept: 'application/json', ...authHeaders() }
+    })
+    if (!response.ok) throw new Error(`和风天气预警接口请求失败(${response.status})`)
+    const payload = await response.json()
+    if (!payload || (!Array.isArray(payload.alerts) && !payload.metadata)) {
+      throw new Error('和风天气预警接口返回异常(empty)')
+    }
+    return payload
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('和风天气预警接口响应超时')
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 function qweatherIconToWmo(icon, text = '') {
   const code = Number(icon)
   const label = String(text || '')
@@ -163,7 +189,33 @@ function mapList(list, mapper) {
   return Array.isArray(list) ? list.map(mapper) : []
 }
 
-function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayload) {
+function normalizeAlertPayload(payload) {
+  const alerts = Array.isArray(payload && payload.alerts) ? payload.alerts : []
+  const metadata = payload && payload.metadata ? payload.metadata : {}
+  return {
+    available: true,
+    zeroResult: Boolean(metadata.zeroResult) || alerts.length === 0,
+    alerts: alerts.map(item => ({
+      id: item.id || '',
+      title: item.headline || item.title || (item.eventType && item.eventType.name) || item.typeName || '天气预警',
+      type: (item.eventType && item.eventType.name) || item.typeName || item.type || '',
+      severity: item.severity || '',
+      severityColor: (item.color && item.color.code) || item.severityColor || '',
+      sender: item.senderName || item.sender || '',
+      pubTime: item.issuedTime || item.pubTime || '',
+      startTime: item.onsetTime || item.effectiveTime || item.startTime || '',
+      endTime: item.expireTime || item.endTime || '',
+      text: item.text || item.description || '',
+      instruction: item.instruction || '',
+      status: (item.messageType && item.messageType.code) || item.status || ''
+    })),
+    attributions: Array.isArray(metadata.attributions)
+      ? metadata.attributions
+      : (Array.isArray(payload && payload.attributions) ? payload.attributions : [])
+  }
+}
+
+function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayload, alertPayload) {
   const now = nowPayload.now || {}
   const hourlyItems = Array.isArray(hourlyPayload.hourly) ? hourlyPayload.hourly : []
   const dailyItems = Array.isArray(dailyPayload.daily) ? dailyPayload.daily : []
@@ -214,18 +266,23 @@ function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayloa
       hourly: hourlyPayload.refer || null,
       daily: dailyPayload.refer || null
     },
+    warning: alertPayload,
     fetchedAt: new Date().toISOString()
   }
 }
 
 async function fetchQweatherWeather(center, plot = {}) {
-  const [nowPayload, hourlyPayload, dailyPayload] = await Promise.all([
+  const warningPromise = requestQweatherAlert(center)
+    .then(normalizeAlertPayload)
+    .catch(error => ({ available: false, zeroResult: false, alerts: [], attributions: [], error: error.message }))
+  const [nowPayload, hourlyPayload, dailyPayload, warning] = await Promise.all([
     requestQweatherJson('/v7/grid-weather/now', center),
     requestQweatherJson('/v7/grid-weather/24h', center),
-    requestQweatherJson('/v7/grid-weather/7d', center)
+    requestQweatherJson('/v7/grid-weather/7d', center),
+    warningPromise
   ])
 
-  const weather = normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayload)
+  const weather = normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayload, warning)
   if (!Array.isArray(weather.hourly.time) || !weather.hourly.time.length) {
     throw new Error('和风天气逐小时预报数据缺失')
   }

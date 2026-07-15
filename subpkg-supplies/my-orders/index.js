@@ -2,6 +2,19 @@
 const app  = getApp()
 const auth = require('../../utils/auth')
 const layout = require('../../utils/layout')
+const i18n = require('../../utils/i18n')
+const machineI18n = require('../../utils/machine-i18n')
+
+const COPY = {
+  zh: { title:'我的订单',loading:'加载中…',empty:'暂无订单',emptySub:'去农资商城或农机租赁看看吧',supplies:'农资',goods:'商品',piece:'件',shipped:'已发货',due:'待付',paid:'实付',cancel:'取消订单',pay:'去支付',delete:'删除订单',machine:'农机',noPlot:'不指定地块',mu:'亩',total:'总价',network:'网络异常',merchantOrder:'商家订单',cancelTitle:'取消订单',cancelContent:'确认取消该订单？库存将立即恢复。',cancelConfirm:'确认取消',cancelled:'已取消',cancelFail:'取消失败',deleted:'已删除',deleteFail:'删除失败',deleteTitle:'删除订单',deleteContent:'确定删除该订单记录吗？删除后不可恢复。' },
+  ug: { title:'زاكازلىرىم',loading:'يۈكلىنىۋاتىدۇ…',empty:'زاكاز يوق',emptySub:'ماتېرىيال ياكى ماشىنا مۇلازىمىتىنى كۆرۈڭ',supplies:'ماتېرىيال',goods:'مەھسۇلات',piece:'دانە',shipped:'يەتكۈزۈلدى',due:'تۆلەش',paid:'تۆلەندى',cancel:'زاكازنى بىكار قىلىش',pay:'تۆلەش',delete:'زاكازنى ئۆچۈرۈش',machine:'ماشىنا',noPlot:'يەر بەلگىلەنمىگەن',mu:'مو',total:'ئومۇمىي باھا',network:'تور نورمال ئەمەس',merchantOrder:'سودىگەر زاكازى',cancelTitle:'زاكازنى بىكار قىلىش',cancelContent:'زاكاز بىكار قىلىنسۇنمۇ؟ مال سانى ئەسلىگە كېلىدۇ.',cancelConfirm:'بىكار قىلىش',cancelled:'بىكار قىلىندى',cancelFail:'بىكار قىلىش مەغلۇپ',deleted:'ئۆچۈرۈلدى',deleteFail:'ئۆچۈرۈش مەغلۇپ',deleteTitle:'زاكازنى ئۆچۈرۈش',deleteContent:'زاكاز خاتىرىسى ئۆچۈرۈلسۇنمۇ؟ قايتۇرغىلى بولمايدۇ.' }
+}
+
+const STATUS_UG = { pending_payment:'تۆلەشنى كۈتۈش',pending_ship:'مال چىقىرىشنى كۈتۈش',shipped:'يەتكۈزۈلۈۋاتىدۇ',completed:'تاماملاندى',refunded:'قايتۇرۇش تامام',refund:'قايتۇرۇش جەريانىدا',cancelled:'بىكار قىلىندى' }
+
+function tabs(lang) {
+  return lang === 'ug' ? [{key:'all',label:'ھەممىسى'},{key:'ongoing',label:'ئىجرا'},{key:'done',label:'تامام'},{key:'cancelled',label:'بىكار'}] : TABS
+}
 
 const STATUS_MAP = {
   pending_payment: { label: '待付款', cls: 'tag-pending',   icon: '💳' },
@@ -44,8 +57,10 @@ function fmtDate(dt) {
 Page({
   data: {
     statusBarHeight: 20,
+    lang: i18n.getLanguage(),
+    copy: COPY[i18n.getLanguage()],
     capsuleSafeRight: 0,
-    tabs: TABS,
+    tabs: tabs(i18n.getLanguage()),
     activeTab: 'all',
     orders: [],        // 合并后用于展示的列表
     loading: true,
@@ -59,7 +74,11 @@ Page({
     this._load()
   },
 
-  onShow() { this._load() },
+  onShow() {
+    const lang = i18n.getLanguage()
+    if (lang !== this.data.lang) this.setData({ lang, copy: COPY[lang], tabs: tabs(lang) })
+    this._load()
+  },
 
   // 同时拉农资订单 + 农机预约，合并按时间排序
   async _load() {
@@ -80,7 +99,7 @@ Page({
         return {
           type: 'supplies',
           id: o.id, raw: o,
-          statusLabel: st.label, statusCls: st.cls, statusIcon: st.icon,
+          statusLabel: this.data.lang === 'ug' ? (STATUS_UG[o.status] || st.label) : st.label, statusCls: st.cls, statusIcon: st.icon,
           bucket: bucketOf(o.status),
           status: o.status,
           total: o.total,
@@ -102,7 +121,7 @@ Page({
         return {
           type: 'machine',
           id: o.id, raw: o,
-          statusLabel: st.label, statusCls: st.cls,
+          statusLabel: machineI18n.statusLabel(o.status, this.data.lang), statusCls: st.cls,
           bucket: bucketOf(o.status),
           status: o.status,
           machineName: o.machine_name, machineIcon: o.machine_icon,
@@ -119,7 +138,7 @@ Page({
       this._applyFilter()
     } catch (e) {
       this.setData({ loading: false, empty: true })
-      wx.showToast({ title: '网络异常', icon: 'none' })
+      wx.showToast({ title: this.data.copy.network, icon: 'none' })
     }
   },
 
@@ -157,7 +176,7 @@ Page({
   onPayOrder(e) {
     const o = e.currentTarget.dataset.order.raw
     app.globalData.currentOrders = [{
-      orderId: o.id, orderNo: o.order_no, store: o.company_name || '商家订单',
+      orderId: o.id, orderNo: o.order_no, store: o.company_name || this.data.copy.merchantOrder,
       items: o.items || [], total: o.total, payExpiresAt: o.pay_expires_at
     }]
     wx.navigateTo({ url: '/subpkg-supplies/supplies-pay/index' })
@@ -166,14 +185,14 @@ Page({
   async onCancelOrder(e) {
     const o = e.currentTarget.dataset.order.raw
     const confirmed = await new Promise(resolve =>
-      wx.showModal({ title: '取消订单', content: '确认取消该订单？库存将立即恢复。',
-        confirmText: '确认取消', confirmColor: '#FF3B30', success: r => resolve(r.confirm) }))
+      wx.showModal({ title: this.data.copy.cancelTitle, content: this.data.copy.cancelContent,
+        confirmText: this.data.copy.cancelConfirm, confirmColor: '#FF3B30', success: r => resolve(r.confirm) }))
     if (!confirmed) return
     try {
       const res = await auth.request('PATCH', `/api/orders/${o.id}/cancel`, {})
-      if (res.code === 200) { wx.showToast({ title: '已取消', icon: 'success' }); this._load() }
-      else wx.showToast({ title: res.msg || '取消失败', icon: 'none' })
-    } catch { wx.showToast({ title: '网络错误', icon: 'none' }) }
+      if (res.code === 200) { wx.showToast({ title: this.data.copy.cancelled, icon: 'success' }); this._load() }
+      else wx.showToast({ title: res.msg || this.data.copy.cancelFail, icon: 'none' })
+    } catch { wx.showToast({ title: this.data.copy.network, icon: 'none' }) }
   },
 
   async onDeleteOrder(e) {
@@ -181,9 +200,9 @@ Page({
     if (!await this._confirmDelete()) return
     try {
       const res = await auth.request('DELETE', `/api/orders/${id}`)
-      if (res.code === 200) { wx.showToast({ title: '已删除', icon: 'none' }); this._load() }
-      else wx.showToast({ title: res.msg || '删除失败', icon: 'none' })
-    } catch (e) { wx.showToast({ title: '网络错误', icon: 'none' }) }
+      if (res.code === 200) { wx.showToast({ title: this.data.copy.deleted, icon: 'none' }); this._load() }
+      else wx.showToast({ title: res.msg || this.data.copy.deleteFail, icon: 'none' })
+    } catch (e) { wx.showToast({ title: this.data.copy.network, icon: 'none' }) }
   },
 
   // ── 农机预约 ──────────────────────────────
@@ -197,15 +216,15 @@ Page({
     if (!await this._confirmDelete()) return
     try {
       const res = await auth.request('DELETE', `/api/machine-orders/${id}`)
-      if (res.code === 200) { wx.showToast({ title: '已删除', icon: 'none' }); this._load() }
-      else wx.showToast({ title: res.msg || '删除失败', icon: 'none' })
-    } catch (e) { wx.showToast({ title: '网络错误', icon: 'none' }) }
+      if (res.code === 200) { wx.showToast({ title: this.data.copy.deleted, icon: 'none' }); this._load() }
+      else wx.showToast({ title: res.msg || this.data.copy.deleteFail, icon: 'none' })
+    } catch (e) { wx.showToast({ title: this.data.copy.network, icon: 'none' }) }
   },
 
   _confirmDelete() {
     return new Promise(resolve =>
-      wx.showModal({ title: '删除订单', content: '确定删除该订单记录吗？删除后不可恢复。',
-        confirmText: '删除', confirmColor: '#FF3B30', success: r => resolve(r.confirm) }))
+      wx.showModal({ title: this.data.copy.deleteTitle, content: this.data.copy.deleteContent,
+        confirmText: this.data.copy.delete, confirmColor: '#FF3B30', success: r => resolve(r.confirm) }))
   },
 
   _dbStatusToLabel(dbStatus) {

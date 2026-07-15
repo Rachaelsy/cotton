@@ -3,75 +3,75 @@
     <view class="rec-nav" style="padding-right: {{capsuleSafeRight}}px">
       <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
       <view class="rec-title-wrap">
-        <text class="rec-title">📝 农事记录</text>
+        <text class="rec-title">{{copy.title}}</text>
         <text class="rec-subtitle">FARM RECORDS</text>
       </view>
       <view class="manage-btn {{manageMode ? 'done' : ''}}" bindtap="onToggleManage">
-        <text class="manage-text">{{manageMode ? '完成' : '管理'}}</text>
+        <text class="manage-text">{{manageMode ? copy.done : copy.manage}}</text>
       </view>
     </view>
 
     <view class="rec-stats">
       <view class="rec-stat">
         <text class="rs-v">{{stats.recordCount}}</text>
-        <text class="rs-l">次农事</text>
+        <text class="rs-l">{{copy.countUnit}}</text>
       </view>
       <view class="rec-sdiv"></view>
       <view class="rec-stat">
         <text class="rs-v">{{stats.fieldCount}}</text>
-        <text class="rs-l">块地</text>
+        <text class="rs-l">{{copy.plotUnit}}</text>
       </view>
       <view class="rec-sdiv"></view>
       <view class="rec-stat">
         <text class="rs-v">{{stats.costText}}</text>
-        <text class="rs-l">元投入</text>
+        <text class="rs-l">{{copy.costUnit}}</text>
       </view>
     </view>
 
     <view class="view-toggle">
       <view class="vt-btn {{viewMode === 'list' ? 'on' : ''}}" bindtap="onViewMode" data-mode="list">
-        <text class="vt-text">📋 列表</text>
+        <text class="vt-text">{{copy.list}}</text>
       </view>
       <view class="vt-btn {{viewMode === 'calendar' ? 'on' : ''}}" bindtap="onViewMode" data-mode="calendar">
-        <text class="vt-text">📅 日历</text>
+        <text class="vt-text">{{copy.calendar}}</text>
       </view>
     </view>
   </view>
 
   <view wx:if="{{manageMode}}" class="edit-mode-tip">
-    <text class="edit-tip-text">✏️ 管理模式 · 点击记录选择，可多选后批量删除</text>
+    <text class="edit-tip-text">{{copy.manageTip}}</text>
   </view>
 
   <view wx:if="{{viewMode === 'list' && !manageMode}}" class="filters">
-    <picker mode="selector" range="{{fieldOptions}}" value="{{fieldPickerIndex}}" bindchange="onFieldPickerChange">
+    <picker mode="selector" range="{{fieldDisplayOptions}}" value="{{fieldPickerIndex}}" bindchange="onFieldPickerChange">
       <view class="field-picker-filter">
         <view class="field-picker-main">
-          <text class="field-picker-label">查看地块</text>
-          <text class="field-picker-value">{{fieldFilter}}</text>
+          <text class="field-picker-label">{{copy.viewPlot}}</text>
+          <text class="field-picker-value">{{fieldFilterLabel}}</text>
         </view>
-        <text class="field-picker-action">切换 ›</text>
+        <text class="field-picker-action">{{copy.switch}}</text>
       </view>
     </picker>
     <scroll-view class="filter-row" scroll-x enhanced show-scrollbar="{{false}}">
       <view
-        class="filter-chip {{typeFilter === item ? 'on' : ''}}"
+        class="filter-chip {{typeFilter === item.value ? 'on' : ''}}"
         wx:for="{{typeFilters}}"
-        wx:key="*this"
+        wx:key="value"
         bindtap="onTypeFilter"
-        data-type="{{item}}"
+        data-type="{{item.value}}"
       >
-        <text class="filter-text">{{item}}</text>
+        <text class="filter-text">{{item.label}}</text>
       </view>
     </scroll-view>
     <scroll-view class="filter-row field-row" scroll-x enhanced show-scrollbar="{{false}}">
       <view
-        class="field-chip {{fieldFilter === item ? 'on' : ''}}"
+        class="field-chip {{fieldFilter === item.value ? 'on' : ''}}"
         wx:for="{{fieldFilters}}"
-        wx:key="*this"
+        wx:key="value"
         bindtap="onFieldFilter"
-        data-field="{{item}}"
+        data-field="{{item.value}}"
       >
-        <text class="field-text">{{item}}</text>
+        <text class="field-text">{{item.label}}</text>
       </view>
     </scroll-view>
   </view>
@@ -79,12 +79,12 @@
   <scroll-view wx:if="{{viewMode === 'list'}}" class="rec-scroll" scroll-y enhanced show-scrollbar="{{false}}">
     <view wx:if="{{loading}}" class="empty">
       <text class="empty-icon">⏳</text>
-      <text class="empty-title">加载中…</text>
+      <text class="empty-title">{{copy.loading}}</text>
     </view>
     <view wx:elif="{{displayRecords.length === 0}}" class="empty">
       <text class="empty-icon">📋</text>
-      <text class="empty-title">{{typeFilter === '全部' && fieldFilter === '全部地块' ? '还没有农事记录' : '暂无匹配记录'}}</text>
-      <text class="empty-desc">{{typeFilter === '全部' && fieldFilter === '全部地块' ? '点击右下角 ＋ 记录第一笔农事' : '换个类型或地块筛选试试'}}</text>
+      <text class="empty-title">{{typeFilter === '全部' && fieldFilter === '全部地块' ? copy.emptyAll : copy.emptyMatch}}</text>
+      <text class="empty-desc">{{typeFilter === '全部' && fieldFilter === '全部地块' ? copy.emptyAllDesc : copy.emptyMatchDesc}}</text>
     </view>
 
     <view
@@ -141,7 +141,7 @@
     <view class="calendar-list-title">{{calendarListTitle}}</view>
     <view wx:if="{{calendarRecords.length === 0}}" class="empty compact">
       <text class="empty-icon">📅</text>
-      <text class="empty-title">暂无记录</text>
+      <text class="empty-title">{{copy.noRecords}}</text>
     </view>
     <view
       class="tl-item"
@@ -171,10 +171,10 @@
 
   <view wx:if="{{manageMode}}" class="edit-act-bar">
     <view class="select-all-btn" bindtap="onSelectAll">
-      <text>{{selectedIds.length > 0 && selectedIds.length === displayRecords.length ? '取消全选' : '全选'}}</text>
+      <text>{{selectedIds.length > 0 && selectedIds.length === displayRecords.length ? copy.cancelSelectAll : copy.selectAll}}</text>
     </view>
     <view class="delete-btn {{selectedIds.length === 0 ? 'off' : ''}}" bindtap="onDeleteSelected">
-      <text>🗑 删除{{selectedIds.length > 0 ? ' ' + selectedIds.length + '条' : ''}}</text>
+      <text>{{copy.delete}}{{selectedIds.length > 0 ? ' ' + selectedIds.length : ''}}</text>
     </view>
   </view>
 
@@ -186,8 +186,8 @@
       </view>
 
       <view wx:if="{{modalStep === 1}}">
-        <text class="modal-title">{{editingId ? '编辑农事记录' : '新增农事记录'}}</text>
-        <text class="modal-subtitle">选择农事类型</text>
+        <text class="modal-title">{{editingId ? copy.editRecord : copy.addRecord}}</text>
+        <text class="modal-subtitle">{{copy.chooseType}}</text>
         <view class="type-grid">
           <view
             class="type-card {{selectedTypeIndex === index ? 'on' : ''}}"
@@ -197,58 +197,58 @@
             data-index="{{index}}"
           >
             <text class="type-icon">{{item.icon}}</text>
-            <text class="type-name">{{item.type}}</text>
+            <text class="type-name">{{item.label}}</text>
           </view>
         </view>
-        <view class="modal-cancel" bindtap="onCloseAddModal"><text>取消</text></view>
+        <view class="modal-cancel" bindtap="onCloseAddModal"><text>{{copy.cancel}}</text></view>
       </view>
 
       <view wx:if="{{modalStep === 2}}">
-        <text class="modal-title">{{selectedType.icon}} {{selectedType.type}}</text>
-        <text class="modal-subtitle">填写详情信息</text>
+        <text class="modal-title">{{selectedType.icon}} {{selectedType.label}}</text>
+        <text class="modal-subtitle">{{copy.fillDetails}}</text>
 
         <view class="form-row">
-          <text class="form-label">地块</text>
-          <picker mode="selector" range="{{fieldOptions}}" value="{{form.fieldIndex}}" bindchange="onFieldChange">
-            <view class="form-picker">{{selectedFieldLabel}}</view>
+          <text class="form-label">{{copy.plot}}</text>
+          <picker mode="selector" range="{{fieldDisplayOptions}}" value="{{form.fieldIndex}}" bindchange="onFieldChange">
+            <view class="form-picker">{{fieldDisplayOptions[form.fieldIndex]}}</view>
           </picker>
         </view>
         <view class="form-row two">
           <view class="form-half">
-            <text class="form-label">日期</text>
+            <text class="form-label">{{copy.date}}</text>
             <picker mode="date" value="{{form.date}}" bindchange="onDateChange">
               <view class="form-picker">{{form.date}}</view>
             </picker>
           </view>
           <view class="form-half">
-            <text class="form-label">时间</text>
+            <text class="form-label">{{copy.time}}</text>
             <picker mode="time" value="{{form.time}}" bindchange="onTimeChange">
               <view class="form-picker">{{form.time}}</view>
             </picker>
           </view>
         </view>
         <view class="form-row">
-          <text class="form-label">用量</text>
-          <input class="form-input" placeholder="如：用水量4800方、亩施15kg" value="{{form.amount}}" bindinput="onAmountInput" />
+          <text class="form-label">{{copy.amount}}</text>
+          <input class="form-input" placeholder="{{copy.amountPh}}" value="{{form.amount}}" bindinput="onAmountInput" />
         </view>
         <view class="form-row two">
           <view class="form-half">
-            <text class="form-label">成本</text>
-            <input class="form-input" type="number" placeholder="元" value="{{form.cost}}" bindinput="onCostInput" />
+            <text class="form-label">{{copy.cost}}</text>
+            <input class="form-input" type="number" placeholder="{{copy.costUnit}}" value="{{form.cost}}" bindinput="onCostInput" />
           </view>
           <view class="form-half">
-            <text class="form-label">执行人</text>
-            <input class="form-input" placeholder="本人" value="{{form.worker}}" bindinput="onWorkerInput" />
+            <text class="form-label">{{copy.worker}}</text>
+            <input class="form-input" placeholder="{{copy.me}}" value="{{form.worker}}" bindinput="onWorkerInput" />
           </view>
         </view>
         <view class="form-row">
-          <text class="form-label">备注</text>
-          <textarea class="form-textarea" placeholder="记录农事过程、药肥名称、田间情况..." value="{{form.note}}" bindinput="onNoteInput"></textarea>
+          <text class="form-label">{{copy.note}}</text>
+          <textarea class="form-textarea" placeholder="{{copy.notePh}}" value="{{form.note}}" bindinput="onNoteInput"></textarea>
         </view>
 
         <view class="modal-actions">
-          <view class="modal-btn secondary" bindtap="onPrevModalStep"><text>上一步</text></view>
-          <view class="modal-btn primary" bindtap="onSaveRecord"><text>{{editingId ? '更新' : '保存'}}</text></view>
+          <view class="modal-btn secondary" bindtap="onPrevModalStep"><text>{{copy.prev}}</text></view>
+          <view class="modal-btn primary" bindtap="onSaveRecord"><text>{{editingId ? copy.update : copy.save}}</text></view>
         </view>
       </view>
     </view>
@@ -267,19 +267,19 @@
         <view class="detail-close" bindtap="onCloseDetail"><text>×</text></view>
       </view>
       <view class="detail-grid">
-        <view class="detail-kv"><text class="kv-label">类型</text><text class="kv-value">{{currentRecord.type}}</text></view>
-        <view class="detail-kv"><text class="kv-label">时间</text><text class="kv-value">{{currentRecord.dateText}}</text></view>
-        <view class="detail-kv"><text class="kv-label">用量</text><text class="kv-value">{{currentRecord.amount}}</text></view>
-        <view class="detail-kv"><text class="kv-label">成本</text><text class="kv-value">{{currentRecord.costText}}</text></view>
-        <view class="detail-kv"><text class="kv-label">执行人</text><text class="kv-value">{{currentRecord.worker}}</text></view>
+        <view class="detail-kv"><text class="kv-label">{{copy.type}}</text><text class="kv-value">{{currentRecord.displayType}}</text></view>
+        <view class="detail-kv"><text class="kv-label">{{copy.time}}</text><text class="kv-value">{{currentRecord.dateText}}</text></view>
+        <view class="detail-kv"><text class="kv-label">{{copy.amount}}</text><text class="kv-value">{{currentRecord.amount}}</text></view>
+        <view class="detail-kv"><text class="kv-label">{{copy.cost}}</text><text class="kv-value">{{currentRecord.costText}}</text></view>
+        <view class="detail-kv"><text class="kv-label">{{copy.worker}}</text><text class="kv-value">{{currentRecord.worker}}</text></view>
       </view>
       <view class="detail-note">
-        <text class="kv-label">备注</text>
+        <text class="kv-label">{{copy.note}}</text>
         <text class="note-text">{{currentRecord.note}}</text>
       </view>
       <view class="detail-actions">
-        <view class="detail-btn danger" bindtap="onDeleteCurrentRecord"><text>删除</text></view>
-        <view class="detail-btn primary" bindtap="onEditRecord"><text>编辑</text></view>
+        <view class="detail-btn danger" bindtap="onDeleteCurrentRecord"><text>{{copy.deleteOne}}</text></view>
+        <view class="detail-btn primary" bindtap="onEditRecord"><text>{{copy.edit}}</text></view>
       </view>
     </view>
   </view>

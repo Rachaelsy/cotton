@@ -1,12 +1,20 @@
 ﻿// pages/supplies-checkout/index.js — 确认订单 & 支付
 const app = getApp()
 const layout = require('../../utils/layout')
+const i18n = require('../../utils/i18n')
+
+const COPY = {
+  zh: { title:'确认订单',shipping:'收货信息',fill:'请填写收货信息',edit:'编辑',fillAddress:'+ 填写地址',name:'收货人姓名',phone:'手机号',address:'省市区乡镇 详细地址',confirm:'确定',goods:'订单商品',delivery:'配送方式',deliveryWay:'送货到地头',payment:'支付方式',wechat:'微信支付',safe:'快捷安全',remark:'订单备注',remarkPh:'如有特殊要求请填写…',subtotal:'商品合计',fee:'运费',submit:'提交订单',submitting:'提交中…',needName:'请填写收货人姓名',needPhone:'请填写手机号',needAddress:'请填写收货地址',orderFail:'下单失败',orderFailDesc:'提交订单失败，请重试',network:'网络异常，请重试' },
+  ug: { title:'زاكازنى جەزملەش',shipping:'تاپشۇرۇۋېلىش ئۇچۇرى',fill:'تاپشۇرۇۋېلىش ئۇچۇرىنى تولدۇرۇڭ',edit:'تەھرىرلەش',fillAddress:'+ ئادرېس تولدۇرۇش',name:'تاپشۇرۇۋالغۇچى نامى',phone:'تېلېفون نومۇرى',address:'رايون، يېزا ۋە تەپسىلىي ئادرېس',confirm:'جەزملەش',goods:'زاكاز مەھسۇلاتى',delivery:'يەتكۈزۈش ئۇسۇلى',deliveryWay:'ئېتىز بېشىغىچە يەتكۈزۈش',payment:'تۆلەش ئۇسۇلى',wechat:'WeChat تۆلەش',safe:'تېز ۋە بىخەتەر',remark:'زاكاز ئىزاھى',remarkPh:'ئالاھىدە تەلەپ بولسا يېزىڭ…',subtotal:'مەھسۇلات جەمئىي',fee:'توشۇش ھەققى',submit:'زاكاز تاپشۇرۇش',submitting:'تاپشۇرۇۋاتىدۇ…',needName:'تاپشۇرۇۋالغۇچى نامىنى تولدۇرۇڭ',needPhone:'تېلېفوننى تولدۇرۇڭ',needAddress:'ئادرېسنى تولدۇرۇڭ',orderFail:'زاكاز مەغلۇپ',orderFailDesc:'زاكاز تاپشۇرۇلمىدى، قايتا سىناڭ',network:'تور نورمال ئەمەس، قايتا سىناڭ' }
+}
 
 const DELIVERY_FEE = 0
 
 Page({
   data: {
     statusBarHeight: 20,
+    lang: i18n.getLanguage(),
+    copy: COPY[i18n.getLanguage()],
     capsuleSafeRight: 0,
     cartItems: [],
     cartTotal: '0',
@@ -41,6 +49,11 @@ Page({
     })
   },
 
+  onShow() {
+    const lang = i18n.getLanguage()
+    if (lang !== this.data.lang) this.setData({ lang, copy: COPY[lang] })
+  },
+
   onBack() {
     wx.navigateBack()
   },
@@ -55,9 +68,9 @@ Page({
 
   onConfirmAddr() {
     const { receiverName, receiverPhone, address } = this.data
-    if (!receiverName.trim())  { wx.showToast({ title: '请填写收货人姓名', icon: 'none' }); return }
-    if (!receiverPhone.trim()) { wx.showToast({ title: '请填写手机号',     icon: 'none' }); return }
-    if (!address.trim())       { wx.showToast({ title: '请填写收货地址',   icon: 'none' }); return }
+    if (!receiverName.trim())  { wx.showToast({ title: this.data.copy.needName, icon: 'none' }); return }
+    if (!receiverPhone.trim()) { wx.showToast({ title: this.data.copy.needPhone, icon: 'none' }); return }
+    if (!address.trim())       { wx.showToast({ title: this.data.copy.needAddress, icon: 'none' }); return }
     // 持久化，下次进入自动回填
     try {
       wx.setStorageSync('shipping_address', {
@@ -73,9 +86,9 @@ Page({
     if (this.data.submitting) return
 
     const { receiverName, receiverPhone, address } = this.data
-    if (!receiverName.trim()) { wx.showToast({ title: '请填写收货人姓名', icon: 'none' }); return }
-    if (!receiverPhone.trim()) { wx.showToast({ title: '请填写手机号', icon: 'none' }); return }
-    if (!address.trim()) { wx.showToast({ title: '请填写收货地址', icon: 'none' }); return }
+    if (!receiverName.trim()) { wx.showToast({ title: this.data.copy.needName, icon: 'none' }); return }
+    if (!receiverPhone.trim()) { wx.showToast({ title: this.data.copy.needPhone, icon: 'none' }); return }
+    if (!address.trim()) { wx.showToast({ title: this.data.copy.needAddress, icon: 'none' }); return }
     this.setData({ submitting: true })
 
     const auth = require('../../utils/auth')
@@ -134,12 +147,12 @@ Page({
           orderObj.total = res.data.total !== undefined ? res.data.total : orderObj.total
         } else {
           this.setData({ submitting: false })
-          wx.showModal({ title: '下单失败', content: res.msg || '提交订单失败，请重试', showCancel: false })
+          wx.showModal({ title: this.data.copy.orderFail, content: res.msg || this.data.copy.orderFailDesc, showCancel: false })
           return
         }
       } catch (e) {
         this.setData({ submitting: false })
-        wx.showToast({ title: '网络异常，请重试', icon: 'none' })
+        wx.showToast({ title: this.data.copy.network, icon: 'none' })
         return
       }
       createdOrders.push(orderObj)

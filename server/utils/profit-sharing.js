@@ -17,8 +17,15 @@ function calculateCommissionFen(amount, commissionRate) {
   return Math.max(0, Math.round(totalFen * rate / 100))
 }
 
-function buildProfitSharingOutOrderNo(orderType, orderId) {
-  return `PS_${String(orderType || 'ORDER').toUpperCase()}_${orderId}`
+function normalizePaymentStage(orderType, paymentStage) {
+  if (String(orderType || '').toLowerCase() !== 'machine') return 'full'
+  return ['deposit', 'balance', 'full'].includes(paymentStage) ? paymentStage : 'full'
+}
+
+function buildProfitSharingOutOrderNo(orderType, orderId, paymentStage = 'full') {
+  const type = String(orderType || 'ORDER').toUpperCase()
+  const stage = normalizePaymentStage(orderType, paymentStage)
+  return type === 'MACHINE' ? `PS_${type}_${orderId}_${stage.toUpperCase()}` : `PS_${type}_${orderId}`
 }
 
 function getPlatformReceiverAccount(cfg = {}) {
@@ -63,7 +70,9 @@ function buildProfitSharingBody({ cfg, order }) {
     sub_mchid: order.subMchid,
     appid: cfg.spAppid,
     transaction_id: order.transactionId,
-    out_order_no: order.outOrderNo || buildProfitSharingOutOrderNo(order.orderType || 'supply', order.orderId),
+    out_order_no: order.outOrderNo || buildProfitSharingOutOrderNo(
+      order.orderType || 'supply', order.orderId, order.paymentStage
+    ),
     receivers: [{
       type: 'MERCHANT_ID',
       account: getPlatformReceiverAccount(cfg),
@@ -115,14 +124,15 @@ async function savePendingOrder({ order, transaction }) {
   const db = getDb()
   const cfg = wxpay.getServiceProviderConfig() || {}
   const orderType = order.kind === 'machine' ? 'machine' : 'supply'
-  const outOrderNo = buildProfitSharingOutOrderNo(orderType, order.id)
+  const paymentStage = normalizePaymentStage(orderType, order.paymentStage)
+  const outOrderNo = buildProfitSharingOutOrderNo(orderType, order.id, paymentStage)
   await db.query(`
     INSERT INTO wechat_profit_sharing_orders
-      (order_type, order_id, out_order_no, transaction_id, sub_mchid, receiver_account,
+      (order_type, order_id, payment_stage, out_order_no, transaction_id, sub_mchid, receiver_account,
        amount_fen, commission_rate, state, result_payload, error_msg)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', '', '')
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', '', '')
     ON DUPLICATE KEY UPDATE
-      out_order_no=VALUES(out_order_no),
+      out_order_no=IF(out_order_no='', VALUES(out_order_no), out_order_no),
       transaction_id=VALUES(transaction_id),
       sub_mchid=VALUES(sub_mchid),
       receiver_account=VALUES(receiver_account),
@@ -134,6 +144,7 @@ async function savePendingOrder({ order, transaction }) {
   `, [
     orderType,
     order.id,
+    paymentStage,
     outOrderNo,
     transactionId,
     order.subMchid,
@@ -179,6 +190,7 @@ async function settleProfitSharingRow(row, cfg = wxpay.getServiceProviderConfig(
     order: {
       orderType: row.order_type,
       orderId: row.order_id,
+      paymentStage: row.payment_stage,
       subMchid: row.sub_mchid,
       transactionId: row.transaction_id,
       outOrderNo: row.out_order_no,
@@ -214,6 +226,12 @@ async function markProfitSharingFailed(row, error) {
 }
 
 async function markOrderFundsAvailable(db, row) {
+  const [[pending]] = await db.query(
+    `SELECT COUNT(*) AS total FROM wechat_profit_sharing_orders
+     WHERE order_type=? AND order_id=? AND state NOT IN ('SUCCESS','FINISHED')`,
+    [row.order_type, row.order_id]
+  )
+  if (Number(pending && pending.total || 0) > 0) return
   if (row.order_type === 'machine') {
     await db.query("UPDATE machine_orders SET fund_status='available' WHERE id=? AND fund_status='frozen'", [row.order_id])
   } else {
@@ -266,6 +284,7 @@ async function releaseEligibleProfitSharing() {
 module.exports = {
   calculateCommissionFen,
   buildProfitSharingOutOrderNo,
+  normalizePaymentStage,
   getPlatformReceiverAccount,
   getPlatformReceiverName,
   getProfitSharingFreezeDays,

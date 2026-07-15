@@ -2,7 +2,7 @@
 <view class="page">
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
     <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
-    <text class="nav-title">农机详情</text>
+    <text class="nav-title">{{copy.title}}</text>
     <view style="width:60rpx"></view>
   </view>
 
@@ -26,7 +26,7 @@
 
     <!-- 超出配送范围提示 -->
     <view wx:if="{{machine.out_of_range}}" class="range-warn">
-      <text class="range-warn-text">⚠ 您的位置距该机具 {{machine.distText}}，超出可配送范围（{{machine.service_radius}}km），机手可能无法上门作业</text>
+      <text class="range-warn-text">{{copy.rangeWarning}}（{{machine.service_radius}}km）</text>
     </view>
 
     <!-- 机手信息 -->
@@ -35,18 +35,18 @@
         <text class="org-icon">🏢</text>
         <view class="org-info">
           <text class="org-name">{{machine.org_name}}</text>
-          <text class="org-sub">{{machine.org_location || machine.service_area}} · 可配送 {{machine.service_radius}}km · 响应 {{machine.response_time}}</text>
+          <text class="org-sub">{{machine.org_location || machine.service_area}} · {{copy.deliver}} {{machine.service_radius}}km · {{copy.response}} {{machine.response_time}}</text>
         </view>
         <view class="org-rating">
           <text class="org-star">⭐{{machine.ratingText}}</text>
-          <text class="org-count">{{machine.order_count}}单</text>
+          <text class="org-count">{{machine.order_count}}{{copy.orders}}</text>
         </view>
       </view>
     </view>
 
     <!-- 规格标签 -->
     <view wx:if="{{machine.spec_badges.length}}" class="block">
-      <text class="block-title">规格亮点</text>
+      <text class="block-title">{{copy.highlights}}</text>
       <view class="badge-wrap">
         <text class="spec-badge" wx:for="{{machine.spec_badges}}" wx:key="*this">{{item}}</text>
       </view>
@@ -54,7 +54,7 @@
 
     <!-- 参数 -->
     <view wx:if="{{machine.params.length}}" class="block">
-      <text class="block-title">技术参数</text>
+      <text class="block-title">{{copy.params}}</text>
       <view class="param-grid">
         <view class="param-cell" wx:for="{{machine.params}}" wx:key="lbl">
           <text class="param-val">{{item.val}}</text>
@@ -65,47 +65,47 @@
 
     <!-- 描述 -->
     <view wx:if="{{machine.description}}" class="block">
-      <text class="block-title">服务说明</text>
+      <text class="block-title">{{copy.service}}</text>
       <text class="desc-text">{{machine.description}}</text>
     </view>
 
     <!-- 评价 -->
     <view class="block">
       <view class="review-head">
-        <text class="block-title">服务评价（{{machine.review_total}}）</text>
-        <text class="review-avg">综合 ⭐{{machine.review_avg}}</text>
+        <text class="block-title">{{copy.reviews}}（{{machine.review_total}}）</text>
+        <text class="review-avg">{{copy.overall}} ⭐{{machine.review_avg}}</text>
       </view>
-      <view wx:if="{{machine.reviews.length === 0}}" class="no-review">暂无评价</view>
+      <view wx:if="{{machine.reviews.length === 0}}" class="no-review">{{copy.noReview}}</view>
       <view class="review-item" wx:for="{{machine.reviews}}" wx:key="id">
         <view class="review-top">
-          <text class="review-name">{{item.farmer_name || '匿名农户'}}</text>
+          <text class="review-name">{{item.farmer_name || copy.anonymous}}</text>
           <text class="review-score">⭐{{item.rating}}</text>
         </view>
         <text wx:if="{{item.content}}" class="review-content">{{item.content}}</text>
         <view class="review-sub">
-          <text class="rs-tag">及时{{item.score_timely}}</text>
-          <text class="rs-tag">质量{{item.score_quality}}</text>
-          <text class="rs-tag">态度{{item.score_attitude}}</text>
-          <text class="rs-tag">价格{{item.score_price}}</text>
+          <text class="rs-tag">{{copy.timely}}{{item.score_timely}}</text>
+          <text class="rs-tag">{{copy.quality}}{{item.score_quality}}</text>
+          <text class="rs-tag">{{copy.attitude}}{{item.score_attitude}}</text>
+          <text class="rs-tag">{{copy.price}}{{item.score_price}}</text>
           <text class="rs-date">{{item.date}}</text>
         </view>
-        <view wx:if="{{item.reply}}" class="review-reply"><text>机手回复：{{item.reply}}</text></view>
+        <view wx:if="{{item.reply}}" class="review-reply"><text>{{copy.reply}}{{item.reply}}</text></view>
       </view>
     </view>
 
     <view style="height:160rpx"></view>
   </scroll-view>
 
-  <view wx:elif="{{!loading}}" class="empty"><text>机具不存在或已下架</text></view>
+  <view wx:elif="{{!loading}}" class="empty"><text>{{copy.notFound}}</text></view>
 
   <!-- 底部操作栏 -->
   <view wx:if="{{machine}}" class="action-bar">
     <view class="action-contact" bindtap="onContact">
       <text class="ac-icon">📞</text>
-      <text class="ac-text">联系机手</text>
+      <text class="ac-text">{{copy.contact}}</text>
     </view>
     <view class="action-book" bindtap="onBook">
-      <text class="ab-text">立即预约</text>
+      <text class="ab-text">{{copy.book}}</text>
     </view>
   </view>
 </view>

@@ -1,7 +1,7 @@
 # 棉花智能体 · 接口文档
 
 > 本文档记录所有后端 API 接口，包含认证、商品和管理后台三个模块。
-> 最后更新：2026-07-14
+> 最后更新：2026-07-15
 
 ---
 
@@ -138,6 +138,7 @@
     "role":        "farmer",
     "real_name":   "古丽巴哈尔",
     "is_verified": 0,
+    "onboarding_completed": 0,
     "location":    "喀什·疏附县",
     "land_size":   486
   }
@@ -163,6 +164,19 @@
 ```json
 { "code": 200, "msg": "已退出登录" }
 ```
+
+### 1.5 农户实名认证与首次使用
+
+以下接口均要求农户 JWT：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/verification` | 查询最新实名审核状态 |
+| POST | `/api/verification/upload` | `multipart/form-data` 上传身份证图片，字段名 `image`，返回私有 `fileToken` |
+| POST | `/api/verification` | 提交 `{ realName,idNumber,frontToken,backToken }`；校验身份证校验位并加密保存 |
+| PATCH | `/api/verification/onboarding` | 实名通过后标记首次使用引导完成 |
+
+管理员审核接口：`GET /api/admin/farmer-verifications`、`GET /api/admin/farmer-verifications/:id/file/:side`、`PATCH /api/admin/farmer-verifications/:id/review`。审核请求体为 `{ "action":"approved|rejected", "reason":"拒绝原因" }`。
 
 ---
 
@@ -648,11 +662,26 @@
       "hourly": { ... },
       "forecast": {
         "daily": [ ... ]
+      },
+      "warning": {
+        "available": true,
+        "alerts": [
+          { "headline": "大风蓝色预警", "severity": "蓝色", "description": "...", "instruction": "..." }
+        ]
       }
+    },
+    "statistics": {
+      "days": 30,
+      "coverage_hours": 96,
+      "coverage_days": 5,
+      "rainfall_mm": 12.4,
+      "gdd_base_10": 42.8
     }
   }
 }
 ```
+
+`statistics` 只汇总 `weather_observations` 中已经采集到的真实逐小时实况，`coverage_*` 用于说明实际数据覆盖范围；不会用预报补齐 30 天。`weather.warning.available=false` 表示官方预警接口不可用，与“接口可用但当前无预警”严格区分。
 
 **失败 400：**
 ```json
@@ -888,18 +917,21 @@ const r = await fetch('/api/admin/merchants', {
 **POST** `/api/pay/wechat/prepay`
 
 ```json
-{ "orderType": "machine", "orderId": 18, "payMode": "deposit" }
+{ "orderType": "machine", "orderId": 18, "paymentStage": "deposit" }
 ```
 
-- `payMode` 支持 `deposit`（定金）或 `full`（全款）。
+- `paymentStage` 支持 `deposit`（定金）、`balance`（尾款）或 `full`（全款）。尾款仅在定金已支付且农机手标记作业完成后允许支付。
 - 农机手必须已绑定有效 `sub_mchid`，否则返回 409。
-- 开启分账时，支付成功会按农机手当前佣金率创建待分账记录；作业完成并达到冻结期后自动执行微信分账。
+- 开启分账时，每个支付阶段按农机手当前佣金率分别创建待分账记录；作业完成并达到冻结期后自动执行微信分账。
+
+农户取消已真实支付但尚可取消的预约、或农机手拒绝预约时，后端发起真实微信退款。若该阶段已经分账，会先回退对应分账；早期模拟支付订单因没有微信交易号会返回 409。
 
 ### 9.2 农机手结算
 
 - **GET** `/api/operator/finance`：订单实付、平台佣金、农机手收入、分账状态。
 - **GET** `/api/operator/commission`：当前佣金率及历史申请。
 - **POST** `/api/operator/commission-change-requests`：提交目标比例和调整理由。
+- **PATCH** `/api/operator/location`：农机手作业期间上报 `{ latitude,longitude,accuracy }`；农户订单详情只返回 10 分钟内的实时位置。
 
 ### 9.3 商户佣金调整
 

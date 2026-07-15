@@ -2,15 +2,15 @@
 <view class="page">
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
     <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
-      <text class="nav-title">微信支付</text>
+      <text class="nav-title">{{copy.title}}</text>
     <view style="width:60rpx"></view>
   </view>
 
   <view class="scroll">
     <view wx:if="{{order}}" class="pay-amount">
-      <text class="pa-label">需支付金额</text>
-      <text class="pa-num">¥{{payMode === 'deposit' ? order.deposit : order.total_price}}</text>
-      <text class="pa-order">订单号 {{order.order_no}}</text>
+      <text class="pa-label">{{copy.amount}}</text>
+      <text class="pa-num">¥{{paymentStage === 'deposit' ? order.deposit : (paymentStage === 'balance' ? balanceAmount : order.total_price)}}</text>
+      <text class="pa-order">{{copy.orderNo}} {{order.order_no}}</text>
     </view>
 
     <view wx:if="{{order}}" class="order-card">
@@ -18,36 +18,46 @@
         <view class="oc-icon"><text>{{order.machine_icon}}</text></view>
         <text class="oc-name">{{order.machine_name}}</text>
       </view>
-      <view class="oc-line"><text class="oc-k">作业总价</text><text class="oc-v">¥{{order.total_price}}</text></view>
-      <view class="oc-line"><text class="oc-k">定金（20%）</text><text class="oc-v">¥{{order.deposit}}</text></view>
+      <view class="oc-line"><text class="oc-k">{{copy.total}}</text><text class="oc-v">¥{{order.total_price}}</text></view>
+      <view class="oc-line"><text class="oc-k">{{copy.deposit}}</text><text class="oc-v">¥{{order.deposit}}</text></view>
     </view>
 
     <!-- 支付方式 -->
-    <view class="mode-card">
+    <view wx:if="{{paymentStage === 'balance'}}" class="mode-card">
+      <view class="mode-item on">
+        <view class="mode-info">
+          <text class="mode-name">{{copy.balance}}</text>
+          <text class="mode-sub">{{copy.balanceSub}}</text>
+        </view>
+        <text class="mode-amt">¥{{balanceAmount}}</text>
+        <view class="radio radio-on"></view>
+      </view>
+    </view>
+    <view wx:else class="mode-card">
       <view class="mode-item {{payMode === 'deposit' ? 'on' : ''}}" bindtap="onPayMode" data-mode="deposit">
         <view class="mode-info">
-          <text class="mode-name">支付定金 <text class="mode-badge">推荐</text></text>
-          <text class="mode-sub">先付 20%，作业完成后付尾款</text>
+          <text class="mode-name">{{copy.depositPay}} <text class="mode-badge">{{copy.recommend}}</text></text>
+          <text class="mode-sub">{{copy.depositSub}}</text>
         </view>
         <text class="mode-amt">¥{{order.deposit}}</text>
         <view class="radio {{payMode === 'deposit' ? 'radio-on' : ''}}"></view>
       </view>
       <view class="mode-item {{payMode === 'full' ? 'on' : ''}}" bindtap="onPayMode" data-mode="full">
         <view class="mode-info">
-          <text class="mode-name">支付全款</text>
-          <text class="mode-sub">一次性付清，省心</text>
+          <text class="mode-name">{{copy.full}}</text>
+          <text class="mode-sub">{{copy.fullSub}}</text>
         </view>
         <text class="mode-amt">¥{{order.total_price}}</text>
         <view class="radio {{payMode === 'full' ? 'radio-on' : ''}}"></view>
       </view>
     </view>
 
-    <view class="trust">🛡️ 微信支付保障：款项支付至农机手特约商户，作业完成后平台按审核通过的佣金比例分账。</view>
+    <view class="trust">{{copy.trust}}</view>
   </view>
 
   <view class="action-bar">
     <view class="bar-btn {{paying ? 'disabled' : ''}}" bindtap="onPay">
-      <text class="bar-btn-text">{{paying ? '支付中…' : '确认支付 ¥' + (payMode === 'deposit' ? order.deposit : order.total_price)}}</text>
+      <text class="bar-btn-text">{{paying ? copy.paying : copy.confirm + ' ¥' + (paymentStage === 'deposit' ? order.deposit : (paymentStage === 'balance' ? balanceAmount : order.total_price))}}</text>
     </view>
   </view>
 </view>

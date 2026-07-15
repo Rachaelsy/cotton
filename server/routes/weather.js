@@ -5,6 +5,7 @@ const { fetchCmaWeather } = require('../utils/cma-weather')
 const { fetchQweatherWeather } = require('../utils/qweather')
 const { normalizeCoordinates, calculateCenter } = require('../utils/plot-geometry')
 const { locateService } = require('../utils/regions')
+const weatherObservations = require('../utils/weather-observations')
 
 const router = express.Router()
 
@@ -124,6 +125,8 @@ router.get('/plot/:id', farmerAuth, async (req, res) => {
 
     const center = calculateCenter(coordinates)
     const weather = await fetchPointWeather(center, plot)
+    await weatherObservations.saveObservation(plot.id, center, weather)
+    const statistics = await weatherObservations.getThirtyDayStats(plot.id)
     return ok(res, {
       plot: {
         id: plot.id,
@@ -137,7 +140,8 @@ router.get('/plot/:id', farmerAuth, async (req, res) => {
         note: plot.note
       },
       center,
-      weather
+      weather,
+      statistics
     }, '天气获取成功')
   } catch (error) {
     const statusCode = isWeatherUpstreamError(error) ? 503 : 500

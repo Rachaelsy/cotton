@@ -1,10 +1,14 @@
 // pages/machine/detail.js — 农机详情
 const app  = getApp()
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
+const machineI18n = require('../../utils/machine-i18n')
 
 Page({
   data: {
     statusBarHeight: 20,
+    lang: i18n.getLanguage(),
+    copy: machineI18n.getCopy('detail'),
     id: null,
     lat: null,
     lng: null,
@@ -23,6 +27,11 @@ Page({
     this.loadDetail()
   },
 
+  onShow() {
+    const lang = i18n.getLanguage()
+    if (lang !== this.data.lang) this.setData({ lang, copy: machineI18n.getCopy('detail', lang) })
+  },
+
   async loadDetail() {
     let qs = ''
     if (this.data.lat && this.data.lng) qs = `?lat=${this.data.lat}&lng=${this.data.lng}`
@@ -36,11 +45,11 @@ Page({
         this.setData({ machine: m, loading: false })
       } else {
         this.setData({ loading: false })
-        wx.showToast({ title: res.msg || '加载失败', icon: 'none' })
+        wx.showToast({ title: res.msg || this.data.copy.loadFail, icon: 'none' })
       }
     } catch (e) {
       this.setData({ loading: false })
-      wx.showToast({ title: '网络异常', icon: 'none' })
+      wx.showToast({ title: this.data.copy.network, icon: 'none' })
     }
   },
 
@@ -49,16 +58,16 @@ Page({
     if (m && m.org_phone) {
       wx.makePhoneCall({ phoneNumber: m.org_phone, fail: () => {} })
     } else {
-      wx.showToast({ title: '暂无联系电话', icon: 'none' })
+      wx.showToast({ title: this.data.copy.noPhone, icon: 'none' })
     }
   },
 
   onBook() {
     if (!auth.isLoggedIn()) {
       wx.showModal({
-        title: '请先登录',
-        content: '预约农机需要先登录账号',
-        confirmText: '去登录',
+        title: this.data.copy.loginTitle,
+        content: this.data.copy.loginContent,
+        confirmText: this.data.copy.goLogin,
         success: (r) => { if (r.confirm) wx.navigateTo({ url: '/pages/login/index' }) }
       })
       return

@@ -2,6 +2,7 @@
 const express = require('express')
 const jwt     = require('jsonwebtoken')
 const db      = require('../db/database')
+const refunds = require('../utils/refunds')
 const router  = express.Router()
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -76,6 +77,9 @@ router.post('/', farmerAuth, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.get('/my', farmerAuth, async (req, res) => {
   try {
+    await refunds.syncPendingMachineRefunds({ farmerId: req.user.id }).catch(error => {
+      console.error('[machine-refund-sync-farmer]', error.message)
+    })
     const { status } = req.query
     let sql = `SELECT *, DATE_FORMAT(work_date,'%Y-%m-%d') AS work_date
                FROM machine_orders WHERE farmer_id=? AND farmer_deleted=0`
@@ -96,17 +100,27 @@ router.get('/my', farmerAuth, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 router.get('/:id', farmerAuth, async (req, res) => {
   try {
+    await refunds.syncPendingMachineRefunds({ farmerId: req.user.id, orderId: req.params.id }).catch(error => {
+      console.error('[machine-refund-sync-detail]', error.message)
+    })
     const [[o]] = await db.query(`
       SELECT mo.*, DATE_FORMAT(mo.work_date,'%Y-%m-%d') AS work_date,
              op.org_name, op.phone AS operator_phone, op.response_time,
-             op.latitude AS op_lat, op.longitude AS op_lng, op.location_name AS op_location
+             CASE WHEN op.live_location_updated_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+                  THEN op.live_latitude ELSE op.latitude END AS op_lat,
+             CASE WHEN op.live_location_updated_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+                  THEN op.live_longitude ELSE op.longitude END AS op_lng,
+             op.location_name AS op_location,
+             CASE WHEN op.live_location_updated_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+                  THEN 1 ELSE 0 END AS is_live_location,
+             DATE_FORMAT(op.live_location_updated_at,'%Y-%m-%d %H:%i:%s') AS live_location_updated_at
       FROM machine_orders mo
       JOIN operators op ON op.id = mo.operator_id
       WHERE mo.id=? AND mo.farmer_id=?
     `, [req.params.id, req.user.id])
     if (!o) return fail(res, '订单不存在', 404)
     o.status_label = STATUS_LABEL[o.status] || o.status
-    // 机手→地块的距离（实时位置示意）
+    // Live location is used only while the operator has updated it in the last 10 minutes.
     if (o.op_lat && o.op_lng && o.farmer_lat && o.farmer_lng) {
       const [[d]] = await db.query(
         'SELECT ROUND(ST_Distance_Sphere(POINT(?,?),POINT(?,?))/1000,1) AS km',
@@ -143,9 +157,18 @@ router.patch('/:id/cancel', farmerAuth, async (req, res) => {
       [req.params.id, req.user.id])
     if (!o) return fail(res, '订单不存在', 404)
     if (o.status !== 'pending') return fail(res, '已接单订单无法取消，请联系机手')
+    let refund = null
+    if (['partial', 'paid'].includes(o.pay_status)) {
+      refund = await refunds.createMachineRefund({
+        orderId: Number(req.params.id), farmerId: req.user.id, reason: '农户取消农机预约'
+      })
+    }
     await db.query("UPDATE machine_orders SET status='cancelled', reject_reason='农户取消' WHERE id=?",
       [req.params.id])
-    return ok(res, null, '已取消，定金原路退回')
+    const message = refund
+      ? (refund.status === 'SUCCESS' ? '已取消，款项已原路退回' : '已取消，微信退款处理中')
+      : '已取消（该订单未支付）'
+    return ok(res, { refund_status: refund && refund.status || '' }, message)
   } catch (e) { console.error('[mo-cancel]', e); return fail(res, '取消失败', 500) }
 })
 
@@ -180,6 +203,7 @@ router.post('/:id/review', farmerAuth, async (req, res) => {
       [req.params.id, req.user.id])
     if (!o) return fail(res, '订单不存在', 404)
     if (o.status !== 'completed') return fail(res, '订单完成后才能评价')
+    if (o.pay_status !== 'paid') return fail(res, '请先付清尾款后再评价')
     const [[exist]] = await db.query('SELECT id FROM machine_reviews WHERE order_id=?', [req.params.id])
     if (exist) return fail(res, '该订单已评价')
     await db.query(

@@ -4,15 +4,15 @@
   <!-- 顶部 -->
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
     <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
-      <text class="nav-title">待付款</text>
+    <text class="nav-title">{{copy.title}}</text>
     </view>
   </view>
 
   <!-- 倒计时提示 -->
   <view class="countdown-bar {{expired ? 'expired' : ''}}">
     <text class="cd-icon">{{expired ? '⏰' : '⏱'}}</text>
-    <text class="cd-text" wx:if="{{!expired}}">请在 <text class="cd-num">{{countdownStr}}</text> 内完成支付，超时自动取消</text>
-    <text class="cd-text" wx:else>订单已超时，即将自动关闭</text>
+    <text class="cd-text" wx:if="{{!expired}}">{{copy.countdown}} <text class="cd-num">{{countdownStr}}</text> {{copy.countdownEnd}}</text>
+    <text class="cd-text" wx:else>{{copy.expired}}</text>
   </view>
 
   <scroll-view class="scroll" scroll-y>
@@ -29,20 +29,20 @@
           <text class="item-thumb-icon">{{item.firstItem.icon || '📦'}}</text>
         </view>
         <view class="item-info">
-          <text class="item-name">{{item.firstItem.name || '商品'}}</text>
-          <text class="item-more" wx:if="{{item.itemCount > 1}}">等共 {{item.itemCount}} 件</text>
+        <text class="item-name">{{item.firstItem.name || copy.goods}}</text>
+        <text class="item-more" wx:if="{{item.itemCount > 1}}">{{item.itemCount}} {{copy.items}}</text>
         </view>
         <text class="item-total">¥{{item.total}}</text>
       </view>
       <view class="card-no-row">
-        <text class="card-no-label">订单号</text>
+        <text class="card-no-label">{{copy.orderNo}}</text>
         <text class="card-no-val">{{item.orderNo}}</text>
       </view>
     </view>
 
     <!-- 合计 -->
     <view class="total-card">
-      <text class="total-label">合计应付</text>
+    <text class="total-label">{{copy.total}}</text>
       <text class="total-val">¥{{grandTotal}}</text>
     </view>
 
@@ -53,10 +53,10 @@
   <!-- 底部操作 -->
   <view class="bottom-bar">
     <view class="cancel-btn" bindtap="onCancel">
-      <text class="cancel-text">{{cancelling ? '取消中...' : '取消订单'}}</text>
+      <text class="cancel-text">{{cancelling ? copy.cancelling : copy.cancel}}</text>
     </view>
     <view class="pay-btn {{(expired || paying) ? 'pay-btn-off' : ''}}" bindtap="onPay">
-      <text class="pay-text">{{paying ? '支付中...' : '立即支付 ¥' + grandTotal}}</text>
+      <text class="pay-text">{{paying ? copy.paying : copy.pay + ' ¥' + grandTotal}}</text>
     </view>
   </view>
 

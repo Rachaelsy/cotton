@@ -103,13 +103,26 @@
         </view>
       </view>
 
-      <view class="wx-alert-banner {{alert ? '' : 'safe'}}" bindtap="onAlertTap">
-        <text class="wa-icon">{{alert ? alert.icon : (weatherDataError ? '⚠️' : '✅')}}</text>
+      <view class="wx-alert-banner {{alert ? '' : (warningAvailable ? 'safe' : 'warning-unavailable')}}" bindtap="onAlertTap">
+        <text class="wa-icon">{{alert ? alert.icon : (weatherDataError || !warningAvailable ? '⚠️' : '✅')}}</text>
         <view class="wa-txt">
-          <text class="wa-title">{{alert ? alert.title + (alert.level ? ' · ' + alert.level : '') : (weatherDataError ? copy.weatherDataFailTitle : copy.todayTip)}}</text>
-          <text class="wa-sub">{{alert ? alert.sub : summary}}</text>
+          <text class="wa-title">{{alert ? alert.title + (alert.level ? ' · ' + alert.level : '') : (weatherDataError ? copy.weatherDataFailTitle : (!warningAvailable ? copy.warningUnavailable : copy.todayTip))}}</text>
+          <text class="wa-sub">{{alert ? alert.sub : (!warningAvailable ? copy.warningUnavailableDesc : summary)}}</text>
         </view>
         <text class="wa-arr">›</text>
+      </view>
+
+      <view wx:if="{{weatherStatistics}}" class="wx-card climate-card">
+        <view class="wx-card-head">
+          <view class="wx-card-bar"></view>
+          <text class="wx-card-title">{{copy.climateStats}}</text>
+        </view>
+        <view class="climate-grid">
+          <view class="climate-item"><text class="climate-value">{{weatherStatistics.growingDegreeDays}}</text><text class="climate-label">{{copy.gdd}}</text></view>
+          <view class="climate-item"><text class="climate-value">{{weatherStatistics.rainfallMm}}mm</text><text class="climate-label">{{copy.rain30}}</text></view>
+          <view class="climate-item"><text class="climate-value">{{weatherStatistics.coverageDays}} / 30</text><text class="climate-label">{{copy.coverage}}</text></view>
+        </view>
+        <text class="climate-note">{{statsTruthText}}</text>
       </view>
 
       <view class="wx-card wx-hourly-card">

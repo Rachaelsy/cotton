@@ -1,13 +1,7 @@
 // pages/machine/orders.js — 我的农机预约
 const auth = require('../../utils/auth')
-
-const TABS = [
-  { key: 'all',       label: '全部' },
-  { key: 'pending',   label: '待接单' },
-  { key: 'ongoing',   label: '进行中' },
-  { key: 'completed', label: '已完成' },
-  { key: 'cancelled', label: '已取消' }
-]
+const i18n = require('../../utils/i18n')
+const machineI18n = require('../../utils/machine-i18n')
 const BADGE = {
   pending: 'b-pending', accepted: 'b-progress', departed: 'b-progress',
   arrived: 'b-progress', working: 'b-progress', completed: 'b-done', cancelled: 'b-cancel'
@@ -16,7 +10,9 @@ const BADGE = {
 Page({
   data: {
     statusBarHeight: 20,
-    tabs: TABS,
+    lang: i18n.getLanguage(),
+    copy: machineI18n.getCopy('orders'),
+    tabs: machineI18n.orderTabs(),
     activeTab: 'all',
     orders: [],
     loading: true
@@ -27,7 +23,11 @@ Page({
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
   },
 
-  onShow() { this.load(this.data.activeTab) },
+  onShow() {
+    const lang = i18n.getLanguage()
+    if (lang !== this.data.lang) this.setData({ lang, copy: machineI18n.getCopy('orders', lang), tabs: machineI18n.orderTabs(lang) })
+    this.load(this.data.activeTab)
+  },
 
   async load(tab) {
     this.setData({ loading: true })
@@ -35,14 +35,14 @@ Page({
     try {
       const res = await auth.request('GET', '/api/machine-orders/my' + qs)
       if (res.code === 200) {
-        const orders = (res.data || []).map(o => ({ ...o, badgeCls: BADGE[o.status] || 'b-progress' }))
+        const orders = (res.data || []).map(o => ({ ...o, status_label: machineI18n.statusLabel(o.status, this.data.lang), badgeCls: BADGE[o.status] || 'b-progress' }))
         this.setData({ orders, loading: false })
       } else {
         this.setData({ orders: [], loading: false })
       }
     } catch (e) {
       this.setData({ orders: [], loading: false })
-      wx.showToast({ title: '网络异常', icon: 'none' })
+      wx.showToast({ title: this.data.copy.network, icon: 'none' })
     }
   },
 
@@ -61,16 +61,16 @@ Page({
   onDelete(e) {
     const id = e.currentTarget.dataset.id
     wx.showModal({
-      title: '删除订单',
-      content: '确定删除该订单记录吗？删除后不可恢复。',
+      title: this.data.copy.deleteTitle,
+      content: this.data.copy.deleteContent,
       confirmColor: '#DC2626',
       success: async (r) => {
         if (!r.confirm) return
         try {
           const res = await auth.request('DELETE', `/api/machine-orders/${id}`)
-          if (res.code === 200) { wx.showToast({ title: '已删除', icon: 'none' }); this.load(this.data.activeTab) }
-          else wx.showToast({ title: res.msg || '删除失败', icon: 'none' })
-        } catch (e) { wx.showToast({ title: '网络异常', icon: 'none' }) }
+          if (res.code === 200) { wx.showToast({ title: this.data.copy.deleted, icon: 'none' }); this.load(this.data.activeTab) }
+          else wx.showToast({ title: res.msg || this.data.copy.deleteFail, icon: 'none' })
+        } catch (e) { wx.showToast({ title: this.data.copy.network, icon: 'none' }) }
       }
     })
   },

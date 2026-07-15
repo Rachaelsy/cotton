@@ -1,4 +1,4 @@
-// server/routes/payments.js — 微信支付服务商 partner JSAPI
+// WeChat Pay service-provider partner JSAPI routes.
 const express = require('express')
 const jwt = require('jsonwebtoken')
 const db = require('../db/database')
@@ -13,18 +13,16 @@ const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: 
 
 function farmerAuth(req, res, next) {
   const auth = req.headers.authorization || ''
-  if (!auth.startsWith('Bearer ')) return res.status(401).json({ code: 401, msg: '请先登录' })
+  if (!auth.startsWith('Bearer ')) return fail(res, '请先登录', 401)
   try {
     req.user = jwt.verify(auth.slice(7), process.env.JWT_SECRET)
     next()
   } catch {
-    res.status(401).json({ code: 401, msg: '登录已过期，请重新登录' })
+    fail(res, '登录已过期，请重新登录', 401)
   }
 }
 
-function fen(amount) {
-  return Math.round(Number(amount || 0) * 100)
-}
+const fen = amount => Math.round(Number(amount || 0) * 100)
 
 function isWechatPayTestMode() {
   return String(process.env.WECHAT_PAY_TEST_MODE || '').trim().toLowerCase() === 'small_amount'
@@ -36,13 +34,20 @@ function getWechatPayChargeFen(order) {
   return fen(order.amount)
 }
 
+function normalizeMachineStage(stage, fallback = 'deposit') {
+  return ['deposit', 'balance', 'full'].includes(stage) ? stage : fallback
+}
+
 function outTradeNo(orderType, order) {
-  return `${orderType.toUpperCase()}_${order.orderNo}_${order.id}`
+  const base = `${orderType.toUpperCase()}_${order.orderNo}_${order.id}`
+  if (orderType !== 'machine') return base
+  return `${base}_${String(order.paymentStage || 'full').toUpperCase()}`
 }
 
 function orderDescription(orderType, order) {
-  if (orderType === 'machine') return `农机预约 ${order.name || order.orderNo}`
-  return `棉花农资订单 ${order.orderNo}`
+  if (orderType !== 'machine') return `棉花农资订单 ${order.orderNo}`
+  const stageName = { deposit: '订金', balance: '尾款', full: '全款' }[order.paymentStage] || '款项'
+  return `农机预约${stageName} ${order.name || order.orderNo}`
 }
 
 function parseNotifyOrder(transaction) {
@@ -50,18 +55,26 @@ function parseNotifyOrder(transaction) {
     try {
       const attach = JSON.parse(transaction.attach)
       if (attach.orderType && attach.orderId) {
+        const orderType = attach.orderType === 'machine' ? 'machine' : 'supply'
         return {
-          orderType: attach.orderType === 'machine' ? 'machine' : 'supply',
-          orderId: Number(attach.orderId)
+          orderType,
+          orderId: Number(attach.orderId),
+          paymentStage: orderType === 'machine'
+            ? normalizeMachineStage(attach.paymentStage, 'full')
+            : 'full'
         }
       }
     } catch {}
   }
   const tradeNo = String(transaction.out_trade_no || '')
   const parts = tradeNo.split('_')
+  const machine = tradeNo.startsWith('MACHINE_')
+  const last = String(parts[parts.length - 1] || '').toLowerCase()
+  const hasStage = machine && ['deposit', 'balance', 'full'].includes(last)
   return {
-    orderType: tradeNo.startsWith('MACHINE_') ? 'machine' : 'supply',
-    orderId: Number(parts[parts.length - 1])
+    orderType: machine ? 'machine' : 'supply',
+    orderId: Number(parts[parts.length - (hasStage ? 2 : 1)]),
+    paymentStage: machine ? normalizeMachineStage(hasStage ? last : 'full', 'full') : 'full'
   }
 }
 
@@ -72,55 +85,51 @@ function getRawBody(req) {
 }
 
 function validateReceiver(order) {
-  if (!order) return { ok: false, msg: '订单不存在、已支付或已超时', code: 404 }
+  if (!order) return { ok: false, msg: '订单不存在或无权访问', code: 404 }
   if (order.kind === 'supply' && Number(order.merchantCount) !== 1) {
     return { ok: false, msg: '该订单包含多个商户，请拆分订单后分别支付', code: 409 }
   }
   if (!order.subMchid) {
     if (order.isSelfOperated) {
-      return { ok: false, msg: '服务商自营测试也必须绑定自营子商户号 sub_mchid，不能直接用服务商商户号收款', code: 409 }
+      return { ok: false, msg: '服务商自营测试也必须绑定自营子商户号 sub_mchid', code: 409 }
     }
-    const who = order.kind === 'machine' ? '农机服务商' : '收款商户'
-    return { ok: false, msg: `${who}尚未配置微信支付子商户号，暂不能发起真实支付`, code: 409 }
+    return {
+      ok: false,
+      msg: `${order.kind === 'machine' ? '农机服务商' : '收款商户'}尚未配置微信支付子商户号，暂不能发起真实支付`,
+      code: 409
+    }
   }
   return { ok: true }
 }
 
 function shouldUseProfitSharing(order) {
-  if (!order || !['supply', 'machine'].includes(order.kind)) return false
-  if (order.isSelfOperated) return false
+  if (!order || !['supply', 'machine'].includes(order.kind) || order.isSelfOperated) return false
   if (String(process.env.WECHAT_PAY_PROFIT_SHARING_ENABLED || 'true') === 'false') return false
   return profitSharing.calculateCommissionFen(order.amount, order.commissionRate) > 0
 }
 
 async function loadSupplyOrder(orderId, userId, statuses = ['pending_payment']) {
   const placeholders = statuses.map(() => '?').join(',')
-  const [[order]] = await db.query(
-    `SELECT o.id, o.order_no, o.total, o.status,
+  const [[row]] = await db.query(
+    `SELECT o.id,o.order_no,o.total,o.status,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
-            MIN(i.merchant_id) AS merchant_id,
-            MIN(m.sub_mchid) AS sub_mchid,
+            MIN(i.merchant_id) AS merchant_id,MIN(m.sub_mchid) AS sub_mchid,
             MIN(m.commission_rate) AS commission_rate,
             MAX(CASE WHEN m.wechat_applyment_state='SELF_OPERATED' THEN 1 ELSE 0 END) AS self_operated
-     FROM orders o
-     JOIN order_items i ON i.order_id=o.id
-     JOIN merchants m ON m.id=i.merchant_id
-     WHERE o.id=? AND o.user_id=? AND o.status IN (${placeholders})
-     GROUP BY o.id`,
+       FROM orders o JOIN order_items i ON i.order_id=o.id JOIN merchants m ON m.id=i.merchant_id
+      WHERE o.id=? AND o.user_id=? AND o.status IN (${placeholders}) GROUP BY o.id`,
     [orderId, userId, ...statuses]
   )
-  if (!order) return null
+  return normalizeSupplyOrder(row)
+}
+
+function normalizeSupplyOrder(row) {
+  if (!row) return null
   return {
-    kind: 'supply',
-    id: order.id,
-    orderNo: order.order_no,
-    amount: Number(order.total || 0),
-    status: order.status,
-    merchantCount: Number(order.merchant_count || 0),
-    merchantId: order.merchant_id,
-    subMchid: order.sub_mchid || '',
-    commissionRate: Number(order.commission_rate || 0),
-    isSelfOperated: Number(order.self_operated || 0) === 1
+    kind: 'supply', id: row.id, orderNo: row.order_no, amount: Number(row.total || 0),
+    status: row.status, merchantCount: Number(row.merchant_count || 0), merchantId: row.merchant_id,
+    subMchid: row.sub_mchid || '', commissionRate: Number(row.commission_rate || 0),
+    isSelfOperated: Number(row.self_operated || 0) === 1, paymentStage: 'full'
   }
 }
 
@@ -129,138 +138,180 @@ async function loadAnySupplyOrder(orderId, userId) {
 }
 
 async function loadSupplyOrderForNotify(orderId) {
-  const [[order]] = await db.query(
-    `SELECT o.id, o.order_no, o.total, o.status,
+  const [[row]] = await db.query(
+    `SELECT o.id,o.order_no,o.total,o.status,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
-            MIN(i.merchant_id) AS merchant_id,
-            MIN(m.sub_mchid) AS sub_mchid,
+            MIN(i.merchant_id) AS merchant_id,MIN(m.sub_mchid) AS sub_mchid,
             MIN(m.commission_rate) AS commission_rate,
             MAX(CASE WHEN m.wechat_applyment_state='SELF_OPERATED' THEN 1 ELSE 0 END) AS self_operated
-     FROM orders o
-     JOIN order_items i ON i.order_id=o.id
-     JOIN merchants m ON m.id=i.merchant_id
-     WHERE o.id=?
-     GROUP BY o.id`,
-    [orderId]
+       FROM orders o JOIN order_items i ON i.order_id=o.id JOIN merchants m ON m.id=i.merchant_id
+      WHERE o.id=? GROUP BY o.id`, [orderId]
   )
-  if (!order) return null
+  return normalizeSupplyOrder(row)
+}
+
+async function loadMachineRow(orderId, userId = null) {
+  const params = [orderId]
+  let ownerSql = ''
+  if (userId !== null) {
+    ownerSql = ' AND mo.farmer_id=?'
+    params.push(userId)
+  }
+  const [[row]] = await db.query(
+    `SELECT mo.id,mo.order_no,mo.machine_name,mo.total_price,mo.deposit,mo.operator_id,
+            mo.status,mo.pay_mode,mo.pay_status,mo.paid_amount,
+            mo.deposit_status,mo.balance_status,mo.deposit_paid_amount,mo.balance_paid_amount,
+            mo.deposit_transaction_id,mo.balance_transaction_id,
+            op.sub_mchid,op.commission_rate
+       FROM machine_orders mo JOIN operators op ON op.id=mo.operator_id
+      WHERE mo.id=?${ownerSql}`, params
+  )
+  return row || null
+}
+
+function normalizeMachineOrder(row, requestedStage) {
+  if (!row) return null
+  const fallback = row.pay_status === 'partial' ? 'balance' : (row.pay_mode === 'full' ? 'full' : 'deposit')
+  const paymentStage = normalizeMachineStage(requestedStage, fallback)
+  const total = Number(row.total_price || 0)
+  const deposit = Number(row.deposit || 0)
+  const depositPaid = Number(row.deposit_paid_amount || 0)
+  const amount = paymentStage === 'deposit'
+    ? deposit
+    : paymentStage === 'balance' ? Math.max(0, +(total - depositPaid).toFixed(2)) : total
   return {
-    kind: 'supply',
-    id: order.id,
-    orderNo: order.order_no,
-    amount: Number(order.total || 0),
-    status: order.status,
-    merchantCount: Number(order.merchant_count || 0),
-    merchantId: order.merchant_id,
-    subMchid: order.sub_mchid || '',
-    commissionRate: Number(order.commission_rate || 0),
-    isSelfOperated: Number(order.self_operated || 0) === 1
+    kind: 'machine', id: row.id, orderNo: row.order_no, name: row.machine_name,
+    amount, total, deposit, status: row.pay_status, workStatus: row.status,
+    paymentStage, payMode: row.pay_mode, depositStatus: row.deposit_status,
+    balanceStatus: row.balance_status, paidAmount: Number(row.paid_amount || 0),
+    subMchid: row.sub_mchid || '', operatorId: row.operator_id,
+    commissionRate: Number(row.commission_rate || 0), isSelfOperated: false
   }
 }
 
-async function loadMachineOrder(orderId, userId, statuses = ['unpaid']) {
-  const placeholders = statuses.map(() => '?').join(',')
-  const [[order]] = await db.query(
-    `SELECT mo.id, mo.order_no, mo.machine_name, mo.total_price, mo.deposit, mo.operator_id,
-            mo.pay_mode, mo.pay_status, op.sub_mchid, op.commission_rate
-     FROM machine_orders mo
-     JOIN operators op ON op.id=mo.operator_id
-     WHERE mo.id=? AND mo.farmer_id=? AND mo.pay_status IN (${placeholders})`,
-    [orderId, userId, ...statuses]
-  )
-  if (!order) return null
-  const amount = order.pay_mode === 'full' ? Number(order.total_price || 0) : Number(order.deposit || 0)
-  return {
-    kind: 'machine',
-    id: order.id,
-    orderNo: order.order_no,
-    name: order.machine_name,
-    amount,
-    status: order.pay_status,
-    subMchid: order.sub_mchid || '',
-    operatorId: order.operator_id,
-    commissionRate: Number(order.commission_rate || 0),
-    isSelfOperated: false
+function validateMachineStage(order) {
+  if (!order) return { ok: false, msg: '农机订单不存在或无权访问', code: 404 }
+  if (order.paymentStage === 'balance') {
+    if (order.depositStatus !== 'paid' || order.status !== 'partial') {
+      return { ok: false, msg: '该订单没有待支付的尾款', code: 409 }
+    }
+    if (order.workStatus !== 'completed') {
+      return { ok: false, msg: '作业完成后才能支付尾款', code: 409 }
+    }
+    if (order.balanceStatus === 'paid') return { ok: false, msg: '尾款已支付', code: 409 }
+  } else if (order.status !== 'unpaid') {
+    return { ok: false, msg: '首笔款项已支付，不能重复付款', code: 409 }
   }
+  if (order.amount <= 0) return { ok: false, msg: '订单金额异常', code: 409 }
+  return { ok: true }
 }
 
-async function loadAnyMachineOrder(orderId, userId) {
-  return loadMachineOrder(orderId, userId, ['unpaid', 'paid'])
+async function loadMachineOrder(orderId, userId, stage) {
+  return normalizeMachineOrder(await loadMachineRow(orderId, userId), stage)
 }
 
-async function loadMachineOrderForNotify(orderId) {
-  const [[order]] = await db.query(
-    `SELECT mo.id, mo.order_no, mo.machine_name, mo.total_price, mo.deposit,
-            mo.pay_mode, mo.pay_status, mo.operator_id, op.sub_mchid, op.commission_rate
-     FROM machine_orders mo
-     JOIN operators op ON op.id=mo.operator_id
-     WHERE mo.id=?`,
-    [orderId]
-  )
-  if (!order) return null
-  const amount = order.pay_mode === 'full' ? Number(order.total_price || 0) : Number(order.deposit || 0)
-  return {
-    kind: 'machine',
-    id: order.id,
-    orderNo: order.order_no,
-    name: order.machine_name,
-    amount,
-    status: order.pay_status,
-    subMchid: order.sub_mchid || '',
-    operatorId: order.operator_id,
-    commissionRate: Number(order.commission_rate || 0),
-    isSelfOperated: false
-  }
+async function loadMachineOrderForNotify(orderId, stage) {
+  return normalizeMachineOrder(await loadMachineRow(orderId), stage)
 }
 
-async function markPaid(type, orderId, userId, transaction = null, amount = 0) {
-  if (type === 'machine') {
-    const [r] = await db.query(
-      `UPDATE machine_orders SET pay_status='paid', paid_amount=?, transaction_id=?,
-       paid_at=NOW(), fund_status='frozen'
-       WHERE id=? AND farmer_id=? AND pay_status='unpaid'`,
-      [Number(amount || 0), transaction?.transaction_id || '', orderId, userId]
+async function markMachinePaid(order, userId, transaction) {
+  const transactionId = transaction && transaction.transaction_id || ''
+  if (order.paymentStage === 'deposit') {
+    const [result] = await db.query(
+      `UPDATE machine_orders SET pay_mode='deposit',pay_status='partial',deposit_status='paid',
+              balance_status='unpaid',deposit_paid_amount=?,paid_amount=?,transaction_id=?,
+              deposit_transaction_id=?,paid_at=NOW(),deposit_paid_at=NOW(),fund_status='frozen'
+        WHERE id=? AND farmer_id=? AND pay_status='unpaid'`,
+      [order.amount, order.amount, transactionId, transactionId, order.id, userId]
     )
-    return r.affectedRows > 0
+    return result.affectedRows > 0
   }
+  if (order.paymentStage === 'balance') {
+    const [result] = await db.query(
+      `UPDATE machine_orders SET pay_status='paid',balance_status='paid',balance_paid_amount=?,
+              paid_amount=deposit_paid_amount+?,balance_transaction_id=?,balance_paid_at=NOW(),fund_status='frozen'
+        WHERE id=? AND farmer_id=? AND pay_status='partial' AND deposit_status='paid' AND balance_status!='paid'`,
+      [order.amount, order.amount, transactionId, order.id, userId]
+    )
+    return result.affectedRows > 0
+  }
+  const [result] = await db.query(
+    `UPDATE machine_orders SET pay_mode='full',pay_status='paid',deposit_status='skipped',
+            balance_status='paid',balance_paid_amount=?,paid_amount=?,transaction_id=?,
+            balance_transaction_id=?,paid_at=NOW(),balance_paid_at=NOW(),fund_status='frozen'
+      WHERE id=? AND farmer_id=? AND pay_status='unpaid'`,
+    [order.amount, order.amount, transactionId, transactionId, order.id, userId]
+  )
+  return result.affectedRows > 0
+}
 
-  const [r] = await db.query(
-    "UPDATE orders SET status='pending_ship', pay_expires_at=NULL WHERE id=? AND user_id=? AND status='pending_payment'",
+async function markMachinePaidByNotify(order, transaction) {
+  const transactionId = transaction.transaction_id || ''
+  if (order.paymentStage === 'deposit') {
+    await db.query(
+      `UPDATE machine_orders SET pay_mode='deposit',pay_status='partial',deposit_status='paid',
+              balance_status='unpaid',deposit_paid_amount=?,paid_amount=?,transaction_id=?,
+              deposit_transaction_id=?,paid_at=NOW(),deposit_paid_at=NOW(),fund_status='frozen'
+        WHERE id=? AND pay_status='unpaid'`,
+      [order.amount, order.amount, transactionId, transactionId, order.id]
+    )
+  } else if (order.paymentStage === 'balance') {
+    await db.query(
+      `UPDATE machine_orders SET pay_status='paid',balance_status='paid',balance_paid_amount=?,
+              paid_amount=deposit_paid_amount+?,balance_transaction_id=?,balance_paid_at=NOW(),fund_status='frozen'
+        WHERE id=? AND pay_status='partial' AND deposit_status='paid' AND balance_status!='paid'`,
+      [order.amount, order.amount, transactionId, order.id]
+    )
+  } else {
+    await db.query(
+      `UPDATE machine_orders SET pay_mode='full',pay_status='paid',deposit_status='skipped',
+              balance_status='paid',balance_paid_amount=?,paid_amount=?,transaction_id=?,
+              balance_transaction_id=?,paid_at=NOW(),balance_paid_at=NOW(),fund_status='frozen'
+        WHERE id=? AND pay_status='unpaid'`,
+      [order.amount, order.amount, transactionId, transactionId, order.id]
+    )
+  }
+}
+
+async function markSupplyPaid(orderId, userId) {
+  const [result] = await db.query(
+    "UPDATE orders SET status='pending_ship',pay_expires_at=NULL WHERE id=? AND user_id=? AND status='pending_payment'",
     [orderId, userId]
   )
-  if (r.affectedRows > 0) {
+  if (result.affectedRows > 0) {
     const [[order]] = await db.query('SELECT order_no FROM orders WHERE id=?', [orderId])
     const [items] = await db.query('SELECT merchant_id FROM order_items WHERE order_id=?', [orderId])
-    notifyNewOrder(orderId, order?.order_no || '', items).catch(error => console.error('[notify-order]', error))
+    notifyNewOrder(orderId, order && order.order_no || '', items).catch(error => console.error('[notify-order]', error))
   }
-  return r.affectedRows > 0
+  return result.affectedRows > 0
 }
 
-async function markPaidByNotify(type, orderId, paidFen, transaction) {
+async function markPaidByNotify(type, orderId, paymentStage, paidFen, transaction) {
   const order = type === 'machine'
-    ? await loadMachineOrderForNotify(orderId)
+    ? await loadMachineOrderForNotify(orderId, paymentStage)
     : await loadSupplyOrderForNotify(orderId)
   if (!order) return { ok: false, message: 'order not found' }
-
   const receiver = validateReceiver(order)
   if (!receiver.ok) return { ok: false, message: receiver.msg }
   if (transaction.sub_mchid && transaction.sub_mchid !== order.subMchid) return { ok: false, message: 'sub_mchid mismatch' }
   if (getWechatPayChargeFen(order) !== Number(paidFen)) return { ok: false, message: 'order amount mismatch' }
 
   if (type === 'machine') {
-    if (order.status === 'paid') return { ok: true, order }
-    await db.query(
-      `UPDATE machine_orders SET pay_status='paid',paid_amount=?,transaction_id=?,
-       paid_at=NOW(),fund_status='frozen' WHERE id=? AND pay_status='unpaid'`,
-      [Number(paidFen || 0) / 100, transaction.transaction_id || '', orderId]
-    )
+    const alreadyPaid = order.paymentStage === 'deposit'
+      ? order.depositStatus === 'paid'
+      : order.balanceStatus === 'paid'
+    if (!alreadyPaid) {
+      const valid = validateMachineStage(order)
+      if (!valid.ok) return { ok: false, message: valid.msg }
+      await markMachinePaidByNotify(order, transaction)
+    }
     return { ok: true, order }
   }
 
   if (order.status === 'pending_ship') return { ok: true, order }
   if (order.status !== 'pending_payment') return { ok: false, message: 'supply order status invalid' }
   await db.query(
-    "UPDATE orders SET status='pending_ship', pay_expires_at=NULL WHERE id=? AND status='pending_payment'",
+    "UPDATE orders SET status='pending_ship',pay_expires_at=NULL WHERE id=? AND status='pending_payment'",
     [orderId]
   )
   const [items] = await db.query('SELECT merchant_id FROM order_items WHERE order_id=?', [orderId])
@@ -274,59 +325,60 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
   if (!orderId) return fail(res, '缺少订单编号')
 
   try {
-    if (orderType === 'machine' && ['deposit', 'full'].includes(req.body.payMode)) {
-      await db.query(
-        "UPDATE machine_orders SET pay_mode=? WHERE id=? AND farmer_id=? AND pay_status='unpaid'",
-        [req.body.payMode, orderId, req.user.id]
-      )
+    let paymentStage = 'full'
+    if (orderType === 'machine') {
+      const requested = req.body.paymentStage || req.body.payMode
+      const current = await loadMachineRow(orderId, req.user.id)
+      const fallback = current && current.pay_status === 'partial'
+        ? 'balance'
+        : (req.body.payMode === 'full' ? 'full' : 'deposit')
+      paymentStage = normalizeMachineStage(requested, fallback)
+      if (current && current.pay_status === 'unpaid' && ['deposit', 'full'].includes(paymentStage)) {
+        await db.query('UPDATE machine_orders SET pay_mode=? WHERE id=? AND farmer_id=? AND pay_status=\'unpaid\'',
+          [paymentStage, orderId, req.user.id])
+      }
     }
+
     const [[user]] = await db.query('SELECT openid FROM users WHERE id=?', [req.user.id])
     if (!user || !user.openid) return fail(res, '请先使用微信登录绑定 openid 后再支付', 409)
 
     const order = orderType === 'machine'
-      ? await loadMachineOrder(orderId, req.user.id)
+      ? await loadMachineOrder(orderId, req.user.id, paymentStage)
       : await loadSupplyOrder(orderId, req.user.id)
+    if (orderType === 'machine') {
+      const stageCheck = validateMachineStage(order)
+      if (!stageCheck.ok) return fail(res, stageCheck.msg, stageCheck.code)
+    }
     const receiver = validateReceiver(order)
     if (!receiver.ok) return fail(res, receiver.msg, receiver.code)
-    if (order.amount <= 0) return fail(res, '订单金额异常')
 
     const cfg = wxpay.getServiceProviderConfig()
-    if (!cfg) return fail(res, '微信支付服务商未配置：请配置服务商 AppID、服务商商户号、证书序列号、私钥和支付回调地址', 501)
+    if (!cfg) return fail(res, '微信支付服务商配置不完整', 501)
 
-    const tradeNo = outTradeNo(orderType, order)
-    const prepayPayload = {
+    const chargeFen = getWechatPayChargeFen(order)
+    const prepay = await wxpay.partnerJsapiPrepay({
       cfg,
       openid: user.openid,
       order: {
         description: orderDescription(orderType, order),
-        outTradeNo: tradeNo,
-        amountFen: getWechatPayChargeFen(order),
+        outTradeNo: outTradeNo(orderType, order),
+        amountFen: chargeFen,
+        subMchid: order.subMchid,
+        profitSharing: shouldUseProfitSharing(order),
         attach: {
-          orderType,
-          orderId: order.id,
+          orderType, orderId: order.id, paymentStage: order.paymentStage,
           subMchid: order.subMchid,
           paymentMode: order.isSelfOperated ? 'self_operated' : 'partner',
-          testMode: isWechatPayTestMode() ? 'small_amount' : 'off',
-          expectedPaidFen: getWechatPayChargeFen(order)
+          testMode: isWechatPayTestMode() ? 'small_amount' : 'off', expectedPaidFen: chargeFen
         }
       }
-    }
-    prepayPayload.order.subMchid = order.subMchid
-    prepayPayload.order.profitSharing = shouldUseProfitSharing(order)
-    const prepay = await wxpay.partnerJsapiPrepay(prepayPayload)
+    })
     if (!prepay || !prepay.prepay_id) return fail(res, '微信支付未返回预支付单号', 502)
 
-    const payParams = wxpay.buildRequestPaymentParams({
-      appid: cfg.spAppid,
-      privateKey: cfg.privateKey,
-      prepayId: prepay.prepay_id
-    })
     return ok(res, {
-      orderType,
-      orderId: order.id,
-      payParams,
-      testMode: isWechatPayTestMode() ? 'small_amount' : 'off',
-      chargeFen: getWechatPayChargeFen(order)
+      orderType, orderId: order.id, paymentStage: order.paymentStage,
+      payParams: wxpay.buildRequestPaymentParams({ appid: cfg.spAppid, privateKey: cfg.privateKey, prepayId: prepay.prepay_id }),
+      testMode: isWechatPayTestMode() ? 'small_amount' : 'off', chargeFen
     })
   } catch (error) {
     console.error('[wechat-prepay]', error)
@@ -338,41 +390,48 @@ router.post('/wechat/confirm', farmerAuth, async (req, res) => {
   const orderType = req.body.orderType === 'machine' ? 'machine' : 'supply'
   const orderId = Number(req.body.orderId)
   if (!orderId) return fail(res, '缺少订单编号')
-
   try {
+    const paymentStage = orderType === 'machine'
+      ? normalizeMachineStage(req.body.paymentStage, req.body.payMode === 'full' ? 'full' : 'deposit')
+      : 'full'
     const order = orderType === 'machine'
-      ? await loadAnyMachineOrder(orderId, req.user.id)
+      ? await loadMachineOrder(orderId, req.user.id, paymentStage)
       : await loadAnySupplyOrder(orderId, req.user.id)
     if (!order) return fail(res, '订单不存在或无权访问', 404)
-    if (order.status === 'paid' || order.status === 'pending_ship') return ok(res, null, '支付状态已同步')
+
+    if (orderType === 'machine') {
+      const alreadyPaid = paymentStage === 'deposit' ? order.depositStatus === 'paid' : order.balanceStatus === 'paid'
+      if (alreadyPaid) return ok(res, null, '支付状态已同步')
+      const stageCheck = validateMachineStage(order)
+      if (!stageCheck.ok) return fail(res, stageCheck.msg, stageCheck.code)
+    } else if (order.status === 'pending_ship') {
+      return ok(res, null, '支付状态已同步')
+    }
 
     const receiver = validateReceiver(order)
     if (!receiver.ok) return fail(res, receiver.msg, receiver.code)
-
     const cfg = wxpay.getServiceProviderConfig()
-    if (!cfg) return fail(res, '微信支付服务商未配置：请配置服务商 AppID、服务商商户号、证书序列号、私钥和支付回调地址', 501)
+    if (!cfg) return fail(res, '微信支付服务商配置不完整', 501)
 
     const transaction = await wxpay.queryPartnerTransaction({
-      cfg,
-      outTradeNo: outTradeNo(orderType, order),
-      subMchid: order.subMchid
+      cfg, outTradeNo: outTradeNo(orderType, order), subMchid: order.subMchid
     })
     if (transaction.trade_state !== 'SUCCESS') {
       return fail(res, `微信支付未完成：${transaction.trade_state || 'UNKNOWN'}`, 409)
     }
-    if (transaction.sub_mchid && transaction.sub_mchid !== order.subMchid) return fail(res, '微信支付子商户号与订单不一致', 400)
+    if (transaction.sub_mchid && transaction.sub_mchid !== order.subMchid) return fail(res, '微信支付子商户号与订单不一致')
     const paidFen = transaction.amount && (transaction.amount.payer_total || transaction.amount.total)
-    if (getWechatPayChargeFen(order) !== Number(paidFen)) return fail(res, '微信支付金额与订单金额不一致', 400)
+    if (getWechatPayChargeFen(order) !== Number(paidFen)) return fail(res, '微信支付金额与订单金额不一致')
 
-    const changed = await markPaid(orderType, orderId, req.user.id, transaction, order.amount)
-    if (changed && shouldUseProfitSharing(order)) {
-      try {
-        await profitSharing.savePendingOrder({ order, transaction })
-      } catch (error) {
+    const changed = orderType === 'machine'
+      ? await markMachinePaid(order, req.user.id, transaction)
+      : await markSupplyPaid(orderId, req.user.id)
+    if (!changed) return fail(res, '订单状态已变化，请刷新后重试', 409)
+    if (shouldUseProfitSharing(order)) {
+      try { await profitSharing.savePendingOrder({ order, transaction }) } catch (error) {
         console.error('[profit-sharing-record]', error.message)
       }
     }
-    if (!changed) return fail(res, '订单不存在或已处理', 404)
     return ok(res, null, '支付状态已同步')
   } catch (error) {
     console.error('[wechat-confirm]', error)
@@ -384,25 +443,20 @@ router.post('/wechat/notify', async (req, res) => {
   try {
     const cfg = wxpay.getNotifyConfig()
     if (!cfg) return res.status(500).json({ code: 'FAIL', message: 'wechat pay notify is not configured' })
-
     const rawBody = getRawBody(req)
     if (!rawBody || !wxpay.verifyNotifySignature(req, rawBody, cfg)) {
       return res.status(401).json({ code: 'FAIL', message: 'invalid wechat pay signature' })
     }
-
     const body = JSON.parse(rawBody)
     const transaction = wxpay.decryptNotifyResource(body.resource, cfg.apiV3Key)
     if (transaction.trade_state !== 'SUCCESS') return res.json({ code: 'SUCCESS', message: 'success' })
-
-    const { orderType, orderId } = parseNotifyOrder(transaction)
+    const { orderType, orderId, paymentStage } = parseNotifyOrder(transaction)
     if (!orderId) return res.status(400).json({ code: 'FAIL', message: 'invalid order info' })
     const paidFen = transaction.amount && (transaction.amount.payer_total || transaction.amount.total)
-    const result = await markPaidByNotify(orderType, orderId, paidFen, transaction)
+    const result = await markPaidByNotify(orderType, orderId, paymentStage, paidFen, transaction)
     if (!result.ok) return res.status(400).json({ code: 'FAIL', message: result.message })
     if (result.order && shouldUseProfitSharing(result.order)) {
-      try {
-        await profitSharing.savePendingOrder({ order: result.order, transaction })
-      } catch (error) {
+      try { await profitSharing.savePendingOrder({ order: result.order, transaction }) } catch (error) {
         console.error('[profit-sharing-record]', error.message)
       }
     }
@@ -417,15 +471,12 @@ router.post('/wechat/refund-notify', async (req, res) => {
   try {
     const cfg = wxpay.getNotifyConfig()
     if (!cfg) return res.status(500).json({ code: 'FAIL', message: 'wechat pay notify is not configured' })
-
     const rawBody = getRawBody(req)
     if (!rawBody || !wxpay.verifyNotifySignature(req, rawBody, cfg)) {
       return res.status(401).json({ code: 'FAIL', message: 'invalid wechat pay signature' })
     }
-
     const body = JSON.parse(rawBody)
-    const refund = wxpay.decryptNotifyResource(body.resource, cfg.apiV3Key)
-    await refunds.handleRefundNotify(refund)
+    await refunds.handleRefundNotify(wxpay.decryptNotifyResource(body.resource, cfg.apiV3Key))
     return res.json({ code: 'SUCCESS', message: 'success' })
   } catch (error) {
     console.error('[wechat-refund-notify]', error)

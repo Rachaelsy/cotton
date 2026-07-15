@@ -1,0 +1,21 @@
+<view class="page">
+  <view class="nav" style="padding-top:{{statusBarHeight}}px"><view class="back" bindtap="back">‹</view><text>{{copy.title}}</text><view class="nav-space"></view></view>
+  <scroll-view class="content" scroll-y>
+    <view class="intro"><view class="shield">✓</view><text>{{copy.intro}}</text></view>
+    <view wx:if="{{status === 'loading'}}" class="state">…</view>
+    <view wx:elif="{{status === 'pending'}}" class="state"><view class="state-icon pending">…</view><text class="state-title">{{copy.pending}}</text><text class="state-sub">{{copy.pendingSub}}</text></view>
+    <view wx:elif="{{status === 'approved'}}" class="state"><view class="state-icon approved">✓</view><text class="state-title">{{copy.approved}}</text><text class="state-sub">{{copy.approvedSub}}</text><button class="primary" bindtap="enterPlatform">{{copy.home}}</button></view>
+    <view wx:else>
+      <view wx:if="{{status === 'rejected'}}" class="reject"><text>{{copy.rejected}}</text><text>{{reason}}</text><button bindtap="retry">{{copy.retry}}</button></view>
+      <view class="form-card">
+        <text class="label">{{copy.name}}</text><input value="{{realName}}" data-field="realName" bindinput="onInput" placeholder="{{copy.namePh}}" />
+        <text class="label">{{copy.id}}</text><input value="{{idNumber}}" data-field="idNumber" bindinput="onInput" maxlength="18" placeholder="{{copy.idPh}}" />
+        <view class="photos">
+          <view class="photo" data-side="front" bindtap="chooseImage"><image wx:if="{{frontPath}}" src="{{frontPath}}" mode="aspectFill"/><view wx:else class="photo-empty">+</view><text>{{copy.front}} · {{frontPath ? copy.replace : copy.upload}}</text></view>
+          <view class="photo" data-side="back" bindtap="chooseImage"><image wx:if="{{backPath}}" src="{{backPath}}" mode="aspectFill"/><view wx:else class="photo-empty">+</view><text>{{copy.back}} · {{backPath ? copy.replace : copy.upload}}</text></view>
+        </view>
+        <button class="primary" loading="{{submitting}}" bindtap="submit">{{submitting ? copy.submitting : copy.submit}}</button>
+      </view>
+    </view>
+  </scroll-view>
+</view>

@@ -7,11 +7,11 @@
       <text class="back-icon">‹</text>
     </view>
     <view class="nav-title-wrap">
-      <text class="nav-title">购物车</text>
-      <text class="nav-count" wx:if="{{cartItems.length > 0}}">{{cartItems.length}}件</text>
+      <text class="nav-title">{{copy.title}}</text>
+      <text class="nav-count" wx:if="{{cartItems.length > 0}}">{{cartItems.length}}{{copy.piece}}</text>
     </view>
     <view class="nav-manage" bindtap="onManage" wx:if="{{cartItems.length > 0}}">
-      <text class="manage-text">{{manage ? '完成' : '管理'}}</text>
+      <text class="manage-text">{{manage ? copy.done : copy.manage}}</text>
     </view>
     <view style="width: 80rpx" wx:else></view>
   </view>
@@ -22,9 +22,9 @@
     <!-- 空购物车 -->
     <view wx:if="{{cartItems.length === 0}}" class="empty-cart">
       <text class="empty-icon">🛒</text>
-      <text class="empty-text">购物车是空的</text>
+      <text class="empty-text">{{copy.empty}}</text>
       <view class="go-shopping-btn" bindtap="onGoShopping">
-        <text class="go-shopping-text">去逛逛</text>
+        <text class="go-shopping-text">{{copy.browse}}</text>
       </view>
     </view>
 
@@ -45,7 +45,7 @@
             <text class="chk-mark">✓</text>
           </view>
           <text class="store-name">{{item.store}}</text>
-          <text class="store-cert" wx:if="{{item.verified}}">✓认证</text>
+          <text class="store-cert" wx:if="{{item.verified}}">✓{{copy.verified}}</text>
           <text class="store-disc" wx:if="{{item.discount}}">{{item.discount}}</text>
         </view>
 
@@ -103,27 +103,27 @@
       <view class="chk chk-on">
         <text class="chk-mark">✓</text>
       </view>
-      <text class="select-all-text">全选</text>
+      <text class="select-all-text">{{copy.all}}</text>
     </view>
     <view class="total-wrap">
       <text class="total-price">¥{{cartTotal}}</text>
-      <text class="total-disc">已优惠¥30</text>
+      <text class="total-disc">{{copy.discount}}¥30</text>
     </view>
     <view class="checkout-btn" bindtap="onCheckout">
-      <text class="checkout-text">去结算({{cartCount}})</text>
+      <text class="checkout-text">{{copy.checkout}}({{cartCount}})</text>
     </view>
   </view>
 
   <!-- 底部：管理模式 -->
   <view class="cart-bottom" wx:if="{{manage}}">
     <view class="select-all-btn" bindtap="onSelectAll">
-      <text class="select-all-btn-text">全选/取消</text>
+      <text class="select-all-btn-text">{{copy.toggleAll}}</text>
     </view>
     <view
       class="delete-btn {{selectedIds.length === 0 ? 'delete-btn-off' : ''}}"
       bindtap="onDeleteSelected"
     >
-      <text class="delete-btn-text">🗑 删除{{selectedIds.length > 0 ? ' ' + selectedIds.length + '件' : ''}}</text>
+      <text class="delete-btn-text">🗑 {{copy.delete}}{{selectedIds.length > 0 ? ' ' + selectedIds.length + copy.piece : ''}}</text>
     </view>
   </view>
 

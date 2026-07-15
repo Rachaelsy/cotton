@@ -146,6 +146,8 @@ async function verify() {
     const res = await request('GET', '/api/auth/verify')
     if (res.code === 200) {
       saveUser(res.data)
+      const app = typeof getApp === 'function' ? getApp() : null
+      if (app && app.globalData) app.globalData.user = res.data
       return true
     }
     clearToken()

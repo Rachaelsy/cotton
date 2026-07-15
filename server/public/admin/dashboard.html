@@ -198,6 +198,10 @@
     <div class="nav-item" data-panel="farmers" onclick="switchPanel(this)">
       <span class="nav-icon">👨‍🌾</span> 农户管理
     </div>
+    <div class="nav-item" data-panel="verifications" onclick="switchPanel(this)">
+      <span class="nav-icon">✓</span> 实名审核
+      <span class="nav-badge" id="verificationBadge" style="display:none">0</span>
+    </div>
     <div class="nav-item" data-panel="merchants" onclick="switchPanel(this)">
       <span class="nav-icon">🏪</span> 商户管理
     </div>
@@ -329,6 +333,14 @@
           <thead><tr><th>公告标题</th><th>内容摘要</th><th>发布时间</th><th>操作</th></tr></thead>
           <tbody id="announce-table"><tr class="empty-row"><td colspan="4">加载中...</td></tr></tbody>
         </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-verifications">
+      <div class="table-wrap">
+        <div class="table-head"><span class="table-title">农户实名认证申请</span><span class="badge badge-warn" id="verification-count">0 条待审核</span></div>
+        <table><thead><tr><th>农户</th><th>姓名</th><th>证件号</th><th>证件图片</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="verificationTable"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody></table>
       </div>
     </div>
 
@@ -760,7 +772,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', verifications: '实名审核', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -776,6 +788,7 @@
     else if (panel === 'applications') loadApplications()
     else if (panel === 'operatorApps') loadOperatorApps()
     else if (panel === 'farmers')     loadFarmers()
+    else if (panel === 'verifications') loadVerifications()
     else if (panel === 'merchants')   loadMerchants()
     else if (panel === 'products')    loadProducts()
     else if (panel === 'orders')      loadAdminOrders()
@@ -935,6 +948,45 @@
     document.getElementById('approveConfirmBtn').onclick = submitApproval
     document.getElementById('rejectBtn').textContent = '拒绝入驻'
     document.getElementById('modalApprove').classList.add('show')
+  }
+
+  // ── 农户实名认证 ────────────────────────────
+  async function loadVerifications() {
+    const r = await api('GET', '/farmer-verifications')
+    if (!r || r.code !== 200) return
+    const pending = r.data.filter(item => item.status === 'pending').length
+    document.getElementById('verification-count').textContent = pending + ' 条待审核'
+    const badge = document.getElementById('verificationBadge')
+    badge.style.display = pending ? '' : 'none'
+    badge.textContent = pending
+    const labels = { pending: '待审核', approved: '已通过', rejected: '已拒绝' }
+    document.getElementById('verificationTable').innerHTML = r.data.length ? r.data.map(item => `
+      <tr>
+        <td>${item.phone}</td><td>${esc(item.real_name || '')}</td><td>${esc(item.id_number_mask || '')}</td>
+        <td><button class="act-btn edit" onclick="viewVerificationImage(${item.id},'front')">人像面</button><button class="act-btn edit" onclick="viewVerificationImage(${item.id},'back')">国徽面</button></td>
+        <td>${fmt(item.created_at)}</td><td class="status-${item.status}">${labels[item.status] || item.status}</td>
+        <td>${item.status === 'pending' ? `<button class="act-btn approve" onclick="reviewVerification(${item.id},'approve')">通过</button><button class="act-btn reject" onclick="reviewVerification(${item.id},'reject')">拒绝</button>` : esc(item.reject_reason || '—')}</td>
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="7">暂无实名认证申请</td></tr>'
+  }
+
+  async function viewVerificationImage(id, side) {
+    const response = await fetch(`/api/admin/farmer-verifications/${id}/file/${side}`, {
+      headers: { Authorization: 'Bearer ' + TOKEN }
+    })
+    if (!response.ok) return alert('证件图片加载失败')
+    const url = URL.createObjectURL(await response.blob())
+    const win = window.open(url, '_blank')
+    if (!win) alert('浏览器阻止了新窗口，请允许弹窗后重试')
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
+  }
+
+  async function reviewVerification(id, action) {
+    const reason = action === 'reject' ? (prompt('请输入拒绝原因：') || '').trim() : ''
+    if (action === 'reject' && !reason) return
+    if (!confirm(action === 'approve' ? '确认身份证信息与照片一致并通过审核？' : '确认拒绝该实名认证？')) return
+    const r = await api('PATCH', `/farmer-verifications/${id}/review`, { action, reason })
+    if (r && r.code === 200) { alert(r.msg); loadVerifications() }
+    else alert(r && r.msg || '审核失败')
   }
 
   // ── 农户 ────────────────────────────────────

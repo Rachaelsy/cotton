@@ -2,13 +2,27 @@
 const app = getApp()
 const layout = require('../../utils/layout')
 const { PRODUCTS, CATS } = require('../../utils/data')
+const i18n = require('../../utils/i18n')
+
+const COPY = {
+  zh: { title:'农资供应',search:'搜索农药、化肥、种子…',spring:'春耕特惠',seedFert:'种子化肥',discount:'全场8折起',quality:'质量保证',certified:'认证农资',compensation:'假一赔十',popular:'棉农都在买',more:'更多 ›',new:'新品',hot:'热销',out:'超出配送范围',merchant:'认证商家',notFound:'未找到相关商品',empty:'该分类暂无商品',genuine:'正品保证',genuineDesc:'所有商品均来自认证农资企业，假一赔十',return7:'7天退换',returnDesc:'收货后7天内可按规则申请退换',transport:'运输保障',transportDesc:'运输途中损坏，可凭照片申请售后',compliance:'合规认证',complianceDesc:'农药、化肥等应持有合法登记证书',know:'我知道了' },
+  ug: { title:'دېھقانچىلىق ماتېرىياللىرى',search:'دورا، ئوغۇت، ئۇرۇق ئىزدەش…',spring:'ئەتىيازلىق ئېتىبار',seedFert:'ئۇرۇق ۋە ئوغۇت',discount:'%20 تىن باشلانغان ئېتىبار',quality:'سۈپەت كاپالىتى',certified:'تەستىقلانغان ماتېرىيال',compensation:'ساختا بولسا تۆلەم',popular:'دېھقانلار سېتىۋاتىدۇ',more:'تېخىمۇ كۆپ ›',new:'يېڭى',hot:'قىزىق',out:'يەتكۈزۈش دائىرىسىدىن سىرت',merchant:'تەستىقلانغان سودىگەر',notFound:'ماس مەھسۇلات تېپىلمىدى',empty:'بۇ تۈردە مەھسۇلات يوق',genuine:'ھەقىقىي مەھسۇلات كاپالىتى',genuineDesc:'مەھسۇلاتلار تەستىقلانغان كارخانىلاردىن تەمىنلىنىدۇ',return7:'7 كۈن ئىچىدە قايتۇرۇش',returnDesc:'تاپشۇرۇۋالغاندىن كېيىن قائىدە بويىچە قايتۇرۇشقا بولىدۇ',transport:'توشۇش كاپالىتى',transportDesc:'توشۇشتا بۇزۇلسا رەسىم بىلەن بىر تەرەپ قىلىشنى ئىلتىماس قىلىڭ',compliance:'قانۇنلۇق تەستىق',complianceDesc:'دورا ۋە ئوغۇتنىڭ قانۇنلۇق تىزىملاش ئىسپاتى بولۇشى كېرەك',know:'بىلدىم' }
+}
+
+const CAT_UG = { '全部':'ھەممىسى','农药':'دورا','化肥':'ئوغۇت','种子':'ئۇرۇق','农膜':'يېپىش پەردىسى','农具':'دېھقانچىلىق قورالى','其他':'باشقا' }
+
+function displayCats(lang) {
+  return CATS.map(item => ({ ...item, label: lang === 'ug' ? (CAT_UG[item.name] || item.name) : item.name }))
+}
 
 Page({
   data: {
     statusBarHeight: 20,
+    lang: i18n.getLanguage(),
+    copy: COPY[i18n.getLanguage()],
     capsuleSafeRight: 0,
     products: [],
-    cats: CATS,
+    cats: displayCats(i18n.getLanguage()),
     catSel: '全部',
     searchKeyword: '',
     displayProds: [],
@@ -28,7 +42,8 @@ Page({
   },
 
   onShow() {
-    this.setData({ cartCount: app.globalData.cartCount })
+    const lang = i18n.getLanguage()
+    this.setData({ cartCount: app.globalData.cartCount, lang, copy: COPY[lang], cats: displayCats(lang) })
   },
 
   // 加载商品数据（优先后端 API，兜底本地数据）
@@ -52,7 +67,7 @@ Page({
           isNew:     false,
           sold:      parseInt(p.sold) || 0,
           rating:    5.0,
-          store:           p.company_name || '认证商家',
+          store:           p.company_name || this.data.copy.merchant,
           cat:             p.category || '其他',
           merchant_wechat: p.merchant_wechat || '',
           outOfRange:      !!p.out_of_range,

@@ -359,6 +359,12 @@
 .wx-alert-banner.safe {
   background: linear-gradient(135deg, #2D8B57, #42B87B);
 }
+.wx-alert-banner.warning-unavailable { background: #FFF7E5; border-color: #E9C777; }
+.climate-grid { display: flex; gap: 12rpx; padding: 8rpx 20rpx 18rpx; }
+.climate-item { flex: 1; min-width: 0; padding: 20rpx 8rpx; background: #F6F8F3; border-radius: 12rpx; text-align: center; }
+.climate-value { display: block; font-size: 30rpx; font-weight: 800; color: #1F6F63; }
+.climate-label { display: block; margin-top: 6rpx; font-size: 20rpx; color: #7C887E; }
+.climate-note { display: block; padding: 0 22rpx 22rpx; font-size: 21rpx; line-height: 1.55; color: #8A7660; }
 
 .wa-icon {
   font-size: 48rpx;

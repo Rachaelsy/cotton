@@ -26,13 +26,13 @@
       <view class="price-row">
         <text class="price-symbol">¥</text>
         <text class="price-main">{{product.price}}</text>
-        <text class="price-unit"> / {{product.unit || '件'}}</text>
+        <text class="price-unit"> / {{product.unit || copy.piece}}</text>
       </view>
       <text class="prod-name">{{product.name}}</text>
       <view class="stats-row">
-        <text class="stat-item">月销 <text class="stat-bold">{{product.sold}}</text></text>
-        <text class="stat-item">⭐ <text class="stat-bold">{{product.rating || 5.0}}分</text></text>
-        <text class="stat-item">⚡ <text class="stat-bold">48h发货</text></text>
+        <text class="stat-item">{{copy.monthly}} <text class="stat-bold">{{product.sold}}</text></text>
+        <text class="stat-item">⭐ <text class="stat-bold">{{product.rating || 5.0}}{{copy.score}}</text></text>
+        <text class="stat-item">⚡ <text class="stat-bold">{{copy.ship48}}</text></text>
       </view>
     </view>
 
@@ -44,26 +44,26 @@
     <!-- ④ 送至地址 -->
     <view class="delivery-card">
       <view class="delivery-row">
-        <text class="dlv-label">送至</text>
-        <text class="dlv-addr">新疆喀什地区疏附县</text>
+        <text class="dlv-label">{{copy.deliverTo}}</text>
+        <text class="dlv-addr">{{copy.address}}</text>
         <view class="dlv-right">
-          <text class="dlv-way">快递 ¥0</text>
+          <text class="dlv-way">{{copy.express}}</text>
           <text class="dlv-arrow">›</text>
         </view>
       </view>
       <view class="delivery-line"></view>
       <view class="delivery-row">
-        <text class="dlv-label">服务</text>
+        <text class="dlv-label">{{copy.service}}</text>
         <view class="dlv-tags">
-          <text class="dlv-tag">7天退换</text>
-          <text class="dlv-tag">假一赔十</text>
-          <text class="dlv-tag">正品保证</text>
+          <text class="dlv-tag">{{copy.return7}}</text>
+          <text class="dlv-tag">{{copy.tenfold}}</text>
+          <text class="dlv-tag">{{copy.genuine}}</text>
         </view>
       </view>
       <view class="delivery-line"></view>
       <view class="delivery-row" bindtap="onGoStore">
-        <text class="dlv-label">店铺</text>
-        <text class="dlv-store-name">{{product.store || '认证商家'}}</text>
+        <text class="dlv-label">{{copy.store}}</text>
+        <text class="dlv-store-name">{{product.store || copy.verifiedMerchant}}</text>
         <text class="dlv-arrow">›</text>
       </view>
     </view>
@@ -71,8 +71,8 @@
     <!-- ⑤ 买家评价 -->
     <view class="section">
       <view class="section-head">
-        <text class="section-title">买家评价</text>
-        <text wx:if="{{reviewTotal > 0}}" class="section-more" bindtap="onShowReviews">全部{{reviewTotal}}条 ›</text>
+        <text class="section-title">{{copy.reviews}}</text>
+        <text wx:if="{{reviewTotal > 0}}" class="section-more" bindtap="onShowReviews">{{copy.all}}{{reviewTotal}}{{copy.reviewUnit}} ›</text>
       </view>
 
       <!-- 有评价 -->
@@ -82,12 +82,12 @@
           <view class="review-stars">
             <text class="star">★</text><text class="star">★</text><text class="star">★</text><text class="star">★</text><text class="star">★</text>
           </view>
-          <text class="review-pct">共 {{reviewTotal}} 条评价</text>
+          <text class="review-pct">{{copy.reviewCount}} {{reviewTotal}} {{copy.reviewUnit}}</text>
         </view>
         <view wx:for="{{reviews}}" wx:key="id">
           <view class="review-item">
             <view class="review-top">
-              <text class="reviewer-avatar">{{item.farmer_name.slice(0,1) || '买'}}</text>
+              <text class="reviewer-avatar">{{item.farmer_name.slice(0,1) || copy.buyerMark}}</text>
               <view class="reviewer-info">
                 <text class="reviewer-name">{{item.farmer_name.length > 1 ? item.farmer_name.slice(0,1) + '**' + item.farmer_name.slice(-1) : item.farmer_name + '**'}}</text>
                 <text class="review-stars-row">{{item.rating >= 1 ? '★' : '☆'}}{{item.rating >= 2 ? '★' : '☆'}}{{item.rating >= 3 ? '★' : '☆'}}{{item.rating >= 4 ? '★' : '☆'}}{{item.rating >= 5 ? '★' : '☆'}}</text>
@@ -95,9 +95,9 @@
               <text class="review-date">{{item.month}}</text>
             </view>
             <text wx:if="{{item.content}}" class="review-content">{{item.content}}</text>
-            <text wx:else class="review-content review-no-content">该用户没有填写评价</text>
+            <text wx:else class="review-content review-no-content">{{copy.noReviewText}}</text>
             <view wx:if="{{item.reply}}" class="review-reply">
-              <text class="review-reply-text">🏪 商家回复：{{item.reply}}</text>
+              <text class="review-reply-text">🏪 {{copy.reply}}{{item.reply}}</text>
             </view>
           </view>
           <view wx:if="{{index < reviews.length - 1}}" class="review-divider"></view>
@@ -106,28 +106,28 @@
 
       <!-- 暂无评价 -->
       <view wx:elif="{{reviewsLoaded}}" class="review-empty">
-        <text class="review-empty-text">暂无评价，快来抢首评吧～</text>
+        <text class="review-empty-text">{{copy.noReviews}}</text>
       </view>
     </view>
 
     <!-- ⑥ 商品介绍（规格 + 详情文字） -->
     <view class="section">
-      <text class="section-title">商品介绍</text>
+      <text class="section-title">{{copy.intro}}</text>
       <view class="spec-row">
-        <text class="spec-label">规格</text>
+        <text class="spec-label">{{copy.spec}}</text>
         <text class="spec-val">{{product.spec || product.unit || '—'}}</text>
       </view>
       <view class="spec-row">
-        <text class="spec-label">分类</text>
+        <text class="spec-label">{{copy.category}}</text>
         <text class="spec-val">{{product.cat || product.category || '—'}}</text>
       </view>
       <view class="spec-row">
-        <text class="spec-label">单位</text>
+        <text class="spec-label">{{copy.unit}}</text>
         <text class="spec-val">{{product.unit || '—'}}</text>
       </view>
       <view class="spec-row">
-        <text class="spec-label">库存</text>
-        <text class="spec-val">{{product.stock || 0}} {{product.unit || '件'}}</text>
+        <text class="spec-label">{{copy.stock}}</text>
+        <text class="spec-val">{{product.stock || 0}} {{product.unit || copy.piece}}</text>
       </view>
       <view wx:if="{{product.detail}}" class="desc-block">
         <view class="desc-divider"></view>
@@ -136,7 +136,7 @@
       <view wx:else class="desc-placeholder">
         <text class="desc-placeholder-icon">{{product.icon || '📦'}}</text>
         <text class="desc-placeholder-name">{{product.name}}</text>
-        <text class="desc-placeholder-sub">正品直供 · 品质保证</text>
+        <text class="desc-placeholder-sub">{{copy.direct}}</text>
       </view>
     </view>
 
@@ -147,26 +147,26 @@
   <view class="action-bar">
     <view class="action-icon" bindtap="onGoStore">
       <text class="ai-icon">🏪</text>
-      <text class="ai-label">店铺</text>
+      <text class="ai-label">{{copy.store}}</text>
     </view>
     <view class="action-icon" bindtap="onCustomerService">
       <text class="ai-icon">💬</text>
-      <text class="ai-label">客服</text>
+      <text class="ai-label">{{copy.customerService}}</text>
     </view>
     <view class="action-icon" bindtap="onQualityGuarantee">
       <text class="ai-icon">🛡</text>
-      <text class="ai-label">质量保证</text>
+      <text class="ai-label">{{copy.quality}}</text>
     </view>
     <view class="action-icon" bindtap="onFavorite">
       <text class="ai-icon {{favorited ? 'icon-fav' : ''}}">{{favorited ? '♥' : '♡'}}</text>
-      <text class="ai-label">收藏</text>
+      <text class="ai-label">{{copy.favorite}}</text>
     </view>
     <view class="action-divider"></view>
     <view class="btn-cart" bindtap="onAddToCart">
-      <text class="btn-text">加入购物车</text>
+      <text class="btn-text">{{copy.addCart}}</text>
     </view>
     <view class="btn-buy" bindtap="onBuyNow">
-      <text class="btn-text">购买</text>
+      <text class="btn-text">{{copy.buy}}</text>
     </view>
   </view>
 
@@ -174,15 +174,15 @@
   <view wx:if="{{showQualityPopup}}" class="cs-overlay" bindtap="onCloseQualityPopup">
     <view class="cs-popup" catchtap="">
       <view class="cs-header">
-        <text class="cs-title">质量保证</text>
+        <text class="cs-title">{{copy.quality}}</text>
         <view class="cs-close" bindtap="onCloseQualityPopup"><text class="cs-close-icon">✕</text></view>
       </view>
-      <view class="quality-item"><text class="quality-icon">✅</text><view><text class="quality-title">正品保证</text><text class="quality-desc">所有商品均来自认证农资企业，假一赔十</text></view></view>
-      <view class="quality-item"><text class="quality-icon">🔄</text><view><text class="quality-title">7天退换</text><text class="quality-desc">收货后7天内，商品无质量问题可申请退换</text></view></view>
-      <view class="quality-item"><text class="quality-icon">🚚</text><view><text class="quality-title">运输保障</text><text class="quality-desc">运输途中损坏，凭照片全额赔偿</text></view></view>
-      <view class="quality-item"><text class="quality-icon">📋</text><view><text class="quality-title">合规认证</text><text class="quality-desc">农药、化肥等均持有合法登记证书</text></view></view>
+      <view class="quality-item"><text class="quality-icon">✅</text><view><text class="quality-title">{{copy.genuine}}</text><text class="quality-desc">{{copy.genuineDesc}}</text></view></view>
+      <view class="quality-item"><text class="quality-icon">🔄</text><view><text class="quality-title">{{copy.return7}}</text><text class="quality-desc">{{copy.returnDesc}}</text></view></view>
+      <view class="quality-item"><text class="quality-icon">🚚</text><view><text class="quality-title">{{copy.transport}}</text><text class="quality-desc">{{copy.transportDesc}}</text></view></view>
+      <view class="quality-item"><text class="quality-icon">📋</text><view><text class="quality-title">{{copy.compliance}}</text><text class="quality-desc">{{copy.complianceDesc}}</text></view></view>
       <view class="cs-copy-btn" bindtap="onCloseQualityPopup">
-        <text class="cs-copy-text">我知道了</text>
+        <text class="cs-copy-text">{{copy.know}}</text>
       </view>
     </view>
   </view>
@@ -191,24 +191,24 @@
   <view wx:if="{{showCsPopup}}" class="cs-overlay" bindtap="onCloseCsPopup">
     <view class="cs-popup" catchtap="">
       <view class="cs-header">
-        <text class="cs-title">联系客服</text>
+        <text class="cs-title">{{copy.contact}}</text>
         <view class="cs-close" bindtap="onCloseCsPopup"><text class="cs-close-icon">✕</text></view>
       </view>
       <view class="cs-avatar-row">
         <view class="cs-avatar"><text class="cs-avatar-icon">🏪</text></view>
         <view class="cs-store-info">
-          <text class="cs-store-name">{{product.store || '认证商家'}}</text>
-          <text class="cs-store-sub">微信扫码或搜索添加客服</text>
+          <text class="cs-store-name">{{product.store || copy.verifiedMerchant}}</text>
+          <text class="cs-store-sub">{{copy.contactSub}}</text>
         </view>
       </view>
       <view class="cs-wechat-card">
-        <text class="cs-wechat-label">客服微信号</text>
+        <text class="cs-wechat-label">{{copy.wechat}}</text>
         <text class="cs-wechat-id">{{product.merchant_wechat}}</text>
       </view>
       <view class="cs-copy-btn" bindtap="onCopyWechat">
-        <text class="cs-copy-text">复制微信号</text>
+        <text class="cs-copy-text">{{copy.copyWechat}}</text>
       </view>
-      <text class="cs-tip">复制后打开微信 → 搜一搜 → 粘贴即可添加</text>
+      <text class="cs-tip">{{copy.copyTip}}</text>
     </view>
   </view>
 
@@ -216,5 +216,5 @@
 
 <!-- 商品不存在时 -->
 <view wx:else class="not-found">
-  <text class="not-found-text">商品加载中...</text>
+  <text class="not-found-text">{{copy.loading}}</text>
 </view>

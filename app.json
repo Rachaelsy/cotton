@@ -10,6 +10,8 @@
     "pages/ai/index",
     "pages/my/index",
     "pages/profile/index",
+    "pages/verification/index",
+    "pages/onboarding/index",
     "pages/favorites/index",
     "pages/fields/index",
     "pages/fields/draw",

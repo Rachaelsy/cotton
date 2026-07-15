@@ -1,16 +1,20 @@
 // pages/machine/review.js — 农机服务评价（分项）
 const auth = require('../../utils/auth')
+const i18n = require('../../utils/i18n')
+const machineI18n = require('../../utils/machine-i18n')
+
+function dimensions(lang) {
+  const labels = lang === 'ug' ? ['ۋاقىتچانلىقى', 'ئىش سۈپىتى', 'مۇلازىمەت مۇئامىلىسى', 'باھا مۇۋاپىقلىقى'] : ['及时性', '作业质量', '服务态度', '价格合理']
+  return ['score_timely', 'score_quality', 'score_attitude', 'score_price'].map((key, index) => ({ key, label: labels[index], score: 5 }))
+}
 
 Page({
   data: {
     statusBarHeight: 20,
+    lang: i18n.getLanguage(),
+    copy: machineI18n.getCopy('review'),
     orderId: null,
-    dims: [
-      { key: 'score_timely',   label: '及时性',   score: 5 },
-      { key: 'score_quality',  label: '作业质量', score: 5 },
-      { key: 'score_attitude', label: '服务态度', score: 5 },
-      { key: 'score_price',    label: '价格合理', score: 5 }
-    ],
+    dims: dimensions(i18n.getLanguage()),
     stars: [1, 2, 3, 4, 5],
     content: '',
     submitting: false
@@ -19,6 +23,14 @@ Page({
   onLoad(query) {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20, orderId: query.id })
+  },
+
+  onShow() {
+    const lang = i18n.getLanguage()
+    if (lang !== this.data.lang) {
+      const old = this.data.dims.reduce((result, item) => { result[item.key] = item.score; return result }, {})
+      this.setData({ lang, copy: machineI18n.getCopy('review', lang), dims: dimensions(lang).map(item => ({ ...item, score: old[item.key] || 5 })) })
+    }
   },
 
   onStar(e) {
@@ -37,15 +49,15 @@ Page({
     try {
       const res = await auth.request('POST', `/api/machine-orders/${this.data.orderId}/review`, body)
       if (res.code === 200) {
-        wx.showToast({ title: '评价成功', icon: 'success' })
+        wx.showToast({ title: this.data.copy.success, icon: 'success' })
         setTimeout(() => wx.navigateBack(), 1200)
       } else {
         this.setData({ submitting: false })
-        wx.showToast({ title: res.msg || '评价失败', icon: 'none' })
+        wx.showToast({ title: res.msg || this.data.copy.fail, icon: 'none' })
       }
     } catch (e) {
       this.setData({ submitting: false })
-      wx.showToast({ title: '网络异常', icon: 'none' })
+      wx.showToast({ title: this.data.copy.network, icon: 'none' })
     }
   },
 

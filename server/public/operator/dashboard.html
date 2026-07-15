@@ -200,6 +200,12 @@
               <div class="form-group"><label>经度</label><input id="p-longitude"></div>
               <button type="button" class="geo-btn" style="margin-bottom:0" onclick="getGeo('p-latitude','p-longitude')">📍 获取定位</button>
             </div>
+            <div style="margin-top:18px;padding:16px;border:1px solid #dce9df;border-radius:8px;background:#f7fbf8">
+              <strong>作业实时位置</strong>
+              <p style="margin:6px 0 12px;color:#68766b;font-size:13px">开始共享后，进行中订单的农户可看到最近 10 分钟内的位置。关闭网页会停止更新。</p>
+              <button id="liveLocationButton" type="button" class="btn btn-outline" onclick="toggleLiveLocation()">开始共享实时位置</button>
+              <span id="liveLocationState" style="margin-left:10px;color:#68766b;font-size:13px">未共享</span>
+            </div>
             <button class="btn btn-primary" style="margin-top:18px" onclick="saveProfile()">保存资料</button>
           </div>
         </div>
@@ -445,6 +451,37 @@
       if (name === 'orders') loadOrders()
       if (name === 'pay') { loadApplyment(); loadOperatorFinance() }
       if (name === 'profile') loadProfile()
+    }
+    let liveLocationWatchId = null
+    async function publishLiveLocation(position) {
+      const data = position.coords
+      const result = await api('/operator/location', {
+        method: 'PATCH',
+        body: JSON.stringify({ latitude: data.latitude, longitude: data.longitude, accuracy: data.accuracy })
+      })
+      const state = document.getElementById('liveLocationState')
+      if (state) state.textContent = result.code === 200
+        ? `已更新 ${new Date().toLocaleTimeString()}`
+        : (result.msg || '更新失败')
+    }
+    function toggleLiveLocation() {
+      if (liveLocationWatchId !== null) {
+        navigator.geolocation.clearWatch(liveLocationWatchId)
+        liveLocationWatchId = null
+        localStorage.removeItem('operatorLiveLocation')
+        document.getElementById('liveLocationButton').textContent = '开始共享实时位置'
+        document.getElementById('liveLocationState').textContent = '已停止共享'
+        return
+      }
+      if (!navigator.geolocation) return toast('浏览器不支持定位')
+      localStorage.setItem('operatorLiveLocation', '1')
+      document.getElementById('liveLocationButton').textContent = '停止共享实时位置'
+      document.getElementById('liveLocationState').textContent = '正在获取定位…'
+      liveLocationWatchId = navigator.geolocation.watchPosition(
+        publishLiveLocation,
+        error => { document.getElementById('liveLocationState').textContent = `定位失败：${error.message}` },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      )
     }
 
     // 工作台
@@ -816,6 +853,7 @@
     }
 
     loadDashboard()
+    if (localStorage.getItem('operatorLiveLocation') === '1') toggleLiveLocation()
   </script>
 </body>
 </html>

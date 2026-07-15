@@ -6,6 +6,7 @@ const jwt     = require('jsonwebtoken')
 const db      = require('../db/database')
 const commissionRequests = require('../utils/commission-requests')
 const applymentRegistration = require('../utils/applyment-registration')
+const refunds = require('../utils/refunds')
 const router  = express.Router()
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -56,8 +57,17 @@ router.get('/finance', operatorAuth, async (req, res) => {
              ps.amount_fen AS profit_sharing_amount_fen,ps.state AS profit_sharing_state,
              ps.error_msg AS profit_sharing_error,ps.wechat_order_id
       FROM machine_orders mo
-      LEFT JOIN wechat_profit_sharing_orders ps
-        ON ps.order_type='machine' AND ps.order_id=mo.id
+      LEFT JOIN (
+        SELECT order_id,SUM(amount_fen) AS amount_fen,
+               CASE
+                 WHEN SUM(state IN ('FAILED')) > 0 THEN 'FAILED'
+                 WHEN SUM(state NOT IN ('SUCCESS','FINISHED')) > 0 THEN 'PROCESSING'
+                 ELSE 'SUCCESS' END AS state,
+               GROUP_CONCAT(NULLIF(error_msg,'') SEPARATOR '; ') AS error_msg,
+               GROUP_CONCAT(NULLIF(wechat_order_id,'') SEPARATOR ',') AS wechat_order_id
+          FROM wechat_profit_sharing_orders
+         WHERE order_type='machine' GROUP BY order_id
+      ) ps ON ps.order_id=mo.id
       WHERE mo.operator_id=? AND mo.pay_status='paid'
       ORDER BY mo.paid_at DESC,mo.id DESC LIMIT 100
     `, [operatorId])
@@ -218,6 +228,24 @@ router.put('/profile', operatorAuth, async (req, res) => {
   } catch (e) { console.error('[op-profile-update]', e); return fail(res, '更新失败', 500) }
 })
 
+// PATCH /api/operator/location - share current working location with active customers.
+router.patch('/location', operatorAuth, async (req, res) => {
+  const { latitude, longitude, accuracy = null } = req.body
+  const ge = geoError(latitude, longitude)
+  if (ge || latitude == null || longitude == null) return fail(res, ge || '缺少定位坐标')
+  try {
+    await db.query(
+      `UPDATE operators SET live_latitude=?,live_longitude=?,live_accuracy=?,
+              live_location_updated_at=NOW() WHERE id=?`,
+      [Number(latitude), Number(longitude), accuracy == null ? null : Number(accuracy), req.operator.operator_id]
+    )
+    return ok(res, { updated_at: new Date().toISOString() }, '实时位置已更新')
+  } catch (error) {
+    console.error('[operator-live-location]', error)
+    return fail(res, '实时位置更新失败', 500)
+  }
+})
+
 // ─────────────────────────────────────────────────────────────
 // 机具管理
 // ─────────────────────────────────────────────────────────────
@@ -318,6 +346,9 @@ router.delete('/machines/:id', operatorAuth, async (req, res) => {
 // GET /api/operator/orders — 订单列表（可按 status 筛选）
 router.get('/orders', operatorAuth, async (req, res) => {
   try {
+    await refunds.syncPendingMachineRefunds({ operatorId: req.operator.operator_id }).catch(error => {
+      console.error('[machine-refund-sync-operator]', error.message)
+    })
     const { status } = req.query
     let sql = `SELECT *, DATE_FORMAT(work_date,'%Y-%m-%d') AS work_date
                FROM machine_orders WHERE operator_id=? AND operator_deleted=0`
@@ -350,9 +381,18 @@ router.patch('/orders/:id/reject', operatorAuth, async (req, res) => {
       [req.params.id, req.operator.operator_id])
     if (!o) return fail(res, '订单不存在', 404)
     if (o.status !== 'pending') return fail(res, '该订单已处理')
+    if (!['partial', 'paid'].includes(o.pay_status)) return fail(res, '农户尚未完成订金或全款支付')
+    let refund = null
+    if (['partial', 'paid'].includes(o.pay_status)) {
+      refund = await refunds.createMachineRefund({
+        orderId: Number(req.params.id), operatorId: req.operator.operator_id,
+        reason: `农机手拒绝预约：${reason || '无法接单'}`
+      })
+    }
     await db.query("UPDATE machine_orders SET status='cancelled', reject_reason=? WHERE id=?",
       [reason || '机手已拒单', req.params.id])
-    return ok(res, null, '已拒单，定金原路退回')
+    return ok(res, { refund_status: refund && refund.status || '' },
+      refund ? '已拒单，付款正在原路退回' : '已拒单')
   } catch (e) { console.error('[op-reject]', e); return fail(res, '操作失败', 500) }
 })
 

@@ -22,13 +22,24 @@ function supplyOutTradeNo(order) {
   return `SUPPLY_${order.order_no || order.orderNo}_${order.id}`
 }
 
+function machinePaymentStage(order) {
+  return order.pay_mode === 'deposit' || order.deposit_status === 'paid' ? 'deposit' : 'full'
+}
+
+function machineOutTradeNo(order) {
+  return `MACHINE_${order.order_no || order.orderNo}_${order.id}_${machinePaymentStage(order).toUpperCase()}`
+}
+
 function outRefundNo(order, sequence = Date.now()) {
-  const base = `RF_SUPPLY_${order.id}_${sequence}`
+  const type = order.order_type === 'machine' || order.kind === 'machine' ? 'MACHINE' : 'SUPPLY'
+  const base = `RF_${type}_${order.id}_${sequence}`
   return base.slice(0, 64)
 }
 
-function outProfitSharingReturnNo(order, sequence = Date.now()) {
-  const base = `PSR_SUPPLY_${order.id}_${sequence}`
+function outProfitSharingReturnNo(order, sequence = Date.now(), paymentStage = '') {
+  const orderType = order.order_type === 'machine' || order.kind === 'machine' ? 'MACHINE' : 'SUPPLY'
+  const stage = orderType === 'MACHINE' && paymentStage ? `_${String(paymentStage).toUpperCase()}` : ''
+  const base = `PSR_${orderType}_${order.id}${stage}_${sequence}`
   return base.slice(0, 64)
 }
 
@@ -132,25 +143,28 @@ async function findActiveRefund(orderId) {
   return row || null
 }
 
-async function findSuccessfulProfitSharing(orderId) {
+async function findSuccessfulProfitSharing(orderType, orderId, paymentStage = '') {
+  const params = [orderType, orderId]
+  const stageFilter = paymentStage ? ' AND payment_stage=?' : ''
+  if (paymentStage) params.push(paymentStage)
   const [[row]] = await db.query(
     `SELECT * FROM wechat_profit_sharing_orders
-     WHERE order_type='supply' AND order_id=? AND amount_fen > 0
+     WHERE order_type=? AND order_id=?${stageFilter} AND amount_fen > 0
      ORDER BY id DESC LIMIT 1`,
-    [orderId]
+    params
   )
   if (!row || !isSuccessProfitSharingState(row.state)) return null
   return row
 }
 
-async function findProfitSharingReturn(orderId) {
+async function findProfitSharingReturn(orderType, orderId) {
   const [[row]] = await db.query(
     `SELECT id, profit_sharing_return_no, profit_sharing_return_state
      FROM wechat_refunds
-     WHERE order_type='supply' AND order_id=?
+     WHERE order_type=? AND order_id=?
        AND profit_sharing_return_state IN ('SUCCESS','FINISHED','PROCESSING')
      ORDER BY id DESC LIMIT 1`,
-    [orderId]
+    [orderType, orderId]
   )
   return row || null
 }
@@ -219,7 +233,15 @@ function extractRefundMeta(result) {
 }
 
 async function markRefundSuccess(row) {
-  if (!row || row.order_type !== 'supply') return
+  if (!row) return
+  if (row.order_type === 'machine') {
+    await db.query(
+      "UPDATE machine_orders SET pay_status='refunded',refund_status='SUCCESS',fund_status='refunded' WHERE id=?",
+      [row.order_id]
+    )
+    return
+  }
+  if (row.order_type !== 'supply') return
   await db.query(
     "UPDATE orders SET status='refunded', fund_status='refunded' WHERE id=?",
     [row.order_id]
@@ -229,6 +251,128 @@ async function markRefundSuccess(row) {
       "UPDATE aftersale_requests SET status='approved' WHERE id=?",
       [row.aftersale_id]
     )
+  }
+}
+
+async function loadMachineRefundOrder(orderId, owner = {}) {
+  const params = [orderId]
+  let filter = ''
+  if (owner.farmerId) {
+    filter = ' AND mo.farmer_id=?'
+    params.push(owner.farmerId)
+  } else if (owner.operatorId) {
+    filter = ' AND mo.operator_id=?'
+    params.push(owner.operatorId)
+  }
+  const [[order]] = await db.query(
+    `SELECT mo.*,op.sub_mchid FROM machine_orders mo
+      JOIN operators op ON op.id=mo.operator_id WHERE mo.id=?${filter}`,
+    params
+  )
+  if (order) order.kind = 'machine'
+  return order || null
+}
+
+function validateRefundableMachineOrder(order) {
+  if (!order) {
+    const error = new Error('农机订单不存在或无权访问')
+    error.statusCode = 404
+    throw error
+  }
+  if (!order.sub_mchid) {
+    const error = new Error('农机手尚未绑定微信支付子商户号，无法发起退款')
+    error.statusCode = 409
+    throw error
+  }
+  if (!['partial', 'paid'].includes(order.pay_status)) {
+    const error = new Error(order.pay_status === 'refunded' ? '订单已退款' : '订单没有可退的真实支付款项')
+    error.statusCode = 409
+    throw error
+  }
+}
+
+async function createMachineRefund({ orderId, farmerId = null, operatorId = null, reason = '' }) {
+  const order = await loadMachineRefundOrder(orderId, { farmerId, operatorId })
+  validateRefundableMachineOrder(order)
+  const [[existing]] = await db.query(
+    "SELECT * FROM wechat_refunds WHERE order_type='machine' AND order_id=? ORDER BY id DESC LIMIT 1",
+    [order.id]
+  )
+  if (existing && isActiveRefundStatus(existing.status)) {
+    if (isSuccessRefundStatus(existing.status)) await markRefundSuccess(existing)
+    return { alreadyExists: true, refund: existing, status: existing.status }
+  }
+
+  const cfg = wxpay.getServiceProviderConfig()
+  if (!cfg) {
+    const error = new Error('微信支付服务商未配置，无法发起真实退款')
+    error.statusCode = 501
+    throw error
+  }
+  const stage = machinePaymentStage(order)
+  const businessAmount = stage === 'deposit'
+    ? Number(order.deposit_paid_amount || order.deposit || 0)
+    : Number(order.balance_paid_amount || order.paid_amount || order.total_price || 0)
+  const totalFen = getWechatPayChargeFen({ amount: businessAmount })
+  const transactionId = stage === 'deposit'
+    ? order.deposit_transaction_id || order.transaction_id
+    : order.balance_transaction_id || order.transaction_id
+  if (!transactionId || totalFen <= 0) {
+    const error = new Error('该订单缺少真实微信交易记录，可能是早期模拟支付订单，不能发起微信退款')
+    error.statusCode = 409
+    throw error
+  }
+
+  const refund = {
+    subMchid: order.sub_mchid,
+    transactionId,
+    outTradeNo: machineOutTradeNo(order),
+    outRefundNo: outRefundNo(order),
+    reason: reason || '农机预约取消退款',
+    notifyUrl: getRefundNotifyUrl(cfg),
+    refundFen: totalFen,
+    totalFen,
+    currency: 'CNY'
+  }
+  const payload = wxpay.buildPartnerRefundBody({ refund })
+  await db.query(
+    `INSERT INTO wechat_refunds
+      (order_type,order_id,out_trade_no,out_refund_no,transaction_id,sub_mchid,
+       amount_fen,total_fen,currency,reason,status,request_payload)
+     VALUES ('machine',?,?,?,?,?,?,?,?,?,'PENDING',?)`,
+    [order.id, refund.outTradeNo, refund.outRefundNo, transactionId, refund.subMchid,
+      totalFen, totalFen, refund.currency, refund.reason, JSON.stringify(payload)]
+  )
+  try {
+    await returnProfitSharingIfNeeded({
+      order,
+      orderType: 'machine',
+      paymentStage: stage,
+      cfg,
+      outRefundNo: refund.outRefundNo,
+      reason: refund.reason
+    })
+    const result = await wxpay.partnerRefund({ cfg, refund })
+    const meta = extractRefundMeta(result)
+    await db.query(
+      `UPDATE wechat_refunds SET wechat_refund_id=?,status=?,channel=?,
+              user_received_account=?,success_time=?,result_payload=?,error_code='',error_msg=''
+        WHERE out_refund_no=?`,
+      [meta.refundId, meta.status, meta.channel, meta.userReceivedAccount,
+        meta.successTime, JSON.stringify(result), refund.outRefundNo]
+    )
+    const [[saved]] = await db.query('SELECT * FROM wechat_refunds WHERE out_refund_no=?', [refund.outRefundNo])
+    await db.query('UPDATE machine_orders SET refund_status=? WHERE id=?', [meta.status, order.id])
+    if (isSuccessRefundStatus(meta.status)) await markRefundSuccess(saved)
+    return { alreadyExists: false, refund: saved, status: meta.status, result }
+  } catch (error) {
+    const wx = error.wxpay || {}
+    await db.query(
+      "UPDATE wechat_refunds SET status='FAILED',error_code=?,error_msg=?,result_payload=? WHERE out_refund_no=?",
+      [wx.code || '', error.message || wx.message || '微信退款失败', JSON.stringify(wx), refund.outRefundNo]
+    )
+    await db.query("UPDATE machine_orders SET refund_status='FAILED' WHERE id=?", [order.id])
+    throw error
   }
 }
 
@@ -341,20 +485,20 @@ async function createSupplyRefund({ orderId, merchantId, aftersaleId = null, rea
   }
 }
 
-async function returnProfitSharingIfNeeded({ order, cfg, outRefundNo, reason }) {
+async function returnProfitSharingIfNeeded({ order, cfg, outRefundNo, reason, orderType = 'supply', paymentStage = '' }) {
   let profitSharing = null
   try {
-    profitSharing = await findSuccessfulProfitSharing(order.id)
+    profitSharing = await findSuccessfulProfitSharing(orderType, order.id, paymentStage)
   } catch (error) {
     if (error && error.code === 'ER_NO_SUCH_TABLE') return null
     throw error
   }
   if (!profitSharing) return null
 
-  const existingReturn = await findProfitSharingReturn(order.id)
+  const existingReturn = await findProfitSharingReturn(orderType, order.id)
   if (existingReturn) return null
 
-  const outReturnNo = outProfitSharingReturnNo(order)
+  const outReturnNo = outProfitSharingReturnNo(order, Date.now(), paymentStage)
   const payload = {
     sub_mchid: profitSharing.sub_mchid || order.sub_mchid,
     out_order_no: profitSharing.out_order_no,
@@ -494,6 +638,55 @@ async function syncPendingSupplyRefunds({ merchantId = null, userId = null, orde
   return { total: rows.length, synced }
 }
 
+async function syncPendingMachineRefunds({ operatorId = null, farmerId = null, orderId = null, limit = 20 } = {}) {
+  const cfg = wxpay.getServiceProviderConfig()
+  if (!cfg) return { total: 0, synced: 0, skipped: true }
+
+  const params = []
+  let where = `r.order_type='machine' AND r.status IN ('PENDING','PROCESSING','ABNORMAL')`
+  if (operatorId) {
+    where += ' AND mo.operator_id=?'
+    params.push(operatorId)
+  }
+  if (farmerId) {
+    where += ' AND mo.farmer_id=?'
+    params.push(farmerId)
+  }
+  if (orderId) {
+    where += ' AND mo.id=?'
+    params.push(orderId)
+  }
+  params.push(Math.max(1, Math.min(Number(limit) || 20, 50)))
+
+  let rows = []
+  try {
+    const [result] = await db.query(
+      `SELECT r.*
+       FROM wechat_refunds r
+       JOIN machine_orders mo ON mo.id=r.order_id
+       WHERE ${where}
+       ORDER BY r.updated_at ASC
+       LIMIT ?`,
+      params
+    )
+    rows = result
+  } catch (error) {
+    if (error && error.code === 'ER_NO_SUCH_TABLE') return { total: 0, synced: 0, skipped: true }
+    throw error
+  }
+
+  let synced = 0
+  for (const row of rows) {
+    try {
+      await syncRefundRow(row, cfg)
+      synced += 1
+    } catch (error) {
+      console.error('[machine-refund-sync]', error.message)
+    }
+  }
+  return { total: rows.length, synced }
+}
+
 function __setDbForTest(mock) {
   db = mock || defaultDb
 }
@@ -506,6 +699,7 @@ module.exports = {
   amountFen,
   getWechatPayChargeFen,
   supplyOutTradeNo,
+  machineOutTradeNo,
   outRefundNo,
   outProfitSharingReturnNo,
   normalizeRefundStatus,
@@ -514,10 +708,12 @@ module.exports = {
   getRefundNotifyUrl,
   loadSupplyRefundOrder,
   createSupplyRefund,
+  createMachineRefund,
   returnProfitSharingIfNeeded,
   handleRefundNotify,
   syncRefundRow,
   syncPendingSupplyRefunds,
+  syncPendingMachineRefunds,
   __setDbForTest,
   __setWxpayForTest
 }

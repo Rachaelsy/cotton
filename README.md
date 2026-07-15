@@ -61,6 +61,7 @@ node db/migrate_wechat_refunds.js     # 微信支付真实退款记录表
 node db/migrate_commission_requests.js # 农机支付字段 + 商户/农机手佣金调整审核表
 node db/migrate_experts.js            # 专家账号表
 node db/migrate_expert_questions.js   # 专家提问表
+node db/migrate_farmer_improvements.js # 农机分阶段支付/定位、气象观测、农户实名与新手引导
 node db/seed.js                       # 插入测试用户账号
 node db/seed_machines.js              # 农机演示数据（机主 13800000003 + 4 台机具）
 
@@ -106,6 +107,11 @@ QWEATHER_JWT_KID=和风 JWT 凭据ID
 QWEATHER_JWT_SUB=和风项目ID
 QWEATHER_JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 QWEATHER_TIMEOUT_MS=8000
+WEATHER_OBSERVATION_COLLECTOR_ENABLED=true
+WEATHER_OBSERVATION_MAX_PLOTS=100
+
+# 农户实名认证（至少 32 位随机字符串，生产环境启用后不得更换）
+IDENTITY_DATA_KEY=请使用密码管理器生成的随机密钥
 ```
 
 `WX_APPID` 和 `WX_SECRET` 用于后端调用微信登录接口，将 `wx.login()` 得到的临时 `code` 换成用户 `openid`。没有这两个配置，微信登录和后续 JSAPI 支付都不能完整工作。
@@ -119,6 +125,7 @@ QWEATHER_TIMEOUT_MS=8000
 - `/v7/grid-weather/now`：格点实时天气
 - `/v7/grid-weather/24h`：格点逐小时预报
 - `/v7/grid-weather/7d`：格点 7 日预报
+- `/weatheralert/v1/current/{纬度}/{经度}`：当前位置官方灾害预警
 
 配置步骤：
 
@@ -151,7 +158,11 @@ QWEATHER_JWT_KID=你的凭据ID
 QWEATHER_JWT_SUB=你的项目ID
 QWEATHER_JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n这里是私钥内容\n-----END PRIVATE KEY-----"
 QWEATHER_TIMEOUT_MS=8000
+WEATHER_OBSERVATION_COLLECTOR_ENABLED=true
+WEATHER_OBSERVATION_MAX_PLOTS=100
 ```
+
+地块页的近 30 天降水与积温来自后端每小时保存的真实实况，不会用预报或本地模型补造。首次部署时历史库为空，统计会从启用采集器后逐步累积，并同时返回实际覆盖小时数/天数。官方预警接口不可用时页面会明确显示“预警数据暂不可用”，不会伪造“无预警”。
 
 如果是本地直接运行后端，填写 `server/.env`；如果是 Docker Compose 部署，还要填写根目录 `.env`，因为 `docker-compose.yml` 会从根目录 `.env` 注入容器环境变量。
 
@@ -181,13 +192,23 @@ node -e "require('dotenv').config(); const { fetchQweatherWeather } = require('.
 
 服务商自营测试店铺也必须绑定一个自营特约商户号 `sub_mchid`，不能直接用服务商商户号作为普通商户收款。可在 `server/.env` 填写 `SELF_MERCHANT_SUB_MCHID`，再运行 `node db/create_self_merchant.js` 绑定到平台自营店铺。
 
-农资订单和农机租赁订单均已接入微信支付服务商分账：下单时按商户或农机手当前生效的 `commission_rate` 标记为可分账订单；微信支付成功后记录待分账；农资订单确认收货、农机订单完成作业并过冻结期后，定时任务调用微信分账接口把平台佣金分到服务商商户号。测试基础支付但暂未开通分账权限时，可在 `server/.env` 设置 `WECHAT_PAY_PROFIT_SHARING_ENABLED=false`，等微信支付分账产品和特约商户授权都开通后再改回 `true`。
+农资订单和农机租赁订单均已接入微信支付服务商分账：农机支持定金、作业完成后尾款及一次性全款三种支付阶段，每笔真实交易分别记录和分账；农资订单确认收货、农机订单完成作业并过冻结期后，定时任务调用微信分账接口把平台佣金分到服务商商户号。测试基础支付但暂未开通分账权限时，可在 `server/.env` 设置 `WECHAT_PAY_PROFIT_SHARING_ENABLED=false`，等微信支付分账产品和特约商户授权都开通后再改回 `true`。
 
 商户和农机手不能直接修改正在生效的佣金比例。两类后台均需填写目标比例和调整理由并提交申请，管理员在“佣金审核”中通过后新比例才生效；审核前创建的订单仍按支付时记录的比例分账。
 
 分账开通后还需要在 `server/.env` 填 `WECHAT_PAY_PROFIT_SHARING_RECEIVER_NAME`，值必须是微信支付商户平台里的接收方商户全称；`WECHAT_PAY_PROFIT_SHARING_RECEIVER_MCH_ID` 留空时默认用服务商商户号收平台佣金；`WECHAT_PAY_PROFIT_SHARING_FREEZE_DAYS` 正式环境建议 `7`，联调可临时设为 `0`。填好后进入 `server` 目录运行 `node db/ensure_profit_sharing_receivers.js`，提前登记分账接收方并验证特约商户最大分账比例。
 
-真实退款已接入微信支付服务商退款接口。商户同意售后或在订单退款入口发起后，后端会创建 `wechat_refunds` 退款单并调用微信退款；退款成功以微信退款回调 `/api/pay/wechat/refund-notify` 为准。`WECHAT_PAY_REFUND_NOTIFY_URL` 可显式配置，不填时会由 `WECHAT_PAY_NOTIFY_URL` 自动推导。
+真实退款已接入微信支付服务商退款接口。农资售后和已支付的农机预约取消都会创建 `wechat_refunds` 退款单；若对应款项已经分账，后端会先按订单/支付阶段退回平台分账，再调用微信退款。退款成功以微信退款回调 `/api/pay/wechat/refund-notify` 为准。早期模拟支付订单没有微信交易号，会明确拒绝真实退款，不会伪造退款成功。
+
+### 农户实名认证与首次使用
+
+农户首次登录必须提交姓名、身份证号及身份证正反面，由管理员后台“实名审核”人工核验；审核通过后才进入首次使用引导。身份证号码使用 AES-256-GCM 加密，证件图片保存在 Docker 私有卷 `identity_uploads`，不会通过 `/uploads` 公开访问。
+
+生产环境必须在 `server/.env` 配置 `IDENTITY_DATA_KEY`。可用 `openssl rand -base64 48` 生成，启用后不要更换，否则历史身份证号无法解密；密钥和 `identity_uploads` 卷都应纳入受控备份。首次使用引导会让农户选择中文/维吾尔语、授权定位并创建首块地，完成状态保存在服务端。
+
+农机手网页后台可在有进行中作业时开启实时位置共享；农户跟踪页每 15 秒读取一次最近位置。生产环境浏览器定位要求 HTTPS 和用户授权，位置超过 10 分钟未更新时只显示“位置暂未更新”，不会拿基地坐标冒充实时位置。
+
+农户端核心操作流程已补齐中文/维吾尔语即时切换，覆盖农机预约与支付、农事记录、水肥管理、农资商城订单及实名认证/首次使用引导。页面固定文案随语言立即刷新；商户录入的商品名称、专家发布的课程内容等业务数据仍按发布者填写的原文展示。
 
 ### 真实快递物流配置
 

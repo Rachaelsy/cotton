@@ -79,6 +79,17 @@ const mockDb = {
         note: ''
       }], []]
     }
+    if (/INSERT INTO weather_observations/i.test(sql)) return [{ affectedRows: 1 }]
+    if (/FROM weather_observations/i.test(sql)) {
+      return [[{
+        observation_hours: 48,
+        coverage_days: 2,
+        rainfall_mm: '2.6',
+        growing_degree_days: '17.4',
+        first_observed_at: '2026-07-05 10:00:00',
+        last_observed_at: '2026-07-07 09:00:00'
+      }], []]
+    }
     throw new Error(`Unexpected SQL in test: ${sql}`)
   }
 }
@@ -263,6 +274,8 @@ async function run() {
     assert.strictEqual(success.json.data.weather.source, 'api.open-meteo.com/v1/cma')
     assert.strictEqual(success.json.data.weather.hourly.time.length, 3)
     assert.strictEqual(success.json.data.weather.daily.time.length, 1)
+    assert.strictEqual(success.json.data.statistics.rainfallMm, 2.6)
+    assert.strictEqual(success.json.data.statistics.observationHours, 48)
     assert(fetchedRequests.some(item => item.url.includes('api.open-meteo.com/v1/cma')), 'weather request should fetch CMA GRAPES hourly data')
     assert(
       fetchedRequests.some(item => item.url.includes('latitude=39.470333333333336') && item.url.includes('longitude=75.99066666666666')),

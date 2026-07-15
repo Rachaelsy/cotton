@@ -53,6 +53,7 @@ services:
       QWEATHER_TIMEOUT_MS: ${QWEATHER_TIMEOUT_MS:-8000}
     volumes:
       - uploads:/app/public/uploads
+      - identity_uploads:/app/private/identity
       - ${WECHAT_PAY_PRIVATE_KEY_HOST_PATH:-./apiclient_key.pem}:/app/apiclient_key.pem:ro
       - ${WECHAT_PAY_PUBLIC_KEY_HOST_PATH:-./pub_key.pem}:/app/pub_key.pem:ro
     depends_on:
@@ -75,3 +76,4 @@ services:
 volumes:
   mysql_data:
   uploads:
+  identity_uploads:

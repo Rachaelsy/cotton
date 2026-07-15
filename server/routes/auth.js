@@ -90,7 +90,7 @@ router.post('/register', async (req, res) => {
 
     // ── 签发 Token ────────────────────────────
     const token = signToken({ id: userId, phone, role })
-    return ok(res, { token, role, real_name: real_name.trim() }, '注册成功')
+    return ok(res, { token, role, real_name: real_name.trim(), is_verified: false, onboarding_completed: false }, '注册成功')
 
   } catch (err) {
     console.error('[register]', err)
@@ -114,7 +114,7 @@ router.post('/login', async (req, res) => {
   try {
     // ── 查询用户 ──────────────────────────────
     const [rows] = await db.query(
-      'SELECT id,phone,password,role,real_name,is_active FROM users WHERE phone=?',
+      'SELECT id,phone,password,role,real_name,is_verified,onboarding_completed,is_active,avatar_url FROM users WHERE phone=?',
       [phone]
     )
     if (rows.length === 0) return fail(res, '手机号未注册', 404)
@@ -159,6 +159,8 @@ router.post('/login', async (req, res) => {
       token,
       role:       user.role,
       real_name:  user.real_name,
+      is_verified: !!user.is_verified,
+      onboarding_completed: !!user.onboarding_completed,
       avatar_url: user.avatar_url || null,
       ...profile
     }, '登录成功')
@@ -179,7 +181,7 @@ router.post('/login', async (req, res) => {
 router.get('/verify', authMiddleware, async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT id,phone,role,real_name,is_verified,avatar_url FROM users WHERE id=? AND is_active=1',
+      'SELECT id,phone,role,real_name,is_verified,onboarding_completed,avatar_url FROM users WHERE id=? AND is_active=1',
       [req.user.id]
     )
     if (rows.length === 0) return fail(res, '用户不存在或已被禁用', 404)
@@ -283,7 +285,10 @@ router.post('/wx-login', async (req, res) => {
     }
 
     const token = signToken(user)
-    return ok(res, { token, role: user.role, real_name: user.real_name || '', phone: user.phone, ...profile }, '登录成功')
+    return ok(res, {
+      token, role: user.role, real_name: user.real_name || '', phone: user.phone,
+      is_verified: !!user.is_verified, onboarding_completed: !!user.onboarding_completed, ...profile
+    }, '登录成功')
 
   } catch (err) {
     console.error('[wx-login]', err)

@@ -2,7 +2,7 @@
 <view class="page">
   <view class="nav" style="padding-top: {{statusBarHeight}}px">
     <view class="back-btn" bindtap="onBack"><text class="back-icon">‹</text></view>
-    <text class="nav-title">服务评价</text>
+    <text class="nav-title">{{copy.title}}</text>
     <view style="width:60rpx"></view>
   </view>
 
@@ -21,8 +21,8 @@
     </view>
 
     <view class="content-card">
-      <text class="cc-label">评价内容</text>
-      <textarea class="cc-input" placeholder="说说这次作业的体验，帮助其他棉农参考…" value="{{content}}" bindinput="onContent" maxlength="200" />
+      <text class="cc-label">{{copy.content}}</text>
+      <textarea class="cc-input" placeholder="{{copy.placeholder}}" value="{{content}}" bindinput="onContent" maxlength="200" />
     </view>
 
     <view style="height:160rpx"></view>
@@ -30,7 +30,7 @@
 
   <view class="action-bar">
     <view class="bar-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">
-      <text class="bar-btn-text">{{submitting ? '提交中…' : '提交评价'}}</text>
+      <text class="bar-btn-text">{{submitting ? copy.submitting : copy.submit}}</text>
     </view>
   </view>
 </view>

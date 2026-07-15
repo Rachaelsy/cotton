@@ -1,6 +1,53 @@
 // server/scheduler.js — 定时任务：自动确认收货 + 售后冻结期解冻
 const db = require('./db/database')
 const profitSharing = require('./utils/profit-sharing')
+const { fetchQweatherWeather } = require('./utils/qweather')
+const { normalizeCoordinates, calculateCenter } = require('./utils/plot-geometry')
+const weatherObservations = require('./utils/weather-observations')
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+function observationCollectorEnabled() {
+  return String(process.env.WEATHER_OBSERVATION_COLLECTOR_ENABLED || 'true').toLowerCase() !== 'false'
+}
+
+function parsePlotCoordinates(value) {
+  try {
+    return normalizeCoordinates(Array.isArray(value) ? value : JSON.parse(value || '[]'))
+  } catch (error) {
+    return []
+  }
+}
+
+// 按地块中心每小时采集一次真实实况，为积温和近 30 天降水建立连续样本。
+async function collectWeatherObservations() {
+  if (!observationCollectorEnabled()) return
+  if (!['qweather', 'heweather'].includes(String(process.env.WEATHER_PROVIDER || 'qweather').toLowerCase())) return
+  const limit = Math.max(1, Math.min(Number(process.env.WEATHER_OBSERVATION_MAX_PLOTS || 100), 500))
+  try {
+    const [plots] = await db.query(
+      'SELECT id,name,area,coordinates FROM plots WHERE coordinates IS NOT NULL ORDER BY id ASC LIMIT ?',
+      [limit]
+    )
+    let saved = 0
+    for (const plot of plots) {
+      const coordinates = parsePlotCoordinates(plot.coordinates)
+      if (!coordinates.length) continue
+      try {
+        const center = calculateCenter(coordinates)
+        const weather = await fetchQweatherWeather(center, plot)
+        await weatherObservations.saveObservation(plot.id, center, weather)
+        saved += 1
+      } catch (error) {
+        console.error(`[weather-collector] plot ${plot.id}:`, error.message)
+      }
+      await wait(250)
+    }
+    if (plots.length) console.log(`[weather-collector] 已采集 ${saved}/${plots.length} 个地块实况`)
+  } catch (error) {
+    console.error('[weather-collector]', error.message)
+  }
+}
 
 // 发货后 10 天无操作 → 系统自动确认收货，资金进入冻结期
 async function autoConfirmReceipt() {
@@ -106,7 +153,9 @@ function startScheduler() {
   setInterval(autoConfirmReceipt, 60 * 60 * 1000)
   setInterval(releaseFunds,       60 * 60 * 1000)
   setInterval(autoExpireOrders,   5  * 60 * 1000)   // 每 5 分钟扫一次
-  console.log('[scheduler] 已启动（自动确认收货 + 资金解冻 + 超时关单）')
+  setTimeout(collectWeatherObservations, 15 * 1000)
+  setInterval(collectWeatherObservations, 60 * 60 * 1000)
+  console.log('[scheduler] 已启动（自动确认收货 + 资金解冻 + 超时关单 + 地块气象采集）')
 }
 
-module.exports = { startScheduler }
+module.exports = { startScheduler, collectWeatherObservations }
