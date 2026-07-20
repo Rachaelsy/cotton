@@ -19,6 +19,7 @@ const MODULES = [
   { id: 11, key: 'loans', icon: '🏦', bg: '#E0F2F1', action: 'loans' },
   { id: 12, key: 'insurance', icon: '🛡', bg: '#E8EAF6', action: 'insurance' }
 ]
+const DEVELOPING_MODULES = ['trade', 'loans', 'insurance']
 
 function buildModules(lang = i18n.getLanguage()) {
   const copy = i18n.getCopy('modules', lang)
@@ -319,6 +320,10 @@ Page({
 
   onModule(e) {
     const action = e.currentTarget.dataset.action
+    if (DEVELOPING_MODULES.includes(action)) {
+      wx.showToast({ title: this.data.common.developing, icon: 'none', duration: 2000 })
+      return
+    }
     const routes = {
       fields: '/pages/fields/index',
       pest: '/pages/pest/index',
@@ -327,9 +332,6 @@ Page({
       fert: this._buildPlotPageUrl('/pages/fert/index'),
       records: '/pages/records/index',
       machine: '/pages/machine/index',
-      trade: '/pages/trade/index',
-      loans: '/pages/loans/index',
-      insurance: '/pages/insurance/index',
       expert: '/pages/expert/index'
     }
     if (action === 'supplies') {

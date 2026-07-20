@@ -96,18 +96,4 @@ router.post('/', farmerAuth, async (req, res) => {
   }
 })
 
-router.patch('/onboarding', farmerAuth, async (req, res) => {
-  try {
-    const [[user]] = await db.query('SELECT is_verified FROM users WHERE id=?', [req.user.id])
-    if (!user || !user.is_verified) {
-      return res.status(409).json({ code: 409, msg: '请先完成实名认证' })
-    }
-    await db.query('UPDATE users SET onboarding_completed=1 WHERE id=?', [req.user.id])
-    return res.json({ code: 200, msg: '新手引导已完成', data: { onboarding_completed: true } })
-  } catch (error) {
-    console.error('[verification-onboarding]', error)
-    return res.status(500).json({ code: 500, msg: '新手引导状态保存失败' })
-  }
-})
-
 module.exports = router

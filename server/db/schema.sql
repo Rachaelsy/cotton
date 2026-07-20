@@ -78,6 +78,43 @@ CREATE TABLE IF NOT EXISTS login_logs (
   INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB COMMENT='登录日志';
 
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT UNSIGNED NOT NULL,
+  content      TEXT NOT NULL,
+  contact      VARCHAR(100) NOT NULL DEFAULT '',
+  images_json  TEXT DEFAULT NULL,
+  status       VARCHAR(20) NOT NULL DEFAULT 'pending',
+  admin_reply  TEXT DEFAULT NULL,
+  replied_by   INT UNSIGNED DEFAULT NULL,
+  replied_at   DATETIME DEFAULT NULL,
+  user_read_at DATETIME DEFAULT NULL,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_feedback_user (user_id, created_at),
+  INDEX idx_feedback_status (status, created_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='农户意见反馈与客服回复';
+
+CREATE TABLE IF NOT EXISTS support_messages (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT UNSIGNED NOT NULL,
+  sender_type  ENUM('farmer','admin') NOT NULL,
+  sender_id    INT UNSIGNED NOT NULL,
+  content      VARCHAR(1000) NOT NULL DEFAULT '',
+  image_url    VARCHAR(255) NOT NULL DEFAULT '',
+  reply_to_id  INT UNSIGNED DEFAULT NULL,
+  reply_to_json TEXT DEFAULT NULL,
+  recalled_at  DATETIME DEFAULT NULL,
+  hidden_for_farmer TINYINT(1) NOT NULL DEFAULT 0,
+  hidden_for_admin  TINYINT(1) NOT NULL DEFAULT 0,
+  read_at      DATETIME DEFAULT NULL,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_support_user_message (user_id, id),
+  INDEX idx_support_unread (user_id, sender_type, read_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='农户与平台客服聊天消息';
+
 -- -------------------------------------------------------
 -- 专家讲堂内容
 -- -------------------------------------------------------

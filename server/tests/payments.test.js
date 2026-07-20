@@ -91,11 +91,25 @@ const mockDb = {
           self_operated: 1
         }], []]
       }
+      if (orderMode === 'expired') {
+        return [[{
+          id: 8,
+          order_no: 'MG202607030001',
+          total: '25.80',
+          status: 'pending_payment',
+          pay_expires_at: '2000-01-01T00:00:00.000Z',
+          merchant_count: 1,
+          merchant_id: 6,
+          sub_mchid: '1700000001',
+          commission_rate: '5.00'
+        }], []]
+      }
       return [[{
         id: 8,
         order_no: 'MG202607030001',
         total: '25.80',
           status: 'pending_payment',
+          pay_expires_at: '2099-01-01T00:00:00.000Z',
           merchant_count: 1,
           merchant_id: 6,
           sub_mchid: '1700000001',
@@ -192,6 +206,7 @@ async function run() {
     assert.strictEqual(prepayCall.order.subMchid, '1700000001')
     assert.strictEqual(prepayCall.openid, 'openid-under-sp-appid')
     assert.strictEqual(prepayCall.order.amountFen, 2580)
+    assert.strictEqual(prepayCall.order.timeExpire, '2099-01-01T00:00:00+00:00')
     assert.strictEqual(prepayCall.order.profitSharing, true)
 
     calls.length = 0
@@ -211,6 +226,12 @@ async function run() {
     const selfMissingSub = await request(baseUrl, token, { orderType: 'supply', orderId: 9 })
     assert.strictEqual(selfMissingSub.status, 409)
     assert.match(selfMissingSub.json.msg, /自营.*子商户号|sub_mchid/)
+
+    calls.length = 0
+    orderMode = 'expired'
+    const expired = await request(baseUrl, token, { orderType: 'supply', orderId: 8 })
+    assert.strictEqual(expired.status, 410)
+    assert(!calls.some(item => item.type === 'partnerJsapiPrepay'), 'expired order should not call WeChat prepay')
 
     calls.length = 0
     machineMode = 'deposit'

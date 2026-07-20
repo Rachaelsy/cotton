@@ -34,37 +34,46 @@ m.createConnection({
 "
 
 echo "🗄️  运行数据库迁移..."
-node db/migrate_products.js           2>/dev/null || true
-node db/migrate_admin.js              2>/dev/null || true
-node db/migrate_merchant_approval.js  2>/dev/null || true
-node db/migrate_openid.js             2>/dev/null || true
-node db/migrate_product_image.js      2>/dev/null || true
-node db/migrate_orders.js             2>/dev/null || true
-node db/migrate_logistics.js          2>/dev/null || true
-node db/migrate_product_detail.js     2>/dev/null || true
-node db/migrate_merchant_wechat.js    2>/dev/null || true
-node db/migrate_aftersale.js          2>/dev/null || true
-node db/migrate_aftersale_images.js   2>/dev/null || true
-node db/migrate_fund_status.js        2>/dev/null || true
-node db/migrate_messages.js           2>/dev/null || true
-node db/migrate_commission.js         2>/dev/null || true
-node db/migrate_pay_expires.js        2>/dev/null || true
-node db/migrate_reviews.js            2>/dev/null || true
-node db/migrate_plots.js              2>/dev/null || true
-node db/migrate_farm_records.js       2>/dev/null || true
-node db/migrate_machines.js           2>/dev/null || true
-node db/migrate_order_delete.js       2>/dev/null || true
-node db/migrate_delivery_range.js     2>/dev/null || true
-node db/migrate_wechat_service_provider.js 2>/dev/null || true
-node db/migrate_profit_sharing.js     2>/dev/null || true
-node db/migrate_commission_requests.js 2>/dev/null || true
-node db/migrate_wechat_refunds.js     2>/dev/null || true
-node db/migrate_experts.js            2>/dev/null || true
-node db/migrate_expert_contents.js    2>/dev/null || true
-node db/migrate_expert_questions.js   2>/dev/null || true
-node db/migrate_farmer_improvements.js 2>/dev/null || true
-node db/seed.js                       2>/dev/null || true
-node db/seed_machines.js              2>/dev/null || true
+run_optional_node() {
+  script="$1"
+  echo "-> $script"
+  if ! node "$script"; then
+    echo "WARNING: $script failed; continuing startup for compatibility" >&2
+  fi
+}
+
+run_optional_node db/migrate_products.js
+run_optional_node db/migrate_admin.js
+run_optional_node db/migrate_merchant_approval.js
+run_optional_node db/migrate_openid.js
+run_optional_node db/migrate_product_image.js
+run_optional_node db/migrate_orders.js
+run_optional_node db/migrate_logistics.js
+run_optional_node db/migrate_product_detail.js
+run_optional_node db/migrate_merchant_wechat.js
+run_optional_node db/migrate_aftersale.js
+run_optional_node db/migrate_aftersale_images.js
+run_optional_node db/migrate_fund_status.js
+run_optional_node db/migrate_messages.js
+run_optional_node db/migrate_commission.js
+run_optional_node db/migrate_pay_expires.js
+run_optional_node db/migrate_reviews.js
+run_optional_node db/migrate_plots.js
+run_optional_node db/migrate_farm_records.js
+run_optional_node db/migrate_machines.js
+run_optional_node db/migrate_order_delete.js
+run_optional_node db/migrate_delivery_range.js
+run_optional_node db/migrate_wechat_service_provider.js
+run_optional_node db/migrate_profit_sharing.js
+run_optional_node db/migrate_commission_requests.js
+run_optional_node db/migrate_wechat_refunds.js
+run_optional_node db/migrate_experts.js
+run_optional_node db/migrate_expert_contents.js
+run_optional_node db/migrate_expert_questions.js
+run_optional_node db/migrate_farmer_improvements.js
+run_optional_node db/migrate_feedbacks.js
+run_optional_node db/seed.js
+run_optional_node db/seed_machines.js
 echo "✅ 数据库初始化完成"
 
 echo "🚀 启动服务..."

@@ -4,6 +4,7 @@ const { EventEmitter } = require('events')
 const https = require('https')
 const fs = require('fs')
 const path = require('path')
+const jwt = require('jsonwebtoken')
 const { detectAiIntent } = require('../utils/ai-intent')
 
 const serverDir = path.join(__dirname, '..')
@@ -14,6 +15,7 @@ assert.ok(routeSource.includes("require('../utils/ai-intent')"))
 process.env.GROQ_API_KEY = ''
 process.env.SILICONFLOW_API_KEY = ''
 process.env.DEEPSEEK_API_KEY = ''
+process.env.JWT_SECRET = 'ai-route-test-secret'
 
 const aiRouter = require('../routes/ai')
 
@@ -26,11 +28,12 @@ async function requestChat(baseUrl, body) {
   return { status: response.status, json: await response.json() }
 }
 
-async function requestPhoto(baseUrl) {
+async function requestPhoto(baseUrl, token = '') {
   const form = new FormData()
   form.append('photo', new Blob(['fake-image-bytes'], { type: 'image/jpeg' }), 'leaf.jpg')
   const response = await fetch(baseUrl + '/api/ai/photo', {
     method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form
   })
   return { status: response.status, json: await response.json() }
@@ -131,7 +134,11 @@ async function run() {
     assert.strictEqual(deepseek.json.data.model, 'deepseek-chat')
     assert.strictEqual(captures[0].hostname, 'api.deepseek.com')
 
-    const photo = await requestPhoto(baseUrl)
+    const unauthorizedPhoto = await requestPhoto(baseUrl)
+    assert.strictEqual(unauthorizedPhoto.status, 401)
+
+    const token = jwt.sign({ id: 42, role: 'farmer' }, process.env.JWT_SECRET)
+    const photo = await requestPhoto(baseUrl, token)
     restore()
     process.env.SILICONFLOW_API_KEY = ''
     process.env.DEEPSEEK_API_KEY = ''

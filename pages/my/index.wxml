@@ -154,6 +154,22 @@
 
       <view class="mi-div"></view>
 
+      <view class="menu-item" bindtap="onFeedback">
+        <view class="mi-icon green">
+          <text class="mi-emoji">💬</text>
+        </view>
+        <view class="mi-body">
+          <text class="mi-title">{{copy.feedback}}</text>
+          <text class="mi-sub">{{copy.feedbackSub}}</text>
+        </view>
+        <view class="mi-right">
+          <text wx:if="{{supportUnread}}" class="mi-unread">{{supportUnread > 99 ? '99+' : supportUnread}}</text>
+          <text class="mi-arr">›</text>
+        </view>
+      </view>
+
+      <view class="mi-div"></view>
+
       <view class="menu-item" bindtap="onAbout">
         <view class="mi-icon blue">
           <text class="mi-emoji">ℹ️</text>

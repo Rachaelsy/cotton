@@ -1,0 +1,56 @@
+<view class="page">
+  <view class="nav" style="padding-top:{{statusBarHeight}}px">
+    <view class="back" bindtap="onBack"><text>‹</text></view>
+    <text class="nav-title">{{copy.title}}</text>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="service-head">
+    <view class="service-avatar"><text>棉</text><view class="service-dot {{connected ? 'connected' : ''}}"></view></view>
+    <view class="service-copy"><text class="service-name">{{copy.serviceName}}</text><text class="service-state">{{connected ? copy.connected : copy.connecting}}</text></view>
+  </view>
+
+  <scroll-view class="messages" scroll-y scroll-into-view="{{scrollToId}}" scroll-with-animation>
+    <view class="message-inner">
+      <view class="welcome"><text>{{copy.welcome}}</text></view>
+      <view wx:if="{{loading}}" class="empty"><text>…</text></view>
+      <view wx:elif="{{!messages.length}}" class="empty"><text>{{copy.empty}}</text></view>
+      <view id="message-{{item.id}}" class="message-row {{item.mine ? 'mine' : 'service'}}" wx:for="{{messages}}" wx:key="id" data-id="{{item.id}}" bindlongpress="openMessageActions">
+        <view wx:if="{{!item.mine}}" class="mini-avatar"><text>棉</text></view>
+        <view class="message-stack">
+          <text wx:if="{{!item.mine}}" class="sender">{{copy.serviceName}}</text>
+          <view class="bubble {{item.recalled ? 'recalled' : ''}}">
+            <text wx:if="{{item.recalled}}" class="recalled-text">{{item.mine ? copy.recalledMine : copy.recalledOther}}</text>
+            <block wx:else>
+              <view wx:if="{{item.reply}}" class="message-quote" data-id="{{item.reply.id}}" catchtap="jumpToQuotedMessage">
+                <text class="quote-name">{{item.reply.label}}</text>
+                <text class="quote-summary">{{item.reply.summary}}</text>
+              </view>
+              <image wx:if="{{item.imageSrc}}" class="message-image" src="{{item.imageSrc}}" mode="widthFix" data-src="{{item.imageSrc}}" bindtap="previewImage"></image>
+              <text wx:if="{{item.content}}" class="message-text">{{item.content}}</text>
+            </block>
+          </view>
+          <view class="message-meta">
+            <text class="message-time">{{item.timeText}}</text>
+            <text wx:if="{{item.mine && !item.recalled}}" class="read-state">{{item.readLabel}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="message-spacer"></view>
+    </view>
+  </scroll-view>
+
+  <view class="composer">
+    <view wx:if="{{replyingTo}}" class="replying-bar">
+      <view class="replying-copy"><text class="replying-label">{{copy.replyingTo}} {{replyingTo.label}}</text><text class="replying-summary">{{replyingTo.summary}}</text></view>
+      <view class="replying-close" aria-role="button" bindtap="cancelReply"><text>×</text></view>
+    </view>
+    <view class="composer-row">
+      <view class="image-button {{uploading ? 'disabled' : ''}}" aria-role="button" bindtap="chooseImage"><text>{{uploading ? '…' : '＋'}}</text></view>
+      <view class="input-shell">
+        <textarea class="message-input" value="{{input}}" maxlength="1000" auto-height cursor-spacing="24" placeholder="{{copy.inputPh}}" bindinput="onInput" confirm-type="send" bindconfirm="sendMessage"></textarea>
+      </view>
+      <view class="send-button {{sending || !canSend ? 'disabled' : ''}}" aria-role="button" bindtap="sendMessage"><text>{{copy.send}}</text></view>
+    </view>
+  </view>
+</view>

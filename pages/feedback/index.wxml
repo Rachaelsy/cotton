@@ -1,0 +1,64 @@
+<view class="page">
+  <view class="nav" style="padding-top:{{statusBarHeight}}px">
+    <view class="back" bindtap="onBack"><text>‹</text></view>
+    <text class="nav-title">{{copy.title}}</text>
+    <view class="nav-space"></view>
+  </view>
+
+  <scroll-view class="content" scroll-y>
+    <view class="intro"><text>{{copy.intro}}</text></view>
+
+    <view class="online-entry" bindtap="onOpenChat">
+      <view class="online-icon"><text>💬</text></view>
+      <view class="online-copy"><text class="online-title">{{copy.onlineService}}</text><text class="online-sub">{{copy.onlineServiceSub}}</text></view>
+      <view class="online-right"><text wx:if="{{chatUnread}}" class="online-unread">{{chatUnread > 99 ? '99+' : chatUnread}}</text><text class="online-action">{{copy.enterChat}} ›</text></view>
+    </view>
+
+    <view class="form-card">
+      <view class="field-head">
+        <text class="field-label">{{copy.content}}</text>
+        <text class="field-count">{{content.length}} / 1000</text>
+      </view>
+      <textarea class="content-input" value="{{content}}" maxlength="1000" placeholder="{{copy.contentPh}}" bindinput="onContentInput"></textarea>
+      <view class="image-field-head"><text class="field-label">{{copy.addImage}}</text><text class="image-hint">{{copy.imageHint}}</text></view>
+      <view class="image-grid">
+        <view class="image-item" wx:for="{{images}}" wx:key="url">
+          <image src="{{item.src}}" mode="aspectFill" data-index="{{index}}" bindtap="previewFormImage"></image>
+          <view class="image-remove" data-index="{{index}}" catchtap="removeImage"><text>×</text></view>
+        </view>
+        <view wx:if="{{images.length < 4}}" class="image-add {{uploadingImages ? 'uploading' : ''}}" bindtap="chooseImages">
+          <text class="image-add-icon">{{uploadingImages ? '…' : '+'}}</text>
+          <text>{{uploadingImages ? copy.uploading : copy.addImage}}</text>
+        </view>
+      </view>
+      <text class="field-label contact-label">{{copy.contact}}</text>
+      <input class="contact-input" value="{{contact}}" maxlength="100" placeholder="{{copy.contactPh}}" bindinput="onContactInput" />
+      <button class="submit-btn" loading="{{submitting}}" disabled="{{submitting || uploadingImages}}" bindtap="submit">{{submitting ? copy.submitting : copy.submit}}</button>
+    </view>
+
+    <view class="history-head"><text>{{copy.history}}</text></view>
+    <view wx:if="{{loading}}" class="empty-state"><text>{{copy.loading}}</text></view>
+    <view wx:elif="{{!feedbacks.length}}" class="empty-state">
+      <text class="empty-title">{{copy.empty}}</text>
+      <text class="empty-sub">{{copy.emptySub}}</text>
+    </view>
+    <view wx:else class="feedback-list">
+      <view class="feedback-card" wx:for="{{feedbacks}}" wx:for-index="feedbackIndex" wx:key="id">
+        <view class="feedback-top">
+          <text class="feedback-time">{{item.createdText}}</text>
+          <text class="status {{item.statusClass}}">{{item.statusLabel}}</text>
+        </view>
+        <text class="feedback-content">{{item.content}}</text>
+        <view wx:if="{{item.imageViews.length}}" class="record-images">
+          <image wx:for="{{item.imageViews}}" wx:for-item="imageUrl" wx:for-index="imageIndex" wx:key="*this" src="{{imageUrl}}" mode="aspectFill" data-feedback-index="{{feedbackIndex}}" data-image-index="{{imageIndex}}" bindtap="previewRecordImage"></image>
+        </view>
+        <text wx:if="{{item.contact}}" class="feedback-contact">{{copy.contact}}：{{item.contact}}</text>
+        <view wx:if="{{item.admin_reply}}" class="reply-block">
+          <view class="reply-head"><text>{{copy.reply}}</text><text>{{item.repliedText}}</text></view>
+          <text class="reply-content">{{item.admin_reply}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="bottom-space"></view>
+  </scroll-view>
+</view>

@@ -7,6 +7,7 @@ process.env.JWT_SECRET = 'qweather-route-test-secret'
 process.env.WEATHER_PROVIDER = 'qweather'
 process.env.QWEATHER_API_HOST = 'abc1234xyz.qweatherapi.com'
 process.env.QWEATHER_API_KEY = 'test-qweather-api-key'
+process.env.QWEATHER_RETRY_DELAY_MS = '0'
 delete process.env.QWEATHER_JWT_KID
 delete process.env.QWEATHER_JWT_SUB
 delete process.env.QWEATHER_JWT_PRIVATE_KEY
@@ -15,6 +16,7 @@ delete process.env.QWEATHER_JWT_PRIVATE_KEY_PATH
 const dbPath = require.resolve('../db/database')
 const nativeFetch = global.fetch
 const fetchedRequests = []
+let failNextNowRequest = false
 const mockCoordinates = JSON.stringify([
   { latitude: 39.47, longitude: 75.99 },
   { latitude: 39.47, longitude: 75.991 },
@@ -133,6 +135,11 @@ function qweatherJson(url) {
 
 global.fetch = async (url, options = {}) => {
   fetchedRequests.push({ url: String(url), headers: options.headers || {} })
+  const currentUrl = new URL(String(url))
+  if (failNextNowRequest && currentUrl.pathname === '/v7/grid-weather/now') {
+    failNextNowRequest = false
+    return { ok: false, status: 502, json: async () => ({ code: '502' }) }
+  }
   const payload = qweatherJson(url)
   if (payload) {
     return { ok: true, status: 200, json: async () => payload }
@@ -193,8 +200,17 @@ async function runRouteTest() {
     assert.strictEqual(locationSuccess.json.data.weather.provider, 'qweather')
 
     const allQweatherRequests = fetchedRequests.filter(item => item.url.includes('qweatherapi.com'))
-    assert.strictEqual(allQweatherRequests.length, 8)
-    assert(allQweatherRequests.slice(4).filter(item => new URL(item.url).pathname.startsWith('/v7/')).every(item => new URL(item.url).searchParams.get('location') === '75.99,39.47'))
+    assert.strictEqual(allQweatherRequests.length, 4, 'same rounded location should reuse the weather cache')
+
+    failNextNowRequest = true
+    const retrySuccess = await request(baseUrl, '', '/api/weather/location?lat=31.22114&lng=121.54409')
+    assert.strictEqual(retrySuccess.status, 200)
+    assert.strictEqual(retrySuccess.json.data.weather.provider, 'qweather')
+    const retriedNowRequests = fetchedRequests.filter(item => {
+      const currentUrl = new URL(item.url)
+      return currentUrl.pathname === '/v7/grid-weather/now' && currentUrl.searchParams.get('location') === '121.54,31.22'
+    })
+    assert.strictEqual(retriedNowRequests.length, 2, 'a transient 502 should retry the current-weather request once')
     assert(fetchedRequests.every(item => !item.url.includes('api.open-meteo.com')), 'qweather provider should not request Open-Meteo')
   } finally {
     await new Promise(resolve => server.close(resolve))

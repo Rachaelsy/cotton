@@ -2,9 +2,16 @@ const fs = require('fs')
 const crypto = require('crypto')
 
 const REQUEST_TIMEOUT_MS = Number(process.env.QWEATHER_TIMEOUT_MS || 8000)
+const RETRY_COUNT = Math.max(0, Number(process.env.QWEATHER_RETRY_COUNT || 1))
+const RETRY_DELAY_MS = Math.max(0, Number(process.env.QWEATHER_RETRY_DELAY_MS || 200))
+const CACHE_TTL_MS = Math.max(0, Number(process.env.QWEATHER_CACHE_TTL_MS || 10 * 60 * 1000))
+const STALE_TTL_MS = Math.max(CACHE_TTL_MS, Number(process.env.QWEATHER_STALE_TTL_MS || 2 * 60 * 60 * 1000))
 const JWT_TTL_SECONDS = 900
+const MAX_CACHE_ENTRIES = 200
 
 let cachedJwt = null
+const weatherCache = new Map()
+const inFlightWeatherRequests = new Map()
 
 function toNumber(value, fallback = null) {
   const number = Number(value)
@@ -103,6 +110,15 @@ function formatLocation(center) {
   return `${formatCoordinate(lng)},${formatCoordinate(lat)}`
 }
 
+function wait(ms) {
+  if (!ms) return Promise.resolve()
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function shouldRetry(error) {
+  return !!(error && (error.retryable || error.name === 'AbortError' || error.name === 'TypeError'))
+}
+
 async function requestQweatherJson(pathname, center, extraParams = {}) {
   const host = normalizeHost(process.env.QWEATHER_API_HOST)
   const params = new URLSearchParams({
@@ -112,33 +128,45 @@ async function requestQweatherJson(pathname, center, extraParams = {}) {
     ...extraParams
   })
   const url = `https://${host}${pathname}?${params.toString()}`
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  for (let attempt = 0; attempt <= RETRY_COUNT; attempt += 1) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'cotton-miniapp-qweather/1.0',
-        Accept: 'application/json',
-        ...authHeaders()
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'cotton-miniapp-qweather/1.0',
+          Accept: 'application/json',
+          ...authHeaders()
+        }
+      })
+      if (!response.ok) {
+        const error = new Error(`和风天气接口请求失败(${response.status})`)
+        error.retryable = response.status === 408 || response.status === 429 || response.status >= 500
+        throw error
       }
-    })
-    if (!response.ok) {
-      throw new Error(`和风天气接口请求失败(${response.status})`)
-    }
 
-    const payload = await response.json()
-    if (!payload || payload.code !== '200') {
-      throw new Error(`和风天气接口返回异常(${payload && payload.code ? payload.code : 'empty'})`)
+      const payload = await response.json()
+      if (!payload || payload.code !== '200') {
+        throw new Error(`和风天气接口返回异常(${payload && payload.code ? payload.code : 'empty'})`)
+      }
+      return payload
+    } catch (error) {
+      const normalizedError = error.name === 'AbortError'
+        ? Object.assign(new Error('和风天气接口响应超时'), { retryable: true })
+        : error
+      if (attempt < RETRY_COUNT && shouldRetry(normalizedError)) {
+        await wait(RETRY_DELAY_MS * (attempt + 1))
+        continue
+      }
+      throw normalizedError
+    } finally {
+      clearTimeout(timer)
     }
-    return payload
-  } catch (error) {
-    if (error.name === 'AbortError') throw new Error('和风天气接口响应超时')
-    throw error
-  } finally {
-    clearTimeout(timer)
   }
+
+  throw new Error('和风天气接口请求失败')
 }
 
 async function requestQweatherAlert(center) {
@@ -272,6 +300,51 @@ function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayloa
 }
 
 async function fetchQweatherWeather(center, plot = {}) {
+  const cacheKey = `${normalizeHost(process.env.QWEATHER_API_HOST)}:${formatLocation(center)}`
+  const now = Date.now()
+  const cached = weatherCache.get(cacheKey)
+  if (cached && cached.expiresAt > now) {
+    return { ...cached.weather, center }
+  }
+
+  if (inFlightWeatherRequests.has(cacheKey)) {
+    const weather = await inFlightWeatherRequests.get(cacheKey)
+    return { ...weather, center }
+  }
+
+  const request = fetchFreshQweatherWeather(center, plot)
+    .then(weather => {
+      for (const [key, entry] of weatherCache) {
+        if (entry.staleUntil <= Date.now()) weatherCache.delete(key)
+      }
+      while (weatherCache.size >= MAX_CACHE_ENTRIES) {
+        weatherCache.delete(weatherCache.keys().next().value)
+      }
+      weatherCache.set(cacheKey, {
+        weather,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+        staleUntil: Date.now() + STALE_TTL_MS
+      })
+      return weather
+    })
+  inFlightWeatherRequests.set(cacheKey, request)
+
+  try {
+    const weather = await request
+    return { ...weather, center }
+  } catch (error) {
+    if (cached && cached.staleUntil > Date.now()) {
+      return { ...cached.weather, center }
+    }
+    throw error
+  } finally {
+    if (inFlightWeatherRequests.get(cacheKey) === request) {
+      inFlightWeatherRequests.delete(cacheKey)
+    }
+  }
+}
+
+async function fetchFreshQweatherWeather(center, plot = {}) {
   const warningPromise = requestQweatherAlert(center)
     .then(normalizeAlertPayload)
     .catch(error => ({ available: false, zeroResult: false, alerts: [], attributions: [], error: error.message }))

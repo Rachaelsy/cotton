@@ -288,6 +288,7 @@ function buildPartnerJsapiBody({ cfg, order, openid }) {
     payer: { sp_openid: openid },
     attach: JSON.stringify(order.attach || {})
   }
+  if (order.timeExpire) body.time_expire = order.timeExpire
   if (order.profitSharing) body.settle_info = { profit_sharing: true }
   return body
 }
@@ -297,7 +298,7 @@ function partnerJsapiPrepay({ cfg, order, openid }) {
 }
 
 function buildJsapiBody({ cfg, order, openid }) {
-  return {
+  const body = {
     appid: cfg.appid || cfg.spAppid,
     mchid: cfg.mchid || cfg.spMchid,
     description: String(order.description || '').slice(0, 120),
@@ -307,6 +308,8 @@ function buildJsapiBody({ cfg, order, openid }) {
     payer: { openid },
     attach: JSON.stringify(order.attach || {})
   }
+  if (order.timeExpire) body.time_expire = order.timeExpire
+  return body
 }
 
 function jsapiPrepay({ cfg, order, openid }) {

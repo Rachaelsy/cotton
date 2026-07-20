@@ -10,7 +10,7 @@ const ENV = 'prod'
 
 const PROD_URL   = 'https://cyaia.cn'        // ← 上线后改为真实备案域名
 const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP
-const LOCAL_IP   = '192.168.0.53'             // 本地开发局域网 IP（ipconfig 查询）
+const LOCAL_IP   = '192.168.0.12'             // 本地开发局域网 IP（ipconfig 查询）
 
 const BASE_URL =
   ENV === 'prod'   ? PROD_URL :
@@ -48,6 +48,10 @@ function saveUser(user) {
 
 function getUser() {
   return wx.getStorageSync(USER_KEY) || null
+}
+
+function isFarmerUser(user) {
+  return !!(user && user.role === 'farmer')
 }
 
 // ─────────────────────────────────────────────
@@ -128,7 +132,7 @@ async function register(form) {
  */
 async function login(phone, password) {
   const res = await request('POST', '/api/auth/login', { phone, password })
-  if (res.code === 200) {
+  if (res.code === 200 && isFarmerUser(res.data)) {
     saveToken(res.data.token)
     saveUser(res.data)
   }
@@ -145,6 +149,12 @@ async function verify() {
   try {
     const res = await request('GET', '/api/auth/verify')
     if (res.code === 200) {
+      if (!isFarmerUser(res.data)) {
+        clearToken()
+        const app = typeof getApp === 'function' ? getApp() : null
+        if (app && app.globalData) app.globalData.user = null
+        return false
+      }
       saveUser(res.data)
       const app = typeof getApp === 'function' ? getApp() : null
       if (app && app.globalData) app.globalData.user = res.data
@@ -187,7 +197,7 @@ function requireLogin() {
  */
 async function wxLogin(loginCode, phoneCode) {
   const res = await request('POST', '/api/auth/wx-login', { loginCode, phoneCode })
-  if (res.code === 200) {
+  if (res.code === 200 && isFarmerUser(res.data)) {
     saveToken(res.data.token)
     saveUser(res.data)
     getApp().globalData.user = res.data
@@ -201,5 +211,5 @@ module.exports = {
   saveUser, getUser,
   request, uploadFile,
   register, login, verify, logout, wxLogin,
-  isLoggedIn, requireLogin
+  isLoggedIn, requireLogin, isFarmerUser
 }

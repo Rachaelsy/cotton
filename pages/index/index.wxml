@@ -22,7 +22,6 @@
           </view>
           <view class="notif-btn" bindtap="onNotification">
             <text class="notif-icon">🔔</text>
-            <view class="notif-dot"></view>
           </view>
         </view>
       </view>

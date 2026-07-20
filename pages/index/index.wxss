@@ -102,17 +102,6 @@
 
 .notif-icon { font-size: 32rpx; }
 
-.notif-dot {
-  position: absolute;
-  top: 8rpx;
-  right: 8rpx;
-  width: 16rpx;
-  height: 16rpx;
-  background: #D6453D;
-  border-radius: 50%;
-  border: 3rpx solid rgba(216, 234, 245, 0.9);
-}
-
 /* ===== 天气卡片 ===== */
 .weather-card {
   background: #ffffff;

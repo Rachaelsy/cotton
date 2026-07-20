@@ -1,6 +1,6 @@
 # 棉花智能体 · WeChat Mini Program
 
-面向新疆棉农和农资商户的智能农业管理平台，微信小程序 Skyline 渲染器 + Node.js 后端。
+面向新疆棉农、农资商户和农业服务人员的智能农业管理平台，采用农户微信小程序 + 多角色网页后台 + Node.js 后端架构。
 
 ---
 
@@ -14,6 +14,8 @@
 | 数据库 | MySQL 8.0（mysql2 连接池）|
 | 认证 | JWT（jsonwebtoken）+ bcryptjs |
 | 开发调试 | 真机：局域网 IP；模拟器：localhost |
+
+当前产品边界：微信小程序仅供农户使用；商户、农机手、专家和管理员统一从网页端进入各自后台。农户登录后直接进入首页，实名认证为可选服务，不影响普通功能。首页暂未开放的棉花交易、农业贷款和农业保险入口继续保留，点击时统一提示“尚在开发中”。
 
 ---
 
@@ -61,13 +63,24 @@ node db/migrate_wechat_refunds.js     # 微信支付真实退款记录表
 node db/migrate_commission_requests.js # 农机支付字段 + 商户/农机手佣金调整审核表
 node db/migrate_experts.js            # 专家账号表
 node db/migrate_expert_questions.js   # 专家提问表
-node db/migrate_farmer_improvements.js # 农机分阶段支付/定位、气象观测、农户实名与新手引导
+node db/migrate_farmer_improvements.js # 农机分阶段支付/定位、气象观测与农户功能增强
+node db/migrate_feedbacks.js          # 意见反馈、在线客服消息、引用/撤回/单方删除状态
 node db/seed.js                       # 插入测试用户账号
 node db/seed_machines.js              # 农机演示数据（机主 13800000003 + 4 台机具）
 
 # 启动服务
 node index.js
 ```
+
+### 回归测试
+
+```bash
+cd server
+npm test
+npm audit --omit=dev
+```
+
+测试覆盖农户权限边界、可选实名认证、天气缓存与重试、AI 和上传安全、支付超时保护、意见反馈、在线客服实时消息及主要支付/订单流程。
 
 ### Docker 部署更新
 
@@ -200,15 +213,21 @@ node -e "require('dotenv').config(); const { fetchQweatherWeather } = require('.
 
 真实退款已接入微信支付服务商退款接口。农资售后和已支付的农机预约取消都会创建 `wechat_refunds` 退款单；若对应款项已经分账，后端会先按订单/支付阶段退回平台分账，再调用微信退款。退款成功以微信退款回调 `/api/pay/wechat/refund-notify` 为准。早期模拟支付订单没有微信交易号，会明确拒绝真实退款，不会伪造退款成功。
 
-### 农户实名认证与首次使用
+### 农户实名认证
 
-农户首次登录必须提交姓名、身份证号及身份证正反面，由管理员后台“实名审核”人工核验；审核通过后才进入首次使用引导。身份证号码使用 AES-256-GCM 加密，证件图片保存在 Docker 私有卷 `identity_uploads`，不会通过 `/uploads` 公开访问。
+农户实名认证是可选服务，不影响登录和普通农户功能。农户可从“我的”页面主动提交姓名、身份证号及身份证正反面，由管理员后台“实名审核”人工核验。身份证号码使用 AES-256-GCM 加密，证件图片保存在 Docker 私有卷 `identity_uploads`，不会通过 `/uploads` 公开访问。
 
-生产环境必须在 `server/.env` 配置 `IDENTITY_DATA_KEY`。可用 `openssl rand -base64 48` 生成，启用后不要更换，否则历史身份证号无法解密；密钥和 `identity_uploads` 卷都应纳入受控备份。首次使用引导会让农户选择中文/维吾尔语、授权定位并创建首块地，完成状态保存在服务端。
+启用实名认证功能时，生产环境必须在 `server/.env` 配置 `IDENTITY_DATA_KEY`。可用 `openssl rand -base64 48` 生成，启用后不要更换，否则历史身份证号无法解密；密钥和 `identity_uploads` 卷都应纳入受控备份。
+
+### 意见反馈与在线客服
+
+农户可从“我的”进入意见反馈，提交文字、联系方式和最多 4 张问题图片，也可直接进入平台在线客服。首页通知红点和“我的”未读角标只使用数据库中的真实未读数量，没有消息时不显示红点。
+
+在线客服支持文字、图片、复制、2 分钟内撤回、双方单独删除、已读状态和引用回复。管理员可在后台查看农户会话、发送文字或图片，并从管理员端清空整个会话；该操作只隐藏管理员端历史，不会删除农户端记录，农户再次发送消息后会创建新的管理员会话。实时刷新使用 WebSocket，并保留 5 秒 HTTP 轮询作为断线兜底。
 
 农机手网页后台可在有进行中作业时开启实时位置共享；农户跟踪页每 15 秒读取一次最近位置。生产环境浏览器定位要求 HTTPS 和用户授权，位置超过 10 分钟未更新时只显示“位置暂未更新”，不会拿基地坐标冒充实时位置。
 
-农户端核心操作流程已补齐中文/维吾尔语即时切换，覆盖农机预约与支付、农事记录、水肥管理、农资商城订单及实名认证/首次使用引导。页面固定文案随语言立即刷新；商户录入的商品名称、专家发布的课程内容等业务数据仍按发布者填写的原文展示。
+农户端核心操作流程已补齐中文/维吾尔语即时切换，覆盖农机预约与支付、农事记录、水肥管理、农资商城订单及可选实名认证。页面固定文案随语言立即刷新；商户录入的商品名称、专家发布的课程内容等业务数据仍按发布者填写的原文展示。
 
 ### 真实快递物流配置
 
@@ -334,6 +353,8 @@ http://localhost:3000/
 | 财务管理 | 商户财务汇总（销售额/佣金/已解冻/冻结）；提现统一在微信支付商户平台处理 |
 | 专家账号 | 管理专家账号，专家与管理员分离，专家可独立登录专家后台 |
 | 专家讲堂 | 管理课程、图文内容、付费/免费标记，并查看农户专家提问 |
+| 在线客服 | 农户会话、真实未读、文字/图片、引用、撤回、单条删除和管理员端会话清空 |
+| 客服反馈 | 查看农户问题和图片，回复并维护待回复/已回复/已完成状态 |
 
 **商户 / 农机手入驻申请（公开页面）：**
 ```
@@ -391,8 +412,7 @@ cotton/
 │   └── data.js               # 本地兜底商品数据（API 不可用时使用）
 │
 ├── components/
-│   ├── tab-bar/              # 农户底部导航（3 Tab：首页/AI/我的）
-│   └── merchant-tab-bar/     # 商户底部导航（5 Tab：首页/商品/订单/资金/我的）
+│   └── tab-bar/              # 农户底部导航（3 Tab：首页/AI/我的）
 │
 ├── custom-tab-bar/           # 框架要求的空壳（display:none），实际导航由上方组件实现
 │
@@ -404,6 +424,8 @@ cotton/
 │   ├── index/                # 农户首页（地块天气、AI 核心入口、农事功能网格）
 │   ├── ai/                   # AI 问答（DeepSeek 优先，支持中文语音问答、指令自动跳转、拍照识别）
 │   ├── my/                   # 我的（用户卡片、实名、退出，含进行中订单徽章）
+│   ├── feedback/             # 意见反馈（问题描述、图片、管理员回复、在线客服入口）
+│   ├── support-chat/         # 农户与平台客服实时聊天
 │   ├── favorites/            # 我的收藏（卡片网格，取消收藏，加购）
 │   ├── fields/               # 地块管理（列表 + 绘制 draw + 详情 detail）
 │   ├── pest/                 # 病虫害识别（拍照 + 识别结果 detail）
@@ -416,14 +438,6 @@ cotton/
 │   ├── loans/                # 农业贷款
 │   ├── insurance/            # 农业保险
 │   └── expert/               # 专家讲堂（课程 + 详情）
-│   │
-│   └── ── 商户页面（主包）──────────────────────────
-│       └── merchant/
-│           ├── index         # 数据看板（订单/收款/商品/营收统计）
-│           ├── products      # 商品管理（上架/编辑/下架/删除，对接 API）
-│           ├── orders        # 订单管理（全部/待发货/已完成）
-│           ├── finance       # 资金结算（收支明细/提现）
-│           └── profile       # 个人中心（店铺信息/改密/退出）
 │
 ├── subpkg-supplies/          # 分包：农资供应（不计入主包体积）
 │   ├── supplies/             # 农资商城首页（对接商户商品 API）
@@ -449,6 +463,7 @@ cotton/
     │   ├── orders.js         # /api/orders/*（下单、查询、确认收货、售后、提交评价）
     │   ├── plots.js          # /api/plots/*（农户地块 CRUD）
     │   ├── farm-records.js   # /api/farm-records/*（农事记录 CRUD + 批量删除）
+    │   ├── feedback.js       # /api/feedback/*（反馈工单、未读数和农户客服消息）
     │   ├── operator.js       # /api/operator/*（机主入驻/登录/机具管理/接单/订单）
     │   ├── machines.js       # /api/machines/*（农户浏览农机，含真实距离排序）
     │   ├── machine-orders.js # /api/machine-orders/*（农机预约下单/跟踪/评价/删除）
@@ -474,6 +489,8 @@ cotton/
     │       ├── login.html           # 选身份登录（机主/商户）
     │       └── register.html        # 选身份注册入驻（机主/商户）
     ├── public/uploads/       # 图片上传目录（wx.uploadFile → POST /api/upload）
+    ├── utils/support-messages.js # 客服消息、引用快照、撤回、已读和单方隐藏
+    ├── utils/support-realtime.js # 客服 WebSocket 连接与事件推送
     └── db/
         ├── database.js       # mysql2 连接池
         ├── schema.sql        # 建表：users / farmers / merchants / login_logs
@@ -490,6 +507,7 @@ cotton/
         ├── migrate_machines.js           # 农机租赁建表 + operator 角色
         ├── migrate_order_delete.js       # 订单按角色软删除字段
         ├── migrate_delivery_range.js     # 可配送范围字段（机具/商户）
+        ├── migrate_feedbacks.js          # 反馈工单与在线客服消息表
         ├── seed.js                       # 测试用户账号（幂等）
         └── seed_machines.js              # 农机演示数据（机主 + 机具）
 ```
@@ -498,14 +516,18 @@ cotton/
 
 ## 后端 API 概览
 
-Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.0.1:3000`（模拟器）
+Base URL（开发）：`http://<电脑当前局域网IP>:3000`（真机）/ `http://127.0.0.1:3000`（模拟器）
 
 | 方法 | 路径 | 权限 | 说明 |
 |------|------|------|------|
-| POST | `/api/auth/register` | 公开 | 注册（农户/商户） |
+| POST | `/api/auth/register` | 公开 | 小程序农户注册；商户走网页入驻 |
 | POST | `/api/auth/login` | 公开 | 手机号+密码登录 |
 | GET  | `/api/auth/verify` | Token | 验证 Token，返回用户信息 |
 | POST | `/api/auth/logout` | Token | 登出（前端清 Token） |
+| GET/POST | `/api/feedback` | 农户 | 查询/提交意见反馈，支持问题图片 |
+| GET | `/api/feedback/unread` | 农户 | 获取反馈回复与客服消息真实未读数 |
+| GET/POST | `/api/feedback/chat/messages` | 农户 | 查询/发送客服文字、图片和引用回复 |
+| PATCH/DELETE | `/api/feedback/chat/messages/:id/recall` `/api/feedback/chat/messages/:id` | 农户 | 撤回自己的消息 / 仅农户端删除消息 |
 | GET  | `/api/products` | 公开 | 获取所有在售商品（含商家名） |
 | GET  | `/api/products/mine` | 商户 | 获取本店商品列表 |
 | POST | `/api/products` | 商户 | 上架新商品 |
@@ -514,6 +536,8 @@ Base URL（开发）：`http://192.168.0.53:3000`（局域网）/ `http://127.0.
 | DELETE | `/api/products/:id` | 商户 | 删除商品 |
 | POST | `/api/admin/login` | 公开 | 管理员登录 |
 | GET  | `/api/admin/stats` | 管理员 | 统计数据概览 |
+| GET/DELETE | `/api/admin/support-chats[/:userId]` | 管理员 | 查询客服会话 / 仅清空管理员端指定会话 |
+| GET/POST | `/api/admin/support-chats/:userId/messages` | 管理员 | 查询或发送客服消息，支持图片和引用 |
 | GET  | `/api/admin/farmers` | 管理员 | 农户列表 |
 | GET  | `/api/admin/merchants` | 管理员 | 商户列表（含商品数） |
 | GET  | `/api/admin/products` | 管理员 | 全量商品列表 |
@@ -646,6 +670,9 @@ machine_orders       → id, order_no, machine_id, operator_id, farmer_id, machi
 machine_reviews      → id, order_id(UNIQUE), machine_id, operator_id, farmer_id, farmer_name,
                         score_timely/quality/attitude/price(分项), rating(综合), content, reply
 login_logs           → user_id, ip, created_at
+feedbacks            → user_id, content, contact, images_json, status, admin_reply, user_read_at
+support_messages     → user_id, sender_type, sender_id, content, image_url, reply_to_id,
+                        reply_to_json, recalled_at, hidden_for_farmer, hidden_for_admin, read_at
 
 订单软删除：`orders` 加 `farmer_deleted/merchant_deleted`、`machine_orders` 加 `farmer_deleted/operator_deleted`——按角色隐藏，仅终态（已完成/已取消/售后完成）可删，不影响对方记录。
 
@@ -668,7 +695,7 @@ login_logs           → user_id, ip, created_at
 
 **当前方案（正确）**：
 - `custom-tab-bar/` 保留空壳（框架要求），CSS 设 `display:none`
-- 在 `components/tab-bar/` 和 `components/merchant-tab-bar/` 中实现真实导航 UI
+- 在 `components/tab-bar/` 中实现真实导航 UI
 - 每个 Tab 页在 WXML 的 flex 列底部直接内嵌组件（无需 `position:fixed`）：
 
 ```wxml
@@ -680,7 +707,7 @@ login_logs           → user_id, ip, created_at
 </view>
 ```
 
-**商户页面**用 `wx.reLaunch` 切换（非 Tab 页），农户 Tab 页用 `wx.switchTab`。
+农户 Tab 页用 `wx.switchTab`。
 
 ---
 

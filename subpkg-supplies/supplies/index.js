@@ -126,7 +126,7 @@ Page({
     const product = this.data.products.find(p => p.id === id)
     if (!product) return
     app.globalData.selectedProduct = product
-    wx.navigateTo({ url: '/subpkg-supplies/supplies-detail/index' })
+    wx.navigateTo({ url: `/subpkg-supplies/supplies-detail/index?id=${id}` })
   },
 
   // 加入购物车（不跳转）

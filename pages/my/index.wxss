@@ -245,6 +245,21 @@
   font-weight: 600;
 }
 
+.mi-unread {
+  min-width: 36rpx;
+  height: 36rpx;
+  padding: 0 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 18rpx;
+  background: #D9363E;
+  color: #fff;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
 .mi-badge-warn {
   background: #FFF3E6;
   border-radius: 999rpx;

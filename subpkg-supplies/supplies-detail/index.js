@@ -23,17 +23,20 @@ Page({
     ,copy: COPY.zh
   },
 
-  onLoad() {
+  onLoad(options = {}) {
     const info = wx.getSystemInfoSync()
-    const product = app.globalData.selectedProduct
+    const productId = options.id ? String(options.id) : ''
+    const selectedProduct = app.globalData.selectedProduct
+    const product = selectedProduct && (!productId || String(selectedProduct.id) === productId)
+      ? selectedProduct
+      : null
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
-      product,
       copy: COPY[i18n.getLanguage()] || COPY.zh,
-      cartCount: app.globalData.cartCount,
-      favorited: product ? app.isFavorited(product.id) : false
+      cartCount: app.globalData.cartCount
     })
-    if (product?.merchant_id) this._loadReviews(product.merchant_id)
+    if (product) this._applyProduct(product)
+    else if (productId) this._loadProduct(productId)
   },
 
   onShow() {
@@ -53,6 +56,39 @@ Page({
         })
       }
     } catch { /* 评价加载失败不影响商品展示 */ }
+  },
+
+  async _loadProduct(id) {
+    try {
+      const res = await auth.request('GET', `/api/products/${id}`)
+      if (res.code === 200 && res.data) this._applyProduct(this._normalizeProduct(res.data))
+    } catch { /* 商品加载失败时保留 loading 状态 */ }
+  },
+
+  _normalizeProduct(product) {
+    const imageUrl = product.image_url && product.image_url.startsWith('/uploads/')
+      ? `${auth.BASE_URL}${product.image_url}`
+      : product.image_url
+    return {
+      ...product,
+      id: String(product.id),
+      spec: product.spec || product.unit || '',
+      imgBg: imageUrl ? '#F5EEE6' : 'linear-gradient(135deg,#C8902E,#D4A043)',
+      image_url: imageUrl || null,
+      sold: parseInt(product.sold) || 0,
+      rating: product.rating || 5.0,
+      store: product.store || product.company_name || this.data.copy.verifiedMerchant,
+      cat: product.cat || product.category || '其他',
+      merchant_wechat: product.merchant_wechat || ''
+    }
+  },
+
+  _applyProduct(product) {
+    this.setData({
+      product,
+      favorited: app.isFavorited(product.id)
+    })
+    if (product.merchant_id) this._loadReviews(product.merchant_id)
   },
 
   onBack() {

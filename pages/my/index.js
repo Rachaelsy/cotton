@@ -17,7 +17,8 @@ Page({
     userInfo: { name: '--', tags: [], verified: false, landSize: 0 },
     userInitial: '?',
     orderCount: 0,
-    favCount: 0
+    favCount: 0,
+    supportUnread: 0
   },
 
   onLoad() {
@@ -65,8 +66,9 @@ Page({
         userInitial: name.charAt(0)
       })
       this._loadOrderCount()
+      this._loadSupportUnread()
     } else {
-      this.setData({ isLoggedIn: false, orderCount: 0 })
+      this.setData({ isLoggedIn: false, orderCount: 0, supportUnread: 0 })
     }
   },
 
@@ -111,14 +113,21 @@ Page({
     try {
       const res = await auth.wxLogin(loginCode, phoneCode)
       if (res.code === 200) {
+        if (!auth.isFarmerUser(res.data)) {
+          auth.clearToken()
+          app.globalData.user = null
+          wx.showModal({
+            title: this.data.copy.webOnlyTitle || '请使用网页后台',
+            content: this.data.copy.webOnlyContent || '商户、农机手和管理员账号请在网页端登录管理后台，小程序仅供农户使用。',
+            showCancel: false,
+            confirmText: this.data.copy.ok || '知道了'
+          })
+          this._refreshUser()
+          return
+        }
         wx.showToast({ title: this.data.copy.loginSuccess, icon: 'success' })
         this._refreshUser()
         this._refreshWxLoginCode()
-        if (res.data.role === 'farmer' && !res.data.is_verified) {
-          setTimeout(() => wx.navigateTo({ url: '/pages/verification/index' }), 500)
-        } else if (res.data.role === 'farmer' && !res.data.onboarding_completed) {
-          setTimeout(() => wx.navigateTo({ url: '/pages/onboarding/index' }), 500)
-        }
       } else if (res.code === 503) {
         // 微信登录未配置，引导手机号登录
         wx.showModal({
@@ -156,6 +165,13 @@ Page({
     wx.navigateTo({ url: '/pages/verification/index' })
   },
 
+  async _loadSupportUnread() {
+    try {
+      const res = await auth.request('GET', '/api/feedback/unread')
+      if (res.code === 200) this.setData({ supportUnread: Number(res.data.total || 0) })
+    } catch { /* 忽略，不影响主界面 */ }
+  },
+
   onFavorites() {
     wx.navigateTo({ url: '/pages/favorites/index' })
   },
@@ -163,6 +179,11 @@ Page({
   onMyOrders() {
     if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
     wx.navigateTo({ url: '/subpkg-supplies/my-orders/index' })
+  },
+
+  onFeedback() {
+    if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
+    wx.navigateTo({ url: '/pages/feedback/index' })
   },
 
   onAbout() {

@@ -96,13 +96,13 @@ Page({
     try {
       const res = await auth.wxLogin(loginCode, phoneCode)
       if (res.code === 200) {
+        if (!auth.isFarmerUser(res.data)) {
+          this._showWebOnlyAccount()
+          return
+        }
         getApp().globalData.user = res.data
         wx.showToast({ title: this.textCopy.loginSuccess, icon: 'success', duration: 1000 })
-        setTimeout(() => {
-          if (res.data.role === 'farmer' && !res.data.is_verified) wx.reLaunch({ url: '/pages/verification/index' })
-          else if (res.data.role === 'farmer' && !res.data.onboarding_completed) wx.reLaunch({ url: '/pages/onboarding/index' })
-          else wx.navigateBack()
-        }, 1000)
+        setTimeout(() => wx.reLaunch({ url: '/pages/index/index' }), 1000)
       } else if (res.code === 503) {
         wx.showModal({
           title: i18n.getCopy('common').tip, content: this.textCopy.wxNeedConfig,
@@ -126,13 +126,12 @@ Page({
     try {
       const res = await auth.login(loginPhone, loginPwd)
       if (res.code === 200) {
+        if (!auth.isFarmerUser(res.data)) {
+          this._showWebOnlyAccount()
+          return
+        }
         getApp().globalData.user = res.data
-        const target = res.data.role === 'merchant'
-          ? '/pages/merchant/index'
-          : (!res.data.is_verified
-              ? '/pages/verification/index'
-              : (res.data.onboarding_completed ? '/pages/index/index' : '/pages/onboarding/index'))
-        wx.reLaunch({ url: target })
+        wx.reLaunch({ url: '/pages/index/index' })
       } else {
         this._toast(res.msg || this.textCopy.loginFail)
       }
@@ -169,7 +168,7 @@ Page({
       if (res.code === 200) {
         getApp().globalData.user = res.data
         wx.showToast({ title: this.textCopy.registerSuccess, icon: 'success', duration: 1200 })
-        setTimeout(() => wx.reLaunch({ url: '/pages/verification/index' }), 1200)
+        setTimeout(() => wx.reLaunch({ url: '/pages/index/index' }), 1200)
       } else {
         this._toast(res.msg || this.textCopy.registerFail)
       }
@@ -181,5 +180,16 @@ Page({
 
   _toast(title) {
     wx.showToast({ title, icon: 'none', duration: 2000 })
+  },
+
+  _showWebOnlyAccount() {
+    auth.clearToken()
+    getApp().globalData.user = null
+    wx.showModal({
+      title: this.textCopy.webOnlyTitle || '请使用网页后台',
+      content: this.textCopy.webOnlyContent || '商户、农机手和管理员账号请在网页端登录管理后台，小程序仅供农户使用。',
+      showCancel: false,
+      confirmText: this.textCopy.ok || '知道了'
+    })
   }
 })

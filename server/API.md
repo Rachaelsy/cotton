@@ -1,7 +1,7 @@
 # 棉花智能体 · 接口文档
 
-> 本文档记录所有后端 API 接口，包含认证、商品和管理后台三个模块。
-> 最后更新：2026-07-15
+> 本文档记录后端 API 接口，包含认证、业务功能和管理后台模块。
+> 最后更新：2026-07-20
 
 ---
 
@@ -9,7 +9,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| 开发环境 Base URL | `http://192.168.0.25:3000`（局域网真机）或 `http://localhost:3000`（模拟器） |
+| 开发环境 Base URL | `http://192.168.0.12:3000`（局域网真机）或 `http://localhost:3000`（模拟器） |
 | 认证方式 | `Authorization: Bearer <token>`（JWT，有效期 7 天） |
 | 请求格式 | `Content-Type: application/json` |
 | 响应格式 | 统一 JSON，字段：`code / msg / data` |
@@ -138,7 +138,6 @@
     "role":        "farmer",
     "real_name":   "古丽巴哈尔",
     "is_verified": 0,
-    "onboarding_completed": 0,
     "location":    "喀什·疏附县",
     "land_size":   486
   }
@@ -165,7 +164,9 @@
 { "code": 200, "msg": "已退出登录" }
 ```
 
-### 1.5 农户实名认证与首次使用
+### 1.5 农户实名认证（可选）
+
+> 实名认证不是登录或使用平台基础功能的前置条件，农户可按需提交认证。
 
 以下接口均要求农户 JWT：
 
@@ -174,9 +175,38 @@
 | GET | `/api/verification` | 查询最新实名审核状态 |
 | POST | `/api/verification/upload` | `multipart/form-data` 上传身份证图片，字段名 `image`，返回私有 `fileToken` |
 | POST | `/api/verification` | 提交 `{ realName,idNumber,frontToken,backToken }`；校验身份证校验位并加密保存 |
-| PATCH | `/api/verification/onboarding` | 实名通过后标记首次使用引导完成 |
 
 管理员审核接口：`GET /api/admin/farmer-verifications`、`GET /api/admin/farmer-verifications/:id/file/:side`、`PATCH /api/admin/farmer-verifications/:id/review`。审核请求体为 `{ "action":"approved|rejected", "reason":"拒绝原因" }`。
+
+### 1.6 意见反馈与客服
+
+农户可在小程序中提交问题并查看管理员回复，以下接口要求农户 JWT：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/feedback` | 查询当前农户最近 50 条反馈、问题图片与管理员回复 |
+| POST | `/api/feedback` | 提交 `{ "content":"问题描述", "contact":"选填联系方式", "images":["/uploads/a.jpg"] }`，最多 4 张图片 |
+| GET | `/api/feedback/unread` | 查询反馈回复与在线客服消息的真实未读数量 |
+| GET | `/api/feedback/chat/messages?after=消息ID` | 查询在线客服消息；传 `after` 时仅返回增量消息 |
+| POST | `/api/feedback/chat/messages` | 发送文字或图片；可带 `reply_to_id` 引用当前仍可见且未撤回的消息 |
+| PATCH | `/api/feedback/chat/messages/:id/recall` | 在 2 分钟内撤回当前农户自己发送的消息 |
+| DELETE | `/api/feedback/chat/messages/:id` | 仅从当前农户的聊天记录中删除消息 |
+
+管理员后台接口要求管理员 JWT：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/admin/feedbacks?status=pending` | 查询反馈工单，可按 `pending / replied / closed` 筛选 |
+| PATCH | `/api/admin/feedbacks/:id/reply` | 回复工单，提交 `{ "reply":"回复内容", "status":"replied|closed" }` |
+| GET | `/api/admin/support-chats` | 查询在线客服会话及农户消息未读数 |
+| DELETE | `/api/admin/support-chats/:userId` | 删除管理员端会话并隐藏该会话的全部历史，农户端记录不受影响 |
+| GET | `/api/admin/support-chats/:userId/messages` | 查询指定农户的聊天记录并标记农户消息已读 |
+| POST | `/api/admin/support-upload` | `multipart/form-data` 上传客服图片，字段名 `image`，最大 8MB |
+| POST | `/api/admin/support-chats/:userId/messages` | 管理员发送文字或已上传的图片；可带 `reply_to_id` 引用消息 |
+| PATCH | `/api/admin/support-chats/:userId/messages/:messageId/recall` | 在 2 分钟内撤回当前管理员自己发送的消息 |
+| DELETE | `/api/admin/support-chats/:userId/messages/:messageId` | 仅从管理员客服界面删除消息，农户端仍保留 |
+
+引用回复以 `reply_to` 返回原消息的发送方、文字或图片摘要。撤回会清除原消息内容并为双方保留“已撤回”占位；删除为单方隐藏，不会删除对方的记录，删除管理员会话也只清空管理员端。聊天记录同时返回 `read_at` 供发送方显示已读状态。在线客服使用 `WS /api/support/socket?token=<JWT>` 推送消息、撤回、删除与已读刷新事件；客户端同时保留 HTTP 轮询作为断线兜底。生产环境应使用 `wss://`，Nginx 需要透传 `Upgrade` 和 `Connection` 请求头。
 
 ---
 

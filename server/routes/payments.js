@@ -34,6 +34,24 @@ function getWechatPayChargeFen(order) {
   return fen(order.amount)
 }
 
+function formatWechatTime(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().replace(/\.\d{3}Z$/, '+00:00')
+}
+
+function isPastTime(value) {
+  if (!value) return false
+  const date = new Date(value)
+  return !Number.isNaN(date.getTime()) && date.getTime() <= Date.now()
+}
+
+function validateSupplyNotExpired(order) {
+  if (!order || order.kind !== 'supply' || order.status !== 'pending_payment') return { ok: true }
+  if (!isPastTime(order.payExpiresAt)) return { ok: true }
+  return { ok: false, msg: '订单已超时，请重新下单', code: 410 }
+}
+
 function normalizeMachineStage(stage, fallback = 'deposit') {
   return ['deposit', 'balance', 'full'].includes(stage) ? stage : fallback
 }
@@ -111,7 +129,7 @@ function shouldUseProfitSharing(order) {
 async function loadSupplyOrder(orderId, userId, statuses = ['pending_payment']) {
   const placeholders = statuses.map(() => '?').join(',')
   const [[row]] = await db.query(
-    `SELECT o.id,o.order_no,o.total,o.status,
+    `SELECT o.id,o.order_no,o.total,o.status,o.pay_expires_at,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
             MIN(i.merchant_id) AS merchant_id,MIN(m.sub_mchid) AS sub_mchid,
             MIN(m.commission_rate) AS commission_rate,
@@ -127,6 +145,7 @@ function normalizeSupplyOrder(row) {
   if (!row) return null
   return {
     kind: 'supply', id: row.id, orderNo: row.order_no, amount: Number(row.total || 0),
+    payExpiresAt: row.pay_expires_at,
     status: row.status, merchantCount: Number(row.merchant_count || 0), merchantId: row.merchant_id,
     subMchid: row.sub_mchid || '', commissionRate: Number(row.commission_rate || 0),
     isSelfOperated: Number(row.self_operated || 0) === 1, paymentStage: 'full'
@@ -139,7 +158,7 @@ async function loadAnySupplyOrder(orderId, userId) {
 
 async function loadSupplyOrderForNotify(orderId) {
   const [[row]] = await db.query(
-    `SELECT o.id,o.order_no,o.total,o.status,
+    `SELECT o.id,o.order_no,o.total,o.status,o.pay_expires_at,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
             MIN(i.merchant_id) AS merchant_id,MIN(m.sub_mchid) AS sub_mchid,
             MIN(m.commission_rate) AS commission_rate,
@@ -348,6 +367,9 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
     if (orderType === 'machine') {
       const stageCheck = validateMachineStage(order)
       if (!stageCheck.ok) return fail(res, stageCheck.msg, stageCheck.code)
+    } else {
+      const expiryCheck = validateSupplyNotExpired(order)
+      if (!expiryCheck.ok) return fail(res, expiryCheck.msg, expiryCheck.code)
     }
     const receiver = validateReceiver(order)
     if (!receiver.ok) return fail(res, receiver.msg, receiver.code)
@@ -362,6 +384,7 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
       order: {
         description: orderDescription(orderType, order),
         outTradeNo: outTradeNo(orderType, order),
+        timeExpire: order.kind === 'supply' ? formatWechatTime(order.payExpiresAt) : '',
         amountFen: chargeFen,
         subMchid: order.subMchid,
         profitSharing: shouldUseProfitSharing(order),
@@ -397,6 +420,10 @@ router.post('/wechat/confirm', farmerAuth, async (req, res) => {
     const order = orderType === 'machine'
       ? await loadMachineOrder(orderId, req.user.id, paymentStage)
       : await loadAnySupplyOrder(orderId, req.user.id)
+    if (orderType === 'supply') {
+      const expiryCheck = validateSupplyNotExpired(order)
+      if (!expiryCheck.ok) return fail(res, expiryCheck.msg, expiryCheck.code)
+    }
     if (!order) return fail(res, '订单不存在或无权访问', 404)
 
     if (orderType === 'machine') {

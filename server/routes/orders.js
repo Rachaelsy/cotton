@@ -1,5 +1,6 @@
 // server/routes/orders.js — 农户订单接口
 const express  = require('express')
+const crypto   = require('crypto')
 const jwt      = require('jsonwebtoken')
 const db       = require('../db/database')
 const { notifyNewOrder, notifyAftersale } = require('../utils/notify')
@@ -38,17 +39,17 @@ function optionalAuth(req, res, next) {
   next()
 }
 
-// 生成订单号：MG + yyyyMMdd + 4位序列
-async function genOrderNo() {
+// 生成订单号：MG + yyyyMMddHHmmssSSS + 随机后缀，避免并发下单撞号
+function genOrderNo() {
   const now = new Date()
   const date = now.getFullYear().toString() +
     String(now.getMonth() + 1).padStart(2, '0') +
     String(now.getDate()).padStart(2, '0')
-  const prefix = 'MG' + date
-  const [[{ cnt }]] = await db.query(
-    `SELECT COUNT(*) AS cnt FROM orders WHERE order_no LIKE ?`, [prefix + '%']
-  )
-  return prefix + String(Number(cnt) + 1).padStart(4, '0')
+  const time = String(now.getHours()).padStart(2, '0') +
+    String(now.getMinutes()).padStart(2, '0') +
+    String(now.getSeconds()).padStart(2, '0') +
+    String(now.getMilliseconds()).padStart(3, '0')
+  return 'MG' + date + time + crypto.randomBytes(3).toString('hex').toUpperCase()
 }
 
 // ─────────────────────────────────────────────

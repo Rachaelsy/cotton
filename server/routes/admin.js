@@ -13,6 +13,8 @@ const commissionRequests = require('../utils/commission-requests')
 const applymentRegistration = require('../utils/applyment-registration')
 const identityData = require('../utils/identity-data')
 const { broadcastAnnouncement } = require('../utils/notify')
+const supportMessages = require('../utils/support-messages')
+const supportRealtime = require('../utils/support-realtime')
 
 // ── 图片上传配置 ─────────────────────────────────────────
 const uploadDir = path.join(__dirname, '../public/uploads/products')
@@ -25,6 +27,20 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) return cb(new Error('只允许上传图片'))
+    cb(null, true)
+  }
+})
+
+const supportUploadDir = path.join(__dirname, '../public/uploads/support')
+if (!fs.existsSync(supportUploadDir)) fs.mkdirSync(supportUploadDir, { recursive: true })
+const supportUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, supportUploadDir),
+    filename: (_req, file, cb) => cb(null, `support_${Date.now()}_${Math.floor(Math.random() * 10000)}${path.extname(file.originalname)}`)
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) return cb(new Error('只允许上传图片'))
     cb(null, true)
@@ -257,6 +273,11 @@ router.post('/login', async (req, res) => {
 router.post('/upload', adminAuth, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ code: 400, msg: '未选择图片' })
   res.json({ code: 200, data: { url: `/uploads/products/${req.file.filename}` } })
+})
+
+router.post('/support-upload', adminAuth, supportUpload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ code: 400, msg: '未选择图片' })
+  res.json({ code: 200, data: { url: `/uploads/support/${req.file.filename}` } })
 })
 
 // ── 专家账号管理：管理员只管理账号，不直接处理专家业务 ─────────
@@ -1039,6 +1060,174 @@ router.post('/apply', async (req, res) => {
     res.json({ code: 200, msg: '申请已提交，请等待管理员审核（1-3个工作日）' })
   } catch (e) {
     console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+// ── 客服反馈 ──────────────────────────────────────────────
+router.get('/feedbacks', adminAuth, async (req, res) => {
+  const status = String(req.query.status || '').trim()
+  const allowedStatuses = new Set(['pending', 'replied', 'closed'])
+  const where = allowedStatuses.has(status) ? 'WHERE f.status=?' : ''
+  const params = allowedStatuses.has(status) ? [status] : []
+  try {
+    const [rows] = await db.query(
+      `SELECT f.id,f.user_id,f.content,f.contact,f.images_json,f.status,f.admin_reply,
+              f.replied_by,f.replied_at,f.created_at,f.updated_at,
+              u.real_name,u.phone
+         FROM feedbacks f
+         JOIN users u ON u.id=f.user_id
+         ${where}
+        ORDER BY CASE f.status WHEN 'pending' THEN 0 WHEN 'replied' THEN 1 ELSE 2 END,
+                 f.created_at DESC
+        LIMIT 200`,
+      params
+    )
+    return R_OK(res, rows.map(row => ({
+      ...row,
+      images: supportMessages.normalizeImages(row.images_json),
+      images_json: undefined
+    })))
+  } catch (error) {
+    console.error('[admin-feedback-list]', error)
+    return R_FAIL(res, '客服反馈加载失败', 500)
+  }
+})
+
+router.patch('/feedbacks/:id/reply', adminAuth, async (req, res) => {
+  const id = Number(req.params.id)
+  const reply = String(req.body.reply || '').trim()
+  const status = req.body.status === 'closed' ? 'closed' : 'replied'
+  if (!Number.isInteger(id) || id <= 0) return R_FAIL(res, '反馈编号无效')
+  if (reply.length < 2) return R_FAIL(res, '请填写管理员回复')
+  if (reply.length > 1000) return R_FAIL(res, '回复不能超过1000字')
+  try {
+    const [result] = await db.query(
+      `UPDATE feedbacks
+          SET admin_reply=?,status=?,replied_by=?,replied_at=NOW(),user_read_at=NULL
+        WHERE id=?`,
+      [reply, status, req.admin.id, id]
+    )
+    if (!result.affectedRows) return R_FAIL(res, '反馈不存在', 404)
+    return R_OK(res, { id, status }, status === 'closed' ? '回复已发送并标记完成' : '回复已发送')
+  } catch (error) {
+    console.error('[admin-feedback-reply]', error)
+    return R_FAIL(res, '回复保存失败', 500)
+  }
+})
+
+router.get('/support-chats', adminAuth, async (_req, res) => {
+  try {
+    return R_OK(res, await supportMessages.listConversations())
+  } catch (error) {
+    console.error('[admin-support-chats]', error)
+    return R_FAIL(res, '客服会话加载失败', 500)
+  }
+})
+
+router.delete('/support-chats/:userId', adminAuth, async (req, res) => {
+  const userId = Number(req.params.userId)
+  if (!Number.isInteger(userId) || userId <= 0) return R_FAIL(res, '农户编号无效')
+  try {
+    const result = await supportMessages.hideConversationForAdmin(userId)
+    supportRealtime.notifyAdmins({
+      type: 'support_conversation_deleted',
+      userId,
+      viewerType: 'admin'
+    })
+    return R_OK(res, result, '会话已从管理员端删除')
+  } catch (error) {
+    if (!error.statusCode || error.statusCode >= 500) console.error('[admin-support-conversation-delete]', error)
+    return R_FAIL(res, error.message || '会话删除失败', error.statusCode || 500)
+  }
+})
+
+router.get('/support-chats/:userId/messages', adminAuth, async (req, res) => {
+  const userId = Number(req.params.userId)
+  if (!Number.isInteger(userId) || userId <= 0) return R_FAIL(res, '农户编号无效')
+  try {
+    const messages = await supportMessages.listMessages(userId, req.query.after, 'admin')
+    const readCount = await supportMessages.markRead(userId, 'admin')
+    if (readCount) supportRealtime.notifyFarmer(userId, { type: 'support_read', userId })
+    return R_OK(res, messages)
+  } catch (error) {
+    console.error('[admin-support-messages]', error)
+    return R_FAIL(res, '聊天记录加载失败', 500)
+  }
+})
+
+router.post('/support-chats/:userId/messages', adminAuth, async (req, res) => {
+  const userId = Number(req.params.userId)
+  if (!Number.isInteger(userId) || userId <= 0) return R_FAIL(res, '农户编号无效')
+  try {
+    if (!(await supportMessages.farmerExists(userId))) return R_FAIL(res, '农户不存在', 404)
+    const message = await supportMessages.createMessage({
+      userId,
+      senderType: 'admin',
+      senderId: req.admin.id,
+      content: req.body.content,
+      imageUrl: req.body.image_url,
+      replyToId: req.body.reply_to_id
+    })
+    supportRealtime.notifyFarmer(userId, {
+      type: 'support_message',
+      userId,
+      messageId: message.id,
+      senderType: 'admin'
+    })
+    supportRealtime.notifyAdmins({
+      type: 'support_message',
+      userId,
+      messageId: message.id,
+      senderType: 'admin'
+    })
+    return R_OK(res, message, '消息已发送')
+  } catch (error) {
+    if (!error.statusCode || error.statusCode >= 500) console.error('[admin-support-message-create]', error)
+    return R_FAIL(res, error.message || '消息发送失败', error.statusCode || 500)
+  }
+})
+
+router.patch('/support-chats/:userId/messages/:messageId/recall', adminAuth, async (req, res) => {
+  const userId = Number(req.params.userId)
+  const messageId = Number(req.params.messageId)
+  if (!Number.isInteger(userId) || userId <= 0 || !Number.isInteger(messageId) || messageId <= 0) {
+    return R_FAIL(res, '消息编号无效')
+  }
+  try {
+    const message = await supportMessages.recallMessage({
+      userId,
+      messageId,
+      actorType: 'admin',
+      actorId: req.admin.id
+    })
+    const payload = { type: 'support_message_changed', userId, messageId }
+    supportRealtime.notifyFarmer(userId, payload)
+    supportRealtime.notifyAdmins(payload)
+    return R_OK(res, message, '消息已撤回')
+  } catch (error) {
+    if (!error.statusCode || error.statusCode >= 500) console.error('[admin-support-recall]', error)
+    return R_FAIL(res, error.message || '消息撤回失败', error.statusCode || 500)
+  }
+})
+
+router.delete('/support-chats/:userId/messages/:messageId', adminAuth, async (req, res) => {
+  const userId = Number(req.params.userId)
+  const messageId = Number(req.params.messageId)
+  if (!Number.isInteger(userId) || userId <= 0 || !Number.isInteger(messageId) || messageId <= 0) {
+    return R_FAIL(res, '消息编号无效')
+  }
+  try {
+    const result = await supportMessages.hideMessage({ userId, messageId, viewerType: 'admin' })
+    supportRealtime.notifyAdmins({
+      type: 'support_message_deleted',
+      userId,
+      messageId,
+      viewerType: 'admin'
+    })
+    return R_OK(res, result, '消息已从管理员会话删除')
+  } catch (error) {
+    if (!error.statusCode || error.statusCode >= 500) console.error('[admin-support-delete]', error)
+    return R_FAIL(res, error.message || '消息删除失败', error.statusCode || 500)
   }
 })
 

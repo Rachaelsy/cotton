@@ -12,6 +12,7 @@ function farmerAuth(req, res, next) {
   if (!auth.startsWith('Bearer ')) return res.status(401).json({ code: 401, msg: '请先登录' })
   try {
     req.user = jwt.verify(auth.slice(7), process.env.JWT_SECRET)
+    if (req.user.role !== 'farmer') return res.status(403).json({ code: 403, msg: '仅农户可管理农事记录' })
     next()
   } catch {
     res.status(401).json({ code: 401, msg: '登录已过期' })

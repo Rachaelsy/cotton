@@ -89,6 +89,29 @@ router.get('/reviews', async (req, res) => {
 // 以下接口需要登录且身份为 merchant
 // ─────────────────────────────────────────────
 
+// GET /api/products/:id — 公开：商品详情
+router.get('/:id(\\d+)', async (req, res) => {
+  const id = parseInt(req.params.id)
+  try {
+    const [[product]] = await db.query(`
+      SELECT p.*, m.company_name, m.wechat_id AS merchant_wechat,
+             m.latitude AS merchant_lat, m.longitude AS merchant_lng,
+             m.location_name AS merchant_location, m.delivery_radius,
+             IFNULL((SELECT SUM(oi.qty) FROM order_items oi WHERE oi.product_id = p.id), 0) AS sold
+      FROM products p
+      LEFT JOIN merchants m ON m.id = p.merchant_id
+      WHERE p.id = ? AND p.status = 'on'
+      LIMIT 1
+    `, [id])
+    if (!product) return fail(res, '商品不存在或已下架', 404)
+    product.delivery_radius = product.delivery_radius != null ? Number(product.delivery_radius) : null
+    return ok(res, product)
+  } catch (err) {
+    console.error('[product detail]', err)
+    return fail(res, '获取商品详情失败', 500)
+  }
+})
+
 // GET /api/products/mine  — 商户：获取自己的商品
 router.get('/mine', authMiddleware, roleGuard('merchant'), async (req, res) => {
   try {

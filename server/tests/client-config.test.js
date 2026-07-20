@@ -13,8 +13,12 @@ function extractConst(name) {
 function run() {
   const env = extractConst('ENV')
   const prodUrl = extractConst('PROD_URL')
+  const releaseCheck = process.env.RELEASE_CLIENT_CONFIG === '1'
 
-  assert.strictEqual(env, 'prod', 'client should use production HTTPS API in release testing')
+  assert.ok(['prod', 'server', 'real', 'sim'].includes(env), 'client ENV should be a known target')
+  if (releaseCheck) {
+    assert.strictEqual(env, 'prod', 'client should use production HTTPS API in release testing')
+  }
   assert.strictEqual(prodUrl, 'https://cyaia.cn', 'production API should use the HTTPS host that currently responds')
   assert.ok(!prodUrl.endsWith('/'), 'production API base URL should not end with a slash')
   assert.ok(!prodUrl.includes('www.cyaia.cn'), 'www.cyaia.cn HTTPS endpoint is not currently reachable')

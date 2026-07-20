@@ -1,6 +1,7 @@
 const crypto = require('crypto')
 const express = require('express')
 const https = require('https')
+const jwt = require('jsonwebtoken')
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
@@ -13,7 +14,63 @@ const pestImageDir = path.join(__dirname, '../public/uploads/pest')
 if (!fs.existsSync(aiTempDir)) fs.mkdirSync(aiTempDir, { recursive: true })
 if (!fs.existsSync(pestImageDir)) fs.mkdirSync(pestImageDir, { recursive: true })
 
-const photoUpload = multer({ dest: aiTempDir, limits: { fileSize: 8 * 1024 * 1024 } })
+const PHOTO_MIME_EXT = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/bmp': '.bmp'
+}
+const rateBuckets = new Map()
+
+function photoFileFilter(_req, file, cb) {
+  if (PHOTO_MIME_EXT[file.mimetype]) return cb(null, true)
+  cb(new Error('仅支持 JPG、PNG、WEBP、GIF、BMP 图片'))
+}
+
+function requireAuth(req, res, next) {
+  const auth = req.headers.authorization || ''
+  if (!auth.startsWith('Bearer ')) return res.status(401).json({ code: 401, msg: '请先登录', data: null })
+  try {
+    req.user = jwt.verify(auth.slice(7), process.env.JWT_SECRET)
+    next()
+  } catch {
+    return res.status(401).json({ code: 401, msg: '登录已过期，请重新登录', data: null })
+  }
+}
+
+function rateLimit({ windowMs, max, keyPrefix }) {
+  return (req, res, next) => {
+    const now = Date.now()
+    const rawKey = req.user?.id ? `user:${req.user.id}` : `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`
+    const key = `${keyPrefix}:${rawKey}`
+    const bucket = rateBuckets.get(key) || { count: 0, resetAt: now + windowMs }
+    if (bucket.resetAt <= now) {
+      bucket.count = 0
+      bucket.resetAt = now + windowMs
+    }
+    bucket.count += 1
+    rateBuckets.set(key, bucket)
+    if (bucket.count > max) return res.status(429).json({ code: 429, msg: '请求过于频繁，请稍后再试', data: null })
+    next()
+  }
+}
+
+const chatRateLimit = rateLimit({ windowMs: 60 * 1000, max: 30, keyPrefix: 'ai-chat' })
+const photoRateLimit = rateLimit({ windowMs: 60 * 1000, max: 6, keyPrefix: 'ai-photo' })
+
+const guardedPhotoUpload = multer({
+  dest: aiTempDir,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: photoFileFilter
+})
+
+function uploadPhoto(req, res, next) {
+  guardedPhotoUpload.single('photo')(req, res, error => {
+    if (error) return res.status(400).json({ code: 400, msg: error.message, data: null })
+    next()
+  })
+}
 
 const CHAT_SYSTEM = '你是“小棉”，专为新疆棉花种植农户设计的 AI 农业助手。你擅长棉花种植、农事管理、棉花交易与农资使用建议。回答要简洁、实用、通俗，控制在 250 字内；如需步骤，请使用 1. 2. 3. 的格式。若无法确认，请明确说明并建议结合当地农技人员意见。'
 
@@ -263,11 +320,7 @@ function normalizeDiagnosis(raw, replyText) {
 }
 
 function extensionFromMime(mimeType, originalName) {
-  const rawExt = path.extname(originalName || '').trim().toLowerCase()
-  if (rawExt) return rawExt
-  if (mimeType === 'image/png') return '.png'
-  if (mimeType === 'image/webp') return '.webp'
-  return '.jpg'
+  return PHOTO_MIME_EXT[mimeType] || path.extname(originalName || '').trim().toLowerCase() || '.jpg'
 }
 
 function persistPestImage(buffer, mimeType, originalName) {
@@ -277,7 +330,7 @@ function persistPestImage(buffer, mimeType, originalName) {
   return `/uploads/pest/${filename}`
 }
 
-router.post('/chat', async (req, res) => {
+router.post('/chat', chatRateLimit, async (req, res) => {
   const message = String(req.body.message || '').trim()
   if (!message) return res.json({ code: 400, msg: '消息不能为空', data: null })
 
@@ -323,7 +376,7 @@ router.post('/chat', async (req, res) => {
   }
 })
 
-router.post('/photo', photoUpload.single('photo'), async (req, res) => {
+router.post('/photo', requireAuth, photoRateLimit, uploadPhoto, async (req, res) => {
   if (!req.file) return res.json({ code: 400, msg: '未收到图片', data: null })
 
   const filePath = req.file.path

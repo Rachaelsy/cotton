@@ -172,6 +172,77 @@
     .expert-thumb { width: 56px; height: 40px; border-radius: 8px; object-fit: cover; background: #F4F1EA; vertical-align: middle; }
     .expert-form-modal { width: 760px; }
     .help-text { font-size: 12px; color: #888; line-height: 1.6; margin-top: 4px; }
+    .support-shell {
+      height: calc(100vh - 112px); min-height: 560px; display: grid;
+      grid-template-columns: 300px minmax(0, 1fr); background: #fff;
+      border: 1px solid #E8ECE8; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .support-list-pane { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid #E8ECE8; background: #FAFBFA; }
+    .support-pane-head { height: 58px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #E8ECE8; background: #fff; }
+    .support-pane-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; }
+    .support-icon-btn { width: 32px; height: 32px; border: 0; border-radius: 6px; background: #EEF3ED; color: #315A3E; cursor: pointer; font-size: 18px; }
+    .support-conversations { flex: 1; min-height: 0; overflow-y: auto; }
+    .support-conversation { min-height: 78px; padding: 13px 15px; display: flex; gap: 11px; cursor: pointer; border-bottom: 1px solid #EEF0EE; }
+    .support-conversation:hover { background: #F4F7F4; }
+    .support-conversation.active { background: #EAF3EC; box-shadow: inset 3px 0 #2F7D4B; }
+    .support-avatar { width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: #234E35; color: #fff; font-size: 13px; font-weight: 700; }
+    .support-conversation-body { flex: 1; min-width: 0; }
+    .support-conversation-top { display: flex; align-items: center; gap: 8px; }
+    .support-conversation-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 700; }
+    .support-conversation-time { color: #999; font-size: 10px; white-space: nowrap; }
+    .support-conversation-delete { width: 24px; height: 24px; margin: -5px -7px -5px 0; flex: 0 0 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: #8B938C; cursor: pointer; font-size: 14px; opacity: .55; }
+    .support-conversation-delete:hover { background: #FCE8E8; color: #B42318; opacity: 1; }
+    .support-conversation-bottom { margin-top: 6px; display: flex; align-items: center; gap: 7px; }
+    .support-conversation-preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #777; font-size: 11px; }
+    .support-unread { min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; }
+    .support-chat-pane { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: #F3F6F2; }
+    .support-chat-head { height: 58px; flex: 0 0 58px; padding: 0 20px; display: flex; align-items: center; border-bottom: 1px solid #E2E7E2; background: #fff; }
+    .support-chat-name { font-size: 14px; font-weight: 700; }
+    .support-chat-phone { margin-left: 10px; color: #888; font-size: 12px; }
+    .support-chat-messages { flex: 1 1 0; min-height: 0; padding: 20px 24px; overflow-y: auto; }
+    .support-chat-empty { height: 100%; display: flex; align-items: center; justify-content: center; color: #9AA29B; font-size: 13px; }
+    .support-message-row { margin-bottom: 16px; display: flex; }
+    .support-message-row.admin { justify-content: flex-end; }
+    .support-message-stack { max-width: 72%; display: flex; flex-direction: column; align-items: flex-start; }
+    .support-message-row.admin .support-message-stack { align-items: flex-end; }
+    .support-message-sender { margin: 0 0 5px 3px; color: #899189; font-size: 10px; }
+    .support-message-bubble { padding: 10px 13px; border-radius: 5px 10px 10px 10px; background: #fff; box-shadow: 0 2px 8px rgba(28,48,33,.06); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.55; }
+    .support-message-row.admin .support-message-bubble { border-radius: 10px 5px 10px 10px; background: #2F7D4B; color: #fff; }
+    .support-message-bubble.recalled, .support-message-row.admin .support-message-bubble.recalled { background: #E5E9E4; color: #7D867F; box-shadow: none; font-size: 12px; font-style: italic; }
+    .support-message-quote { margin-bottom: 8px; padding: 6px 9px; border-left: 3px solid #93A398; background: #F0F3EF; color: #58645B; cursor: pointer; }
+    .support-message-row.admin .support-message-quote { border-left-color: rgba(255,255,255,.65); background: rgba(255,255,255,.14); color: #F1F6F2; }
+    .support-message-quote-name { display: block; font-size: 10px; font-weight: 700; }
+    .support-message-quote-text { display: block; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; opacity: .9; }
+    .support-message-image { display: block; width: 220px; max-width: 100%; max-height: 260px; object-fit: cover; border-radius: 6px; cursor: zoom-in; }
+    .support-message-image + .support-message-text { display: block; margin-top: 8px; }
+    .support-message-meta { margin-top: 5px; display: flex; align-items: center; gap: 7px; color: #999; font-size: 10px; }
+    .support-read-state { color: #718077; }
+    .support-message-actions { height: 20px; margin-top: 2px; display: flex; align-items: center; gap: 3px; opacity: .45; transition: opacity .15s ease; }
+    .support-message-row:hover .support-message-actions, .support-message-actions:focus-within { opacity: 1; }
+    .support-message-action { padding: 2px 5px; border: 0; border-radius: 3px; background: transparent; color: #68726A; cursor: pointer; font-size: 10px; }
+    .support-message-action:hover { background: #E4EAE4; color: #234E35; }
+    .support-message-action.danger:hover { background: #FCE8E8; color: #B42318; }
+    .support-composer { min-height: 90px; flex: 0 0 auto; padding: 12px 16px; display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: end; gap: 9px 10px; border-top: 1px solid #E2E7E2; background: #fff; }
+    .support-replying { grid-column: 1 / -1; height: 34px; min-width: 0; padding: 0 5px 0 10px; display: flex; align-items: center; gap: 9px; border-left: 3px solid #2F7D4B; background: #F2F5F1; }
+    .support-replying[hidden] { display: none; }
+    .support-replying-copy { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; overflow: hidden; }
+    .support-replying-label { flex-shrink: 0; color: #315A3E; font-size: 11px; font-weight: 700; }
+    .support-replying-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #778078; font-size: 11px; }
+    .support-replying-close { width: 28px; height: 28px; flex: 0 0 28px; padding: 0; border: 0; background: transparent; color: #68726A; cursor: pointer; font-size: 19px; }
+    .support-composer textarea { flex: 1; height: 62px; padding: 10px 12px; resize: none; border: 1px solid #DDE3DD; border-radius: 7px; outline: none; font: inherit; font-size: 13px; line-height: 1.45; }
+    .support-composer textarea:focus { border-color: #2F7D4B; }
+    .support-image-send { width: 38px; height: 38px; flex: 0 0 38px; padding: 0; border: 1px solid #DDE3DD; border-radius: 7px; background: #F5F7F5; color: #315A3E; cursor: pointer; font-size: 18px; }
+    .support-image-send:hover { border-color: #2F7D4B; background: #EAF2EB; }
+    .support-image-send:disabled { cursor: not-allowed; opacity: .45; }
+    .support-send { height: 38px; padding: 0 18px; border: 0; border-radius: 7px; background: #234E35; color: #fff; cursor: pointer; font-weight: 700; }
+    .feedback-thumbs { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .feedback-thumb { width: 46px; height: 46px; object-fit: cover; border-radius: 5px; cursor: zoom-in; border: 1px solid #E3E7E3; }
+    .feedback-modal-images { margin: -4px 0 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .feedback-modal-images img { width: 82px; height: 82px; object-fit: cover; border-radius: 6px; cursor: zoom-in; }
+    @media (max-width: 980px) {
+      .support-shell { grid-template-columns: 240px minmax(0, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -213,6 +284,14 @@
     </div>
     <div class="nav-item" data-panel="announcements" onclick="switchPanel(this)">
       <span class="nav-icon">📢</span> 平台公告
+    </div>
+    <div class="nav-item" data-panel="supportChats" onclick="switchPanel(this)">
+      <span class="nav-icon">💬</span> 在线客服
+      <span class="nav-badge" id="supportChatBadge" style="display:none">0</span>
+    </div>
+    <div class="nav-item" data-panel="feedbacks" onclick="switchPanel(this)">
+      <span class="nav-icon">💬</span> 客服反馈
+      <span class="nav-badge" id="feedbackBadge" style="display:none">0</span>
     </div>
     <div class="nav-item" data-panel="expertAccounts" onclick="switchPanel(this)">
       <span class="nav-icon">🎓</span> 专家账号
@@ -332,6 +411,62 @@
         <table>
           <thead><tr><th>公告标题</th><th>内容摘要</th><th>发布时间</th><th>操作</th></tr></thead>
           <tbody id="announce-table"><tr class="empty-row"><td colspan="4">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 在线客服 -->
+    <div class="panel" id="panel-supportChats">
+      <div class="support-shell">
+        <div class="support-list-pane">
+          <div class="support-pane-head">
+            <span class="support-pane-title">农户会话</span>
+            <span class="badge" id="support-chat-count">0</span>
+            <button class="support-icon-btn" onclick="loadSupportChats()" title="刷新会话">↻</button>
+          </div>
+          <div class="support-conversations" id="supportConversationList">
+            <div class="support-chat-empty">加载中...</div>
+          </div>
+        </div>
+        <div class="support-chat-pane">
+          <div class="support-chat-head">
+            <span class="support-chat-name" id="supportChatName">请选择农户会话</span>
+            <span class="support-chat-phone" id="supportChatPhone"></span>
+          </div>
+          <div class="support-chat-messages" id="supportChatMessages">
+            <div class="support-chat-empty">从左侧选择一位农户开始回复</div>
+          </div>
+          <div class="support-composer">
+            <div class="support-replying" id="supportReplying" hidden>
+              <div class="support-replying-copy"><span class="support-replying-label" id="supportReplyingLabel"></span><span class="support-replying-text" id="supportReplyingText"></span></div>
+              <button class="support-replying-close" onclick="cancelSupportReply()" title="取消引用">×</button>
+            </div>
+            <input id="supportChatImageInput" type="file" accept="image/*" hidden onchange="sendSupportChatImage(event)">
+            <button class="support-image-send" id="supportChatImage" disabled onclick="document.getElementById('supportChatImageInput').click()" title="发送图片">＋</button>
+            <textarea id="supportChatInput" maxlength="1000" placeholder="输入回复内容" disabled onkeydown="handleSupportChatKeydown(event)"></textarea>
+            <button class="support-send" id="supportChatSend" disabled onclick="sendSupportChatMessage()">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 客服反馈 -->
+    <div class="panel" id="panel-feedbacks">
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">用户反馈与客服工单</span>
+          <span class="badge badge-warn" id="feedback-count">0 条</span>
+          <select id="feedback-status-filter" onchange="loadFeedbacks()" style="padding:6px 10px;border:1px solid #E0E0E0;border-radius:6px;background:#fff;color:#555">
+            <option value="">全部状态</option>
+            <option value="pending">待回复</option>
+            <option value="replied">已回复</option>
+            <option value="closed">已完成</option>
+          </select>
+          <button class="act-btn edit" onclick="loadFeedbacks()">刷新</button>
+        </div>
+        <table>
+          <thead><tr><th>用户</th><th>联系方式</th><th>问题描述</th><th>状态</th><th>提交时间</th><th>管理员回复</th><th>操作</th></tr></thead>
+          <tbody id="feedbackTable"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -753,10 +888,27 @@
   if (!TOKEN) window.location.href = '/admin/login.html'
   document.getElementById('adminName').textContent = localStorage.getItem('admin_name') || '管理员'
 
+  function decodeTokenPayload(token) {
+    try {
+      const raw = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+      const encoded = raw.padEnd(Math.ceil(raw.length / 4) * 4, '=')
+      return JSON.parse(decodeURIComponent(escape(atob(encoded))))
+    } catch { return {} }
+  }
+
+  const ADMIN_ID = Number(decodeTokenPayload(TOKEN).id || 0)
+
   let currentEditId = null
   let rejectMode = false
   let approvalType = 'merchant'
   let approvedMerchantsCache = []   // 已批准商户缓存，供新增商品下拉使用
+  let feedbackData = []
+  let supportChatData = []
+  let supportMessageData = []
+  let supportReplyTarget = null
+  let selectedSupportUserId = 0
+  let supportSocket = null
+  let supportSocketReconnectTimer = null
 
   // 时间
   function updateTime() { document.getElementById('topbarTime').textContent = new Date().toLocaleString('zh-CN') }
@@ -772,7 +924,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', verifications: '实名审核', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', verifications: '实名审核', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', supportChats: '在线客服', feedbacks: '客服反馈', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -793,6 +945,8 @@
     else if (panel === 'products')    loadProducts()
     else if (panel === 'orders')      loadAdminOrders()
     else if (panel === 'announcements') loadAnnouncements()
+    else if (panel === 'supportChats') loadSupportChats()
+    else if (panel === 'feedbacks')   loadFeedbacks()
     else if (panel === 'expertAccounts') loadExpertAccounts()
     else if (panel === 'aftersale')     loadAftersales()
     else if (panel === 'finance')       loadFinance()
@@ -1517,6 +1671,418 @@
     else alert(r?.msg || '操作失败')
   }
 
+  // ── 在线客服 ────────────────────────────────
+  function updateSupportChatBadge(list = supportChatData) {
+    const unread = list.reduce((total, item) => total + Number(item.unread_count || 0), 0)
+    const badge = document.getElementById('supportChatBadge')
+    badge.textContent = unread
+    badge.style.display = unread ? 'flex' : 'none'
+  }
+
+  function supportConversationPreview(item) {
+    if (item.recalled_at) return item.sender_type === 'admin' ? '客服撤回了一条消息' : '农户撤回了一条消息'
+    if (item.image_url) return item.sender_type === 'admin' ? '客服：[图片]' : '[图片]'
+    const prefix = item.sender_type === 'admin' ? '客服：' : ''
+    return prefix + (item.last_content || '新会话')
+  }
+
+  function renderSupportConversations() {
+    const container = document.getElementById('supportConversationList')
+    document.getElementById('support-chat-count').textContent = supportChatData.length
+    updateSupportChatBadge()
+    if (!supportChatData.length) {
+      container.innerHTML = '<div class="support-chat-empty">暂无在线客服会话</div>'
+      return
+    }
+    container.innerHTML = supportChatData.map(item => `
+      <div class="support-conversation ${Number(item.user_id) === selectedSupportUserId ? 'active' : ''}" onclick="selectSupportChat(${Number(item.user_id)})">
+        <div class="support-avatar">${esc((item.real_name || '农户').slice(0, 2))}</div>
+        <div class="support-conversation-body">
+          <div class="support-conversation-top">
+            <span class="support-conversation-name">${esc(item.real_name || '未填写姓名')}</span>
+            <span class="support-conversation-time">${fmt(item.created_at)}</span>
+            <button class="support-conversation-delete" onclick="event.stopPropagation(); deleteSupportConversation(${Number(item.user_id)})" title="删除会话" aria-label="删除会话">🗑</button>
+          </div>
+          <div class="support-conversation-bottom">
+            <span class="support-conversation-preview">${esc(supportConversationPreview(item))}</span>
+            ${Number(item.unread_count) ? `<span class="support-unread">${Number(item.unread_count)}</span>` : ''}
+          </div>
+        </div>
+      </div>`).join('')
+  }
+
+  async function loadSupportChats() {
+    const container = document.getElementById('supportConversationList')
+    if (!supportChatData.length) container.innerHTML = '<div class="support-chat-empty">加载中...</div>'
+    try {
+      const r = await api('GET', '/support-chats')
+      if (!r || r.code !== 200) throw new Error((r && r.msg) || '加载失败')
+      supportChatData = r.data || []
+      if (selectedSupportUserId && !supportChatData.some(item => Number(item.user_id) === selectedSupportUserId)) {
+        selectedSupportUserId = 0
+      }
+      renderSupportConversations()
+      if (!selectedSupportUserId && supportChatData.length) await selectSupportChat(supportChatData[0].user_id)
+    } catch (error) {
+      container.innerHTML = `<div class="support-chat-empty">${esc(error.message || '会话加载失败')}</div>`
+    }
+  }
+
+  function resetSupportChatPane() {
+    selectedSupportUserId = 0
+    supportMessageData = []
+    document.getElementById('supportChatName').textContent = '请选择农户会话'
+    document.getElementById('supportChatPhone').textContent = ''
+    document.getElementById('supportChatMessages').innerHTML = '<div class="support-chat-empty">从左侧选择一位农户开始回复</div>'
+    document.getElementById('supportChatInput').value = ''
+    document.getElementById('supportChatInput').disabled = true
+    document.getElementById('supportChatSend').disabled = true
+    document.getElementById('supportChatImage').disabled = true
+    cancelSupportReply()
+  }
+
+  async function deleteSupportConversation(userId) {
+    const conversation = supportChatData.find(item => Number(item.user_id) === Number(userId))
+    const name = conversation && (conversation.real_name || conversation.phone) || '该农户'
+    if (!confirm(`确定删除与“${name}”的客服会话吗？\n\n管理员端的聊天记录将被清空且无法恢复，农户端记录不受影响。`)) return
+    const r = await api('DELETE', `/support-chats/${Number(userId)}`)
+    if (!r || r.code !== 200) return alert((r && r.msg) || '会话删除失败')
+    supportChatData = supportChatData.filter(item => Number(item.user_id) !== Number(userId))
+    if (selectedSupportUserId === Number(userId)) resetSupportChatPane()
+    renderSupportConversations()
+    await loadSupportChats()
+  }
+
+  async function refreshSupportChatBadge() {
+    try {
+      const r = await api('GET', '/support-chats')
+      if (!r || r.code !== 200) return
+      updateSupportChatBadge(r.data || [])
+    } catch {}
+  }
+
+  async function selectSupportChat(userId) {
+    selectedSupportUserId = Number(userId)
+    const conversation = supportChatData.find(item => Number(item.user_id) === selectedSupportUserId)
+    if (!conversation) return
+    cancelSupportReply()
+    renderSupportConversations()
+    document.getElementById('supportChatName').textContent = conversation.real_name || '未填写姓名'
+    document.getElementById('supportChatPhone').textContent = conversation.phone || ''
+    document.getElementById('supportChatInput').disabled = false
+    document.getElementById('supportChatSend').disabled = false
+    document.getElementById('supportChatImage').disabled = false
+    await loadSupportChatMessages(true)
+  }
+
+  async function loadSupportChatMessages(showLoading = false) {
+    if (!selectedSupportUserId) return
+    const container = document.getElementById('supportChatMessages')
+    if (showLoading) container.innerHTML = '<div class="support-chat-empty">加载中...</div>'
+    try {
+      const r = await api('GET', `/support-chats/${selectedSupportUserId}/messages`)
+      if (!r || r.code !== 200) throw new Error((r && r.msg) || '聊天记录加载失败')
+      supportMessageData = r.data || []
+      container.innerHTML = supportMessageData.length ? supportMessageData.map(item => {
+        const isAdmin = item.sender_type === 'admin'
+        const isRecalled = !!item.is_recalled
+        const canRecall = isAdmin && Number(item.sender_id) === ADMIN_ID && !isRecalled &&
+          Date.now() - new Date(String(item.created_at || '').replace(' ', 'T')).getTime() <= 120000
+        const image = !isRecalled && item.image_url
+          ? `<img class="support-message-image" src="${esc(item.image_url)}" alt="聊天图片" onclick="previewSupportImage('${esc(item.image_url)}')">`
+          : ''
+        const content = !isRecalled && item.content ? `<span class="support-message-text">${esc(item.content)}</span>` : ''
+        const reply = !isRecalled && item.reply_to
+          ? `<div class="support-message-quote" onclick="scrollToSupportMessage(${Number(item.reply_to.id)})"><span class="support-message-quote-name">${item.reply_to.sender_type === 'admin' ? '平台客服' : '农户'}</span><span class="support-message-quote-text">${esc(item.reply_to.content || (item.reply_to.image_url ? '[图片]' : ''))}</span></div>`
+          : ''
+        const recalled = isRecalled
+          ? `<span>${isAdmin ? '客服撤回了一条消息' : '农户撤回了一条消息'}</span>`
+          : ''
+        const actions = [
+          !isRecalled ? `<button class="support-message-action" onclick="setSupportReply(${Number(item.id)})">引用</button>` : '',
+          !isRecalled && item.content ? `<button class="support-message-action" onclick="copySupportMessage(${Number(item.id)})">复制</button>` : '',
+          canRecall ? `<button class="support-message-action" onclick="recallSupportMessage(${Number(item.id)})">撤回</button>` : '',
+          `<button class="support-message-action danger" onclick="deleteSupportMessage(${Number(item.id)})">删除</button>`
+        ].join('')
+        return `<div class="support-message-row ${isAdmin ? 'admin' : 'farmer'}" id="support-message-${Number(item.id)}">
+          <div class="support-message-stack">
+            <span class="support-message-sender">${isAdmin ? '平台客服' : '农户'}</span>
+            <div class="support-message-bubble ${isRecalled ? 'recalled' : ''}">${recalled}${reply}${image}${content}</div>
+            <div class="support-message-meta"><span>${fmt(item.created_at)}</span>${isAdmin && !isRecalled ? `<span class="support-read-state">${item.read_at ? '已读' : '未读'}</span>` : ''}</div>
+            <div class="support-message-actions">${actions}</div>
+          </div>
+        </div>`
+      }).join('') : '<div class="support-chat-empty">暂无聊天消息</div>'
+      container.scrollTop = container.scrollHeight
+      const conversation = supportChatData.find(item => Number(item.user_id) === selectedSupportUserId)
+      if (conversation) conversation.unread_count = 0
+      renderSupportConversations()
+    } catch (error) {
+      if (showLoading) container.innerHTML = `<div class="support-chat-empty">${esc(error.message || '聊天记录加载失败')}</div>`
+    }
+  }
+
+  async function sendSupportChatMessage() {
+    if (!selectedSupportUserId) return
+    const input = document.getElementById('supportChatInput')
+    const button = document.getElementById('supportChatSend')
+    const content = input.value.trim()
+    if (!content) return
+    button.disabled = true
+    try {
+      const body = { content }
+      if (supportReplyTarget) body.reply_to_id = supportReplyTarget.id
+      const r = await api('POST', `/support-chats/${selectedSupportUserId}/messages`, body)
+      if (!r || r.code !== 200) throw new Error((r && r.msg) || '发送失败')
+      input.value = ''
+      cancelSupportReply()
+      await loadSupportChatMessages(false)
+      await loadSupportChats()
+    } catch (error) {
+      alert(error.message || '消息发送失败')
+    } finally {
+      button.disabled = false
+      input.focus()
+    }
+  }
+
+  async function sendSupportChatImage(event) {
+    const input = event.target
+    const file = input.files && input.files[0]
+    if (!file || !selectedSupportUserId) return
+    if (file.size > 8 * 1024 * 1024) {
+      input.value = ''
+      return alert('图片不能超过8MB')
+    }
+    const button = document.getElementById('supportChatImage')
+    button.disabled = true
+    try {
+      const form = new FormData()
+      form.append('image', file)
+      const uploadResponse = await fetch('/api/admin/support-upload', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + TOKEN },
+        body: form
+      })
+      const upload = await uploadResponse.json()
+      if (!uploadResponse.ok || upload.code !== 200) throw new Error(upload.msg || '图片上传失败')
+      const body = { image_url: upload.data.url }
+      if (supportReplyTarget) body.reply_to_id = supportReplyTarget.id
+      const r = await api('POST', `/support-chats/${selectedSupportUserId}/messages`, body)
+      if (!r || r.code !== 200) throw new Error((r && r.msg) || '图片发送失败')
+      cancelSupportReply()
+      await loadSupportChatMessages(false)
+      await loadSupportChats()
+    } catch (error) {
+      alert(error.message || '图片发送失败')
+    } finally {
+      input.value = ''
+      button.disabled = !selectedSupportUserId
+    }
+  }
+
+  function handleSupportChatKeydown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      sendSupportChatMessage()
+    }
+  }
+
+  function previewSupportImage(url) {
+    if (!String(url || '').startsWith('/uploads/')) return
+    document.getElementById('supportImagePreview').src = url
+    document.getElementById('modalSupportImage').classList.add('show')
+  }
+
+  function setSupportReply(messageId) {
+    const message = supportMessageData.find(item => Number(item.id) === Number(messageId))
+    if (!message || message.is_recalled) return
+    supportReplyTarget = {
+      id: Number(message.id),
+      sender: message.sender_type === 'admin' ? '平台客服' : '农户',
+      summary: message.content || (message.image_url ? '[图片]' : '')
+    }
+    document.getElementById('supportReplyingLabel').textContent = `正在引用 ${supportReplyTarget.sender}`
+    document.getElementById('supportReplyingText').textContent = supportReplyTarget.summary
+    document.getElementById('supportReplying').hidden = false
+    document.getElementById('supportChatInput').focus()
+  }
+
+  function cancelSupportReply() {
+    supportReplyTarget = null
+    const preview = document.getElementById('supportReplying')
+    if (preview) preview.hidden = true
+  }
+
+  function scrollToSupportMessage(messageId) {
+    const target = document.getElementById(`support-message-${Number(messageId)}`)
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  async function copySupportMessage(messageId) {
+    const message = supportMessageData.find(item => Number(item.id) === Number(messageId))
+    if (!message || !message.content) return
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(message.content)
+      } else {
+        const input = document.createElement('textarea')
+        input.value = message.content
+        input.style.position = 'fixed'
+        input.style.opacity = '0'
+        document.body.appendChild(input)
+        input.select()
+        document.execCommand('copy')
+        input.remove()
+      }
+    } catch { alert('复制失败，请手动选择文字复制') }
+  }
+
+  async function recallSupportMessage(messageId) {
+    if (!selectedSupportUserId || !confirm('确定撤回这条消息吗？撤回后双方都会看到撤回提示。')) return
+    const r = await api('PATCH', `/support-chats/${selectedSupportUserId}/messages/${messageId}/recall`)
+    if (!r || r.code !== 200) return alert((r && r.msg) || '消息撤回失败')
+    await loadSupportChatMessages(false)
+    await loadSupportChats()
+  }
+
+  async function deleteSupportMessage(messageId) {
+    if (!selectedSupportUserId || !confirm('删除后仅管理员端不再显示这条消息，农户仍可查看。确定删除吗？')) return
+    const r = await api('DELETE', `/support-chats/${selectedSupportUserId}/messages/${messageId}`)
+    if (!r || r.code !== 200) return alert((r && r.msg) || '消息删除失败')
+    supportMessageData = supportMessageData.filter(item => Number(item.id) !== Number(messageId))
+    await loadSupportChatMessages(false)
+    await loadSupportChats()
+  }
+
+  function connectSupportSocket() {
+    if (supportSocket && (supportSocket.readyState === WebSocket.OPEN || supportSocket.readyState === WebSocket.CONNECTING)) return
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+    supportSocket = new WebSocket(`${protocol}//${location.host}/api/support/socket?token=${encodeURIComponent(TOKEN)}`)
+    supportSocket.onmessage = event => {
+      try {
+        const payload = JSON.parse(event.data)
+        if (!['support_message', 'support_read', 'support_message_changed', 'support_message_deleted', 'support_conversation_deleted'].includes(payload.type)) return
+        if (payload.type === 'support_conversation_deleted' && payload.viewerType === 'admin') {
+          if (selectedSupportUserId === Number(payload.userId)) resetSupportChatPane()
+          loadSupportChats()
+          return
+        }
+        refreshSupportChatBadge()
+        if (document.getElementById('panel-supportChats').classList.contains('active')) {
+          loadSupportChats()
+          if (selectedSupportUserId === Number(payload.userId)) loadSupportChatMessages(false)
+        }
+      } catch {}
+    }
+    supportSocket.onclose = () => {
+      supportSocket = null
+      clearTimeout(supportSocketReconnectTimer)
+      supportSocketReconnectTimer = setTimeout(connectSupportSocket, 3000)
+    }
+    supportSocket.onerror = () => supportSocket.close()
+  }
+
+  // ── 客服反馈 ────────────────────────────────
+  const FEEDBACK_STATUS = {
+    pending: { label: '待回复', className: 'status-pending' },
+    replied: { label: '已回复', className: 'status-approved' },
+    closed: { label: '已完成', className: 'status-off' }
+  }
+
+  async function refreshFeedbackBadge() {
+    const badge = document.getElementById('feedbackBadge')
+    try {
+      const r = await api('GET', '/feedbacks?status=pending')
+      if (!r || r.code !== 200) return
+      const count = (r.data || []).length
+      badge.textContent = count
+      badge.style.display = count ? 'flex' : 'none'
+    } catch {
+      badge.style.display = 'none'
+    }
+  }
+
+  async function loadFeedbacks() {
+    const tbody = document.getElementById('feedbackTable')
+    const status = document.getElementById('feedback-status-filter').value
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载中...</td></tr>'
+    let r
+    try {
+      r = await api('GET', '/feedbacks' + (status ? `?status=${status}` : ''))
+    } catch {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">网络连接失败，请稍后重试</td></tr>'
+      return
+    }
+    if (!r || r.code !== 200) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载失败，请稍后重试</td></tr>'
+      return
+    }
+    feedbackData = r.data || []
+    document.getElementById('feedback-count').textContent = `${feedbackData.length} 条`
+    if (!feedbackData.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无客服反馈</td></tr>'
+      refreshFeedbackBadge()
+      return
+    }
+    tbody.innerHTML = feedbackData.map(item => {
+      const state = FEEDBACK_STATUS[item.status] || FEEDBACK_STATUS.pending
+      const images = (item.images || []).map(url => `<img class="feedback-thumb" src="${esc(url)}" alt="反馈图片" onclick="previewSupportImage('${esc(url)}')">`).join('')
+      return `<tr>
+        <td><strong>${esc(item.real_name || '未填写姓名')}</strong><br><span style="color:#888;font-size:12px">${esc(item.phone || '—')}</span></td>
+        <td>${esc(item.contact || '—')}</td>
+        <td style="max-width:320px;white-space:normal;line-height:1.6" title="${esc(item.content)}">${esc(item.content)}${images ? `<div class="feedback-thumbs">${images}</div>` : ''}</td>
+        <td><span class="${state.className}">${state.label}</span></td>
+        <td style="white-space:nowrap">${fmt(item.created_at)}</td>
+        <td style="max-width:280px;white-space:normal;line-height:1.6">${item.admin_reply ? esc(item.admin_reply) : '<span style="color:#AAA">尚未回复</span>'}</td>
+        <td style="white-space:nowrap"><button class="act-btn ${item.admin_reply ? 'edit' : 'approve'}" onclick="openFeedbackReply(${Number(item.id)})">${item.admin_reply ? '修改回复' : '回复'}</button></td>
+      </tr>`
+    }).join('')
+    refreshFeedbackBadge()
+  }
+
+  function openFeedbackReply(id) {
+    const item = feedbackData.find(row => Number(row.id) === Number(id))
+    if (!item) return alert('反馈记录不存在，请刷新后重试')
+    document.getElementById('feedback-reply-id').value = item.id
+    document.getElementById('feedback-reply-summary').textContent = `用户：${item.real_name || '未填写姓名'}（${item.phone || '无手机号'}）\n问题：${item.content}`
+    document.getElementById('feedback-reply-images').innerHTML = (item.images || []).map(url => `<img src="${esc(url)}" alt="反馈图片" onclick="previewSupportImage('${esc(url)}')">`).join('')
+    document.getElementById('feedback-reply-content').value = item.admin_reply || ''
+    document.getElementById('feedback-reply-status').value = item.status === 'closed' ? 'closed' : 'replied'
+    document.getElementById('feedback-reply-result').textContent = ''
+    document.getElementById('modalFeedbackReply').classList.add('show')
+  }
+
+  async function submitFeedbackReply() {
+    const id = Number(document.getElementById('feedback-reply-id').value)
+    const reply = document.getElementById('feedback-reply-content').value.trim()
+    const status = document.getElementById('feedback-reply-status').value
+    const result = document.getElementById('feedback-reply-result')
+    if (reply.length < 2) {
+      result.style.color = '#DC2626'
+      result.textContent = '请填写至少2个字的回复内容'
+      return
+    }
+    result.style.color = '#888'
+    result.textContent = '正在发送...'
+    let r
+    try {
+      r = await api('PATCH', `/feedbacks/${id}/reply`, { reply, status })
+    } catch {
+      result.style.color = '#DC2626'
+      result.textContent = '网络连接失败，请稍后重试'
+      return
+    }
+    if (!r || r.code !== 200) {
+      result.style.color = '#DC2626'
+      result.textContent = (r && r.msg) || '发送失败，请稍后重试'
+      return
+    }
+    closeModal('modalFeedbackReply')
+    await loadFeedbacks()
+    alert(r.msg || '回复已发送')
+  }
+
   // ── 平台公告 ────────────────────────────────
   async function loadAnnouncements() {
     const tbody = document.getElementById('announce-table')
@@ -2037,6 +2603,17 @@
 
   // 初始加载
   loadOverview()
+  refreshFeedbackBadge()
+  refreshSupportChatBadge()
+  connectSupportSocket()
+  setInterval(() => {
+    if (document.getElementById('panel-supportChats').classList.contains('active')) {
+      loadSupportChats()
+      loadSupportChatMessages(false)
+    } else {
+      refreshSupportChatBadge()
+    }
+  }, 5000)
 </script>
 
 <!-- 佣金费率弹窗 -->
@@ -2091,6 +2668,42 @@
         style="padding:10px 24px;border:1.5px solid #E0E0E0;border-radius:10px;background:#fff;cursor:pointer;font-size:14px">取消</button>
       <button onclick="submitAnnouncement()"
         style="padding:10px 24px;background:#C8902E;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600">发布公告</button>
+    </div>
+  </div>
+</div>
+
+<!-- 客服回复弹窗 -->
+<div class="modal-mask" id="modalFeedbackReply">
+  <div class="modal" style="max-width:560px">
+    <h3>回复用户反馈</h3>
+    <input id="feedback-reply-id" type="hidden">
+    <div id="feedback-reply-summary" style="white-space:pre-wrap;background:#F7F8FA;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.7;color:#555"></div>
+    <div class="feedback-modal-images" id="feedback-reply-images"></div>
+    <div class="mfield">
+      <label>回复内容 *</label>
+      <textarea id="feedback-reply-content" maxlength="1000" rows="6" placeholder="请说明处理结果或给出解决办法"></textarea>
+    </div>
+    <div class="mfield">
+      <label>工单状态</label>
+      <select id="feedback-reply-status">
+        <option value="replied">已回复，等待用户查看</option>
+        <option value="closed">已回复并标记完成</option>
+      </select>
+    </div>
+    <div id="feedback-reply-result" style="font-size:13px;min-height:18px"></div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalFeedbackReply')">取消</button>
+      <button class="mbtn save" onclick="submitFeedbackReply()">发送回复</button>
+    </div>
+  </div>
+</div>
+
+<!-- 客服图片预览 -->
+<div class="modal-mask" id="modalSupportImage" onclick="if(event.target===this) closeModal('modalSupportImage')">
+  <div class="modal" style="width:auto;max-width:92vw;padding:14px">
+    <img id="supportImagePreview" alt="客服图片预览" style="display:block;max-width:82vw;max-height:78vh;object-fit:contain;border-radius:6px">
+    <div class="mbtns" style="margin-top:12px">
+      <button class="mbtn cancel" onclick="closeModal('modalSupportImage')">关闭</button>
     </div>
   </div>
 </div>

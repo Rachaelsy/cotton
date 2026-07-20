@@ -4,6 +4,8 @@ require('dotenv').config()
 const express = require('express')
 const cors    = require('cors')
 const path    = require('path')
+const http    = require('http')
+const { attachSupportRealtime } = require('./utils/support-realtime')
 
 const app = express()
 app.set('trust proxy', true)
@@ -51,6 +53,7 @@ app.use('/api/orders',   require('./routes/orders'))
 app.use('/api/logistics', require('./routes/logistics'))
 app.use('/api/plots',    require('./routes/plots'))
 app.use('/api/farm-records', require('./routes/farm-records'))
+app.use('/api/feedback', require('./routes/feedback'))
 app.use('/api/weather',  require('./routes/weather'))
 app.use('/api/verification', require('./routes/verification'))
 app.use('/api/expert',   require('./routes/expert'))
@@ -79,7 +82,9 @@ app.use((err, _req, res, _next) => {
 
 // ── 启动 ────────────────────────────────────
 const PORT = process.env.PORT || 3000
-app.listen(PORT, () => {
+const server = http.createServer(app)
+attachSupportRealtime(server)
+server.listen(PORT, () => {
   console.log(`🚀 棉花智能体后端启动成功 → http://localhost:${PORT}`)
   require('./scheduler').startScheduler()
 })
