@@ -16,7 +16,7 @@ delete process.env.QWEATHER_JWT_PRIVATE_KEY_PATH
 const dbPath = require.resolve('../db/database')
 const nativeFetch = global.fetch
 const fetchedRequests = []
-let failNextNowRequest = false
+let failNextCityNowRequest = false
 const mockCoordinates = JSON.stringify([
   { latitude: 39.47, longitude: 75.99 },
   { latitude: 39.47, longitude: 75.991 },
@@ -82,6 +82,31 @@ function qweatherJson(url) {
     }
   }
 
+  if (currentUrl.pathname === '/v7/weather/now') {
+    return {
+      code: '200',
+      updateTime: '2026-07-07T10:10+08:00',
+      now: {
+        obsTime: '2026-07-07T10:05+08:00',
+        temp: '30',
+        feelsLike: '33',
+        icon: '101',
+        text: '多云',
+        wind360: '135',
+        windDir: '东南风',
+        windScale: '2',
+        windSpeed: '11',
+        humidity: '62',
+        precip: '0.0',
+        pressure: '1001',
+        vis: '18',
+        cloud: '75',
+        dew: '22'
+      },
+      refer: { sources: ['QWeather'], license: ['QWeather Developers License'] }
+    }
+  }
+
   if (currentUrl.pathname === '/v7/grid-weather/24h') {
     return {
       code: '200',
@@ -95,6 +120,18 @@ function qweatherJson(url) {
     }
   }
 
+  if (currentUrl.pathname === '/v7/weather/24h') {
+    return {
+      code: '200',
+      updateTime: '2026-07-07T10:10+08:00',
+      hourly: [
+        { fxTime: '2026-07-07T11:00+08:00', temp: '31', icon: '101', text: '多云', wind360: '135', windSpeed: '11', humidity: '60', precip: '0.0', pressure: '1001' },
+        { fxTime: '2026-07-07T12:00+08:00', temp: '32', icon: '101', text: '多云', wind360: '145', windSpeed: '12', humidity: '58', precip: '0.0', pressure: '1000' }
+      ],
+      refer: { sources: ['QWeather'], license: ['QWeather Developers License'] }
+    }
+  }
+
   if (currentUrl.pathname === '/v7/grid-weather/7d') {
     return {
       code: '200',
@@ -102,6 +139,18 @@ function qweatherJson(url) {
       daily: [
         { fxDate: '2026-07-07', tempMax: '31', tempMin: '22', iconDay: '302', textDay: '雷阵雨', wind360Day: '45', windSpeedDay: '11', humidity: '78', precip: '1.2', pressure: '862' },
         { fxDate: '2026-07-08', tempMax: '33', tempMin: '23', iconDay: '101', textDay: '多云', wind360Day: '80', windSpeedDay: '13', humidity: '62', precip: '0.0', pressure: '860' }
+      ],
+      refer: { sources: ['QWeather'], license: ['QWeather Developers License'] }
+    }
+  }
+
+  if (currentUrl.pathname === '/v7/weather/7d') {
+    return {
+      code: '200',
+      updateTime: '2026-07-07T10:10+08:00',
+      daily: [
+        { fxDate: '2026-07-07', tempMax: '34', tempMin: '24', iconDay: '101', textDay: '多云', wind360Day: '135', windSpeedDay: '12', humidity: '60', precip: '0.0', pressure: '1001' },
+        { fxDate: '2026-07-08', tempMax: '35', tempMin: '25', iconDay: '100', textDay: '晴', wind360Day: '150', windSpeedDay: '13', humidity: '58', precip: '0.0', pressure: '1000' }
       ],
       refer: { sources: ['QWeather'], license: ['QWeather Developers License'] }
     }
@@ -136,8 +185,8 @@ function qweatherJson(url) {
 global.fetch = async (url, options = {}) => {
   fetchedRequests.push({ url: String(url), headers: options.headers || {} })
   const currentUrl = new URL(String(url))
-  if (failNextNowRequest && currentUrl.pathname === '/v7/grid-weather/now') {
-    failNextNowRequest = false
+  if (failNextCityNowRequest && currentUrl.pathname === '/v7/weather/now') {
+    failNextCityNowRequest = false
     return { ok: false, status: 502, json: async () => ({ code: '502' }) }
   }
   const payload = qweatherJson(url)
@@ -198,17 +247,25 @@ async function runRouteTest() {
     assert.strictEqual(locationSuccess.json.data.location.name, '喀什市')
     assert.strictEqual(locationSuccess.json.data.location.inService, true)
     assert.strictEqual(locationSuccess.json.data.weather.provider, 'qweather')
+    assert.strictEqual(locationSuccess.json.data.weather.model, 'QWeather City Weather')
+    assert.strictEqual(locationSuccess.json.data.weather.current.weather_text, '多云')
+    assert.strictEqual(locationSuccess.json.data.weather.current.temperature_2m, 30)
+    assert.strictEqual(locationSuccess.json.data.weather.current.apparent_temperature, 33)
+    assert.strictEqual(locationSuccess.json.data.weather.current.visibility, 18000)
 
     const allQweatherRequests = fetchedRequests.filter(item => item.url.includes('qweatherapi.com'))
-    assert.strictEqual(allQweatherRequests.length, 4, 'same rounded location should reuse the weather cache')
+    assert.strictEqual(allQweatherRequests.length, 8, 'location weather should use an independent city-weather cache')
+    assert(allQweatherRequests.some(item => new URL(item.url).pathname === '/v7/weather/now'))
+    assert(allQweatherRequests.some(item => new URL(item.url).pathname === '/v7/weather/24h'))
+    assert(allQweatherRequests.some(item => new URL(item.url).pathname === '/v7/weather/7d'))
 
-    failNextNowRequest = true
+    failNextCityNowRequest = true
     const retrySuccess = await request(baseUrl, '', '/api/weather/location?lat=31.22114&lng=121.54409')
     assert.strictEqual(retrySuccess.status, 200)
     assert.strictEqual(retrySuccess.json.data.weather.provider, 'qweather')
     const retriedNowRequests = fetchedRequests.filter(item => {
       const currentUrl = new URL(item.url)
-      return currentUrl.pathname === '/v7/grid-weather/now' && currentUrl.searchParams.get('location') === '121.54,31.22'
+      return currentUrl.pathname === '/v7/weather/now' && currentUrl.searchParams.get('location') === '121.54,31.22'
     })
     assert.strictEqual(retriedNowRequests.length, 2, 'a transient 502 should retry the current-weather request once')
     assert(fetchedRequests.every(item => !item.url.includes('api.open-meteo.com')), 'qweather provider should not request Open-Meteo')

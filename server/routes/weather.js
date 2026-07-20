@@ -2,7 +2,7 @@ const express = require('express')
 const jwt = require('jsonwebtoken')
 const db = require('../db/database')
 const { fetchCmaWeather } = require('../utils/cma-weather')
-const { fetchQweatherWeather } = require('../utils/qweather')
+const { fetchQweatherLocationWeather, fetchQweatherWeather } = require('../utils/qweather')
 const { normalizeCoordinates, calculateCenter } = require('../utils/plot-geometry')
 const { locateService } = require('../utils/regions')
 const weatherObservations = require('../utils/weather-observations')
@@ -30,6 +30,19 @@ async function fetchPointWeather(center, plot) {
     return fetchQweatherWeather(center, plot)
   }
   throw new Error(`未知天气数据源：${provider}`)
+}
+
+async function fetchLocationWeather(center, locationName) {
+  const provider = weatherProvider()
+  if (provider === 'qweather' || provider === 'heweather') {
+    return fetchQweatherLocationWeather(center)
+  }
+  return fetchPointWeather(center, {
+    id: null,
+    name: locationName,
+    area: 0,
+    coordinates: JSON.stringify([center])
+  })
 }
 
 function farmerAuth(req, res, next) {
@@ -80,12 +93,7 @@ router.get('/location', async (req, res) => {
   const locationName = location && location.name ? location.name : '当前位置'
 
   try {
-    const weather = await fetchPointWeather(center, {
-      id: null,
-      name: locationName,
-      area: 0,
-      coordinates: JSON.stringify([center])
-    })
+    const weather = await fetchLocationWeather(center, locationName)
     return ok(res, {
       center,
       location: {

@@ -6,8 +6,28 @@ const RETRY_COUNT = Math.max(0, Number(process.env.QWEATHER_RETRY_COUNT || 1))
 const RETRY_DELAY_MS = Math.max(0, Number(process.env.QWEATHER_RETRY_DELAY_MS || 200))
 const CACHE_TTL_MS = Math.max(0, Number(process.env.QWEATHER_CACHE_TTL_MS || 10 * 60 * 1000))
 const STALE_TTL_MS = Math.max(CACHE_TTL_MS, Number(process.env.QWEATHER_STALE_TTL_MS || 2 * 60 * 60 * 1000))
+const LOCATION_CACHE_TTL_MS = Math.max(0, Number(process.env.QWEATHER_LOCATION_CACHE_TTL_MS || 3 * 60 * 1000))
+const LOCATION_STALE_TTL_MS = Math.max(
+  LOCATION_CACHE_TTL_MS,
+  Number(process.env.QWEATHER_LOCATION_STALE_TTL_MS || 10 * 60 * 1000)
+)
 const JWT_TTL_SECONDS = 900
 const MAX_CACHE_ENTRIES = 200
+
+const WEATHER_MODES = {
+  grid: {
+    pathPrefix: '/v7/grid-weather',
+    model: 'QWeather Grid Weather',
+    cacheTtlMs: CACHE_TTL_MS,
+    staleTtlMs: STALE_TTL_MS
+  },
+  city: {
+    pathPrefix: '/v7/weather',
+    model: 'QWeather City Weather',
+    cacheTtlMs: LOCATION_CACHE_TTL_MS,
+    staleTtlMs: LOCATION_STALE_TTL_MS
+  }
+}
 
 let cachedJwt = null
 const weatherCache = new Map()
@@ -243,7 +263,7 @@ function normalizeAlertPayload(payload) {
   }
 }
 
-function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayload, alertPayload) {
+function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayload, alertPayload, model) {
   const now = nowPayload.now || {}
   const hourlyItems = Array.isArray(hourlyPayload.hourly) ? hourlyPayload.hourly : []
   const dailyItems = Array.isArray(dailyPayload.daily) ? dailyPayload.daily : []
@@ -252,7 +272,7 @@ function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayloa
   return {
     provider: 'qweather',
     source: normalizeHost(process.env.QWEATHER_API_HOST),
-    model: 'QWeather Grid Weather',
+    model,
     center,
     current: {
       time: currentTime,
@@ -264,9 +284,9 @@ function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayloa
       wind_speed_10m: toNumber(now.windSpeed, 0),
       wind_direction_10m: toNumber(now.wind360, 0),
       surface_pressure: toNumber(now.pressure, 0),
-      visibility: null,
+      visibility: toNumber(now.vis) === null ? null : toNumber(now.vis) * 1000,
       soil_temperature_0cm: null,
-      apparent_temperature: null
+      apparent_temperature: toNumber(now.feelsLike)
     },
     hourly: {
       time: mapList(hourlyItems, item => item.fxTime),
@@ -300,7 +320,18 @@ function normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayloa
 }
 
 async function fetchQweatherWeather(center, plot = {}) {
-  const cacheKey = `${normalizeHost(process.env.QWEATHER_API_HOST)}:${formatLocation(center)}`
+  return fetchQweatherWeatherByMode(center, plot, 'grid')
+}
+
+async function fetchQweatherLocationWeather(center) {
+  return fetchQweatherWeatherByMode(center, {}, 'city')
+}
+
+async function fetchQweatherWeatherByMode(center, plot, mode) {
+  const config = WEATHER_MODES[mode]
+  if (!config) throw new Error(`未知和风天气模式：${mode}`)
+
+  const cacheKey = `${normalizeHost(process.env.QWEATHER_API_HOST)}:${mode}:${formatLocation(center)}`
   const now = Date.now()
   const cached = weatherCache.get(cacheKey)
   if (cached && cached.expiresAt > now) {
@@ -312,7 +343,7 @@ async function fetchQweatherWeather(center, plot = {}) {
     return { ...weather, center }
   }
 
-  const request = fetchFreshQweatherWeather(center, plot)
+  const request = fetchFreshQweatherWeather(center, plot, config)
     .then(weather => {
       for (const [key, entry] of weatherCache) {
         if (entry.staleUntil <= Date.now()) weatherCache.delete(key)
@@ -322,8 +353,8 @@ async function fetchQweatherWeather(center, plot = {}) {
       }
       weatherCache.set(cacheKey, {
         weather,
-        expiresAt: Date.now() + CACHE_TTL_MS,
-        staleUntil: Date.now() + STALE_TTL_MS
+        expiresAt: Date.now() + config.cacheTtlMs,
+        staleUntil: Date.now() + config.staleTtlMs
       })
       return weather
     })
@@ -344,18 +375,18 @@ async function fetchQweatherWeather(center, plot = {}) {
   }
 }
 
-async function fetchFreshQweatherWeather(center, plot = {}) {
+async function fetchFreshQweatherWeather(center, plot, config) {
   const warningPromise = requestQweatherAlert(center)
     .then(normalizeAlertPayload)
     .catch(error => ({ available: false, zeroResult: false, alerts: [], attributions: [], error: error.message }))
   const [nowPayload, hourlyPayload, dailyPayload, warning] = await Promise.all([
-    requestQweatherJson('/v7/grid-weather/now', center),
-    requestQweatherJson('/v7/grid-weather/24h', center),
-    requestQweatherJson('/v7/grid-weather/7d', center),
+    requestQweatherJson(`${config.pathPrefix}/now`, center),
+    requestQweatherJson(`${config.pathPrefix}/24h`, center),
+    requestQweatherJson(`${config.pathPrefix}/7d`, center),
     warningPromise
   ])
 
-  const weather = normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayload, warning)
+  const weather = normalizeQweatherPayload(center, nowPayload, hourlyPayload, dailyPayload, warning, config.model)
   if (!Array.isArray(weather.hourly.time) || !weather.hourly.time.length) {
     throw new Error('和风天气逐小时预报数据缺失')
   }
@@ -367,6 +398,7 @@ async function fetchFreshQweatherWeather(center, plot = {}) {
 
 module.exports = {
   createQweatherJwt,
+  fetchQweatherLocationWeather,
   fetchQweatherWeather,
   formatLocation,
   qweatherIconToWmo
