@@ -1553,8 +1553,19 @@ const CAMPAIGN_TYPES = {
   ]
 }
 const CAMPAIGN_STATUS = {
-  draft:'草稿', pending:'待审核', approved:'待开始', scheduled:'待开始', running:'进行中',
+  draft:'草稿', pending:'待审核', approved:'已通过', scheduled:'待开始', running:'进行中',
   paused:'已暂停', rejected:'已驳回', ended:'已结束'
+}
+
+function campaignDisplayStatus(item) {
+  if (!['approved','running'].includes(item.status)) return item.display_status || item.status
+  const now = Date.now()
+  const startsAt = new Date(item.starts_at).getTime()
+  const endsAt = new Date(item.ends_at).getTime()
+  if (Number.isFinite(startsAt) && startsAt > now) return 'scheduled'
+  if (Number.isFinite(endsAt) && endsAt <= now) return 'ended'
+  if (Number.isFinite(startsAt) && Number.isFinite(endsAt)) return 'running'
+  return item.display_status || item.status
 }
 
 async function loadCampaigns() {
@@ -1567,7 +1578,7 @@ async function loadCampaigns() {
   }
   campaignsData = r.data || []
   document.getElementById('mk-total').textContent = campaignsData.length
-  document.getElementById('mk-running').textContent = campaignsData.filter(x => x.display_status === 'running').length
+  document.getElementById('mk-running').textContent = campaignsData.filter(x => campaignDisplayStatus(x) === 'running').length
   document.getElementById('mk-pending').textContent = campaignsData.filter(x => x.status === 'pending').length
   document.getElementById('mk-used').textContent = campaignsData.reduce((sum, x) => sum + Number(x.used_count || 0), 0)
   renderCampaigns()
@@ -1591,7 +1602,7 @@ function renderCampaigns() {
   }
   tbody.innerHTML = list.map(item => {
     const typeName = (CAMPAIGN_TYPES[item.kind] || []).find(x => x[0] === item.type)?.[1] || item.type
-    const status = item.display_status || item.status
+    const status = campaignDisplayStatus(item)
     const starts = String(item.starts_at || '').slice(0,16).replace('T',' ')
     const ends = String(item.ends_at || '').slice(0,16).replace('T',' ')
     const edit = ['draft','rejected'].includes(item.status) ? `<button class="btn btn-outline btn-sm" onclick="editCampaign(${item.id})">编辑</button>` : ''
@@ -1649,7 +1660,7 @@ async function openCampaignModal(item) {
   document.getElementById('campaign-quota').value = campaign?.kind === 'coupon' ? (campaign?.total_quota || '') : ''
   document.getElementById('campaign-user-limit').value = campaign?.per_user_limit || 1
   document.getElementById('campaign-stackable').checked = !!campaign?.stackable
-  document.getElementById('campaign-start').value = datetimeLocal(campaign?.starts_at || new Date(Date.now() + 10 * 60000))
+  document.getElementById('campaign-start').value = datetimeLocal(campaign?.starts_at || new Date())
   document.getElementById('campaign-end').value = datetimeLocal(campaign?.ends_at || new Date(Date.now() + 7 * 86400000))
   document.getElementById('campaign-tiers').value = (campaign?.rules?.tiers || []).map(x => `${x.threshold}:${x.discount}`).join(',')
   const selected = new Set((campaign?.products || []).map(x => Number(x.product_id)))

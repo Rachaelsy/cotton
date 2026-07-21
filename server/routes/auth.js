@@ -27,6 +27,18 @@ function signToken(user) {
   )
 }
 
+async function loadFarmerProfile(userId, executor = db) {
+  const [rows] = await executor.query(
+    'SELECT location,land_size,crop_type FROM farmers WHERE user_id=? LIMIT 1',
+    [userId]
+  )
+  return rows[0] || null
+}
+
+function farmerSessionUser(user) {
+  return { ...user, role: 'farmer' }
+}
+
 // ─────────────────────────────────────────────
 // POST /api/auth/register  注册接口
 // ─────────────────────────────────────────────
@@ -47,7 +59,7 @@ function signToken(user) {
  */
 router.post('/register', async (req, res) => {
   const { phone, password, role, real_name,
-          location, land_size,
+          location, land_size, crop_type,
           company_name, business_license, product_category } = req.body
 
   // ── 基础校验 ──────────────────────────────
@@ -62,8 +74,32 @@ router.post('/register', async (req, res) => {
 
   try {
     // ── 检查手机号是否已注册 ─────────────────
-    const [rows] = await db.query('SELECT id FROM users WHERE phone=?', [phone])
-    if (rows.length > 0) return fail(res, '该手机号已注册')
+    const [rows] = await db.query(
+      'SELECT id,phone,password,role,real_name,is_verified,is_active,avatar_url FROM users WHERE phone=?',
+      [phone]
+    )
+    if (rows.length > 0) {
+      if (role !== 'farmer') return fail(res, '该手机号已注册')
+      const existing = rows[0]
+      if (!existing.is_active) return fail(res, '账号已被禁用，请联系客服', 403)
+      const profile = await loadFarmerProfile(existing.id)
+      if (profile) return fail(res, '该手机号已注册农户身份，请直接登录', 409)
+      if (!existing.password || !await bcrypt.compare(password, existing.password)) {
+        return fail(res, '该手机号已有网页端账号，请填写原账号密码以注册农户身份', 409)
+      }
+      await db.query(
+        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
+        [existing.id, location || '', parseFloat(land_size) || 0, crop_type || '棉花']
+      )
+      const farmerUser = farmerSessionUser(existing)
+      const token = signToken(farmerUser)
+      return ok(res, {
+        token, role: 'farmer', phone: existing.phone,
+        real_name: existing.real_name || real_name.trim(),
+        is_verified: !!existing.is_verified, avatar_url: existing.avatar_url || null,
+        location: location || '', land_size: parseFloat(land_size) || 0, crop_type: crop_type || '棉花'
+      }, '农户身份注册成功')
+    }
 
     // ── 加密密码 ─────────────────────────────
     const hash = await bcrypt.hash(password, 10)
@@ -78,10 +114,10 @@ router.post('/register', async (req, res) => {
     // ── 插入角色扩展信息 ───────────────────────
     if (role === 'farmer') {
       await db.query(
-        'INSERT INTO farmers (user_id,location,land_size) VALUES (?,?,?)',
-        [userId, location || '', parseFloat(land_size) || 0]
+        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
+        [userId, location || '', parseFloat(land_size) || 0, crop_type || '棉花']
       )
-    } else {
+    } else if (sessionRole === 'merchant') {
       await db.query(
         'INSERT INTO merchants (user_id,company_name,business_license,product_category) VALUES (?,?,?,?)',
         [userId, company_name || '', business_license || '', product_category || '']
@@ -90,7 +126,7 @@ router.post('/register', async (req, res) => {
 
     // ── 签发 Token ────────────────────────────
     const token = signToken({ id: userId, phone, role })
-    return ok(res, { token, role, real_name: real_name.trim(), is_verified: false }, '注册成功')
+    return ok(res, { token, role, phone, real_name: real_name.trim(), is_verified: false }, '注册成功')
 
   } catch (err) {
     console.error('[register]', err)
@@ -107,7 +143,7 @@ router.post('/register', async (req, res) => {
  *   password {string} 密码
  */
 router.post('/login', async (req, res) => {
-  const { phone, password } = req.body
+  const { phone, password, role: requestedRole } = req.body
 
   if (!phone || !password) return fail(res, '手机号和密码不能为空')
 
@@ -128,11 +164,14 @@ router.post('/login', async (req, res) => {
 
     // ── 查询角色扩展信息 ───────────────────────
     let profile = {}
-    if (user.role === 'farmer') {
-      const [rows2] = await db.query(
-        'SELECT location,land_size FROM farmers WHERE user_id=?', [user.id]
-      )
-      if (rows2.length) profile = rows2[0]
+    let sessionUser = user
+    if (requestedRole === 'farmer') {
+      const farmerProfile = await loadFarmerProfile(user.id)
+      if (!farmerProfile) return fail(res, '该账号尚未注册农户身份，请先完成农户注册', 403)
+      profile = farmerProfile
+      sessionUser = farmerSessionUser(user)
+    } else if (user.role === 'farmer') {
+      profile = await loadFarmerProfile(user.id) || {}
     } else {
       const [rows2] = await db.query(
         'SELECT company_name,business_license,product_category,apply_status,reject_reason,sub_mchid,wechat_applyment_state FROM merchants WHERE user_id=?', [user.id]
@@ -154,10 +193,10 @@ router.post('/login', async (req, res) => {
     ).catch(() => {})
 
     // ── 签发 Token ────────────────────────────
-    const token = signToken(user)
+    const token = signToken(sessionUser)
     return ok(res, {
       token,
-      role:       user.role,
+      role:       sessionUser.role,
       real_name:  user.real_name,
       is_verified: !!user.is_verified,
       avatar_url: user.avatar_url || null,
@@ -186,14 +225,14 @@ router.get('/verify', authMiddleware, async (req, res) => {
     if (rows.length === 0) return fail(res, '用户不存在或已被禁用', 404)
 
     const user = rows[0]
+    const sessionRole = req.user.role || user.role
 
     // 查角色扩展
     let profile = {}
-    if (user.role === 'farmer') {
-      const [r] = await db.query(
-        'SELECT location,land_size FROM farmers WHERE user_id=?', [user.id]
-      )
-      if (r.length) profile = r[0]
+    if (sessionRole === 'farmer') {
+      const farmerProfile = await loadFarmerProfile(user.id)
+      if (!farmerProfile) return fail(res, '农户身份不存在，请重新注册', 403)
+      profile = farmerProfile
     } else {
       const [r] = await db.query(
         'SELECT company_name,business_license,product_category FROM merchants WHERE user_id=?', [user.id]
@@ -201,7 +240,7 @@ router.get('/verify', authMiddleware, async (req, res) => {
       if (r.length) profile = r[0]
     }
 
-    return ok(res, { ...user, ...profile })
+    return ok(res, { ...user, role: sessionRole, ...profile })
   } catch (err) {
     console.error('[verify]', err)
     return fail(res, '服务器错误', 500)
@@ -267,8 +306,8 @@ router.post('/wx-login', async (req, res) => {
         [phone, openid, 'farmer']
       )
       await db.query(
-        'INSERT INTO farmers (user_id, location, land_size) VALUES (?, ?, ?)',
-        [result.insertId, '', 0]
+        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
+        [result.insertId, '', 0, '棉花']
       )
       const [newRow] = await db.query('SELECT * FROM users WHERE id=?', [result.insertId])
       user = newRow[0]
@@ -276,16 +315,20 @@ router.post('/wx-login', async (req, res) => {
 
     if (!user.is_active) return fail(res, '账号已被禁用，请联系客服', 403)
 
-    // ── 6. 查角色信息 ──────────────────────────
-    let profile = {}
-    if (user.role === 'farmer') {
-      const [r] = await db.query('SELECT location,land_size FROM farmers WHERE user_id=?', [user.id])
-      if (r.length) profile = r[0]
+    // ── 6. 微信授权手机号即视为注册/登录农户身份 ──
+    let profile = await loadFarmerProfile(user.id)
+    if (!profile) {
+      await db.query(
+        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
+        [user.id, '', 0, '棉花']
+      )
+      profile = { location: '', land_size: 0, crop_type: '棉花' }
     }
 
-    const token = signToken(user)
+    const sessionUser = farmerSessionUser(user)
+    const token = signToken(sessionUser)
     return ok(res, {
-      token, role: user.role, real_name: user.real_name || '', phone: user.phone,
+      token, role: 'farmer', real_name: user.real_name || '', phone: user.phone,
       is_verified: !!user.is_verified, ...profile
     }, '登录成功')
 

@@ -187,7 +187,7 @@ Page({
     getApp().globalData.user = null
     wx.showModal({
       title: this.textCopy.webOnlyTitle || '请使用网页后台',
-      content: this.textCopy.webOnlyContent || '商户、农机手和管理员账号请在网页端登录管理后台，小程序仅供农户使用。',
+      content: this.textCopy.webOnlyContent || '网页后台保留商户、农机手和管理员功能；如需使用小程序，请先注册农户身份。',
       showCancel: false,
       confirmText: this.textCopy.ok || '知道了'
     })

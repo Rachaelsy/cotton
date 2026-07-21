@@ -145,11 +145,12 @@ async function listConversations() {
               WHERE unread.user_id=u.id AND unread.sender_type='farmer'
                 AND unread.read_at IS NULL AND unread.hidden_for_admin=0) AS unread_count
        FROM users u
+       JOIN farmers f ON f.user_id=u.id
        JOIN support_messages last_message ON last_message.id=(
          SELECT MAX(latest.id) FROM support_messages latest
           WHERE latest.user_id=u.id AND latest.hidden_for_admin=0
        )
-      WHERE u.role='farmer'
+      WHERE u.is_active=1
       ORDER BY last_message.id DESC
       LIMIT 200`
   )
@@ -214,7 +215,8 @@ async function hideConversationForAdmin(userId) {
 
 async function farmerExists(userId) {
   const [rows] = await db.query(
-    "SELECT id FROM users WHERE id=? AND role='farmer' AND is_active=1 LIMIT 1",
+    `SELECT u.id FROM users u JOIN farmers f ON f.user_id=u.id
+      WHERE u.id=? AND u.is_active=1 LIMIT 1`,
     [Number(userId)]
   )
   return rows.length > 0

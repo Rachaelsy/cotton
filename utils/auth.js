@@ -131,7 +131,7 @@ async function register(form) {
  * @param {string} password
  */
 async function login(phone, password) {
-  const res = await request('POST', '/api/auth/login', { phone, password })
+  const res = await request('POST', '/api/auth/login', { phone, password, role: 'farmer' })
   if (res.code === 200 && isFarmerUser(res.data)) {
     saveToken(res.data.token)
     saveUser(res.data)

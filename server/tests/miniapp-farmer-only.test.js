@@ -25,6 +25,7 @@ function run() {
   assert(loginSource.includes('_showWebOnlyAccount'), 'login page should show web-only guidance for non-farmers')
   assert(mySource.includes('webOnlyContent'), 'profile page WeChat login should show web-only guidance for non-farmers')
   assert(authSource.includes('function isFarmerUser'), 'auth helper should expose farmer-only role guard')
+  assert(authSource.includes("{ phone, password, role: 'farmer' }"), 'miniapp login should request a farmer session for multi-role users')
 
   console.log('miniapp farmer-only tests passed')
 }

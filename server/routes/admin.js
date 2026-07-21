@@ -594,8 +594,8 @@ router.patch('/expert-questions/:id/status', adminAuth, async (req, res) => {
 router.get('/stats', adminAuth, async (req, res) => {
   try {
     const [[{ totalUsers }]]       = await db.query('SELECT COUNT(*) AS totalUsers FROM users WHERE is_admin=0')
-    const [[{ totalFarmers }]]     = await db.query('SELECT COUNT(*) AS totalFarmers FROM users WHERE role="farmer"')
-    const [[{ totalMerchants }]]   = await db.query('SELECT COUNT(*) AS totalMerchants FROM users WHERE role="merchant"')
+    const [[{ totalFarmers }]]     = await db.query('SELECT COUNT(*) AS totalFarmers FROM farmers')
+    const [[{ totalMerchants }]]   = await db.query('SELECT COUNT(*) AS totalMerchants FROM merchants')
     const [[{ pendingApps }]]      = await db.query('SELECT COUNT(*) AS pendingApps FROM merchants WHERE apply_status="pending"')
     const [[{ totalProducts }]]    = await db.query('SELECT COUNT(*) AS totalProducts FROM products')
     const [[{ onSaleProducts }]]   = await db.query('SELECT COUNT(*) AS onSaleProducts FROM products WHERE status="on"')
@@ -635,8 +635,7 @@ router.get('/farmers', adminAuth, async (req, res) => {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.is_verified, u.is_active, u.created_at,
              f.id AS farmer_id, f.location, f.land_size
-      FROM users u LEFT JOIN farmers f ON f.user_id = u.id
-      WHERE u.role = 'farmer'
+      FROM farmers f JOIN users u ON u.id = f.user_id
       ORDER BY u.created_at DESC
     `)
     res.json({ code: 200, data: rows })

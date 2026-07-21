@@ -138,7 +138,7 @@ const mockDb = {
       return [{ affectedRows: 1 }, []]
     }
 
-    if (/FROM users u JOIN support_messages last_message/i.test(compact)) {
+    if (/FROM users u JOIN farmers f ON f\.user_id=u\.id JOIN support_messages last_message/i.test(compact)) {
       if (!messages.length) return [[], []]
       const visibleMessages = messages.filter(item => !item.hidden_for_admin)
       if (!visibleMessages.length) return [[], []]
@@ -176,7 +176,7 @@ const mockDb = {
       return [{ affectedRows }, []]
     }
 
-    if (/SELECT id FROM users WHERE id=\? AND role='farmer'/i.test(compact)) {
+    if (/SELECT u\.id FROM users u JOIN farmers f/i.test(compact)) {
       return [Number(params[0]) === 42 ? [{ id: 42 }] : [], []]
     }
 

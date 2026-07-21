@@ -24,6 +24,10 @@ function run() {
   assert.ok(merchant.includes('创建营销活动'))
   assert.ok(merchant.includes('秒杀库存'))
   assert.ok(merchant.includes('/merchant/campaigns'))
+  assert.ok(merchant.includes('function campaignDisplayStatus(item)'))
+  assert.ok(merchant.includes("approved:'已通过', scheduled:'待开始'"))
+  assert.ok(merchant.includes("campaign?.starts_at || new Date()"), 'new campaigns should start immediately by default')
+  assert.ok(!merchant.includes('Date.now() + 10 * 60000'), 'new campaigns must not silently wait ten minutes')
   assertInlineScriptsParse(merchant, 'merchant dashboard')
 
   const admin = read('server', 'public', 'admin', 'dashboard.html')
