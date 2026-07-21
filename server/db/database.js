@@ -9,7 +9,16 @@ const pool = mysql.createPool({
   password:        process.env.DB_PASS || '',
   waitForConnections: true,
   connectionLimit: 10,
-  charset:         'utf8mb4'
+  charset:         'utf8mb4',
+  // The product operates in China. Keep DATETIME parsing and SQL NOW() on the
+  // same clock even when the cloud host itself runs in UTC.
+  timezone:        '+08:00'
+})
+
+pool.on('connection', connection => {
+  connection.query("SET time_zone = '+08:00'", error => {
+    if (error) console.error('MySQL 时区初始化失败:', error.message)
+  })
 })
 
 // 测试连接

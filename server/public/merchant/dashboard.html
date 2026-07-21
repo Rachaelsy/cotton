@@ -1603,8 +1603,8 @@ function renderCampaigns() {
   tbody.innerHTML = list.map(item => {
     const typeName = (CAMPAIGN_TYPES[item.kind] || []).find(x => x[0] === item.type)?.[1] || item.type
     const status = campaignDisplayStatus(item)
-    const starts = String(item.starts_at || '').slice(0,16).replace('T',' ')
-    const ends = String(item.ends_at || '').slice(0,16).replace('T',' ')
+    const starts = item.starts_at ? datetimeLocal(item.starts_at).replace('T',' ') : '-'
+    const ends = item.ends_at ? datetimeLocal(item.ends_at).replace('T',' ') : '-'
     const edit = ['draft','rejected'].includes(item.status) ? `<button class="btn btn-outline btn-sm" onclick="editCampaign(${item.id})">编辑</button>` : ''
     const submit = ['draft','rejected'].includes(item.status) ? `<button class="btn btn-primary btn-sm" onclick="submitCampaign(${item.id})">提交审核</button>` : ''
     const pause = ['approved','running'].includes(item.status) && status !== 'ended' ? `<button class="btn btn-warn btn-sm" onclick="pauseCampaign(${item.id})">暂停</button>` : ''

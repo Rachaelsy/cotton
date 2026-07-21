@@ -4,6 +4,7 @@ const engine = require('./marketing-engine')
 
 const ACTIVE_STATUSES = ['approved', 'running']
 const EDITABLE_STATUSES = ['draft', 'rejected']
+const BUSINESS_TIMEZONE_OFFSET_MS = 8 * 60 * 60 * 1000
 
 function statusError(message, statusCode = 400) {
   const error = new Error(message)
@@ -15,11 +16,25 @@ function placeholders(values) {
   return values.map(() => '?').join(',')
 }
 
+function parseCampaignDate(value) {
+  if (value instanceof Date) return new Date(value.getTime())
+  const text = String(value || '').trim()
+  const local = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/)
+  if (local) {
+    return new Date(Date.UTC(
+      Number(local[1]), Number(local[2]) - 1, Number(local[3]),
+      Number(local[4]), Number(local[5]), Number(local[6] || 0)
+    ) - BUSINESS_TIMEZONE_OFFSET_MS)
+  }
+  return new Date(value)
+}
+
 function mysqlDate(value) {
-  const date = value instanceof Date ? value : new Date(value)
+  const date = parseCampaignDate(value)
   if (!Number.isFinite(date.getTime())) return null
+  const businessDate = new Date(date.getTime() + BUSINESS_TIMEZONE_OFFSET_MS)
   const pad = number => String(number).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  return `${businessDate.getUTCFullYear()}-${pad(businessDate.getUTCMonth() + 1)}-${pad(businessDate.getUTCDate())} ${pad(businessDate.getUTCHours())}:${pad(businessDate.getUTCMinutes())}:${pad(businessDate.getUTCSeconds())}`
 }
 
 function groupCampaignRows(rows) {
@@ -364,8 +379,8 @@ function validateCampaignPayload(input = {}) {
   if (!name || name.length > 80) throw statusError('活动名称不能为空且不能超过80字')
   const startsAt = mysqlDate(input.starts_at)
   const endsAt = mysqlDate(input.ends_at)
-  if (!startsAt || !endsAt || new Date(startsAt) >= new Date(endsAt)) throw statusError('活动开始和结束时间无效')
-  if (new Date(endsAt) <= new Date()) throw statusError('活动结束时间必须晚于当前时间')
+  if (!startsAt || !endsAt || parseCampaignDate(startsAt) >= parseCampaignDate(endsAt)) throw statusError('活动开始和结束时间无效')
+  if (parseCampaignDate(endsAt) <= new Date()) throw statusError('活动结束时间必须晚于当前时间')
   const scopeType = ['all', 'category', 'products'].includes(input.scope_type) ? input.scope_type : 'all'
   const productIds = Array.from(new Set((Array.isArray(input.product_ids) ? input.product_ids : [])
     .map(Number).filter(value => Number.isInteger(value) && value > 0)))
@@ -526,8 +541,8 @@ function serializeCampaign(campaign) {
   const now = new Date()
   let displayStatus = item.status
   if (ACTIVE_STATUSES.includes(item.status)) {
-    if (new Date(item.starts_at) > now) displayStatus = 'scheduled'
-    else if (new Date(item.ends_at) <= now) displayStatus = 'ended'
+    if (parseCampaignDate(item.starts_at) > now) displayStatus = 'scheduled'
+    else if (parseCampaignDate(item.ends_at) <= now) displayStatus = 'ended'
     else displayStatus = 'running'
   }
   return {
@@ -566,7 +581,21 @@ function serializeCampaign(campaign) {
   }
 }
 
+async function syncCampaignStatuses(executor = db) {
+  const now = mysqlDate(new Date())
+  await executor.query(`
+    UPDATE marketing_campaigns
+       SET status=CASE
+         WHEN ends_at<=? THEN 'ended'
+         WHEN starts_at<=? THEN 'running'
+         ELSE 'approved'
+       END
+     WHERE status IN ('approved','running')
+  `, [now, now])
+}
+
 async function listMerchantCampaigns(merchantId) {
+  await syncCampaignStatuses()
   const campaigns = await queryCampaigns(db, 'c.merchant_id=?', [merchantId])
   return campaigns.map(serializeCampaign)
 }
@@ -589,6 +618,7 @@ async function pauseCampaign(merchantId, campaignId) {
 }
 
 async function listAdminCampaigns(status = '') {
+  await syncCampaignStatuses()
   const where = status ? 'c.status=?' : '1=1'
   const campaigns = await queryCampaigns(db, where, status ? [status] : [])
   if (!campaigns.length) return []
@@ -601,11 +631,15 @@ async function listAdminCampaigns(status = '') {
 }
 
 async function reviewCampaign(adminId, campaignId, approved, reason = '') {
-  const status = approved ? 'approved' : 'rejected'
+  const now = mysqlDate(new Date())
+  const statusSql = approved
+    ? "CASE WHEN ends_at<=? THEN 'ended' WHEN starts_at<=? THEN 'running' ELSE 'approved' END"
+    : "'rejected'"
+  const statusParams = approved ? [now, now] : []
   const [result] = await db.query(
-    `UPDATE marketing_campaigns SET status=?,rejection_reason=?,reviewed_by=?,reviewed_at=NOW()
+    `UPDATE marketing_campaigns SET status=${statusSql},rejection_reason=?,reviewed_by=?,reviewed_at=?
       WHERE id=? AND status='pending'`,
-    [status, approved ? '' : String(reason || '').trim().slice(0, 255), adminId, campaignId]
+    [...statusParams, approved ? '' : String(reason || '').trim().slice(0, 255), adminId, now, campaignId]
   )
   if (!result.affectedRows) throw statusError('活动不存在或已经审核', 409)
 }
@@ -866,6 +900,8 @@ async function returnCouponAfterRefund(orderId, executor = db) {
 
 module.exports = {
   campaignLabel,
+  parseCampaignDate,
+  mysqlDate,
   serializeCampaign,
   validateCampaignPayload,
   decorateProducts,
@@ -878,6 +914,7 @@ module.exports = {
   listMerchantCampaigns,
   submitCampaign,
   pauseCampaign,
+  syncCampaignStatuses,
   listAdminCampaigns,
   reviewCampaign,
   listClaimableCoupons,

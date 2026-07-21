@@ -28,6 +28,17 @@ function executorFor(records) {
 }
 
 async function run() {
+  assert.strictEqual(
+    marketing.parseCampaignDate('2026-07-21T17:00').toISOString(),
+    '2026-07-21T09:00:00.000Z',
+    'merchant wall-clock values must be interpreted as China Standard Time'
+  )
+  assert.strictEqual(
+    marketing.mysqlDate(new Date('2026-07-21T09:00:00.000Z')),
+    '2026-07-21 17:00:00',
+    'absolute timestamps must be stored as China Standard Time'
+  )
+
   assert.throws(
     () => marketing.validateCampaignPayload(validCampaign({ discount_amount: 'invalid' })),
     /数值格式无效/
@@ -62,6 +73,12 @@ async function run() {
     { couponApplied: true, payableFen: 9000, couponDiscountFen: 1000 },
     { couponApplied: true, payableFen: 8000, couponDiscountFen: 2000 }
   ), false)
+
+  const lifecycle = executorFor([])
+  await marketing.syncCampaignStatuses(lifecycle)
+  const lifecycleUpdate = lifecycle.calls.find(call => call.sql.includes('SET status=CASE'))
+  assert.ok(lifecycleUpdate, 'campaign listing should be able to persist lifecycle status changes')
+  assert.strictEqual(lifecycleUpdate.params.length, 2)
 
   const records = [
     { campaign_id: 1, kind: 'coupon', user_coupon_id: 9, type: 'cash' },
