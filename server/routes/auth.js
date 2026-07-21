@@ -64,6 +64,17 @@ function farmerSessionUser(user) {
   return { ...user, role: 'farmer' }
 }
 
+function sessionUserResponse(user, role = user.role) {
+  return {
+    id: user.id,
+    phone: user.phone,
+    role,
+    real_name: user.real_name || '',
+    is_verified: !!user.is_verified,
+    avatar_url: user.avatar_url || null
+  }
+}
+
 // ─────────────────────────────────────────────
 // POST /api/auth/register  注册接口
 // ─────────────────────────────────────────────
@@ -99,10 +110,7 @@ router.post('/register', async (req, res) => {
 
   try {
     // ── 检查手机号是否已注册 ─────────────────
-    const [rows] = await db.query(
-      'SELECT id,phone,password,role,real_name,is_verified,is_active,avatar_url FROM users WHERE phone=?',
-      [phone]
-    )
+    const [rows] = await db.query('SELECT * FROM users WHERE phone=?', [phone])
     if (rows.length > 0) {
       if (role !== 'farmer') return fail(res, '该手机号已注册')
       const existing = rows[0]
@@ -168,17 +176,14 @@ router.post('/login', async (req, res) => {
 
   try {
     // ── 查询用户 ──────────────────────────────
-    const [rows] = await db.query(
-      'SELECT id,phone,password,role,real_name,is_verified,is_active,avatar_url FROM users WHERE phone=?',
-      [phone]
-    )
+    const [rows] = await db.query('SELECT * FROM users WHERE phone=?', [phone])
     if (rows.length === 0) return fail(res, '手机号未注册', 404)
 
     const user = rows[0]
     if (!user.is_active) return fail(res, '账号已被禁用，请联系客服', 403)
 
     // ── 校验密码 ──────────────────────────────
-    const match = await bcrypt.compare(password, user.password)
+    const match = user.password && await bcrypt.compare(password, user.password)
     if (!match) return fail(res, '密码错误')
 
     // ── 查询角色扩展信息 ───────────────────────
@@ -237,10 +242,7 @@ router.post('/login', async (req, res) => {
  */
 router.get('/verify', authMiddleware, async (req, res) => {
   try {
-    const [rows] = await db.query(
-      'SELECT id,phone,role,real_name,is_verified,avatar_url FROM users WHERE id=? AND is_active=1',
-      [req.user.id]
-    )
+    const [rows] = await db.query('SELECT * FROM users WHERE id=? AND is_active=1', [req.user.id])
     if (rows.length === 0) return fail(res, '用户不存在或已被禁用', 404)
 
     const user = rows[0]
@@ -259,7 +261,7 @@ router.get('/verify', authMiddleware, async (req, res) => {
       if (r.length) profile = r[0]
     }
 
-    return ok(res, { ...user, role: sessionRole, ...profile })
+    return ok(res, { ...sessionUserResponse(user, sessionRole), ...profile })
   } catch (err) {
     console.error('[verify]', err)
     return fail(res, '服务器错误', 500)

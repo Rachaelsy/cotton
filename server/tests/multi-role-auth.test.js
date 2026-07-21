@@ -114,6 +114,7 @@ async function run() {
     assert.strictEqual(verify.status, 200)
     assert.strictEqual(verify.json.data.role, 'farmer')
     assert.strictEqual(verify.json.data.location, '喀什地区')
+    assert.strictEqual(verify.json.data.password, undefined, 'verification responses must never expose password hashes')
 
     const duplicate = await request('/api/auth/register', {
       phone: merchant.phone,
