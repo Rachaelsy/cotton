@@ -26,6 +26,7 @@ Page({
     cartCount: 0,
     cartTotal: '0.00',
     cartCouponDiscount: '0.00',
+    cartQuoteError: '',
     lang: 'zh', copy: COPY.zh
   },
 
@@ -125,7 +126,8 @@ Page({
     const product = this.data.products.find(p => String(p.id) === String(id))
     if (!product) return
     const current = (app.globalData.cart || []).find(item => String(item.id) === String(id))
-    if (current && Number(current.qty) >= Number(product.stock)) {
+    const stock = Number(product.stock)
+    if (Number.isFinite(stock) && (stock <= 0 || Number(current?.qty || 0) >= stock)) {
       wx.showToast({ title: this.data.copy.max, icon: 'none' })
       return
     }
@@ -157,7 +159,8 @@ Page({
       displayProds: this.data.displayProds.map(attachQty),
       cartCount: summary.count,
       cartTotal: summary.total,
-      cartCouponDiscount: '0.00'
+      cartCouponDiscount: '0.00',
+      cartQuoteError: ''
     })
     clearTimeout(this._cartQuoteTimer)
     if (summary.count) {
@@ -168,7 +171,7 @@ Page({
   async _loadBestCartSummary(quoteVersion) {
     const summary = await app.getBestCartSummary()
     if (quoteVersion !== this._cartQuoteVersion || summary.count !== app.globalData.cartCount) return
-    this.setData({ cartTotal: summary.total, cartCouponDiscount: summary.couponDiscount })
+    this.setData({ cartTotal: summary.total, cartCouponDiscount: summary.couponDiscount, cartQuoteError: summary.errorMessage || '' })
   },
 
   onGoCart() {

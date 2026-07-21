@@ -95,6 +95,7 @@
         <text class="quick-cart-selected">
           {{copy.selected}} {{cartCount}} {{copy.piece}}
           <text wx:if="{{cartCouponDiscount > 0}}"> · {{copy.bestCoupon}} ¥{{cartCouponDiscount}}</text>
+          <text wx:elif="{{cartQuoteError}}" class="quick-cart-error"> · {{cartQuoteError}}</text>
         </text>
         <view class="quick-cart-price-row">
           <text class="quick-cart-estimate">{{copy.estimate}}</text>

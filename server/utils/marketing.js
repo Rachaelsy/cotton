@@ -230,7 +230,11 @@ async function loadUserCoupon(executor, userCouponId, userId, lock = false) {
   coupon.userCouponStatus = rows[0].user_coupon_status
   coupon.userCouponExpiresAt = rows[0].user_coupon_expires_at
   if (coupon.userCouponStatus !== 'available') throw statusError('优惠券当前不可使用', 409)
-  if (!engine.isCampaignActive(coupon) || new Date(coupon.userCouponExpiresAt) <= new Date()) {
+  const now = new Date()
+  const startsAt = parseCampaignDate(coupon.starts_at)
+  const endsAt = parseCampaignDate(coupon.ends_at)
+  const expiresAt = parseCampaignDate(coupon.userCouponExpiresAt)
+  if (!ACTIVE_STATUSES.includes(coupon.status) || startsAt > now || endsAt <= now || expiresAt <= now) {
     throw statusError('优惠券已过期或活动已结束', 409)
   }
   return coupon
@@ -298,16 +302,17 @@ async function priceOrderWithBestCoupon(executor, { items, userId }) {
   const basePricing = await priceOrder(executor, { items, userId, userCouponId: null, lock: false })
   if (!userId) return { pricing: basePricing, selectedUserCouponId: null, evaluatedCoupons: 0 }
 
+  const now = mysqlDate(new Date())
   const [rows] = await executor.query(`
     SELECT uc.id AS user_coupon_id
       FROM user_coupons uc
       JOIN marketing_campaigns c ON c.id=uc.campaign_id
-     WHERE uc.user_id=? AND uc.status='available' AND uc.expires_at>NOW()
-       AND c.merchant_id=? AND c.kind='coupon' AND c.status IN ('approved','running')
-       AND c.starts_at<=NOW() AND c.ends_at>NOW()
+     WHERE uc.user_id=? AND uc.status='available' AND uc.expires_at>?
+        AND c.merchant_id=? AND c.kind='coupon' AND c.status IN ('approved','running')
+       AND c.starts_at<=? AND c.ends_at>?
      ORDER BY uc.expires_at ASC,uc.id ASC
      LIMIT 50
-  `, [userId, basePricing.merchantId])
+  `, [userId, now, basePricing.merchantId, now, now])
 
   let bestPricing = basePricing
   let selectedUserCouponId = null

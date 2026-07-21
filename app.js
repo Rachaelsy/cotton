@@ -116,6 +116,7 @@ App({
     let couponDiscount = 0
     let merchantDiscount = 0
     let selectedCouponCount = 0
+    let errorMessage = ''
     for (const items of groups.values()) {
       try {
         const response = await auth.request('POST', '/api/marketing/quote/best', {
@@ -126,7 +127,8 @@ App({
         couponDiscount += Number(response.data.coupon_discount || 0)
         merchantDiscount += Number(response.data.merchant_discount || 0)
         if (response.data.user_coupon_id) selectedCouponCount++
-      } catch {
+      } catch (error) {
+        if (!errorMessage) errorMessage = error.message || '优惠价格暂时无法计算'
         total += items.reduce((sum, item) => {
           const price = item.has_promotion && item.display_price != null
             ? Number(item.display_price)
@@ -140,7 +142,8 @@ App({
       total: total.toFixed(2),
       couponDiscount: couponDiscount.toFixed(2),
       merchantDiscount: merchantDiscount.toFixed(2),
-      selectedCouponCount
+      selectedCouponCount,
+      errorMessage
     }
   },
 

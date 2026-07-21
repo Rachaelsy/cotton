@@ -496,6 +496,7 @@
   color: #667067;
   font-size: 21rpx;
 }
+.quick-cart-error { color: #B74232; }
 
 .quick-cart-price-row {
   display: flex;

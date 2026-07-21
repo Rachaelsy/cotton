@@ -18,6 +18,7 @@ Page({
     cartCount: 0,
     cartTotal: '0',
     cartDiscount: '0.00',
+    quoteError: '',
     manage: false,
     selectedIds: [],
     lang: 'zh',
@@ -72,6 +73,7 @@ Page({
   async _loadQuote(groups, quoteVersion) {
     let payable = 0
     let discount = 0
+    let quoteError = ''
     const quotedGroups = []
     for (const group of groups) {
       try {
@@ -89,13 +91,14 @@ Page({
             return line ? { ...item, estimated_price: (Number(line.subtotal) / Number(item.qty)).toFixed(2), promotion_discount: line.promotion_discount } : item
           })
         })
-      } catch {
+      } catch (error) {
+        if (!quoteError) quoteError = error.message || '优惠价格暂时无法计算'
         quotedGroups.push(group)
         payable += group.items.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0)
       }
     }
     if (groups.length && quoteVersion === this._quoteVersion) {
-      this.setData({ cartGroups: quotedGroups, cartTotal: payable.toFixed(2), cartDiscount: discount.toFixed(2) })
+      this.setData({ cartGroups: quotedGroups, cartTotal: payable.toFixed(2), cartDiscount: discount.toFixed(2), quoteError })
     }
   },
 

@@ -362,6 +362,7 @@
 }
 
 .quick-cart-selected { color: #667067; font-size: 21rpx; }
+.quick-cart-error { color: #B74232; }
 .quick-cart-price-row { display: flex; align-items: baseline; gap: 8rpx; }
 .quick-cart-estimate { color: #8A948B; font-size: 20rpx; }
 .quick-cart-price { color: #D6453D; font-size: 34rpx; font-weight: 900; }

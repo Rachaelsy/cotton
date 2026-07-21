@@ -312,6 +312,9 @@
 .coupon-selected text:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .coupon-arrow { flex-shrink: 0; color: #929A94; font-size: 32rpx; }
 .marketing-loading { padding: 14rpx 0 4rpx; color: #8A948B; text-align: center; font-size: 22rpx; }
+.coupon-hint, .coupon-error { display: block; padding: 8rpx 0 0; font-size: 21rpx; line-height: 1.45; }
+.coupon-hint { color: #7B827D; }
+.coupon-error { color: #B74232; }
 
 /* ===== 配送 ===== */
 .delivery-row {

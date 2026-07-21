@@ -317,6 +317,7 @@
   gap: 20rpx;
   flex-shrink: 0;
 }
+.total-error { max-width: 300rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #B74232; font-size: 20rpx; }
 
 /* 普通模式底部 */
 .select-all-wrap {

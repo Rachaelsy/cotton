@@ -28,11 +28,36 @@ function signToken(user) {
 }
 
 async function loadFarmerProfile(userId, executor = db) {
-  const [rows] = await executor.query(
-    'SELECT location,land_size,crop_type FROM farmers WHERE user_id=? LIMIT 1',
-    [userId]
-  )
-  return rows[0] || null
+  try {
+    const [rows] = await executor.query(
+      'SELECT location,land_size,crop_type FROM farmers WHERE user_id=? LIMIT 1',
+      [userId]
+    )
+    return rows[0] || null
+  } catch (error) {
+    if (error.code !== 'ER_BAD_FIELD_ERROR') throw error
+    const [rows] = await executor.query(
+      'SELECT location,land_size FROM farmers WHERE user_id=? LIMIT 1',
+      [userId]
+    )
+    return rows[0] ? { ...rows[0], crop_type: '棉花' } : null
+  }
+}
+
+async function createFarmerProfile(userId, profile = {}, executor = db) {
+  const params = [userId, profile.location || '', parseFloat(profile.land_size) || 0]
+  try {
+    await executor.query(
+      'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
+      [...params, profile.crop_type || '棉花']
+    )
+  } catch (error) {
+    if (error.code !== 'ER_BAD_FIELD_ERROR') throw error
+    await executor.query(
+      'INSERT INTO farmers (user_id,location,land_size) VALUES (?,?,?)',
+      params
+    )
+  }
 }
 
 function farmerSessionUser(user) {
@@ -87,10 +112,7 @@ router.post('/register', async (req, res) => {
       if (!existing.password || !await bcrypt.compare(password, existing.password)) {
         return fail(res, '该手机号已有网页端账号，请填写原账号密码以注册农户身份', 409)
       }
-      await db.query(
-        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
-        [existing.id, location || '', parseFloat(land_size) || 0, crop_type || '棉花']
-      )
+      await createFarmerProfile(existing.id, { location, land_size, crop_type })
       const farmerUser = farmerSessionUser(existing)
       const token = signToken(farmerUser)
       return ok(res, {
@@ -113,11 +135,8 @@ router.post('/register', async (req, res) => {
 
     // ── 插入角色扩展信息 ───────────────────────
     if (role === 'farmer') {
-      await db.query(
-        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
-        [userId, location || '', parseFloat(land_size) || 0, crop_type || '棉花']
-      )
-    } else if (sessionRole === 'merchant') {
+      await createFarmerProfile(userId, { location, land_size, crop_type })
+    } else if (role === 'merchant') {
       await db.query(
         'INSERT INTO merchants (user_id,company_name,business_license,product_category) VALUES (?,?,?,?)',
         [userId, company_name || '', business_license || '', product_category || '']
@@ -305,10 +324,7 @@ router.post('/wx-login', async (req, res) => {
         'INSERT INTO users (phone, openid, role, is_active) VALUES (?, ?, ?, 1)',
         [phone, openid, 'farmer']
       )
-      await db.query(
-        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
-        [result.insertId, '', 0, '棉花']
-      )
+      await createFarmerProfile(result.insertId)
       const [newRow] = await db.query('SELECT * FROM users WHERE id=?', [result.insertId])
       user = newRow[0]
     }
@@ -318,10 +334,7 @@ router.post('/wx-login', async (req, res) => {
     // ── 6. 微信授权手机号即视为注册/登录农户身份 ──
     let profile = await loadFarmerProfile(user.id)
     if (!profile) {
-      await db.query(
-        'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
-        [user.id, '', 0, '棉花']
-      )
+      await createFarmerProfile(user.id)
       profile = { location: '', land_size: 0, crop_type: '棉花' }
     }
 

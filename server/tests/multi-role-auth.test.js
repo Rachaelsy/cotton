@@ -21,15 +21,26 @@ async function run() {
   }
   let farmerProfile = null
   let farmerInsertCount = 0
+  const legacyFarmerSchema = true
 
   const mockDb = {
     async query(sql, params = []) {
       const compact = String(sql).replace(/\s+/g, ' ').trim()
       if (/FROM users WHERE phone=\?/i.test(compact)) return [[{ ...merchant }], []]
       if (/FROM farmers WHERE user_id=\?/i.test(compact)) {
+        if (legacyFarmerSchema && /crop_type/i.test(compact)) {
+          const error = new Error('Unknown column crop_type')
+          error.code = 'ER_BAD_FIELD_ERROR'
+          throw error
+        }
         return [farmerProfile ? [{ ...farmerProfile }] : [], []]
       }
       if (/INSERT INTO farmers/i.test(compact)) {
+        if (legacyFarmerSchema && /crop_type/i.test(compact)) {
+          const error = new Error('Unknown column crop_type')
+          error.code = 'ER_BAD_FIELD_ERROR'
+          throw error
+        }
         farmerInsertCount += 1
         farmerProfile = {
           location: params[1] || '',
@@ -97,6 +108,7 @@ async function run() {
     assert.strictEqual(login.status, 200)
     assert.strictEqual(login.json.data.role, 'farmer')
     assert.strictEqual(login.json.data.location, '喀什地区')
+    assert.strictEqual(login.json.data.crop_type, '棉花', 'legacy cloud schemas should receive the default crop type')
 
     const verify = await request('/api/auth/verify', null, login.json.data.token)
     assert.strictEqual(verify.status, 200)

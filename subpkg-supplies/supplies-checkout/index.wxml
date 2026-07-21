@@ -104,6 +104,8 @@
             </view>
           </picker>
         </view>
+        <text wx:if="{{item.couponHint}}" class="coupon-hint">{{item.couponHint}}</text>
+        <text wx:if="{{item.marketingError}}" class="coupon-error">{{item.marketingError}}</text>
       </view>
       <view wx:if="{{marketingLoading}}" class="marketing-loading">正在计算可用优惠...</view>
     </view>

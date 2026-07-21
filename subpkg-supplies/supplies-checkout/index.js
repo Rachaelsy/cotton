@@ -165,14 +165,19 @@ Page({
     for (const group of groups) {
       try {
         const baseQuote = await this._quoteGroup(group)
-        const eligible = coupons.filter(coupon => Number(coupon.merchant_id) === Number(group.merchant_id)).slice(0, 20)
+        const merchantId = Number(baseQuote.merchant_id || group.merchant_id)
+        const eligible = coupons.filter(coupon => Number(coupon.merchant_id) === merchantId).slice(0, 20)
         const couponOptions = [{ user_coupon_id: null, label: this.data.copy.noCoupon, quote: baseQuote }]
+        const unavailableReasons = []
         let bestIndex = 0
         let bestTotal = Number(baseQuote.payable_total)
         for (const coupon of eligible) {
           try {
             const quote = await this._quoteGroup(group, coupon.user_coupon_id)
-            if (!quote.coupon_applied) continue
+            if (!quote.coupon_applied) {
+              if (quote.coupon_reason) unavailableReasons.push(`${coupon.name}：${quote.coupon_reason}`)
+              continue
+            }
             couponOptions.push({
               user_coupon_id: coupon.user_coupon_id,
               label: `${coupon.label} · ${coupon.name}`,
@@ -182,12 +187,14 @@ Page({
               bestTotal = Number(quote.payable_total)
               bestIndex = couponOptions.length - 1
             }
-          } catch { /* 单张券不可用时跳过，不影响其他优惠 */ }
+          } catch (error) {
+            unavailableReasons.push(`${coupon.name}：${error.message || '当前不可用'}`)
+          }
         }
         const selected = couponOptions[bestIndex]
-        pricedGroups.push({ ...group, ...selected.quote, items: group.items, couponOptions, selectedCouponIndex: bestIndex, selectedCouponLabel: selected.label, user_coupon_id: selected.user_coupon_id })
-      } catch {
-        pricedGroups.push(group)
+        pricedGroups.push({ ...group, merchant_id: merchantId, ...selected.quote, items: group.items, couponOptions, selectedCouponIndex: bestIndex, selectedCouponLabel: selected.label, user_coupon_id: selected.user_coupon_id, couponHint: bestIndex === 0 ? (unavailableReasons[0] || '') : '', marketingError: '' })
+      } catch (error) {
+        pricedGroups.push({ ...group, marketingError: error.message || '优惠价格暂时无法计算' })
       }
     }
     this._applyMarketingGroups(pricedGroups)

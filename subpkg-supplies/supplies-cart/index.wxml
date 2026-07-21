@@ -108,6 +108,7 @@
     <view class="total-wrap">
       <text class="total-price">¥{{cartTotal}}</text>
       <text wx:if="{{cartDiscount > 0}}" class="total-disc">{{copy.discount}}¥{{cartDiscount}}</text>
+      <text wx:elif="{{quoteError}}" class="total-error">{{quoteError}}</text>
     </view>
     <view class="checkout-btn" bindtap="onCheckout">
       <text class="checkout-text">{{copy.checkout}}({{cartCount}})</text>
