@@ -105,6 +105,7 @@
     .status-pending  { color: #D97706; font-weight: 600; }
     .status-approved { color: #16A34A; font-weight: 600; }
     .status-rejected { color: #DC2626; font-weight: 600; }
+    .muted { margin-top: 3px; color: #8A938D; font-size: 12px; line-height: 1.45; }
     .act-btn {
       padding: 4px 10px; border-radius: 6px; border: none;
       font-size: 12px; cursor: pointer; font-weight: 600; margin-right: 4px;
@@ -278,6 +279,10 @@
     </div>
     <div class="nav-item" data-panel="products" onclick="switchPanel(this)">
       <span class="nav-icon">📦</span> 商品管理
+    </div>
+    <div class="nav-item" data-panel="marketing" onclick="switchPanel(this)">
+      <span class="nav-icon">%</span> 营销审核
+      <span class="nav-badge" id="marketingBadge" style="display:none">0</span>
     </div>
     <div class="nav-item" data-panel="orders" onclick="switchPanel(this)">
       <span class="nav-icon">📋</span> 订单管理
@@ -532,6 +537,30 @@
             <tr><th>农户</th><th>分类</th><th>问题</th><th>状态</th><th>提交时间</th><th>操作</th></tr>
           </thead>
           <tbody id="expertQuestionTable"><tr class="empty-row"><td colspan="6">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ 营销审核面板 ══ -->
+    <div class="panel" id="panel-marketing">
+      <div class="table-wrap">
+        <div class="table-head" style="flex-wrap:wrap;gap:10px">
+          <span class="table-title">商户营销活动</span>
+          <span class="badge" id="marketing-count">0</span>
+          <div style="display:flex;gap:6px;margin-left:auto">
+            <select id="marketing-status-filter" style="padding:5px 10px;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;outline:none" onchange="loadMarketingCampaigns()">
+              <option value="pending">待审核</option>
+              <option value="">全部状态</option>
+              <option value="approved">已通过</option>
+              <option value="rejected">已驳回</option>
+              <option value="paused">已暂停</option>
+            </select>
+            <button class="act-btn" onclick="loadMarketingCampaigns()" style="background:#F0F0F0;color:#555">刷新</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>活动</th><th>商户</th><th>优惠规则</th><th>适用范围</th><th>有效期</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="marketingTable"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -866,6 +895,24 @@
   </div>
 </div>
 
+<!-- ══ 弹窗：营销活动审核 ══ -->
+<div class="modal-mask" id="modalMarketingReview">
+  <div class="modal">
+    <h3>审核营销活动</h3>
+    <input type="hidden" id="marketing-review-id">
+    <div class="approve-info" id="marketing-review-detail"></div>
+    <div class="mfield" id="marketing-reject-area" style="display:none">
+      <label>驳回原因 <span class="req">*</span></label>
+      <textarea id="marketing-reject-reason" rows="4" placeholder="请说明需要商户调整的内容"></textarea>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalMarketingReview')">取消</button>
+      <button class="mbtn danger" id="marketingRejectBtn" onclick="toggleMarketingReject()">驳回</button>
+      <button class="mbtn save" id="marketingApproveBtn" onclick="submitMarketingReview(true)">通过审核</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 弹窗：审批 ══ -->
 <div class="modal-mask" id="modalApprove">
   <div class="modal">
@@ -909,6 +956,8 @@
   let selectedSupportUserId = 0
   let supportSocket = null
   let supportSocketReconnectTimer = null
+  let marketingCampaignData = []
+  let marketingRejectMode = false
 
   // 时间
   function updateTime() { document.getElementById('topbarTime').textContent = new Date().toLocaleString('zh-CN') }
@@ -923,8 +972,16 @@
     return res.json()
   }
 
+  async function marketingApi(method, path, body) {
+    const opts = { method, headers: { 'Authorization': 'Bearer ' + TOKEN } }
+    if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body) }
+    const res = await fetch('/api/marketing' + path, opts)
+    if (res.status === 401) { logout(); return null }
+    return res.json()
+  }
+
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', verifications: '实名审核', merchants: '商户管理', products: '商品管理', orders: '订单管理', announcements: '平台公告', supportChats: '在线客服', feedbacks: '客服反馈', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', verifications: '实名审核', merchants: '商户管理', products: '商品管理', marketing: '营销审核', orders: '订单管理', announcements: '平台公告', supportChats: '在线客服', feedbacks: '客服反馈', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -943,6 +1000,7 @@
     else if (panel === 'verifications') loadVerifications()
     else if (panel === 'merchants')   loadMerchants()
     else if (panel === 'products')    loadProducts()
+    else if (panel === 'marketing')   loadMarketingCampaigns()
     else if (panel === 'orders')      loadAdminOrders()
     else if (panel === 'announcements') loadAnnouncements()
     else if (panel === 'supportChats') loadSupportChats()
@@ -962,6 +1020,7 @@
     const r = await api('GET', '/stats')
     if (!r || r.code !== 200) return
     const d = r.data
+    refreshMarketingBadge()
     document.getElementById('s-total').textContent    = d.totalUsers
     document.getElementById('s-farmers').textContent  = d.totalFarmers
     document.getElementById('s-merchants').textContent = d.totalMerchants
@@ -1506,6 +1565,111 @@
     refunded:     { label:'退款成功',  cls:'badge-danger'  }
   }
   let adminOrdersData = []
+
+  const MARKETING_TYPE_LABELS = {
+    cash: '无门槛立减', full_reduction: '满减券', percentage: '折扣券',
+    quantity_reduction: '满件减', free_shipping: '运费券', new_customer: '新人券',
+    flash_sale: '限时秒杀', limited_discount: '限时折扣', special_price: '限时特价',
+    tiered_reduction: '阶梯满减', multi_buy_discount: '多件折扣', buy_x_get_y: '买赠活动'
+  }
+  const MARKETING_STATUS_LABELS = {
+    draft: '草稿', pending: '待审核', approved: '已通过', running: '进行中',
+    scheduled: '待开始', ended: '已结束', rejected: '已驳回', paused: '已暂停'
+  }
+
+  async function refreshMarketingBadge() {
+    const r = await marketingApi('GET', '/admin/campaigns?status=pending')
+    if (!r || r.code !== 200) return
+    const count = r.data.length
+    const badge = document.getElementById('marketingBadge')
+    badge.textContent = count
+    badge.style.display = count ? 'flex' : 'none'
+  }
+
+  async function loadMarketingCampaigns() {
+    const status = document.getElementById('marketing-status-filter').value
+    const r = await marketingApi('GET', '/admin/campaigns' + (status ? `?status=${encodeURIComponent(status)}` : ''))
+    if (!r || r.code !== 200) return
+    marketingCampaignData = r.data || []
+    document.getElementById('marketing-count').textContent = `${marketingCampaignData.length} 个活动`
+    const pending = status === 'pending' ? marketingCampaignData.length : marketingCampaignData.filter(item => item.status === 'pending').length
+    const badge = document.getElementById('marketingBadge')
+    badge.textContent = pending
+    badge.style.display = pending ? 'flex' : 'none'
+    const tbody = document.getElementById('marketingTable')
+    tbody.innerHTML = marketingCampaignData.length ? marketingCampaignData.map(item => {
+      const scope = item.scope_type === 'all'
+        ? '全店商品'
+        : item.scope_type === 'category'
+          ? `分类：${esc(item.category || '未填写')}`
+          : `${item.products.length} 件指定商品`
+      const statusLabel = MARKETING_STATUS_LABELS[item.display_status] || MARKETING_STATUS_LABELS[item.status] || item.status
+      const actions = item.status === 'pending'
+        ? `<button class="act-btn approve" onclick="openMarketingReview(${item.id})">审核</button>`
+        : `<button class="act-btn edit" onclick="openMarketingReview(${item.id})">查看</button>`
+      return `<tr>
+        <td><b>${esc(item.name)}</b><div class="muted">${MARKETING_TYPE_LABELS[item.type] || esc(item.type)}</div></td>
+        <td>${esc(item.merchant_name || '—')}</td>
+        <td><b style="color:#176B45">${esc(item.label || '—')}</b><div class="muted">${item.stackable ? '可叠加优惠券' : '不可叠加同类优惠'}</div></td>
+        <td>${scope}</td>
+        <td>${fmt(item.starts_at)}<br><span class="muted">至 ${fmt(item.ends_at)}</span></td>
+        <td class="${item.status === 'rejected' ? 'status-off' : item.status === 'pending' ? '' : 'status-on'}">${statusLabel}</td>
+        <td>${actions}</td>
+      </tr>`
+    }).join('') : '<tr class="empty-row"><td colspan="7">暂无符合条件的营销活动</td></tr>'
+  }
+
+  function openMarketingReview(id) {
+    const item = marketingCampaignData.find(row => Number(row.id) === Number(id))
+    if (!item) return
+    marketingRejectMode = false
+    document.getElementById('marketing-review-id').value = item.id
+    document.getElementById('marketing-reject-area').style.display = 'none'
+    document.getElementById('marketing-reject-reason').value = ''
+    document.getElementById('marketingRejectBtn').textContent = '驳回'
+    document.getElementById('marketingApproveBtn').textContent = '通过审核'
+    document.getElementById('marketingApproveBtn').onclick = () => submitMarketingReview(true)
+    const productNames = item.products.map(product => esc(product.product_name || `商品 #${product.product_id}`)).join('、') || '全店或分类商品'
+    const quota = item.kind === 'coupon'
+      ? `发行 ${item.total_quota || '不限'} 张，每人限领 ${item.per_user_limit || 1} 张`
+      : item.type === 'flash_sale' ? `每件商品活动库存 ${item.total_quota || 0}` : '不单独限制活动库存'
+    document.getElementById('marketing-review-detail').innerHTML = `
+      <b>活动名称：</b>${esc(item.name)}<br>
+      <b>发布商户：</b>${esc(item.merchant_name || '—')}<br>
+      <b>活动类型：</b>${MARKETING_TYPE_LABELS[item.type] || esc(item.type)}<br>
+      <b>优惠规则：</b>${esc(item.label || '—')}<br>
+      <b>适用商品：</b>${productNames}<br>
+      <b>数量设置：</b>${quota}<br>
+      <b>有效时间：</b>${fmt(item.starts_at)} 至 ${fmt(item.ends_at)}
+      ${item.description ? `<br><b>活动说明：</b>${esc(item.description)}` : ''}
+      ${item.rejection_reason ? `<br><b>驳回原因：</b><span style="color:#c2413b">${esc(item.rejection_reason)}</span>` : ''}
+    `
+    const editable = item.status === 'pending'
+    document.getElementById('marketingRejectBtn').style.display = editable ? '' : 'none'
+    document.getElementById('marketingApproveBtn').style.display = editable ? '' : 'none'
+    document.getElementById('modalMarketingReview').classList.add('show')
+  }
+
+  function toggleMarketingReject() {
+    marketingRejectMode = !marketingRejectMode
+    document.getElementById('marketing-reject-area').style.display = marketingRejectMode ? 'block' : 'none'
+    document.getElementById('marketingRejectBtn').textContent = marketingRejectMode ? '取消驳回' : '驳回'
+    const approve = document.getElementById('marketingApproveBtn')
+    approve.textContent = marketingRejectMode ? '确认驳回' : '通过审核'
+    approve.onclick = () => submitMarketingReview(!marketingRejectMode)
+  }
+
+  async function submitMarketingReview(approved) {
+    const id = Number(document.getElementById('marketing-review-id').value)
+    const reason = document.getElementById('marketing-reject-reason').value.trim()
+    if (!approved && !reason) { alert('请填写驳回原因'); return }
+    const r = await marketingApi('PATCH', `/admin/campaigns/${id}/review`, { approved, reason })
+    if (r?.code === 200) {
+      closeModal('modalMarketingReview')
+      await loadMarketingCampaigns()
+      alert(approved ? '活动已通过审核' : '活动已驳回')
+    } else alert(r?.msg || '审核失败')
+  }
 
   async function loadAdminOrders() {
     const tbody = document.getElementById('ordersTable')
@@ -2536,7 +2700,7 @@
         const sales = parseFloat(m.total_sales) || 0
         const rate  = parseFloat(m.commission_rate) || 5
         totalSales      += sales
-        totalCommission += sales * rate / 100
+        totalCommission += parseFloat(m.total_commission) || 0
         totalFrozen     += parseFloat(m.frozen_amount) || 0
         totalAvailable  += parseFloat(m.available_amount) || 0
       })
@@ -2549,7 +2713,7 @@
       tbody.innerHTML = list.map(m => {
         const rate       = parseFloat(m.commission_rate) || 5
         const sales      = parseFloat(m.total_sales) || 0
-        const commission = (sales * rate / 100).toFixed(2)
+        const commission = (parseFloat(m.total_commission) || 0).toFixed(2)
         const available  = parseFloat(m.available_amount) || 0
         const frozen     = parseFloat(m.frozen_amount) || 0
         return `<tr>

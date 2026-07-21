@@ -11,6 +11,7 @@
         <text class="store-name">{{storeName}}</text>
         <text class="store-sub">{{copy.goodsPrefix}} {{displayProds.length}} {{copy.goodsSuffix}}</text>
       </view>
+      <view class="coupon-btn" bindtap="onCoupons">券</view>
       <view class="cart-btn" bindtap="onGoCart">
         <text class="cart-icon">🛒</text>
         <text wx:if="{{cartCount > 0}}" class="cart-badge">{{cartCount > 99 ? '99+' : cartCount}}</text>
@@ -66,9 +67,15 @@
           <view class="prod-bottom">
             <view class="price-wrap">
               <text class="price-symbol">¥</text>
-              <text class="price-main">{{item.price}}</text>
+              <text class="price-main">{{item.has_promotion ? item.display_price : item.price}}</text>
+              <text wx:if="{{item.has_promotion}}" class="price-old">¥{{item.original_price}}</text>
             </view>
-            <view class="add-btn" catchtap="onAddToCart" data-id="{{item.id}}">
+            <view wx:if="{{item.cartQty > 0}}" class="qty-stepper">
+              <view class="qty-step-btn qty-step-minus" catchtap="onQtyMinus" data-id="{{item.id}}"><text class="qty-step-icon">−</text></view>
+              <text class="qty-step-num">{{item.cartQty}}</text>
+              <view class="qty-step-btn" catchtap="onAddToCart" data-id="{{item.id}}"><text class="qty-step-icon">＋</text></view>
+            </view>
+            <view wx:else class="add-btn" catchtap="onAddToCart" data-id="{{item.id}}">
               <text class="add-icon">+</text>
             </view>
           </view>
@@ -77,5 +84,27 @@
     </view>
     <view style="height:40rpx"></view>
   </scroll-view>
+
+  <view wx:if="{{cartCount > 0}}" class="quick-cart">
+    <view class="quick-cart-summary" bindtap="onGoCart">
+      <view class="quick-cart-icon-wrap">
+        <text class="quick-cart-icon">🛒</text>
+        <text class="quick-cart-count">{{cartCount > 99 ? '99+' : cartCount}}</text>
+      </view>
+      <view class="quick-cart-copy">
+        <text class="quick-cart-selected">
+          {{copy.selected}} {{cartCount}} {{copy.piece}}
+          <text wx:if="{{cartCouponDiscount > 0}}"> · {{copy.bestCoupon}} ¥{{cartCouponDiscount}}</text>
+        </text>
+        <view class="quick-cart-price-row">
+          <text class="quick-cart-estimate">{{copy.estimate}}</text>
+          <text class="quick-cart-price">¥{{cartTotal}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="quick-cart-action" bindtap="onCheckout">
+      <text class="quick-cart-action-text">{{copy.checkout}}</text>
+    </view>
+  </view>
 
 </view>

@@ -94,7 +94,11 @@
         </view>
         <view class="kv-row">
           <text class="kv-k">{{copy.subtotal}}</text>
-          <text class="kv-v">¥{{order.subtotal}}</text>
+          <text class="kv-v">¥{{order.originalSubtotal || order.subtotal}}</text>
+        </view>
+        <view wx:if="{{order.merchantDiscount > 0}}" class="kv-row">
+          <text class="kv-k">{{copy.discount}}</text>
+          <text class="kv-v" style="color:#B74232">-¥{{order.merchantDiscount}}</text>
         </view>
         <view class="kv-row">
           <text class="kv-k">{{copy.freight}}</text>

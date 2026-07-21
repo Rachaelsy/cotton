@@ -51,6 +51,13 @@
           <input class="addr-input addr-phone-input" value="{{receiverPhone}}" placeholder="{{copy.phone}}" type="number" bindinput="onPhoneInput"/>
             </view>
         <input class="addr-input addr-detail-input" value="{{address}}" placeholder="{{copy.address}}" bindinput="onAddrInput"/>
+        <view class="addr-location-row">
+          <view class="addr-location-btn" bindtap="onChooseLocation">
+            <text class="addr-location-icon">⌖</text>
+            <text class="addr-location-text">{{copy.chooseLocation}}</text>
+          </view>
+          <text wx:if="{{addressLatitude !== null && addressLongitude !== null}}" class="addr-location-ready">{{copy.locationSelected}}</text>
+        </view>
           </view>
         </view>
         <view class="addr-confirm-btn" bindtap="onConfirmAddr">
@@ -76,6 +83,29 @@
         </view>
         <text class="co-item-price">¥{{item.price * item.qty}}</text>
       </view>
+    </view>
+
+    <view class="co-card">
+      <view class="co-card-title">
+        <text class="co-card-title-bar"></text>
+        <text class="co-card-title-text">{{copy.discount}}</text>
+      </view>
+      <view class="discount-shop" wx:for="{{orderGroups}}" wx:key="key">
+        <view class="discount-shop-head">
+          <text class="discount-store">{{item.store}}</text>
+          <text wx:if="{{item.promotion_discount > 0}}" class="discount-saving">-¥{{item.promotion_discount}}</text>
+        </view>
+        <view class="discount-row">
+          <text class="discount-label">{{copy.coupon}}</text>
+          <picker class="coupon-picker" mode="selector" range="{{item.couponOptions}}" range-key="label" value="{{item.selectedCouponIndex}}" data-index="{{index}}" bindchange="onCouponChange">
+            <view class="coupon-selected">
+              <text>{{item.selectedCouponLabel}}</text>
+              <text class="coupon-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+      <view wx:if="{{marketingLoading}}" class="marketing-loading">正在计算可用优惠...</view>
     </view>
 
     <!-- 配送方式 -->
@@ -130,13 +160,17 @@
         <text class="co-total-label">{{copy.subtotal}}</text>
         <text class="co-total-val">¥{{cartTotal}}</text>
       </view>
+      <view wx:if="{{merchantDiscount > 0}}" class="co-total-row">
+        <text class="co-total-label">{{copy.saved}}</text>
+        <text class="co-total-val co-discount-val">-¥{{merchantDiscount}}</text>
+      </view>
       <view class="co-total-row">
         <text class="co-total-label">{{copy.fee}}</text>
         <text class="co-total-val">¥{{deliveryFee}}</text>
       </view>
     </view>
     <view class="co-pay-btn" bindtap="onPay">
-      <text class="co-pay-text" wx:if="{{!submitting}}">{{copy.submit}}</text>
+      <text class="co-pay-text" wx:if="{{!submitting}}">{{copy.submit}} · ¥{{totalWithFee}}</text>
       <text class="co-pay-text" wx:else>{{copy.submitting}}</text>
     </view>
   </view>

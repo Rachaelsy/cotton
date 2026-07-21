@@ -73,7 +73,7 @@ App({
   // 加入购物车
   addToCart(product) {
     const cart = this.globalData.cart
-    const existing = cart.find(c => c.id === product.id)
+    const existing = cart.find(c => String(c.id) === String(product.id))
     if (existing) {
       existing.qty++
     } else {
@@ -85,9 +85,63 @@ App({
   // 从购物车移除
   removeFromCart(productId) {
     const cart = this.globalData.cart
-    const idx = cart.findIndex(c => c.id === productId)
+    const idx = cart.findIndex(c => String(c.id) === String(productId))
     if (idx >= 0) cart.splice(idx, 1)
     this.saveCart()
+  },
+
+  // 商城列表使用的即时购物车摘要，最终金额仍以后端结算报价为准
+  getCartSummary() {
+    const cart = this.globalData.cart || []
+    const count = cart.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+    const total = cart.reduce((sum, item) => {
+      const price = item.has_promotion && item.display_price != null
+        ? Number(item.display_price)
+        : Number(item.price)
+      return sum + (Number.isFinite(price) ? price : 0) * (Number(item.qty) || 0)
+    }, 0)
+    return { count, total: total.toFixed(2) }
+  },
+
+  async getBestCartSummary() {
+    const cart = (this.globalData.cart || []).map(item => ({ ...item }))
+    const groups = new Map()
+    cart.forEach(item => {
+      const key = String(item.merchant_id || item.store || '__unknown__')
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key).push(item)
+    })
+
+    let total = 0
+    let couponDiscount = 0
+    let merchantDiscount = 0
+    let selectedCouponCount = 0
+    for (const items of groups.values()) {
+      try {
+        const response = await auth.request('POST', '/api/marketing/quote/best', {
+          items: items.map(item => ({ id: item.id, qty: item.qty }))
+        })
+        if (response.code !== 200) throw new Error(response.msg || '优惠计算失败')
+        total += Number(response.data.payable_total || 0)
+        couponDiscount += Number(response.data.coupon_discount || 0)
+        merchantDiscount += Number(response.data.merchant_discount || 0)
+        if (response.data.user_coupon_id) selectedCouponCount++
+      } catch {
+        total += items.reduce((sum, item) => {
+          const price = item.has_promotion && item.display_price != null
+            ? Number(item.display_price)
+            : Number(item.price)
+          return sum + (Number.isFinite(price) ? price : 0) * (Number(item.qty) || 0)
+        }, 0)
+      }
+    }
+    return {
+      count: cart.reduce((sum, item) => sum + (Number(item.qty) || 0), 0),
+      total: total.toFixed(2),
+      couponDiscount: couponDiscount.toFixed(2),
+      merchantDiscount: merchantDiscount.toFixed(2),
+      selectedCouponCount
+    }
   },
 
   // 清空购物车

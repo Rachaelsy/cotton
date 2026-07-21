@@ -2,6 +2,7 @@
 const express = require('express')
 const db = require('../db/database')
 const { authMiddleware, roleGuard } = require('../middleware/auth')
+const marketing = require('../utils/marketing')
 
 const router = express.Router()
 
@@ -47,7 +48,7 @@ router.get('/', async (req, res) => {
       p.out_of_range = p.delivery_distance_km != null && p.delivery_radius != null
         && p.delivery_distance_km > p.delivery_radius
     })
-    return ok(res, rows)
+    return ok(res, await marketing.decorateProducts(rows))
   } catch (err) {
     console.error('[products list]', err)
     return fail(res, '获取商品列表失败', 500)
@@ -105,7 +106,8 @@ router.get('/:id(\\d+)', async (req, res) => {
     `, [id])
     if (!product) return fail(res, '商品不存在或已下架', 404)
     product.delivery_radius = product.delivery_radius != null ? Number(product.delivery_radius) : null
-    return ok(res, product)
+    const [decorated] = await marketing.decorateProducts([product])
+    return ok(res, decorated)
   } catch (err) {
     console.error('[product detail]', err)
     return fail(res, '获取商品详情失败', 500)

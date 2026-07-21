@@ -100,6 +100,17 @@
   margin-left: 4rpx;
 }
 
+.price-old { margin-left: 12rpx; color: #999F9B; font-size: 24rpx; text-decoration: line-through; }
+.promotion-line { margin: -4rpx 0 16rpx; display: flex; align-items: center; gap: 10rpx; }
+.promotion-badge { padding: 3rpx 9rpx; color: #FFFFFF; background: #B74232; border-radius: 4rpx; font-size: 19rpx; font-weight: 700; }
+.promotion-name { min-width: 0; overflow: hidden; color: #663B33; font-size: 22rpx; text-overflow: ellipsis; white-space: nowrap; }
+.promotion-label { flex-shrink: 0; color: #B74232; font-size: 22rpx; font-weight: 700; }
+
+.coupon-row { margin-top: 2rpx; min-height: 82rpx; padding: 0 28rpx; display: flex; align-items: center; gap: 16rpx; background: #FFFFFF; border-top: 1rpx solid #EEF1EC; }
+.coupon-label { padding: 4rpx 10rpx; color: #B74232; border: 1rpx solid #B74232; border-radius: 4rpx; font-size: 20rpx; font-weight: 700; }
+.coupon-copy { flex: 1; color: #475149; font-size: 24rpx; }
+.coupon-arrow { color: #A5ACA7; font-size: 36rpx; }
+
 .prod-name {
   font-size: 30rpx;
   font-weight: 800;

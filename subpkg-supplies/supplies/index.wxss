@@ -160,6 +160,40 @@
   margin-bottom: 16rpx;
 }
 
+.coupon-entry {
+  margin: 0 28rpx 16rpx;
+  min-height: 92rpx;
+  padding: 16rpx 22rpx;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  background: #FFFFFF;
+  border-left: 6rpx solid #B74232;
+  border-radius: 10rpx;
+}
+
+.coupon-entry-mark {
+  width: 58rpx;
+  height: 58rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #FFFFFF;
+  background: #B74232;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.coupon-entry-copy { flex: 1; min-width: 0; margin-left: 18rpx; display: flex; flex-direction: column; }
+.coupon-entry-title { color: #263129; font-size: 27rpx; font-weight: 800; }
+.coupon-entry-sub { margin-top: 3rpx; color: #79827B; font-size: 21rpx; }
+.coupon-entry-arrow { color: #A3AAA5; font-size: 40rpx; }
+.price-line { display: flex; align-items: baseline; gap: 8rpx; }
+.prod-price-old { color: #999F9B; font-size: 19rpx; text-decoration: line-through; }
+.promo-label { align-self: flex-start; max-width: 190rpx; margin-bottom: 4rpx; padding: 2rpx 8rpx; overflow: hidden; color: #A5362D; background: #FFF0E9; border-radius: 4rpx; font-size: 18rpx; line-height: 28rpx; white-space: nowrap; text-overflow: ellipsis; }
+
 .banner {
   flex: 1;
   border-radius: 22rpx;
@@ -258,7 +292,6 @@
 
 .tag-new { background: #FF3B30; }
 .tag-hot { background: #D97918; }
-.tag-out { top: auto; bottom: 16rpx; left: 16rpx; background: rgba(220,38,38,0.92); }
 
 .prod-body {
   padding: 16rpx 20rpx 20rpx;
@@ -306,9 +339,9 @@
 
 .prod-price-wrap {
   display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  gap: 2rpx;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
 }
 
 .prod-price {
@@ -339,6 +372,48 @@
   line-height: 1;
 }
 
+.qty-stepper {
+  width: 158rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.qty-step-btn {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  background: #B9852F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-step-minus {
+  box-sizing: border-box;
+  border: 2rpx solid #D9C292;
+  background: #ffffff;
+}
+
+.qty-step-icon {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.qty-step-minus .qty-step-icon { color: #8A6A25; }
+
+.qty-step-num {
+  width: 46rpx;
+  color: #18231A;
+  font-size: 25rpx;
+  font-weight: 800;
+  text-align: center;
+}
+
 /* ===== 无商品 ===== */
 .empty-tip {
   display: flex;
@@ -356,6 +431,105 @@
 }
 
 .list-bottom { height: 40rpx; }
+
+/* ===== 实时结算栏 ===== */
+.quick-cart {
+  min-height: 112rpx;
+  padding: 14rpx 24rpx calc(14rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  border-top: 1rpx solid #E1E7DD;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  flex-shrink: 0;
+  box-shadow: 0 -8rpx 24rpx rgba(33, 61, 42, 0.08);
+}
+
+.quick-cart-summary {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.quick-cart-icon-wrap {
+  position: relative;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #EEF4E9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quick-cart-icon { font-size: 34rpx; }
+
+.quick-cart-count {
+  position: absolute;
+  top: -6rpx;
+  right: -8rpx;
+  min-width: 30rpx;
+  height: 30rpx;
+  padding: 0 5rpx;
+  box-sizing: border-box;
+  border-radius: 15rpx;
+  background: #D6453D;
+  color: #ffffff;
+  font-size: 18rpx;
+  font-weight: 700;
+  line-height: 30rpx;
+  text-align: center;
+}
+
+.quick-cart-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.quick-cart-selected {
+  color: #667067;
+  font-size: 21rpx;
+}
+
+.quick-cart-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.quick-cart-estimate {
+  color: #8A948B;
+  font-size: 20rpx;
+}
+
+.quick-cart-price {
+  color: #D6453D;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.quick-cart-action {
+  width: 190rpx;
+  height: 72rpx;
+  border-radius: 8rpx;
+  background: #2F7D4A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quick-cart-action-text {
+  color: #ffffff;
+  font-size: 27rpx;
+  font-weight: 800;
+}
 
 /* ===== 质量保证弹窗 ===== */
 .cs-overlay {

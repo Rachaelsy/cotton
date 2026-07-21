@@ -77,6 +77,8 @@ Page({
       image_url: imageUrl || null,
       sold: parseInt(product.sold) || 0,
       rating: product.rating || 5.0,
+      original_price: Number(product.original_price !== undefined ? product.original_price : product.price),
+      display_price: Number(product.display_price !== undefined ? product.display_price : product.price),
       store: product.store || product.company_name || this.data.copy.verifiedMerchant,
       cat: product.cat || product.category || '其他',
       merchant_wechat: product.merchant_wechat || ''
@@ -131,6 +133,12 @@ Page({
     wx.navigateTo({
       url: `/subpkg-supplies/supplies-store/index?merchant_id=${p.merchant_id}&store_name=${storeName}`
     })
+  },
+
+  onCoupons() {
+    const p = this.data.product
+    if (!p) return
+    wx.navigateTo({ url: `/subpkg-supplies/marketing-coupons/index?merchant_id=${p.merchant_id}` })
   },
 
   onCustomerService() {

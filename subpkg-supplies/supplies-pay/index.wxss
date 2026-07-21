@@ -59,6 +59,27 @@
   color: #D97706;
 }
 
+.mock-pay-notice {
+  min-height: 64rpx;
+  padding: 0 32rpx;
+  background: #E8F5E9;
+  border-bottom: 1rpx solid #C8E6C9;
+  color: #1B5E20;
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.mock-pay-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #2E7D32;
+  flex-shrink: 0;
+}
+
 /* ===== 滚动区 ===== */
 .scroll { flex: 1; height: 0; width: 100%; }
 

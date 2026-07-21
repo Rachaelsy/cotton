@@ -67,11 +67,13 @@ run_optional_node db/migrate_wechat_service_provider.js
 run_optional_node db/migrate_profit_sharing.js
 run_optional_node db/migrate_commission_requests.js
 run_optional_node db/migrate_wechat_refunds.js
+run_optional_node db/migrate_supply_payment_trace.js
 run_optional_node db/migrate_experts.js
 run_optional_node db/migrate_expert_contents.js
 run_optional_node db/migrate_expert_questions.js
 run_optional_node db/migrate_farmer_improvements.js
 run_optional_node db/migrate_feedbacks.js
+run_optional_node db/migrate_marketing.js
 run_optional_node db/seed.js
 run_optional_node db/seed_machines.js
 echo "✅ 数据库初始化完成"

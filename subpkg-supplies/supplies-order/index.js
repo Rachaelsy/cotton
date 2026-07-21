@@ -7,7 +7,7 @@ const i18n = require('../../utils/i18n')
 const COPY = {
   zh: {
     title: '订单详情', address: '收货信息', goods: '订单商品', info: '订单信息', orderNo: '订单编号', copy: '复制',
-    payMethod: '支付方式', logisticsNo: '物流单号', subtotal: '商品合计', freight: '运费', paid: '实付金额',
+    payMethod: '支付方式', logisticsNo: '物流单号', subtotal: '商品原价', discount: '商户优惠', freight: '运费', paid: '实付金额',
     logistics: '物流动态', querying: '查询中', refresh: '刷新', waitingPickup: '等待揽收', arrivalPrefix: '预计 ',
     arrivalSuffix: ' 送达', shippedWaiting: '商家已发货，等待快递公司揽收', updatedAt: '更新于 ',
     logisticsDisabled: '物流查询服务尚未配置，当前仅显示商家填写的发货信息。', queryingTrack: '正在查询真实物流轨迹...',
@@ -26,7 +26,7 @@ const COPY = {
   },
   ug: {
     title: 'زاكاز تەپسىلاتى', address: 'تاپشۇرۇۋېلىش ئۇچۇرى', goods: 'زاكاز ماللىرى', info: 'زاكاز ئۇچۇرى', orderNo: 'زاكاز نومۇرى', copy: 'كۆچۈرۈش',
-    payMethod: 'تۆلەش ئۇسۇلى', logisticsNo: 'يەتكۈزۈش نومۇرى', subtotal: 'مال سوممىسى', freight: 'توشۇش ھەققى', paid: 'تۆلەنگەن پۇل',
+    payMethod: 'تۆلەش ئۇسۇلى', logisticsNo: 'يەتكۈزۈش نومۇرى', subtotal: 'مال ئەسلى باھاسى', discount: 'سودىگەر ئېتىبارى', freight: 'توشۇش ھەققى', paid: 'تۆلەنگەن پۇل',
     logistics: 'يەتكۈزۈش ئەھۋالى', querying: 'سۈرۈشتۈرۈۋاتىدۇ', refresh: 'يېڭىلاش', waitingPickup: 'قوبۇل قىلىشنى كۈتۈۋاتىدۇ', arrivalPrefix: 'مۆلچەر ',
     arrivalSuffix: ' يېتىپ بارىدۇ', shippedWaiting: 'ساتقۇچى ئەۋەتتى، تېز يوللانمىنىڭ قوبۇل قىلىشىنى كۈتۈۋاتىدۇ', updatedAt: 'يېڭىلانغان ۋاقىت: ',
     logisticsDisabled: 'يەتكۈزۈش سۈرۈشتۈرۈش مۇلازىمىتى سەپلەنمىگەن، ھازىر پەقەت ساتقۇچى كىرگۈزگەن ئۇچۇر كۆرسىتىلىدۇ.', queryingTrack: 'ھەقىقىي يەتكۈزۈش يولى سۈرۈشتۈرۈلۈۋاتىدۇ...',

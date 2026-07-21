@@ -162,7 +162,9 @@ Page({
     const firstItem = (o.items || [])[0] || {}
     app.globalData.currentOrder = {
       orderId: o.id, orderNo: o.order_no, items: o.items,
-      subtotal: o.subtotal, deliveryFee: o.delivery_fee, total: o.total,
+      subtotal: o.subtotal, originalSubtotal: o.original_subtotal,
+      promotionDiscount: o.promotion_discount, couponDiscount: o.coupon_discount,
+      merchantDiscount: o.merchant_discount, deliveryFee: o.delivery_fee, total: o.total,
       payMethod: o.pay_method, status: this._dbStatusToLabel(o.status),
       address: o.address, receiverName: o.receiver_name, receiverPhone: o.receiver_phone,
       logisticsNo: o.logistics_no || '', logisticsCompany: o.logistics_company || '',

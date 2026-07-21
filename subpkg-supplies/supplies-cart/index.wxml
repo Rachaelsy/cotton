@@ -75,7 +75,7 @@
             <text class="cart-name">{{ci.name}}</text>
             <text class="cart-spec">{{ci.spec}}</text>
             <view class="cart-price-row">
-              <text class="cart-price">¥{{ci.price}}</text>
+              <text class="cart-price">¥{{ci.estimated_price || ci.display_price || ci.price}}</text>
               <!-- 数量控制（普通模式） -->
               <view class="qty-ctrl" wx:if="{{!manage}}">
                 <view class="qty-btn" catchtap="onQtyMinus" data-id="{{ci.id}}">
@@ -107,7 +107,7 @@
     </view>
     <view class="total-wrap">
       <text class="total-price">¥{{cartTotal}}</text>
-      <text class="total-disc">{{copy.discount}}¥30</text>
+      <text wx:if="{{cartDiscount > 0}}" class="total-disc">{{copy.discount}}¥{{cartDiscount}}</text>
     </view>
     <view class="checkout-btn" bindtap="onCheckout">
       <text class="checkout-text">{{copy.checkout}}({{cartCount}})</text>

@@ -17,6 +17,15 @@ function calculateCommissionFen(amount, commissionRate) {
   return Math.max(0, Math.round(totalFen * rate / 100))
 }
 
+function calculateOrderCommissionFen(order = {}) {
+  const paymentFen = Math.max(0, Math.round(Number(order.amount || 0) * 100))
+  const commissionFen = calculateCommissionFen(
+    order.commissionBase == null ? order.amount : order.commissionBase,
+    order.commissionRate
+  )
+  return Math.min(paymentFen, commissionFen)
+}
+
 function normalizePaymentStage(orderType, paymentStage) {
   if (String(orderType || '').toLowerCase() !== 'machine') return 'full'
   return ['deposit', 'balance', 'full'].includes(paymentStage) ? paymentStage : 'full'
@@ -115,7 +124,7 @@ async function ensurePlatformReceiver(cfg, subMchid) {
 }
 
 async function savePendingOrder({ order, transaction }) {
-  const amountFen = calculateCommissionFen(order.amount, order.commissionRate)
+  const amountFen = calculateOrderCommissionFen(order)
   if (!amountFen) return null
 
   const transactionId = transaction.transaction_id || transaction.transactionId || ''
@@ -283,6 +292,7 @@ async function releaseEligibleProfitSharing() {
 
 module.exports = {
   calculateCommissionFen,
+  calculateOrderCommissionFen,
   buildProfitSharingOutOrderNo,
   normalizePaymentStage,
   getPlatformReceiverAccount,

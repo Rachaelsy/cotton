@@ -205,6 +205,45 @@
 .addr-phone-input { flex: 1; }
 .addr-detail-input { width: 100%; }
 
+.addr-location-row {
+  min-height: 64rpx;
+  margin-top: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.addr-location-btn {
+  min-height: 60rpx;
+  padding: 0 18rpx;
+  box-sizing: border-box;
+  border: 2rpx solid #B9852F;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.addr-location-icon {
+  color: #8A6A25;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.addr-location-text {
+  color: #8A6A25;
+  font-size: 23rpx;
+  font-weight: 700;
+}
+
+.addr-location-ready {
+  min-width: 0;
+  color: #2F7D4A;
+  font-size: 21rpx;
+  text-align: right;
+}
+
 /* ===== 订单商品 ===== */
 .co-item {
   display: flex;
@@ -260,6 +299,19 @@
   color: #FF3B30;
   flex-shrink: 0;
 }
+
+.discount-shop { padding: 6rpx 0 14rpx; border-bottom: 1rpx solid #EAF0E6; }
+.discount-shop:last-of-type { border-bottom: none; }
+.discount-shop-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
+.discount-store { max-width: 440rpx; overflow: hidden; color: #28332B; font-size: 24rpx; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.discount-saving { color: #B74232; font-size: 23rpx; font-weight: 700; }
+.discount-row { display: flex; align-items: center; gap: 16rpx; }
+.discount-label { flex-shrink: 0; color: #6E786F; font-size: 24rpx; }
+.coupon-picker { min-width: 0; flex: 1; }
+.coupon-selected { min-height: 62rpx; padding: 0 16rpx; display: flex; align-items: center; justify-content: space-between; gap: 8rpx; box-sizing: border-box; color: #455047; background: #F5F7F3; border-radius: 8rpx; font-size: 22rpx; }
+.coupon-selected text:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.coupon-arrow { flex-shrink: 0; color: #929A94; font-size: 32rpx; }
+.marketing-loading { padding: 14rpx 0 4rpx; color: #8A948B; text-align: center; font-size: 22rpx; }
 
 /* ===== 配送 ===== */
 .delivery-row {
@@ -383,6 +435,8 @@
   font-weight: 700;
   color: #18231A;
 }
+
+.co-discount-val { color: #B74232; }
 
 .co-pay-btn {
   background: linear-gradient(135deg, #D97918, #FF3B30);

@@ -2,6 +2,7 @@
 const app = getApp()
 const layout = require('../../utils/layout')
 const i18n = require('../../utils/i18n')
+const auth = require('../../utils/auth')
 
 const COPY = {
   zh: { title:'购物车',piece:'件',done:'完成',manage:'管理',empty:'购物车是空的',browse:'去逛逛',verified:'认证',all:'全选',discount:'已优惠',checkout:'去结算',toggleAll:'全选/取消',delete:'删除',other:'其他商家',max:'最多购买',deleted:'已删除' },
@@ -16,6 +17,7 @@ Page({
     cartGroups: [],
     cartCount: 0,
     cartTotal: '0',
+    cartDiscount: '0.00',
     manage: false,
     selectedIds: [],
     lang: 'zh',
@@ -59,8 +61,42 @@ Page({
       cartItems: cart,
       cartGroups: Object.values(groupMap),
       cartCount,
-      cartTotal
+      cartTotal,
+      cartDiscount: '0.00'
     })
+    const quoteVersion = (this._quoteVersion || 0) + 1
+    this._quoteVersion = quoteVersion
+    this._loadQuote(Object.values(groupMap), quoteVersion)
+  },
+
+  async _loadQuote(groups, quoteVersion) {
+    let payable = 0
+    let discount = 0
+    const quotedGroups = []
+    for (const group of groups) {
+      try {
+        const res = await auth.request('POST', '/api/marketing/quote/best', {
+          items: group.items.map(item => ({ id: item.id, qty: item.qty }))
+        })
+        if (res.code !== 200) throw new Error(res.msg)
+        payable += Number(res.data.payable_total || 0)
+        discount += Number(res.data.merchant_discount || 0)
+        const byId = new Map((res.data.items || []).map(item => [String(item.product_id), item]))
+        quotedGroups.push({
+          ...group,
+          items: group.items.map(item => {
+            const line = byId.get(String(item.id))
+            return line ? { ...item, estimated_price: (Number(line.subtotal) / Number(item.qty)).toFixed(2), promotion_discount: line.promotion_discount } : item
+          })
+        })
+      } catch {
+        quotedGroups.push(group)
+        payable += group.items.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0)
+      }
+    }
+    if (groups.length && quoteVersion === this._quoteVersion) {
+      this.setData({ cartGroups: quotedGroups, cartTotal: payable.toFixed(2), cartDiscount: discount.toFixed(2) })
+    }
   },
 
   onBack() {

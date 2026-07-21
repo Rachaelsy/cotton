@@ -21,6 +21,9 @@ const mockDb = {
       machineMode = params[0]
       return [{ affectedRows: 1 }]
     }
+    if (/UPDATE orders SET wechat_out_trade_no=\?/i.test(compact)) {
+      return [{ affectedRows: 1 }]
+    }
     if (/FROM machine_orders mo JOIN operators op/i.test(compact)) {
       const balance = machineMode === 'balance'
       return [[{
@@ -242,7 +245,8 @@ async function run() {
     const depositPrepay = calls.find(item => item.type === 'partnerJsapiPrepay')
     assert.strictEqual(depositPrepay.order.amountFen, 8000)
     assert.strictEqual(depositPrepay.order.attach.paymentStage, 'deposit')
-    assert.match(depositPrepay.order.outTradeNo, /_DEPOSIT$/)
+    assert.match(depositPrepay.order.outTradeNo, /^M_18_D_/)
+    assert(depositPrepay.order.outTradeNo.length <= 32)
 
     calls.length = 0
     machineMode = 'balance'
@@ -253,7 +257,8 @@ async function run() {
     const balancePrepay = calls.find(item => item.type === 'partnerJsapiPrepay')
     assert.strictEqual(balancePrepay.order.amountFen, 72000)
     assert.strictEqual(balancePrepay.order.attach.paymentStage, 'balance')
-    assert.match(balancePrepay.order.outTradeNo, /_BALANCE$/)
+    assert.match(balancePrepay.order.outTradeNo, /^M_18_B_/)
+    assert(balancePrepay.order.outTradeNo.length <= 32)
 
     calls.length = 0
     machineMode = 'full'

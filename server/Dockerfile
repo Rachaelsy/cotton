@@ -1,6 +1,7 @@
 FROM docker.m.daocloud.io/library/node:20-alpine
 
 WORKDIR /app
+ENV NODE_ENV=production
 
 # 先复制依赖清单，利用 Docker 层缓存
 COPY package*.json ./

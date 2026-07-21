@@ -15,7 +15,31 @@ const mockConnection = {
   async query(sql, params = []) {
     const compact = sql.replace(/\s+/g, ' ').trim()
     calls.push({ type: 'conn-sql', sql: compact, params })
-    if (/UPDATE products SET stock = stock - \?/i.test(compact)) {
+    if (/SELECT p\.id,p\.merchant_id.*FROM products p JOIN merchants m/i.test(compact)) {
+      return [[{
+        id: 1,
+        merchant_id: 7,
+        name: '测试商品',
+        category: '化肥',
+        price: '10.01',
+        unit: '袋',
+        stock: 100,
+        status: 'on',
+        icon: '📦',
+        image_url: null,
+        company_name: '测试商户',
+        commission_rate: 5,
+        sub_mchid: '',
+        wechat_applyment_state: '',
+        merchant_latitude: 39.38,
+        merchant_longitude: 75.86,
+        delivery_radius: 50
+      }], []]
+    }
+    if (/FROM marketing_campaigns c/i.test(compact)) {
+      return [[], []]
+    }
+    if (/UPDATE products SET stock=stock-\?/i.test(compact)) {
       return [{ affectedRows: 1 }, []]
     }
     if (/INSERT INTO orders/i.test(compact)) {
@@ -70,12 +94,14 @@ function assertCheckoutUiShowsFreeShipping() {
   const checkoutWxml = fs.readFileSync(path.join(root, 'subpkg-supplies/supplies-checkout/index.wxml'), 'utf8')
   const detailWxml = fs.readFileSync(path.join(root, 'subpkg-supplies/supplies-detail/index.wxml'), 'utf8')
   const orderWxml = fs.readFileSync(path.join(root, 'subpkg-supplies/supplies-order/index.wxml'), 'utf8')
+  const merchantDashboard = fs.readFileSync(path.join(root, 'server/public/merchant/dashboard.html'), 'utf8')
 
   assert.match(checkoutJs, /DELIVERY_FEE\s*=\s*0/, 'checkout should use a zero freight constant')
   assert(!/deliveryFee\s*=\s*10/.test(checkoutJs), 'checkout should not create orders with 10 yuan freight')
   assert(!/¥10/.test(checkoutWxml), 'checkout should not display 10 yuan freight')
   assert(!/快递\s*¥10/.test(detailWxml), 'product detail should not advertise 10 yuan freight')
   assert(!/运费[\s\S]{0,80}¥10/.test(orderWxml), 'order detail should not display 10 yuan freight')
+  assert(!merchantDashboard.includes("['free_shipping','运费券']"), 'merchant should not create a useless shipping coupon while all orders ship free')
 }
 
 async function run() {
@@ -104,10 +130,22 @@ async function run() {
     assert.strictEqual(result.status, 200)
     const insertOrder = calls.find(call => call.type === 'conn-sql' && /INSERT INTO orders/i.test(call.sql))
     assert(insertOrder, 'route should insert the order')
-    assert.strictEqual(insertOrder.params[7], 10.01, 'subtotal should keep product amount')
-    assert.strictEqual(insertOrder.params[8], 0, 'delivery_fee should be zero')
-    assert.strictEqual(insertOrder.params[9], 10.01, 'total should be subtotal plus zero freight')
+    assert.strictEqual(insertOrder.params[13], 10.01, 'subtotal should keep server-priced product amount')
+    assert.strictEqual(insertOrder.params[14], 0, 'delivery_fee should be zero')
+    assert.strictEqual(insertOrder.params[15], 10.01, 'total should be subtotal plus zero freight')
     assert(!calls.some(call => call.type === 'rollback'), 'successful order should not rollback')
+
+    const outOfRange = await request(baseUrl, {
+      items: [{ id: 1, qty: 1 }],
+      payMethod: 'wechat',
+      receiverName: '测试农户',
+      receiverPhone: '13800000001',
+      address: '上海市浦东新区测试地址',
+      receiverLatitude: 31.22114,
+      receiverLongitude: 121.54409
+    })
+    assert.strictEqual(outOfRange.status, 409, 'selected shipping location outside the merchant radius should be rejected')
+    assert.match(outOfRange.json.msg, /超出商户配送范围/)
 
     console.log('supply shipping fee tests passed')
   } finally {

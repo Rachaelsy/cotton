@@ -17,6 +17,10 @@ async function run() {
       delivery_fee  DECIMAL(10,2) NOT NULL DEFAULT 0    COMMENT '运费',
       total         DECIMAL(10,2) NOT NULL DEFAULT 0    COMMENT '实付金额',
       pay_method    VARCHAR(20)  NOT NULL DEFAULT 'wechat' COMMENT '支付方式',
+      wechat_out_trade_no VARCHAR(32) NOT NULL DEFAULT '' COMMENT '微信商户订单号',
+      wechat_transaction_id VARCHAR(64) NOT NULL DEFAULT '' COMMENT '微信支付交易号',
+      payment_mode  VARCHAR(16) NOT NULL DEFAULT '' COMMENT 'wechat/mock',
+      paid_at       DATETIME DEFAULT NULL,
       status        VARCHAR(20)  NOT NULL DEFAULT 'pending_ship' COMMENT '状态',
       logistics_no  VARCHAR(64)  DEFAULT NULL           COMMENT '物流单号',
       note          VARCHAR(256) DEFAULT ''             COMMENT '买家备注',
@@ -24,7 +28,8 @@ async function run() {
       updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_user_id (user_id),
       INDEX idx_status  (status),
-      INDEX idx_created (created_at)
+      INDEX idx_created (created_at),
+      INDEX idx_orders_wechat_transaction (wechat_transaction_id)
     ) ENGINE=InnoDB COMMENT='订单主表'
   `)
   console.log('✅ orders 表已创建')

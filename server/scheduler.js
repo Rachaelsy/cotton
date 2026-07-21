@@ -4,6 +4,7 @@ const profitSharing = require('./utils/profit-sharing')
 const { fetchQweatherWeather } = require('./utils/qweather')
 const { normalizeCoordinates, calculateCenter } = require('./utils/plot-geometry')
 const weatherObservations = require('./utils/weather-observations')
+const { cancelPendingSupplyOrder } = require('./utils/order-lifecycle')
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -129,16 +130,7 @@ async function autoExpireOrders() {
     `)
     if (!rows.length) return
     for (const row of rows) {
-      const [items] = await db.query(
-        'SELECT product_id, qty FROM order_items WHERE order_id=?', [row.id]
-      )
-      for (const item of items) {
-        if (!item.product_id) continue
-        await db.query('UPDATE products SET stock=stock+? WHERE id=?', [item.qty, item.product_id])
-      }
-      await db.query(
-        `UPDATE orders SET status='cancelled', pay_expires_at=NULL WHERE id=?`, [row.id]
-      )
+      await cancelPendingSupplyOrder(row.id)
     }
     console.log(`[scheduler] 超时关单: ${rows.length} 笔`)
   } catch (e) {

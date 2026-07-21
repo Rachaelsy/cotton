@@ -1,0 +1,53 @@
+<view class="page">
+  <view class="nav" style="padding-top: {{statusBarHeight}}px; padding-right: calc(28rpx + {{capsuleSafeRight}}px)">
+    <view class="back" bindtap="onBack"><text class="back-icon">‹</text></view>
+    <text class="title">优惠券</text>
+    <view class="nav-space"></view>
+  </view>
+
+  <view class="tabs">
+    <view class="tab {{activeTab === 'center' ? 'tab-on' : ''}}" data-tab="center" bindtap="onTab">领券中心</view>
+    <view class="tab {{activeTab === 'mine' ? 'tab-on' : ''}}" data-tab="mine" bindtap="onTab">我的优惠券</view>
+  </view>
+
+  <scroll-view class="content" scroll-y>
+    <view wx:if="{{loading}}" class="state">正在加载...</view>
+
+    <block wx:elif="{{activeTab === 'center'}}">
+      <view class="coupon {{!item.can_claim ? 'coupon-disabled' : ''}}" wx:for="{{coupons}}" wx:key="id">
+        <view class="coupon-value">
+          <view><text class="value">{{item.valueText}}</text><text class="unit">{{item.valueUnit}}</text></view>
+          <text class="condition">{{item.condition}}</text>
+        </view>
+        <view class="coupon-main">
+          <text class="coupon-name">{{item.name}}</text>
+          <text class="merchant">{{item.merchant_name || '认证商户'}}</text>
+          <text class="validity">有效期 {{item.validity}}</text>
+        </view>
+        <view class="coupon-action {{item.can_claim ? '' : 'coupon-action-off'}}" data-id="{{item.id}}" data-can="{{item.can_claim}}" catchtap="onClaim">
+          {{item.claimText}}
+        </view>
+      </view>
+      <view wx:if="{{!coupons.length}}" class="state">当前暂无可领取优惠券</view>
+    </block>
+
+    <block wx:else>
+      <view class="coupon {{item.disabled ? 'coupon-disabled' : ''}}" wx:for="{{mine}}" wx:key="user_coupon_id">
+        <view class="coupon-value">
+          <view><text class="value">{{item.valueText}}</text><text class="unit">{{item.valueUnit}}</text></view>
+          <text class="condition">{{item.condition}}</text>
+        </view>
+        <view class="coupon-main">
+          <text class="coupon-name">{{item.name}}</text>
+          <text class="merchant">{{item.merchant_name || '认证商户'}}</text>
+          <text class="validity">有效期 {{item.validity}}</text>
+        </view>
+        <view class="coupon-action {{item.disabled ? 'coupon-action-off' : ''}}" catchtap="onUse">
+          {{item.disabled ? item.statusText : '去使用'}}
+        </view>
+      </view>
+      <view wx:if="{{!mine.length}}" class="state">还没有优惠券，先去领一张吧</view>
+    </block>
+    <view class="bottom-space"></view>
+  </scroll-view>
+</view>

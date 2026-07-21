@@ -5,16 +5,13 @@ const jwt      = require('jsonwebtoken')
 const db       = require('../db/database')
 const { notifyNewOrder, notifyAftersale } = require('../utils/notify')
 const refunds  = require('../utils/refunds')
+const marketing = require('../utils/marketing')
+const { cancelPendingSupplyOrder } = require('../utils/order-lifecycle')
 const router   = express.Router()
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
 const DELIVERY_FEE = 0
-
-function parseMoney(value, fallback = 0) {
-  const number = Number.parseFloat(value)
-  return Number.isFinite(number) ? number : fallback
-}
 
 // 农户鉴权中间件（严格版：必须登录）
 function farmerAuth(req, res, next) {
@@ -52,39 +49,90 @@ function genOrderNo() {
   return 'MG' + date + time + crypto.randomBytes(3).toString('hex').toUpperCase()
 }
 
+function parseCoordinate(value, min, max) {
+  if (value === undefined || value === null || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : NaN
+}
+
+function distanceKm(lat1, lng1, lat2, lng2) {
+  const radians = degrees => degrees * Math.PI / 180
+  const latDelta = radians(lat2 - lat1)
+  const lngDelta = radians(lng2 - lng1)
+  const a = Math.sin(latDelta / 2) ** 2 +
+    Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(lngDelta / 2) ** 2
+  const normalized = Math.min(1, Math.max(0, a))
+  return 6371 * 2 * Math.atan2(Math.sqrt(normalized), Math.sqrt(1 - normalized))
+}
+
+function validateDeliveryRange(merchant, receiverLatitude, receiverLongitude) {
+  if (receiverLatitude === null || receiverLongitude === null) return null
+  const merchantLatitudeValue = merchant && merchant.merchant_latitude
+  const merchantLongitudeValue = merchant && merchant.merchant_longitude
+  const deliveryRadiusValue = merchant && merchant.delivery_radius
+  if ([merchantLatitudeValue, merchantLongitudeValue, deliveryRadiusValue].some(value => value === null || value === undefined || value === '')) {
+    return null
+  }
+  const merchantLatitude = Number(merchantLatitudeValue)
+  const merchantLongitude = Number(merchantLongitudeValue)
+  const deliveryRadius = Number(deliveryRadiusValue)
+  if (!Number.isFinite(merchantLatitude) || !Number.isFinite(merchantLongitude) || !Number.isFinite(deliveryRadius) || deliveryRadius <= 0) {
+    return null
+  }
+  const deliveryDistance = distanceKm(merchantLatitude, merchantLongitude, receiverLatitude, receiverLongitude)
+  if (deliveryDistance > deliveryRadius) {
+    throw marketing.statusError(`该收货地址超出商户配送范围（距离约${deliveryDistance.toFixed(1)}公里，配送半径${deliveryRadius}公里）`, 409)
+  }
+  return Number(deliveryDistance.toFixed(1))
+}
+
 // ─────────────────────────────────────────────
 // POST /api/orders — 提交订单（登录/访客均可）
 // ─────────────────────────────────────────────
 router.post('/', optionalAuth, async (req, res) => {
   const {
-    items, subtotal, deliveryFee, total, payMethod,
-    receiverName, receiverPhone, address
+    items, payMethod, userCouponId, user_coupon_id,
+    receiverName, receiverPhone, address, receiverLatitude, receiverLongitude
   } = req.body
 
   if (!items || !items.length) return fail(res, '订单商品不能为空')
   if (!receiverName)           return fail(res, '请填写收货人姓名')
   if (!receiverPhone)          return fail(res, '请填写手机号')
   if (!address)                return fail(res, '请填写收货地址')
+  const parsedReceiverLatitude = parseCoordinate(receiverLatitude, -90, 90)
+  const parsedReceiverLongitude = parseCoordinate(receiverLongitude, -180, 180)
+  if (Number.isNaN(parsedReceiverLatitude) || Number.isNaN(parsedReceiverLongitude) ||
+      (parsedReceiverLatitude === null) !== (parsedReceiverLongitude === null)) {
+    return fail(res, '收货位置坐标无效，请重新选择')
+  }
+  const selectedCouponId = Number(userCouponId || user_coupon_id) || null
+  if (selectedCouponId && !req.user) return fail(res, '请登录后使用优惠券', 401)
 
   const conn = await db.getConnection()
   try {
     await conn.beginTransaction()
 
-    // 锁库存：每件商品扣减，不足则回滚
-    for (const item of items) {
-      const pid = parseInt(item.id)
-      const qty = parseInt(item.qty) || 1
-      if (!pid) continue  // 本地兜底商品跳过
-      const [r] = await conn.query(
-        `UPDATE products SET stock = stock - ?
-         WHERE id = ? AND stock >= ? AND status = 'on'`,
-        [qty, pid, qty]
+    const pricing = await marketing.priceOrder(conn, {
+      items,
+      userId: req.user && req.user.id,
+      userCouponId: selectedCouponId,
+      lock: true
+    })
+    if (selectedCouponId && !pricing.couponApplied) {
+      throw marketing.statusError(pricing.couponReason || '所选优惠券当前不可用', 409)
+    }
+    const deliveryDistance = validateDeliveryRange(
+      pricing.merchant,
+      parsedReceiverLatitude,
+      parsedReceiverLongitude
+    )
+
+    for (const line of pricing.lines) {
+      const [stock] = await conn.query(
+        `UPDATE products SET stock=stock-? WHERE id=? AND stock>=? AND status='on'`,
+        [line.qty, line.productId, line.qty]
       )
-      if (r.affectedRows === 0) {
-        await conn.rollback()
-        conn.release()
-        return fail(res, `商品「${item.name}」库存不足或已下架`)
-      }
+      if (!stock.affectedRows) throw marketing.statusError(`商品「${line.name}」库存不足或已下架`, 409)
     }
 
     // 已登录：用账号信息作为买家姓名/电话；访客：用收货人信息
@@ -100,7 +148,12 @@ router.post('/', optionalAuth, async (req, res) => {
       farmerPhone = user?.phone     || receiverPhone || ''
     }
 
-    const orderSubtotal = parseMoney(subtotal)
+    const quote = marketing.publicQuote(pricing)
+    const originalSubtotal = quote.original_subtotal
+    const promotionDiscount = quote.promotion_discount
+    const couponDiscount = quote.coupon_discount
+    const merchantDiscount = quote.merchant_discount
+    const orderSubtotal = quote.payable_total
     const orderDeliveryFee = DELIVERY_FEE
     const orderTotal = Number((orderSubtotal + orderDeliveryFee).toFixed(2))
 
@@ -108,13 +161,20 @@ router.post('/', optionalAuth, async (req, res) => {
     const [r] = await conn.query(
       `INSERT INTO orders (order_no, user_id, farmer_name, farmer_phone,
         receiver_name, receiver_phone, address,
+        original_subtotal,promotion_discount,coupon_discount,merchant_discount,commission_base,user_coupon_id,
         subtotal, delivery_fee, total, pay_method, status, pay_expires_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,'pending_payment', DATE_ADD(NOW(), INTERVAL 30 MINUTE))`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending_payment', DATE_ADD(NOW(), INTERVAL 30 MINUTE))`,
       [
         orderNo, userId,
         farmerName, farmerPhone,
         receiverName, receiverPhone || '',
         address,
+        originalSubtotal,
+        promotionDiscount,
+        couponDiscount,
+        merchantDiscount,
+        originalSubtotal,
+        pricing.coupon ? pricing.coupon.userCouponId : null,
         orderSubtotal,
         orderDeliveryFee,
         orderTotal,
@@ -123,24 +183,35 @@ router.post('/', optionalAuth, async (req, res) => {
     )
     const orderId = r.insertId
 
-    // 插入商品明细
-    for (const item of items) {
-      await conn.query(
-        `INSERT INTO order_items (order_id, merchant_id, product_id, name, icon, spec, price, qty, subtotal)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
+    const orderItemIds = new Map()
+    for (const line of pricing.lines) {
+      const promotionPrice = Number(((line.lineOriginalFen - (line.promotionDiscountFen || 0)) / line.qty / 100).toFixed(2))
+      const [itemResult] = await conn.query(
+        `INSERT INTO order_items
+          (order_id,merchant_id,product_id,name,icon,spec,original_price,promotion_price,price,qty,subtotal,
+           promotion_discount,coupon_discount,marketing_campaign_id)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           orderId,
-          parseInt(item.merchant_id) || 1,
-          parseInt(item.id) || null,
-          item.name || '',
-          item.icon || '📦',
-          item.spec || '',
-          parseFloat(item.price) || 0,
-          parseInt(item.qty) || 1,
-          parseFloat(item.price) * parseInt(item.qty) || 0
+          line.merchantId,
+          line.productId,
+          line.name,
+          line.icon || '📦',
+          line.unit,
+          Number((line.originalPriceFen / 100).toFixed(2)),
+          promotionPrice,
+          Number((line.originalPriceFen / 100).toFixed(2)),
+          line.qty,
+          Number((line.linePayableFen / 100).toFixed(2)),
+          Number(((line.promotionDiscountFen || 0) / 100).toFixed(2)),
+          Number(((line.couponDiscountFen || 0) / 100).toFixed(2)),
+          line.promotion ? line.promotion.id : (line.orderPromotion ? line.orderPromotion.id : null)
         ]
       )
+      orderItemIds.set(line.productId, itemResult.insertId)
     }
+
+    await marketing.reserveOrderMarketing(conn, orderId, userId, pricing, orderItemIds)
 
     await conn.commit()
     conn.release()
@@ -148,14 +219,21 @@ router.post('/', optionalAuth, async (req, res) => {
       orderId,
       orderNo,
       subtotal: orderSubtotal,
+      originalSubtotal,
+      promotionDiscount,
+      couponDiscount,
+      merchantDiscount,
       deliveryFee: orderDeliveryFee,
-      total: orderTotal
+      total: orderTotal,
+      couponApplied: pricing.couponApplied,
+      couponReason: pricing.couponReason,
+      deliveryDistance
     }, '订单提交成功，请在30分钟内完成支付')
   } catch (e) {
     await conn.rollback()
     conn.release()
-    console.error('[create-order]', e)
-    return fail(res, '下单失败，请重试', 500)
+    if (!e.statusCode || e.statusCode >= 500) console.error('[create-order]', e)
+    return fail(res, e.message || '下单失败，请重试', e.statusCode || 500)
   }
 })
 
@@ -183,7 +261,7 @@ router.patch('/:id/pay', optionalAuth, async (req, res) => {
     const order = rows[0]
     if (order.pay_expires_at && new Date(order.pay_expires_at) < new Date()) {
       // 已超时，关单并释放库存
-      await _cancelAndReleaseStock(id)
+      await cancelPendingSupplyOrder(id)
       return fail(res, '订单已超时，请重新下单', 410)
     }
     // 付款成功 → 待发货
@@ -221,7 +299,7 @@ router.patch('/:id/cancel', optionalAuth, async (req, res) => {
       )
     }
     if (!rows.length) return fail(res, '订单不存在或不可取消', 404)
-    await _cancelAndReleaseStock(id)
+    await cancelPendingSupplyOrder(id)
     return ok(res, null, '订单已取消')
   } catch (e) {
     console.error('[cancel-order]', e)
@@ -230,21 +308,6 @@ router.patch('/:id/cancel', optionalAuth, async (req, res) => {
 })
 
 // 内部：取消订单并释放库存
-async function _cancelAndReleaseStock(orderId) {
-  const [items] = await db.query(
-    'SELECT product_id, qty FROM order_items WHERE order_id=?', [orderId]
-  )
-  for (const item of items) {
-    if (!item.product_id) continue
-    await db.query(
-      'UPDATE products SET stock=stock+? WHERE id=?', [item.qty, item.product_id]
-    )
-  }
-  await db.query(
-    `UPDATE orders SET status='cancelled', pay_expires_at=NULL WHERE id=?`, [orderId]
-  )
-}
-
 // ─────────────────────────────────────────────
 // GET /api/orders/my — 农户查看自己的订单
 // ─────────────────────────────────────────────
@@ -255,7 +318,8 @@ router.get('/my', farmerAuth, async (req, res) => {
     })
     const { status } = req.query
     let sql = `
-      SELECT o.id, o.order_no, o.subtotal, o.delivery_fee, o.total,
+      SELECT o.id, o.order_no, o.original_subtotal, o.promotion_discount,
+             o.coupon_discount, o.merchant_discount, o.subtotal, o.delivery_fee, o.total,
              o.pay_method, o.status, o.logistics_no, o.logistics_company,
              o.logistics_company_name, o.logistics_state, o.logistics_status,
              o.logistics_latest, o.logistics_arrival_time, o.logistics_updated_at, o.address,

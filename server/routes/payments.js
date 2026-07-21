@@ -6,6 +6,8 @@ const { notifyNewOrder } = require('../utils/notify')
 const wxpay = require('../utils/wechat-pay')
 const profitSharing = require('../utils/profit-sharing')
 const refunds = require('../utils/refunds')
+const marketing = require('../utils/marketing')
+const paymentOrderNo = require('../utils/payment-order-no')
 
 const router = express.Router()
 const ok = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -26,6 +28,12 @@ const fen = amount => Math.round(Number(amount || 0) * 100)
 
 function isWechatPayTestMode() {
   return String(process.env.WECHAT_PAY_TEST_MODE || '').trim().toLowerCase() === 'small_amount'
+}
+
+function isMockPaymentMode(env = process.env) {
+  return String(env.NODE_ENV || '').trim().toLowerCase() !== 'production' &&
+    String(env.WECHAT_PAY_TEST_MODE || '').trim().toLowerCase() === 'mock' &&
+    String(env.WECHAT_PAY_MOCK_ENABLED || '').trim().toLowerCase() === 'true'
 }
 
 function getWechatPayChargeFen(order) {
@@ -57,9 +65,9 @@ function normalizeMachineStage(stage, fallback = 'deposit') {
 }
 
 function outTradeNo(orderType, order) {
-  const base = `${orderType.toUpperCase()}_${order.orderNo}_${order.id}`
-  if (orderType !== 'machine') return base
-  return `${base}_${String(order.paymentStage || 'full').toUpperCase()}`
+  return orderType === 'machine'
+    ? paymentOrderNo.machineOutTradeNo(order, order.paymentStage)
+    : paymentOrderNo.supplyOutTradeNo(order)
 }
 
 function orderDescription(orderType, order) {
@@ -85,6 +93,13 @@ function parseNotifyOrder(transaction) {
     } catch {}
   }
   const tradeNo = String(transaction.out_trade_no || '')
+  const compactSupply = tradeNo.match(/^S_(\d+)_/)
+  if (compactSupply) return { orderType: 'supply', orderId: Number(compactSupply[1]), paymentStage: 'full' }
+  const compactMachine = tradeNo.match(/^M_(\d+)_([DBF])_/)
+  if (compactMachine) {
+    const stage = { D: 'deposit', B: 'balance', F: 'full' }[compactMachine[2]]
+    return { orderType: 'machine', orderId: Number(compactMachine[1]), paymentStage: stage }
+  }
   const parts = tradeNo.split('_')
   const machine = tradeNo.startsWith('MACHINE_')
   const last = String(parts[parts.length - 1] || '').toLowerCase()
@@ -120,16 +135,25 @@ function validateReceiver(order) {
   return { ok: true }
 }
 
+function validateMockOrder(order) {
+  if (!order) return { ok: false, msg: '订单不存在或无权访问', code: 404 }
+  if (order.kind === 'supply' && Number(order.merchantCount) !== 1) {
+    return { ok: false, msg: '该订单包含多个商户，请拆分订单后分别支付', code: 409 }
+  }
+  return { ok: true }
+}
+
 function shouldUseProfitSharing(order) {
   if (!order || !['supply', 'machine'].includes(order.kind) || order.isSelfOperated) return false
   if (String(process.env.WECHAT_PAY_PROFIT_SHARING_ENABLED || 'true') === 'false') return false
-  return profitSharing.calculateCommissionFen(order.amount, order.commissionRate) > 0
+  return profitSharing.calculateOrderCommissionFen(order) > 0
 }
 
 async function loadSupplyOrder(orderId, userId, statuses = ['pending_payment']) {
   const placeholders = statuses.map(() => '?').join(',')
   const [[row]] = await db.query(
-    `SELECT o.id,o.order_no,o.total,o.status,o.pay_expires_at,
+    `SELECT o.id,o.order_no,o.total,o.original_subtotal,o.commission_base,o.status,o.pay_expires_at,
+            o.wechat_out_trade_no,o.wechat_transaction_id,o.payment_mode,o.paid_at,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
             MIN(i.merchant_id) AS merchant_id,MIN(m.sub_mchid) AS sub_mchid,
             MIN(m.commission_rate) AS commission_rate,
@@ -145,7 +169,11 @@ function normalizeSupplyOrder(row) {
   if (!row) return null
   return {
     kind: 'supply', id: row.id, orderNo: row.order_no, amount: Number(row.total || 0),
+    commissionBase: Number(row.commission_base || row.original_subtotal || row.total || 0),
     payExpiresAt: row.pay_expires_at,
+    wechatOutTradeNo: row.wechat_out_trade_no || '',
+    wechatTransactionId: row.wechat_transaction_id || '',
+    paymentMode: row.payment_mode || '', paidAt: row.paid_at,
     status: row.status, merchantCount: Number(row.merchant_count || 0), merchantId: row.merchant_id,
     subMchid: row.sub_mchid || '', commissionRate: Number(row.commission_rate || 0),
     isSelfOperated: Number(row.self_operated || 0) === 1, paymentStage: 'full'
@@ -158,7 +186,8 @@ async function loadAnySupplyOrder(orderId, userId) {
 
 async function loadSupplyOrderForNotify(orderId) {
   const [[row]] = await db.query(
-    `SELECT o.id,o.order_no,o.total,o.status,o.pay_expires_at,
+    `SELECT o.id,o.order_no,o.total,o.original_subtotal,o.commission_base,o.status,o.pay_expires_at,
+            o.wechat_out_trade_no,o.wechat_transaction_id,o.payment_mode,o.paid_at,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
             MIN(i.merchant_id) AS merchant_id,MIN(m.sub_mchid) AS sub_mchid,
             MIN(m.commission_rate) AS commission_rate,
@@ -292,15 +321,31 @@ async function markMachinePaidByNotify(order, transaction) {
   }
 }
 
-async function markSupplyPaid(orderId, userId) {
+async function recordSupplyPaymentTrace(order, transaction, paymentMode = 'wechat') {
+  const transactionId = transaction && transaction.transaction_id || ''
+  await db.query(
+    `UPDATE orders SET wechat_out_trade_no=?,wechat_transaction_id=?,payment_mode=?,paid_at=COALESCE(paid_at,NOW())
+      WHERE id=?`,
+    [outTradeNo('supply', order), transactionId, paymentMode, order.id]
+  )
+}
+
+async function markSupplyPaid(order, userId, transaction, paymentMode = 'wechat') {
+  const ownerSql = userId == null ? '' : ' AND user_id=?'
+  const params = [
+    outTradeNo('supply', order), transaction && transaction.transaction_id || '', paymentMode, order.id
+  ]
+  if (userId != null) params.push(userId)
   const [result] = await db.query(
-    "UPDATE orders SET status='pending_ship',pay_expires_at=NULL WHERE id=? AND user_id=? AND status='pending_payment'",
-    [orderId, userId]
+    `UPDATE orders SET status='pending_ship',pay_expires_at=NULL,wechat_out_trade_no=?,
+            wechat_transaction_id=?,payment_mode=?,paid_at=COALESCE(paid_at,NOW())
+      WHERE id=?${ownerSql} AND status='pending_payment'`,
+    params
   )
   if (result.affectedRows > 0) {
-    const [[order]] = await db.query('SELECT order_no FROM orders WHERE id=?', [orderId])
-    const [items] = await db.query('SELECT merchant_id FROM order_items WHERE order_id=?', [orderId])
-    notifyNewOrder(orderId, order && order.order_no || '', items).catch(error => console.error('[notify-order]', error))
+    await marketing.markOrderPaid(order.id)
+    const [items] = await db.query('SELECT merchant_id FROM order_items WHERE order_id=?', [order.id])
+    notifyNewOrder(order.id, order.orderNo || '', items).catch(error => console.error('[notify-order]', error))
   }
   return result.affectedRows > 0
 }
@@ -327,16 +372,21 @@ async function markPaidByNotify(type, orderId, paymentStage, paidFen, transactio
     return { ok: true, order }
   }
 
-  if (order.status === 'pending_ship') return { ok: true, order }
+  if (order.status === 'pending_ship') {
+    await recordSupplyPaymentTrace(order, transaction, 'wechat')
+    await marketing.markOrderPaid(orderId)
+    return { ok: true, order }
+  }
   if (order.status !== 'pending_payment') return { ok: false, message: 'supply order status invalid' }
-  await db.query(
-    "UPDATE orders SET status='pending_ship',pay_expires_at=NULL WHERE id=? AND status='pending_payment'",
-    [orderId]
-  )
-  const [items] = await db.query('SELECT merchant_id FROM order_items WHERE order_id=?', [orderId])
-  notifyNewOrder(orderId, order.orderNo || '', items).catch(error => console.error('[notify-order]', error))
+  const changed = await markSupplyPaid(order, null, transaction, 'wechat')
+  if (!changed) return { ok: false, message: 'supply order status changed' }
   return { ok: true, order }
 }
+
+router.get('/wechat/mode', farmerAuth, (_req, res) => {
+  const mode = isMockPaymentMode() ? 'mock' : (isWechatPayTestMode() ? 'small_amount' : 'real')
+  return ok(res, { mode, mock: mode === 'mock' })
+})
 
 router.post('/wechat/prepay', farmerAuth, async (req, res) => {
   const orderType = req.body.orderType === 'machine' ? 'machine' : 'supply'
@@ -344,6 +394,7 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
   if (!orderId) return fail(res, '缺少订单编号')
 
   try {
+    const mockPayment = isMockPaymentMode()
     let paymentStage = 'full'
     if (orderType === 'machine') {
       const requested = req.body.paymentStage || req.body.payMode
@@ -358,8 +409,11 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
       }
     }
 
-    const [[user]] = await db.query('SELECT openid FROM users WHERE id=?', [req.user.id])
-    if (!user || !user.openid) return fail(res, '请先使用微信登录绑定 openid 后再支付', 409)
+    let user = null
+    if (!mockPayment) {
+      [[user]] = await db.query('SELECT openid FROM users WHERE id=?', [req.user.id])
+      if (!user || !user.openid) return fail(res, '请先使用微信登录绑定 openid 后再支付', 409)
+    }
 
     const order = orderType === 'machine'
       ? await loadMachineOrder(orderId, req.user.id, paymentStage)
@@ -371,19 +425,39 @@ router.post('/wechat/prepay', farmerAuth, async (req, res) => {
       const expiryCheck = validateSupplyNotExpired(order)
       if (!expiryCheck.ok) return fail(res, expiryCheck.msg, expiryCheck.code)
     }
-    const receiver = validateReceiver(order)
+    const receiver = mockPayment ? validateMockOrder(order) : validateReceiver(order)
     if (!receiver.ok) return fail(res, receiver.msg, receiver.code)
+
+    if (mockPayment) {
+      return ok(res, {
+        orderType,
+        orderId: order.id,
+        paymentStage: order.paymentStage,
+        payParams: null,
+        mock: true,
+        testMode: 'mock',
+        chargeFen: fen(order.amount)
+      }, '模拟支付已就绪')
+    }
 
     const cfg = wxpay.getServiceProviderConfig()
     if (!cfg) return fail(res, '微信支付服务商配置不完整', 501)
 
     const chargeFen = getWechatPayChargeFen(order)
+    const paymentOutTradeNo = outTradeNo(orderType, order)
+    if (orderType === 'supply' && !order.wechatOutTradeNo) {
+      await db.query(
+        "UPDATE orders SET wechat_out_trade_no=? WHERE id=? AND wechat_out_trade_no=''",
+        [paymentOutTradeNo, order.id]
+      )
+      order.wechatOutTradeNo = paymentOutTradeNo
+    }
     const prepay = await wxpay.partnerJsapiPrepay({
       cfg,
       openid: user.openid,
       order: {
         description: orderDescription(orderType, order),
-        outTradeNo: outTradeNo(orderType, order),
+        outTradeNo: paymentOutTradeNo,
         timeExpire: order.kind === 'supply' ? formatWechatTime(order.payExpiresAt) : '',
         amountFen: chargeFen,
         subMchid: order.subMchid,
@@ -414,6 +488,7 @@ router.post('/wechat/confirm', farmerAuth, async (req, res) => {
   const orderId = Number(req.body.orderId)
   if (!orderId) return fail(res, '缺少订单编号')
   try {
+    const mockPayment = isMockPaymentMode()
     const paymentStage = orderType === 'machine'
       ? normalizeMachineStage(req.body.paymentStage, req.body.payMode === 'full' ? 'full' : 'deposit')
       : 'full'
@@ -435,8 +510,22 @@ router.post('/wechat/confirm', farmerAuth, async (req, res) => {
       return ok(res, null, '支付状态已同步')
     }
 
-    const receiver = validateReceiver(order)
+    const receiver = mockPayment ? validateMockOrder(order) : validateReceiver(order)
     if (!receiver.ok) return fail(res, receiver.msg, receiver.code)
+
+    if (mockPayment) {
+      const transaction = {
+        transaction_id: `MOCK_${orderType.toUpperCase()}_${order.id}_${Date.now()}`,
+        trade_state: 'SUCCESS',
+        amount: { total: fen(order.amount), payer_total: fen(order.amount) }
+      }
+      const changed = orderType === 'machine'
+        ? await markMachinePaid(order, req.user.id, transaction)
+        : await markSupplyPaid(order, req.user.id, transaction, 'mock')
+      if (!changed) return fail(res, '订单状态已变化，请刷新后重试', 409)
+      return ok(res, { mock: true, transactionId: transaction.transaction_id }, '模拟支付成功')
+    }
+
     const cfg = wxpay.getServiceProviderConfig()
     if (!cfg) return fail(res, '微信支付服务商配置不完整', 501)
 
@@ -452,7 +541,7 @@ router.post('/wechat/confirm', farmerAuth, async (req, res) => {
 
     const changed = orderType === 'machine'
       ? await markMachinePaid(order, req.user.id, transaction)
-      : await markSupplyPaid(orderId, req.user.id)
+      : await markSupplyPaid(order, req.user.id, transaction, 'wechat')
     if (!changed) return fail(res, '订单状态已变化，请刷新后重试', 409)
     if (shouldUseProfitSharing(order)) {
       try { await profitSharing.savePendingOrder({ order, transaction }) } catch (error) {

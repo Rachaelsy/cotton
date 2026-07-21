@@ -1293,26 +1293,30 @@ router.get('/finance', adminAuth, async (req, res) => {
     const [rows] = await db.query(`
       SELECT
         m.id AS merchant_id, m.company_name, m.commission_rate, u.phone,
-        COALESCE(cs.total_sales,  0) AS total_sales,
-        COALESCE(av.available,    0) AS available_amount,
-        COALESCE(fr.frozen,       0) AS frozen_amount
+        COALESCE(fin.total_sales, 0) AS total_sales,
+        COALESCE(fin.total_commission, 0) AS total_commission,
+        COALESCE(fin.available_amount, 0) AS available_amount,
+        COALESCE(fin.frozen_amount, 0) AS frozen_amount
       FROM merchants m
       LEFT JOIN users u ON u.id = m.user_id
       LEFT JOIN (
-        SELECT oi.merchant_id, SUM(oi.subtotal) AS total_sales
-        FROM order_items oi JOIN orders o ON o.id = oi.order_id
-        WHERE o.status = 'completed' GROUP BY oi.merchant_id
-      ) cs ON cs.merchant_id = m.id
-      LEFT JOIN (
-        SELECT oi.merchant_id, SUM(oi.subtotal) AS available
-        FROM order_items oi JOIN orders o ON o.id = oi.order_id
-        WHERE o.fund_status = 'available' GROUP BY oi.merchant_id
-      ) av ON av.merchant_id = m.id
-      LEFT JOIN (
-        SELECT oi.merchant_id, SUM(oi.subtotal) AS frozen
-        FROM order_items oi JOIN orders o ON o.id = oi.order_id
-        WHERE o.fund_status = 'frozen' GROUP BY oi.merchant_id
-      ) fr ON fr.merchant_id = m.id
+        SELECT q.merchant_id,
+          SUM(CASE WHEN q.status='completed' THEN q.paid_amount ELSE 0 END) AS total_sales,
+          SUM(CASE WHEN q.status='completed' THEN LEAST(q.paid_amount, q.commission_base * q.commission_rate / 100) ELSE 0 END) AS total_commission,
+          SUM(CASE WHEN q.fund_status='available' THEN GREATEST(q.paid_amount - LEAST(q.paid_amount, q.commission_base * q.commission_rate / 100), 0) ELSE 0 END) AS available_amount,
+          SUM(CASE WHEN q.fund_status='frozen' THEN GREATEST(q.paid_amount - LEAST(q.paid_amount, q.commission_base * q.commission_rate / 100), 0) ELSE 0 END) AS frozen_amount
+        FROM (
+          SELECT oi.merchant_id, o.id AS order_id, o.status, o.fund_status,
+                 SUM(oi.subtotal) AS paid_amount,
+                 SUM(COALESCE(NULLIF(oi.original_price,0),oi.price) * oi.qty) AS commission_base,
+                 m2.commission_rate
+            FROM order_items oi
+            JOIN orders o ON o.id=oi.order_id
+            JOIN merchants m2 ON m2.id=oi.merchant_id
+           GROUP BY oi.merchant_id,o.id,o.status,o.fund_status,m2.commission_rate
+        ) q
+        GROUP BY q.merchant_id
+      ) fin ON fin.merchant_id=m.id
       WHERE m.apply_status = 'approved'
       ORDER BY total_sales DESC
     `)

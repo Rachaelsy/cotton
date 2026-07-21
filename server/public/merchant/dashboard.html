@@ -234,12 +234,30 @@
     .msg-content { font-size: 12px; color: #888; line-height: 1.5; }
     .msg-time { font-size: 11px; color: #BBB; white-space: nowrap; margin-left: auto; }
 
+    /* ── 营销中心 ── */
+    .marketing-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .marketing-metric { background: #fff; border: 1px solid #E7E9EC; border-radius: 8px; padding: 15px; }
+    .marketing-metric span { display: block; color: #777; font-size: 12px; }
+    .marketing-metric strong { display: block; margin-top: 5px; font-size: 24px; }
+    .campaign-type { font-weight: 700; color: #166534; }
+    .campaign-rule { color: #B45309; font-weight: 700; }
+    .product-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; max-height: 150px; overflow-y: auto; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; }
+    .product-checks label { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #333; }
+    .product-checks input { width: auto; }
+    .field-hint { color: #888; font-size: 11px; line-height: 1.5; margin-top: 4px; }
+    .campaign-status { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .campaign-status.pending, .campaign-status.scheduled { background: #FEF3C7; color: #92400E; }
+    .campaign-status.running, .campaign-status.approved { background: #DCFCE7; color: #166534; }
+    .campaign-status.rejected, .campaign-status.paused { background: #FEE2E2; color: #991B1B; }
+    .campaign-status.draft, .campaign-status.ended { background: #F3F4F6; color: #4B5563; }
+
     /* ── 响应式 ── */
     @media (max-width: 900px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .shortcut-grid { grid-template-columns: repeat(2, 1fr); }
       .finance-grid { grid-template-columns: 1fr; }
       .pay-layout { grid-template-columns: 1fr; }
+      .marketing-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .form-row { flex-direction: column; }
     }
   </style>
@@ -257,6 +275,7 @@
     <div class="nav-section">核心功能</div>
     <div class="nav-item active" id="nav-shop"      onclick="show('shop')">      <span class="nav-icon">🏠</span> 店铺中心</div>
     <div class="nav-item"        id="nav-products"  onclick="show('products')">  <span class="nav-icon">📦</span> 商品管理</div>
+    <div class="nav-item"        id="nav-marketing" onclick="show('marketing')"> <span class="nav-icon">%</span> 营销中心</div>
     <div class="nav-item"        id="nav-orders"    onclick="show('orders')">    <span class="nav-icon">📋</span> 订单管理<span class="nav-badge" id="order-badge" style="display:none">0</span></div>
     <div class="nav-item"        id="nav-aftersale" onclick="show('aftersale')"> <span class="nav-icon">🔄</span> 售后管理<span class="nav-badge" id="aftersale-badge" style="display:none">0</span></div>
     <div class="nav-section">财务与用户</div>
@@ -364,6 +383,34 @@
             <th>价格</th><th>单位</th><th>库存</th><th>状态</th><th>操作</th>
           </tr></thead>
           <tbody id="prod-table"><tr class="empty-row"><td colspan="9">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ 营销中心 ══ -->
+    <div class="panel" id="panel-marketing">
+      <div class="marketing-summary">
+        <div class="marketing-metric"><span>全部活动</span><strong id="mk-total">0</strong></div>
+        <div class="marketing-metric"><span>进行中</span><strong id="mk-running">0</strong></div>
+        <div class="marketing-metric"><span>待审核</span><strong id="mk-pending">0</strong></div>
+        <div class="marketing-metric"><span>累计核销</span><strong id="mk-used">0</strong></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">优惠券与促销活动</span>
+          <button class="btn btn-primary btn-sm" onclick="openCampaignModal()">＋ 创建活动</button>
+        </div>
+        <div class="toolbar">
+          <select id="campaign-filter" onchange="renderCampaigns()">
+            <option value="">全部活动</option>
+            <option value="coupon">优惠券</option>
+            <option value="promotion">促销/秒杀</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="loadCampaigns()">刷新</button>
+        </div>
+        <table>
+          <thead><tr><th>活动</th><th>类型</th><th>优惠规则</th><th>范围</th><th>有效期</th><th>数据</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="campaign-table"><tr class="empty-row"><td colspan="8">加载中...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -786,6 +833,54 @@
   </div>
 </div>
 
+<!-- ══ 弹窗：营销活动 ══ -->
+<div class="modal-mask" id="modalCampaign">
+  <div class="modal" style="width:min(760px,92vw);max-height:90vh;overflow-y:auto">
+    <h3 id="campaign-modal-title">创建营销活动</h3>
+    <input type="hidden" id="campaign-id">
+    <div class="mrow">
+      <div class="mfield"><label>活动类别 <span class="req">*</span></label><select id="campaign-kind" onchange="refreshCampaignTypeOptions()"><option value="coupon">优惠券</option><option value="promotion">自动促销/秒杀</option></select></div>
+      <div class="mfield"><label>活动类型 <span class="req">*</span></label><select id="campaign-type" onchange="refreshCampaignFields()"></select></div>
+    </div>
+    <div class="mfield"><label>活动名称 <span class="req">*</span></label><input id="campaign-name" maxlength="80" placeholder="例如：春耕满减券"></div>
+    <div class="mfield"><label>活动说明</label><textarea id="campaign-description" maxlength="255" placeholder="展示给农户的活动说明"></textarea></div>
+    <div class="mrow">
+      <div class="mfield"><label>适用范围</label><select id="campaign-scope" onchange="refreshCampaignFields()"><option value="all">全店商品</option><option value="category">指定分类</option><option value="products">指定商品</option></select></div>
+      <div class="mfield campaign-scope-category"><label>商品分类</label><select id="campaign-category"><option value="化肥">化肥</option><option value="农药">农药</option><option value="种子">种子</option><option value="农膜">农膜</option><option value="农机">农机</option><option value="其他">其他</option></select></div>
+    </div>
+    <div class="mfield campaign-scope-products"><label>适用商品</label><div class="product-checks" id="campaign-products"></div></div>
+    <div class="mrow">
+      <div class="mfield campaign-value" data-types="full_reduction,new_customer,tiered_reduction"><label>满减门槛（元）</label><input id="campaign-threshold-amount" type="number" min="0" step="0.01"></div>
+      <div class="mfield campaign-value" data-types="quantity_reduction,multi_buy_discount"><label>件数门槛</label><input id="campaign-threshold-quantity" type="number" min="1" step="1"></div>
+      <div class="mfield campaign-value" data-types="cash,full_reduction,quantity_reduction,new_customer,tiered_reduction"><label>优惠金额（元）</label><input id="campaign-discount-amount" type="number" min="0" step="0.01"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield campaign-value" data-types="percentage,limited_discount,multi_buy_discount"><label>折扣百分比</label><input id="campaign-discount-rate" type="number" min="1" max="99" step="1" placeholder="90表示9折"></div>
+      <div class="mfield campaign-value" data-types="percentage"><label>最高优惠（元）</label><input id="campaign-max-discount" type="number" min="0" step="0.01"></div>
+      <div class="mfield campaign-value" data-types="flash_sale,special_price"><label>活动价（元）</label><input id="campaign-special-price" type="number" min="0.01" step="0.01"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield campaign-value" data-types="buy_x_get_y"><label>购买数量</label><input id="campaign-buy-quantity" type="number" min="1" step="1"></div>
+      <div class="mfield campaign-value" data-types="buy_x_get_y"><label>赠送数量</label><input id="campaign-gift-quantity" type="number" min="1" step="1"></div>
+      <div class="mfield campaign-value" data-types="flash_sale"><label>秒杀库存</label><input id="campaign-total-quota" type="number" min="1" step="1"></div>
+    </div>
+    <div class="mfield campaign-value" data-types="tiered_reduction"><label>阶梯规则</label><input id="campaign-tiers" placeholder="例如：100:10,300:40,500:80"><div class="field-hint">使用“门槛:优惠”格式，多档用英文逗号分隔。</div></div>
+    <div class="mrow">
+      <div class="mfield"><label>开始时间 <span class="req">*</span></label><input id="campaign-start" type="datetime-local"></div>
+      <div class="mfield"><label>结束时间 <span class="req">*</span></label><input id="campaign-end" type="datetime-local"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>总发行量</label><input id="campaign-quota" type="number" min="1" step="1" placeholder="留空表示不限量"></div>
+      <div class="mfield"><label id="campaign-user-limit-label">每位农户限领（固定一次）</label><input id="campaign-user-limit" type="number" min="1" step="1" value="1" disabled></div>
+    </div>
+    <div class="mfield"><label style="display:flex;align-items:center;gap:8px"><input id="campaign-stackable" type="checkbox" style="width:auto"> 允许与其他活动叠加</label></div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalCampaign')">取消</button>
+      <button class="mbtn save" onclick="saveCampaign()">保存草稿</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ════════════════════════════════════════════
    工具函数
@@ -858,6 +953,17 @@ async function api(method, path, body) {
   }
 }
 
+async function marketingApi(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
+  if (body !== undefined) opts.body = JSON.stringify(body)
+  const response = await fetch('/api/marketing' + path, opts)
+  const text = await response.text()
+  let data
+  try { data = JSON.parse(text) } catch { throw new Error('服务器返回格式错误: ' + text.slice(0, 100)) }
+  if (data.code === 401) { logout(); return null }
+  return data
+}
+
 async function applymentApi(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
   if (body) opts.body = JSON.stringify(body)
@@ -921,8 +1027,9 @@ function showModal(id)  { document.getElementById(id).classList.add('show') }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
 
 /* ── 全局状态（必须在 init IIFE 之前声明）── */
-var TITLES = { shop:'店铺中心', products:'商品管理', orders:'订单管理', aftersale:'售后管理', finance:'财务结算', pay:'微信收款', customers:'客户评价', messages:'消息中心', settings:'店铺设置' }
+var TITLES = { shop:'店铺中心', products:'商品管理', marketing:'营销中心', orders:'订单管理', aftersale:'售后管理', finance:'财务结算', pay:'微信收款', customers:'客户评价', messages:'消息中心', settings:'店铺设置' }
 var productsData = []
+var campaignsData = []
 var editProdId = null
 var currentOrderTab = 'all'
 var ordersData = []
@@ -973,6 +1080,7 @@ function show(panel) {
   document.getElementById('page-title').textContent = TITLES[panel] || ''
   if (panel === 'shop')      loadStats()
   if (panel === 'products')  loadProducts()
+  if (panel === 'marketing') loadCampaigns()
   if (panel === 'orders')    loadOrders('all')
   if (panel === 'aftersale') loadAftersale('all')
   if (panel === 'finance')   loadFinance()
@@ -1429,6 +1537,212 @@ async function setPeriod(p, el) {
   el.classList.add('active-period')
   const r = await api('GET', '/trend?period=' + p).catch(() => null)
   if (r?.data) renderBarChart('finance-chart', r.data)
+}
+
+/* ════════════════════════════════════════════
+   营销中心
+════════════════════════════════════════════ */
+const CAMPAIGN_TYPES = {
+  coupon: [
+    ['cash','无门槛立减券'],['full_reduction','满减券'],['percentage','折扣券'],
+    ['quantity_reduction','满件券'],['new_customer','新客券']
+  ],
+  promotion: [
+    ['flash_sale','秒杀'],['limited_discount','限时折扣'],['special_price','限时特价'],
+    ['tiered_reduction','阶梯满减'],['multi_buy_discount','多件折扣'],['buy_x_get_y','买赠']
+  ]
+}
+const CAMPAIGN_STATUS = {
+  draft:'草稿', pending:'待审核', approved:'待开始', scheduled:'待开始', running:'进行中',
+  paused:'已暂停', rejected:'已驳回', ended:'已结束'
+}
+
+async function loadCampaigns() {
+  const tbody = document.getElementById('campaign-table')
+  if (tbody) tbody.innerHTML = '<tr class="empty-row"><td colspan="8">加载中...</td></tr>'
+  const r = await marketingApi('GET', '/merchant/campaigns').catch(e => ({ code:500, msg:e.message }))
+  if (!r || r.code !== 200) {
+    if (tbody) tbody.innerHTML = `<tr class="empty-row"><td colspan="8">${esc(r?.msg || '加载失败')}</td></tr>`
+    return
+  }
+  campaignsData = r.data || []
+  document.getElementById('mk-total').textContent = campaignsData.length
+  document.getElementById('mk-running').textContent = campaignsData.filter(x => x.display_status === 'running').length
+  document.getElementById('mk-pending').textContent = campaignsData.filter(x => x.status === 'pending').length
+  document.getElementById('mk-used').textContent = campaignsData.reduce((sum, x) => sum + Number(x.used_count || 0), 0)
+  renderCampaigns()
+}
+
+function campaignScopeText(item) {
+  if (item.scope_type === 'all') return '全店商品'
+  if (item.scope_type === 'category') return item.category || '指定分类'
+  const names = (item.products || []).map(p => p.product_name).filter(Boolean)
+  return names.length > 2 ? `${names.slice(0,2).join('、')}等${names.length}件` : (names.join('、') || '指定商品')
+}
+
+function renderCampaigns() {
+  const tbody = document.getElementById('campaign-table')
+  if (!tbody) return
+  const filter = document.getElementById('campaign-filter').value
+  const list = campaignsData.filter(item => !filter || item.kind === filter)
+  if (!list.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">暂无营销活动</td></tr>'
+    return
+  }
+  tbody.innerHTML = list.map(item => {
+    const typeName = (CAMPAIGN_TYPES[item.kind] || []).find(x => x[0] === item.type)?.[1] || item.type
+    const status = item.display_status || item.status
+    const starts = String(item.starts_at || '').slice(0,16).replace('T',' ')
+    const ends = String(item.ends_at || '').slice(0,16).replace('T',' ')
+    const edit = ['draft','rejected'].includes(item.status) ? `<button class="btn btn-outline btn-sm" onclick="editCampaign(${item.id})">编辑</button>` : ''
+    const submit = ['draft','rejected'].includes(item.status) ? `<button class="btn btn-primary btn-sm" onclick="submitCampaign(${item.id})">提交审核</button>` : ''
+    const pause = ['approved','running'].includes(item.status) && status !== 'ended' ? `<button class="btn btn-warn btn-sm" onclick="pauseCampaign(${item.id})">暂停</button>` : ''
+    return `<tr>
+      <td><strong>${esc(item.name)}</strong>${item.rejection_reason ? `<br><span style="font-size:11px;color:#B91C1C">${esc(item.rejection_reason)}</span>` : ''}</td>
+      <td><span class="campaign-type">${item.kind === 'coupon' ? '优惠券' : '促销'}</span><br><span style="font-size:11px;color:#777">${esc(typeName)}</span></td>
+      <td><span class="campaign-rule">${esc(item.label)}</span></td>
+      <td>${esc(campaignScopeText(item))}</td>
+      <td style="font-size:11px;color:#666">${starts}<br>至 ${ends}</td>
+      <td style="font-size:12px">领取 ${item.claimed_count || 0}<br>核销 ${item.used_count || 0}</td>
+      <td><span class="campaign-status ${status}">${CAMPAIGN_STATUS[status] || status}</span></td>
+      <td><div style="display:flex;gap:5px;flex-wrap:wrap">${edit}${submit}${pause}</div></td>
+    </tr>`
+  }).join('')
+}
+
+function datetimeLocal(value) {
+  const date = value ? new Date(value) : new Date()
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0,16)
+}
+
+async function ensureCampaignProducts() {
+  if (!productsData.length) {
+    const r = await api('GET', '/products')
+    productsData = r?.data || []
+  }
+  document.getElementById('campaign-products').innerHTML = productsData.map(product =>
+    `<label><input type="checkbox" value="${product.id}"> <span>${esc(product.name)}</span></label>`
+  ).join('') || '<span style="color:#888">请先上架商品</span>'
+}
+
+async function openCampaignModal(item) {
+  await ensureCampaignProducts()
+  const campaign = item || null
+  document.getElementById('campaign-modal-title').textContent = campaign ? '编辑营销活动' : '创建营销活动'
+  document.getElementById('campaign-id').value = campaign?.id || ''
+  document.getElementById('campaign-kind').value = campaign?.kind || 'coupon'
+  refreshCampaignTypeOptions(campaign?.type)
+  document.getElementById('campaign-name').value = campaign?.name || ''
+  document.getElementById('campaign-description').value = campaign?.description || ''
+  document.getElementById('campaign-scope').value = campaign?.scope_type || 'all'
+  document.getElementById('campaign-category').value = campaign?.category || '化肥'
+  document.getElementById('campaign-threshold-amount').value = campaign?.threshold_amount || ''
+  document.getElementById('campaign-threshold-quantity').value = campaign?.threshold_quantity || ''
+  document.getElementById('campaign-discount-amount').value = campaign?.discount_amount || ''
+  document.getElementById('campaign-discount-rate').value = campaign?.discount_rate || ''
+  document.getElementById('campaign-max-discount').value = campaign?.max_discount || ''
+  document.getElementById('campaign-special-price').value = campaign?.special_price || ''
+  document.getElementById('campaign-buy-quantity').value = campaign?.buy_quantity || ''
+  document.getElementById('campaign-gift-quantity').value = campaign?.gift_quantity || ''
+  document.getElementById('campaign-total-quota').value = campaign?.type === 'flash_sale' ? (campaign?.total_quota || '') : ''
+  document.getElementById('campaign-quota').value = campaign?.kind === 'coupon' ? (campaign?.total_quota || '') : ''
+  document.getElementById('campaign-user-limit').value = campaign?.per_user_limit || 1
+  document.getElementById('campaign-stackable').checked = !!campaign?.stackable
+  document.getElementById('campaign-start').value = datetimeLocal(campaign?.starts_at || new Date(Date.now() + 10 * 60000))
+  document.getElementById('campaign-end').value = datetimeLocal(campaign?.ends_at || new Date(Date.now() + 7 * 86400000))
+  document.getElementById('campaign-tiers').value = (campaign?.rules?.tiers || []).map(x => `${x.threshold}:${x.discount}`).join(',')
+  const selected = new Set((campaign?.products || []).map(x => Number(x.product_id)))
+  document.querySelectorAll('#campaign-products input').forEach(input => { input.checked = selected.has(Number(input.value)) })
+  refreshCampaignFields()
+  showModal('modalCampaign')
+}
+
+function refreshCampaignTypeOptions(selected) {
+  const kind = document.getElementById('campaign-kind').value
+  const select = document.getElementById('campaign-type')
+  select.innerHTML = CAMPAIGN_TYPES[kind].map(item => `<option value="${item[0]}">${item[1]}</option>`).join('')
+  if (selected && CAMPAIGN_TYPES[kind].some(item => item[0] === selected)) select.value = selected
+  refreshCampaignFields()
+}
+
+function refreshCampaignFields() {
+  const kind = document.getElementById('campaign-kind').value
+  const type = document.getElementById('campaign-type').value
+  if (!type) return
+  if (['flash_sale','special_price'].includes(type)) document.getElementById('campaign-scope').value = 'products'
+  const scope = document.getElementById('campaign-scope').value
+  document.querySelectorAll('.campaign-value').forEach(field => {
+    field.style.display = field.dataset.types.split(',').includes(type) ? '' : 'none'
+  })
+  document.querySelectorAll('.campaign-scope-category').forEach(field => { field.style.display = scope === 'category' ? '' : 'none' })
+  document.querySelectorAll('.campaign-scope-products').forEach(field => { field.style.display = scope === 'products' ? '' : 'none' })
+  const userLimit = document.getElementById('campaign-user-limit')
+  userLimit.disabled = kind === 'coupon'
+  if (kind === 'coupon') userLimit.value = 1
+  document.getElementById('campaign-user-limit-label').textContent = kind === 'coupon'
+    ? '每位农户限领（固定一次）'
+    : '每位农户限购数量'
+}
+
+function parseTiers(value) {
+  return String(value || '').split(',').map(text => {
+    const [threshold, discount] = text.split(':').map(Number)
+    return { threshold, discount }
+  }).filter(item => item.threshold > 0 && item.discount > 0)
+}
+
+async function saveCampaign() {
+  const id = Number(document.getElementById('campaign-id').value) || null
+  const kind = document.getElementById('campaign-kind').value
+  const type = document.getElementById('campaign-type').value
+  const productIds = Array.from(document.querySelectorAll('#campaign-products input:checked')).map(input => Number(input.value))
+  const quota = kind === 'coupon' ? document.getElementById('campaign-quota').value : document.getElementById('campaign-total-quota').value
+  const body = {
+    kind, type,
+    name: document.getElementById('campaign-name').value.trim(),
+    description: document.getElementById('campaign-description').value.trim(),
+    scope_type: document.getElementById('campaign-scope').value,
+    category: document.getElementById('campaign-category').value,
+    product_ids: productIds,
+    threshold_amount: document.getElementById('campaign-threshold-amount').value,
+    threshold_quantity: document.getElementById('campaign-threshold-quantity').value,
+    discount_amount: document.getElementById('campaign-discount-amount').value,
+    discount_rate: document.getElementById('campaign-discount-rate').value || 100,
+    max_discount: document.getElementById('campaign-max-discount').value,
+    special_price: document.getElementById('campaign-special-price').value,
+    buy_quantity: document.getElementById('campaign-buy-quantity').value,
+    gift_quantity: document.getElementById('campaign-gift-quantity').value,
+    total_quota: quota || null,
+    per_user_limit: kind === 'coupon' ? 1 : (document.getElementById('campaign-user-limit').value || 1),
+    rules_json: { tiers: parseTiers(document.getElementById('campaign-tiers').value) },
+    stackable: document.getElementById('campaign-stackable').checked,
+    starts_at: document.getElementById('campaign-start').value,
+    ends_at: document.getElementById('campaign-end').value
+  }
+  const r = await marketingApi(id ? 'PUT' : 'POST', id ? `/merchant/campaigns/${id}` : '/merchant/campaigns', body).catch(e => ({ msg:e.message }))
+  if (r?.code !== 200) { alert(r?.msg || '保存失败'); return }
+  closeModal('modalCampaign')
+  await loadCampaigns()
+}
+
+function editCampaign(id) {
+  const item = campaignsData.find(x => Number(x.id) === Number(id))
+  if (item) openCampaignModal(item)
+}
+
+async function submitCampaign(id) {
+  if (!confirm('提交后核心优惠规则不能修改，确定提交管理员审核？')) return
+  const r = await marketingApi('POST', `/merchant/campaigns/${id}/submit`, {})
+  if (r?.code !== 200) alert(r?.msg || '提交失败')
+  else loadCampaigns()
+}
+
+async function pauseCampaign(id) {
+  if (!confirm('暂停后农户将不能继续领取或使用该活动，确定暂停？')) return
+  const r = await marketingApi('PATCH', `/merchant/campaigns/${id}/pause`, {})
+  if (r?.code !== 200) alert(r?.msg || '暂停失败')
+  else loadCampaigns()
 }
 
 /* ════════════════════════════════════════════

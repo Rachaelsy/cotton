@@ -47,6 +47,7 @@
         "supplies-order/index",
         "supplies-aftersale/index",
         "supplies-review/index",
+        "marketing-coupons/index",
         "my-orders/index"
       ]
     }

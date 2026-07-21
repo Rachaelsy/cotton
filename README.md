@@ -17,6 +17,14 @@
 
 当前产品边界：微信小程序仅供农户使用；商户、农机手、专家和管理员统一从网页端进入各自后台。农户登录后直接进入首页，实名认证为可选服务，不影响普通功能。首页暂未开放的棉花交易、农业贷款和农业保险入口继续保留，点击时统一提示“尚在开发中”。
 
+### 商户营销与优惠
+
+- 商户在网页端“营销中心”创建优惠券或自动促销，保存草稿并提交；管理员在“营销审核”通过后才会对农户生效。
+- 优惠券支持无门槛立减、满减、折扣封顶、满件减和新人券；自动促销支持秒杀、限时折扣、限时特价、阶梯满减、多件折扣和买赠。农资商城当前全场包邮，因此不开放无实际抵扣价值的运费券。
+- 小程序仅提供农户领券、查看券、活动价展示和结算选券，不包含商户发布入口。多商户购物车按商户拆单，每个子订单独立选择一张券。
+- 商品价格、活动资格、秒杀库存和优惠券归属全部由后端在事务中重新校验。取消或超时订单释放普通库存、秒杀库存与占用券；全额退款成功后返还仍在有效期内的券。
+- 优惠金额由商户承担。平台佣金以订单原价为计算基数，但佣金金额不会超过该订单实付金额；商户结算金额为实付减平台佣金。
+
 ---
 
 ## 快速启动
@@ -60,11 +68,14 @@ node db/migrate_delivery_range.js     # 可配送范围（machines.service_radiu
 node db/migrate_wechat_service_provider.js # 微信支付服务商字段（sub_mchid、进件状态、素材表）
 node db/migrate_profit_sharing.js     # 微信支付分账记录表
 node db/migrate_wechat_refunds.js     # 微信支付真实退款记录表
+node db/migrate_supply_payment_trace.js # 农资订单微信商户单号、交易号、支付模式与支付时间
 node db/migrate_commission_requests.js # 农机支付字段 + 商户/农机手佣金调整审核表
 node db/migrate_experts.js            # 专家账号表
 node db/migrate_expert_questions.js   # 专家提问表
 node db/migrate_farmer_improvements.js # 农机分阶段支付/定位、气象观测与农户功能增强
 node db/migrate_feedbacks.js          # 意见反馈、在线客服消息、引用/撤回/单方删除状态
+node db/migrate_marketing.js          # 商户优惠券、自动促销、秒杀库存和订单优惠快照
+npm run seed:marketing-demo           # 写入/续期 6 组已审核营销测试活动
 node db/seed.js                       # 插入测试用户账号
 node db/seed_machines.js              # 农机演示数据（机主 13800000003 + 4 台机具）
 
@@ -80,7 +91,7 @@ npm test
 npm audit --omit=dev
 ```
 
-测试覆盖农户权限边界、可选实名认证、天气缓存与重试、AI 和上传安全、支付超时保护、意见反馈、在线客服实时消息及主要支付/订单流程。
+测试覆盖农户权限边界、可选实名认证、天气缓存与重试、AI 和上传安全、支付超时保护、意见反馈、在线客服实时消息、营销计价与主要支付/订单流程。
 
 ### Docker 部署更新
 
@@ -200,6 +211,46 @@ node -e "require('dotenv').config(); const { fetchQweatherWeather } = require('.
 - `401 Unauthorized`：凭据 ID、项目 ID、私钥和上传的公钥不是同一组，或服务器时间偏差较大。
 
 微信支付服务商相关字段（如 `WECHAT_PAY_SP_MCH_ID`、`WECHAT_PAY_API_V3_KEY`、`WECHAT_PAY_PUBLIC_KEY_ID`、API 私钥路径等）等公司通过微信支付服务商审核后再填写。Docker Compose 会通过 `env_file: ./server/.env` 注入微信支付配置，所以这些字段要填在 `server/.env`。新服务商优先使用微信支付公钥模式：在服务商平台 `账户中心 -> 账户设置 -> API安全 -> 管理公钥` 下载公钥，填写 `WECHAT_PAY_PUBLIC_KEY_ID` 和 `WECHAT_PAY_PUBLIC_KEY_PATH`。旧平台证书字段仅作兼容保留。暂时不填时，普通后端功能可以运行；发起真实微信支付时会返回未配置提示，不会走模拟支付。
+
+### 营销联调与微信支付模式
+
+当前开发环境和部署环境均使用真实微信支付，`server/.env` 保持以下配置：
+
+```env
+WECHAT_PAY_TEST_MODE=
+WECHAT_PAY_MOCK_ENABLED=false
+```
+
+初始化营销测试活动时运行：
+
+```bash
+cd server
+npm run migrate:marketing
+npm run migrate:payment-trace
+npm run seed:marketing-demo
+npm start
+```
+
+测试数据脚本可为第一个已审核商户幂等写入或续期 6 组活动，包括立减券、满减券、折扣券、秒杀、指定商品折扣和阶梯满减。测试活动统一以 `[测试]` 开头，有效期为执行脚本后的 30 天。
+
+仅在明确需要无扣款联调时，才可在非生产环境同时开启以下两个开关：
+
+```env
+WECHAT_PAY_TEST_MODE=mock
+WECHAT_PAY_MOCK_ENABLED=true
+```
+
+模拟模式不会调用微信、不会扣款或创建分账任务，也不要求测试账号绑定 openid 或商户配置 `sub_mchid`，但会正常推进订单、核销优惠券和活动库存。小程序会明确展示模拟支付状态，并跳过 `wx.requestPayment`；`NODE_ENV=production` 时模拟模式强制失效。
+
+恢复真实支付后，可先只读核验、再事务清理没有真实微信交易的测试订单，并同时清空农户领券记录：
+
+```bash
+cd server
+npm run cleanup:test-payments
+npm run cleanup:test-payments -- --execute
+```
+
+清理脚本会逐笔查询微信支付：仅保留 `SUCCESS` 或 `REFUND` 的真实交易，删除无微信交易的农资/农机测试订单及关联售后、评价和营销记录，恢复被测试订单占用的商品与秒杀库存，并清空 `user_coupons`。`--execute` 会永久修改当前数据库，执行前必须确认连接的是目标测试库。模拟支付生成的订单不能调用真实微信退款接口。
 
 特约商户/农机手微信支付进件资料模板见 [docs/wechat-pay-applyment.md](docs/wechat-pay-applyment.md)。商户和农机手都可通过 `/api/wechat-applyment/*` 保存草稿、提交微信审核、同步状态；审核完成返回 `sub_mchid` 后才能发起真实收款。
 
@@ -348,6 +399,7 @@ http://localhost:3000/
 | 农户管理 | 列表查看、新增、编辑（姓名/地区/面积/实名）、启用/禁用账号 |
 | 商户管理 | 列表查看、新增（自动批准）、编辑（店铺名/联系人/品类/实名）、查看审批状态、启用/禁用账号、**单独设置佣金费率** |
 | 商品管理 | 全量商品列表、新增（选择所属商户）、编辑（名称/价格/库存/状态等）、删除 |
+| 营销审核 | 审核商户提交的优惠券、自动促销和秒杀活动；支持通过或填写原因驳回 |
 | 订单管理 | 全量订单列表，按状态筛选，在线修改订单状态 |
 | 售后管理 | 全平台售后申请列表，按状态筛选，查看申请详情（描述+凭证图片） |
 | 财务管理 | 商户财务汇总（销售额/佣金/已解冻/冻结）；提现统一在微信支付商户平台处理 |
@@ -374,6 +426,7 @@ http://localhost:3000/admin/login.html
 |------|------|
 | 店铺中心 | 今日销售/订单/待发货/结算统计 |
 | 商品管理 | CRUD + 图片上传 + 简介/详情字段 |
+| 营销中心 | 创建优惠券、限时促销、秒杀、阶梯满减和买赠；保存草稿、提交审核、查看核销数据及暂停活动 |
 | 订单管理 | 全部/待发货/已发货/已完成/售后，发货填单号，支持导出 CSV |
 | 售后管理 | 售后申请列表（分 Tab），查看详情（描述+凭证图片），一键同意/拒绝 |
 | 财务结算 | 结算明细、分账状态、冻结/已解冻金额；提现在微信支付商户平台操作 |
@@ -445,6 +498,7 @@ cotton/
 │   ├── supplies-store/       # 店铺页（单商户全部商品）
 │   ├── supplies-cart/        # 购物车（按商家分组）
 │   ├── supplies-checkout/    # 确认订单（含商品图片、收货信息）
+│   ├── marketing-coupons/    # 领券中心与我的优惠券（农户端）
 │   ├── supplies-pay/         # 待付款（倒计时、取消/去支付）
    ├── supplies-pay-success/ # 支付成功（多商家拆单卡片展示）
 │   ├── supplies-order/       # 订单详情（进度条 + 确认收货 + 售后）
@@ -609,7 +663,9 @@ Base URL（开发）：`http://<电脑当前局域网IP>:3000`（真机）/ `htt
 | POST  | `/api/machine-orders` | 农户 | 提交预约（含作业地址）|
 | GET   | `/api/machine-orders/my` | 农户 | 我的农机预约（可按状态）|
 | GET   | `/api/machine-orders/:id` | 农户 | 订单跟踪详情 |
-| POST  | `/api/pay/wechat/prepay` | 农户 | 农资或农机订单真实微信服务商 JSAPI 预支付（农机传 `orderType=machine`） |
+| GET   | `/api/pay/wechat/mode` | 农户 | 查询当前支付模式，待付款页据此显示真实或模拟支付状态 |
+| POST  | `/api/pay/wechat/prepay` | 农户 | 农资或农机订单预支付；真实模式调用微信 JSAPI，模拟模式只校验订单 |
+| POST  | `/api/pay/wechat/confirm` | 农户 | 同步真实微信支付结果，或在本地模拟模式推进订单状态 |
 | PATCH | `/api/machine-orders/:id/cancel` | 农户 | 取消未支付农机订单 |
 | POST  | `/api/machine-orders/:id/review` | 农户 | 分项评价（及时/质量/态度/价格）|
 | DELETE | `/api/machine-orders/:id` | 农户 | 删除（隐藏）订单 |
@@ -621,6 +677,21 @@ Base URL（开发）：`http://<电脑当前局域网IP>:3000`（真机）/ `htt
 | GET  | `/api/admin/announcements` | 管理员 | 公告列表 |
 | POST | `/api/admin/announcements` | 管理员 | 发布公告（广播至所有商户消息中心） |
 | DELETE | `/api/admin/announcements/:id` | 管理员 | 删除公告 |
+
+### 营销优惠 API
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/marketing/coupons` | 公开/农户 | 查询当前可领取优惠券，可按商户筛选 |
+| GET | `/api/marketing/coupons/mine` | 农户 | 查询我的可用、占用、已使用或已过期优惠券 |
+| POST | `/api/marketing/coupons/:id/claim` | 农户 | 领取优惠券，事务校验发行量与每人限领 |
+| POST | `/api/marketing/quote` | 公开/农户 | 按真实商品价格计算自动促销和所选优惠券 |
+| GET/POST | `/api/marketing/merchant/campaigns` | 商户网页端 | 查询活动或创建草稿 |
+| PUT | `/api/marketing/merchant/campaigns/:id` | 商户网页端 | 编辑草稿或被驳回活动 |
+| POST | `/api/marketing/merchant/campaigns/:id/submit` | 商户网页端 | 提交管理员审核 |
+| PATCH | `/api/marketing/merchant/campaigns/:id/pause` | 商户网页端 | 暂停已通过或进行中的活动 |
+| GET | `/api/marketing/admin/campaigns` | 管理员 | 查询营销审核列表 |
+| PATCH | `/api/marketing/admin/campaigns/:id/review` | 管理员 | 通过或驳回商户活动 |
 
 ---
 
@@ -635,11 +706,20 @@ merchants            → user_id(FK), company_name, business_license, product_ca
 products             → id, merchant_id(FK), name, category, price, unit, stock, status,
                         icon, image_url, description, detail
 orders               → id, order_no(UNIQUE), user_id(FK), farmer_name, farmer_phone,
-                        receiver_name, receiver_phone, address, subtotal, delivery_fee,
-                        total, pay_method, status, pay_expires_at(30分钟超时截止),
+                         receiver_name, receiver_phone, address, original_subtotal,
+                         promotion_discount, coupon_discount, merchant_discount, commission_base,
+                         user_coupon_id, subtotal, delivery_fee,
+                        total, pay_method, wechat_out_trade_no, wechat_transaction_id,
+                        payment_mode(wechat/mock), paid_at, status, pay_expires_at(30分钟超时截止),
                         logistics_no, note, shipped_at, confirmed_at, auto_confirmed,
                         fund_status, created_at, updated_at
-order_items          → id, order_id(FK CASCADE), merchant_id, product_id, name, icon, spec, price, qty, subtotal
+order_items          → id, order_id(FK CASCADE), merchant_id, product_id, name, icon, spec,
+                         original_price, promotion_price, price, qty, subtotal,
+                         promotion_discount, coupon_discount, marketing_campaign_id
+marketing_campaigns  → 商户优惠券/促销主表，含类型、范围、规则、发行量、审核状态和有效期
+marketing_campaign_products → 活动指定商品、活动价、秒杀配额、可用库存与销量
+user_coupons         → 农户领取券，含 available/locked/used/expired 状态和占用订单
+order_promotions     → 订单使用的活动、优惠券和秒杀库存快照，支持支付、取消与退款幂等处理
 aftersale_requests   → id, order_id, order_no, merchant_id, user_id, farmer_name,
                         aftersale_type, reason, other_reason, description, images(TEXT),
                         status(pending/approved/rejected), handle_note, created_at, updated_at

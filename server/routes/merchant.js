@@ -254,21 +254,23 @@ router.get('/stats', merchantAuth, async (req, res) => {
         SUM(CASE WHEN DATE(o.created_at)=CURDATE() THEN o.total ELSE 0 END) AS today_sales,
         SUM(CASE WHEN DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m') THEN o.total ELSE 0 END) AS monthly_sales
       FROM orders o
-      JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      WHERE EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
     `, [mid])
     const [[tc]] = await db.query(`
       SELECT COUNT(DISTINCT o.user_id) AS total_customers
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      FROM orders o
+      WHERE EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
     `, [mid])
     const [[merchantInfo]] = await db.query(
       'SELECT commission_rate FROM merchants WHERE id=?', [mid]
     )
-    const keepRate = parseFloat((1 - (parseFloat(merchantInfo?.commission_rate || 5) / 100)).toFixed(4))
+    const commissionRate = parseFloat(merchantInfo?.commission_rate || 5) / 100
     const [[frozen]] = await db.query(`
-      SELECT IFNULL(SUM(o.total * ?), 0) AS amount
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      SELECT IFNULL(SUM(GREATEST(o.total - LEAST(o.total, COALESCE(NULLIF(o.commission_base,0),o.total) * ?), 0)), 0) AS amount
+      FROM orders o
       WHERE o.fund_status='frozen'
-    `, [keepRate, mid])
+        AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
+    `, [commissionRate, mid])
     const [[um]] = await db.query(
       "SELECT COUNT(*) AS cnt FROM messages WHERE merchant_id=? AND is_read=0", [mid]
     )
@@ -277,8 +279,9 @@ router.get('/stats', merchantAuth, async (req, res) => {
     )
     const [wtRows] = await db.query(`
       SELECT DATE(o.created_at) AS day, SUM(o.total) AS amount
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      FROM orders o
       WHERE o.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
       GROUP BY DATE(o.created_at) ORDER BY day ASC
     `, [mid])
     const today = new Date()
@@ -322,21 +325,21 @@ router.get('/finance', merchantAuth, async (req, res) => {
       'SELECT commission_rate FROM merchants WHERE id=?', [mid]
     )
     const commissionRate = parseFloat(merchantInfo?.commission_rate || 5) / 100
-    const keepRate = parseFloat((1 - commissionRate).toFixed(4))
-
     // 已解冻资金（扣除佣金后，提现在微信支付商户平台操作）
     const [[avail]] = await db.query(`
-      SELECT IFNULL(SUM(o.total * ?), 0) AS amount
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      SELECT IFNULL(SUM(GREATEST(o.total - LEAST(o.total, COALESCE(NULLIF(o.commission_base,0),o.total) * ?), 0)), 0) AS amount
+      FROM orders o
       WHERE o.fund_status='available'
-    `, [keepRate, mid])
+        AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
+    `, [commissionRate, mid])
 
     // 冻结中余额（扣除佣金后）
     const [[frozen]] = await db.query(`
-      SELECT IFNULL(SUM(o.total * ?), 0) AS amount
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      SELECT IFNULL(SUM(GREATEST(o.total - LEAST(o.total, COALESCE(NULLIF(o.commission_base,0),o.total) * ?), 0)), 0) AS amount
+      FROM orders o
       WHERE o.fund_status='frozen'
-    `, [keepRate, mid])
+        AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
+    `, [commissionRate, mid])
 
     // 本月统计
     const [[m]] = await db.query(`
@@ -344,18 +347,19 @@ router.get('/finance', merchantAuth, async (req, res) => {
         COUNT(*) AS monthly_orders,
         IFNULL(SUM(o.total), 0) AS monthly_sales,
         IFNULL(SUM(CASE WHEN o.status='refunded' THEN o.total ELSE 0 END), 0) AS monthly_refund
-      FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+      FROM orders o
       WHERE DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')
+        AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
     `, [mid])
 
     // 结算明细（已完成的订单，含资金状态和确认时间）
     const [settleRows] = await db.query(`
-      SELECT o.id, o.order_no, o.total, o.created_at,
+      SELECT o.id, o.order_no, o.total, o.commission_base, o.created_at,
              o.fund_status, o.confirmed_at, o.auto_confirmed,
-             ps.state AS profit_sharing_state,
-             ps.amount_fen AS profit_sharing_amount_fen,
-             ps.error_msg AS profit_sharing_error,
-             ps.wechat_order_id AS profit_sharing_wechat_order_id,
+             MAX(ps.state) AS profit_sharing_state,
+             MAX(ps.amount_fen) AS profit_sharing_amount_fen,
+             MAX(ps.error_msg) AS profit_sharing_error,
+             MAX(ps.wechat_order_id) AS profit_sharing_wechat_order_id,
              GROUP_CONCAT(i.name ORDER BY i.id SEPARATOR '、') AS prod_names
       FROM orders o
       JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
@@ -377,8 +381,9 @@ router.get('/finance', merchantAuth, async (req, res) => {
       monthly_refund:    parseFloat(m.monthly_refund || 0).toFixed(2),
       settlements: settleRows.map((s, idx) => {
         const amount     = parseFloat(s.total)
-        const commission = parseFloat((amount * commissionRate).toFixed(2))
-        const actual     = parseFloat((amount * keepRate).toFixed(2))
+        const commissionBase = parseFloat(s.commission_base || amount)
+        const commission = parseFloat(Math.min(amount, commissionBase * commissionRate).toFixed(2))
+        const actual     = parseFloat(Math.max(0, amount - commission).toFixed(2))
         // 距解冻剩余天数（确认收货后按当前分账冻结配置）
         let daysLeft = null
         if (s.fund_status === 'frozen' && s.confirmed_at) {
@@ -483,16 +488,19 @@ router.get('/trend', merchantAuth, async (req, res) => {
     if (period === 'day') {
       const [rows] = await db.query(`
         SELECT HOUR(o.created_at) AS h, IFNULL(SUM(o.total), 0) AS amount
-        FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
-        WHERE DATE(o.created_at)=CURDATE() GROUP BY h ORDER BY h
+        FROM orders o
+        WHERE DATE(o.created_at)=CURDATE()
+          AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
+        GROUP BY h ORDER BY h
       `, [mid])
       const hm = {}; rows.forEach(r => { hm[r.h] = parseFloat(r.amount) })
       data = [0,3,6,9,12,15,18,21].map(h => ({ label: h + '时', val: Math.round(hm[h] || 0) }))
     } else if (period === 'month') {
       const [rows] = await db.query(`
         SELECT FLOOR((DAY(o.created_at)-1)/7)+1 AS w, IFNULL(SUM(o.total), 0) AS amount
-        FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+        FROM orders o
         WHERE DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')
+          AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
         GROUP BY w ORDER BY w
       `, [mid])
       const wm = {}; rows.forEach(r => { wm[r.w] = parseFloat(r.amount) })
@@ -505,8 +513,9 @@ router.get('/trend', merchantAuth, async (req, res) => {
       })
       const [rows] = await db.query(`
         SELECT DATE(o.created_at) AS day, IFNULL(SUM(o.total), 0) AS amount
-        FROM orders o JOIN order_items i ON i.order_id=o.id AND i.merchant_id=?
+        FROM orders o
         WHERE o.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+          AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
         GROUP BY DATE(o.created_at) ORDER BY day
       `, [mid])
       const dm = {}; rows.forEach(r => { dm[String(r.day).slice(0, 10)] = parseFloat(r.amount) })
@@ -599,7 +608,8 @@ router.get('/orders', merchantAuth, async (req, res) => {
     let sql = `
       SELECT o.id, o.order_no, o.farmer_name, o.farmer_phone,
              o.receiver_name, o.receiver_phone, o.address,
-             o.subtotal, o.delivery_fee, o.total,
+             o.original_subtotal, o.promotion_discount, o.coupon_discount,
+             o.merchant_discount, o.subtotal, o.delivery_fee, o.total,
              o.pay_method, o.status, o.logistics_no, o.logistics_company,
              o.logistics_company_name, o.logistics_status, o.logistics_latest,
              o.logistics_updated_at, o.note,

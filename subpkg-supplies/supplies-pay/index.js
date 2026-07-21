@@ -5,8 +5,8 @@ const layout = require('../../utils/layout')
 const i18n = require('../../utils/i18n')
 
 const COPY = {
-  zh: { title:'待付款',countdown:'请在',countdownEnd:'内完成支付，超时自动取消',expired:'订单已超时，即将自动关闭',goods:'商品',items:'件',orderNo:'订单号',total:'合计应付',cancelling:'取消中…',cancel:'取消订单',paying:'支付中…',pay:'立即支付',unknown:'未知商家',timeoutTitle:'订单已超时',timeoutContent:'超过30分钟未付款，订单已自动取消，库存已释放',know:'知道了',unavailable:'微信支付暂不可用',syncFail:'支付状态同步失败',incomplete:'支付未完成',cancelContent:'确定取消所有订单吗？库存将立即恢复。',cancelConfirm:'确认取消' },
-  ug: { title:'تۆلەشنى كۈتۈش',countdown:'',countdownEnd:'ئىچىدە تۆلەڭ، ۋاقىت ئۆتسە ئاپتوماتىك بىكار بولىدۇ',expired:'زاكاز ۋاقتى ئۆتتى، ئاپتوماتىك تاقىلىدۇ',goods:'مەھسۇلات',items:'دانە',orderNo:'زاكاز نومۇرى',total:'جەمئىي تۆلەش',cancelling:'بىكار قىلىۋاتىدۇ…',cancel:'زاكازنى بىكار قىلىش',paying:'تۆلەۋاتىدۇ…',pay:'ھازىر تۆلەش',unknown:'نامەلۇم سودىگەر',timeoutTitle:'زاكاز ۋاقتى ئۆتتى',timeoutContent:'30 مىنۇت ئىچىدە تۆلەنمىگەچكە زاكاز بىكار قىلىندى ۋە مال سانى ئەسلىگە كەلدى',know:'بىلدىم',unavailable:'WeChat تۆلەشنى ئىشلەتكىلى بولمايدۇ',syncFail:'تۆلەش ھالىتى ماسلاشمىدى',incomplete:'تۆلەش تاماملانمىدى',cancelContent:'بارلىق زاكاز بىكار قىلىنسۇنمۇ؟ مال سانى ئەسلىگە كېلىدۇ.',cancelConfirm:'بىكار قىلىش' }
+  zh: { title:'待付款',countdown:'请在',countdownEnd:'内完成支付，超时自动取消',expired:'订单已超时，即将自动关闭',goods:'商品',items:'件',orderNo:'订单号',total:'合计应付',cancelling:'取消中…',cancel:'取消订单',paying:'支付中…',pay:'立即支付',mockPay:'模拟支付',mockNotice:'模拟支付已开启，本次不会扣款',unknown:'未知商家',timeoutTitle:'订单已超时',timeoutContent:'超过30分钟未付款，订单已自动取消，库存已释放',know:'知道了',unavailable:'微信支付暂不可用',syncFail:'支付状态同步失败',incomplete:'支付未完成',cancelContent:'确定取消所有订单吗？库存将立即恢复。',cancelConfirm:'确认取消' },
+  ug: { title:'تۆلەشنى كۈتۈش',countdown:'',countdownEnd:'ئىچىدە تۆلەڭ، ۋاقىت ئۆتسە ئاپتوماتىك بىكار بولىدۇ',expired:'زاكاز ۋاقتى ئۆتتى، ئاپتوماتىك تاقىلىدۇ',goods:'مەھسۇلات',items:'دانە',orderNo:'زاكاز نومۇرى',total:'جەمئىي تۆلەش',cancelling:'بىكار قىلىۋاتىدۇ…',cancel:'زاكازنى بىكار قىلىش',paying:'تۆلەۋاتىدۇ…',pay:'ھازىر تۆلەش',mockPay:'تەقلىدىي تۆلەش',mockNotice:'تەقلىدىي تۆلەش ئېچىلدى، پۇل تۇتۇلمايدۇ',unknown:'نامەلۇم سودىگەر',timeoutTitle:'زاكاز ۋاقتى ئۆتتى',timeoutContent:'30 مىنۇت ئىچىدە تۆلەنمىگەچكە زاكاز بىكار قىلىندى ۋە مال سانى ئەسلىگە كەلدى',know:'بىلدىم',unavailable:'WeChat تۆلەشنى ئىشلەتكىلى بولمايدۇ',syncFail:'تۆلەش ھالىتى ماسلاشمىدى',incomplete:'تۆلەش تاماملانمىدى',cancelContent:'بارلىق زاكاز بىكار قىلىنسۇنمۇ؟ مال سانى ئەسلىگە كېلىدۇ.',cancelConfirm:'بىكار قىلىش' }
 }
 
 Page({
@@ -20,6 +20,7 @@ Page({
     countdownStr: '30:00',
     secondsLeft: 30 * 60,
     expired: false,
+    mockPayment: false,
     paying: false,
     cancelling: false
   },
@@ -62,6 +63,16 @@ Page({
     } else {
       this._startCountdown()
     }
+    this._loadPaymentMode()
+  },
+
+  async _loadPaymentMode() {
+    try {
+      const result = await auth.request('GET', '/api/pay/wechat/mode')
+      this.setData({ mockPayment: !!(result.data && result.data.mock) })
+    } catch {
+      this.setData({ mockPayment: false })
+    }
   },
 
   onUnload() {
@@ -102,12 +113,12 @@ Page({
           orderType: 'supply',
           orderId: o.orderId
         })
-        if (prepay.code !== 200 || !(prepay.data && prepay.data.payParams)) {
+        if (prepay.code !== 200 || !prepay.data || (!prepay.data.mock && !prepay.data.payParams)) {
           wx.showToast({ title: prepay.msg || this.data.copy.unavailable, icon: 'none' })
           allOk = false
           break
         }
-        await this._requestPayment(prepay.data.payParams)
+        if (!prepay.data.mock) await this._requestPayment(prepay.data.payParams)
         const confirm = await auth.request('POST', '/api/pay/wechat/confirm', {
           orderType: 'supply',
           orderId: o.orderId

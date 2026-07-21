@@ -1,5 +1,7 @@
 const defaultDb = require('../db/database')
 const defaultWxpay = require('./wechat-pay')
+const marketing = require('./marketing')
+const paymentOrderNo = require('./payment-order-no')
 
 let db = defaultDb
 let wxpay = defaultWxpay
@@ -19,7 +21,7 @@ function getWechatPayChargeFen(order, env = process.env) {
 }
 
 function supplyOutTradeNo(order) {
-  return `SUPPLY_${order.order_no || order.orderNo}_${order.id}`
+  return paymentOrderNo.supplyOutTradeNo(order)
 }
 
 function machinePaymentStage(order) {
@@ -27,7 +29,7 @@ function machinePaymentStage(order) {
 }
 
 function machineOutTradeNo(order) {
-  return `MACHINE_${order.order_no || order.orderNo}_${order.id}_${machinePaymentStage(order).toUpperCase()}`
+  return paymentOrderNo.machineOutTradeNo(order, machinePaymentStage(order))
 }
 
 function outRefundNo(order, sequence = Date.now()) {
@@ -87,6 +89,7 @@ async function loadSupplyRefundOrder(orderId, merchantId) {
   }
   const [[order]] = await db.query(
     `SELECT o.id, o.order_no, o.total, o.status, o.pay_method, o.fund_status,
+            o.wechat_out_trade_no,o.wechat_transaction_id,o.payment_mode,o.paid_at,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
             MIN(i.merchant_id) AS merchant_id,
             MIN(m.sub_mchid) AS sub_mchid
@@ -246,6 +249,9 @@ async function markRefundSuccess(row) {
     "UPDATE orders SET status='refunded', fund_status='refunded' WHERE id=?",
     [row.order_id]
   )
+  await marketing.returnCouponAfterRefund(row.order_id, db).catch(error => {
+    console.error('[refund-coupon-return]', error.message)
+  })
   if (row.aftersale_id) {
     await db.query(
       "UPDATE aftersale_requests SET status='approved' WHERE id=?",

@@ -25,8 +25,14 @@
     <view class="name-section">
       <view class="price-row">
         <text class="price-symbol">¥</text>
-        <text class="price-main">{{product.price}}</text>
+        <text class="price-main">{{product.has_promotion ? product.display_price : product.price}}</text>
+        <text wx:if="{{product.has_promotion}}" class="price-old">¥{{product.original_price}}</text>
         <text class="price-unit"> / {{product.unit || copy.piece}}</text>
+      </view>
+      <view wx:if="{{product.has_promotion}}" class="promotion-line">
+        <text class="promotion-badge">优惠</text>
+        <text class="promotion-name">{{product.promotion_name}}</text>
+        <text class="promotion-label">{{product.promotion_label}}</text>
       </view>
       <text class="prod-name">{{product.name}}</text>
       <view class="stats-row">
@@ -34,6 +40,12 @@
         <text class="stat-item">⭐ <text class="stat-bold">{{product.rating || 5.0}}{{copy.score}}</text></text>
         <text class="stat-item">⚡ <text class="stat-bold">{{copy.ship48}}</text></text>
       </view>
+    </view>
+
+    <view class="coupon-row" bindtap="onCoupons">
+      <text class="coupon-label">领券</text>
+      <text class="coupon-copy">{{product.coupon_count > 0 ? product.coupon_count + ' 张优惠券可领' : '查看店铺优惠券'}}</text>
+      <text class="coupon-arrow">›</text>
     </view>
 
     <!-- ③ 商品简介 -->

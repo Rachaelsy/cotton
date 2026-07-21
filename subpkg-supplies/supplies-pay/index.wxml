@@ -15,6 +15,11 @@
     <text class="cd-text" wx:else>{{copy.expired}}</text>
   </view>
 
+  <view wx:if="{{mockPayment}}" class="mock-pay-notice">
+    <text class="mock-pay-dot"></text>
+    <text>{{copy.mockNotice}}</text>
+  </view>
+
   <scroll-view class="scroll" scroll-y>
   <view class="scroll-inner">
 
@@ -56,7 +61,7 @@
       <text class="cancel-text">{{cancelling ? copy.cancelling : copy.cancel}}</text>
     </view>
     <view class="pay-btn {{(expired || paying) ? 'pay-btn-off' : ''}}" bindtap="onPay">
-      <text class="pay-text">{{paying ? copy.paying : copy.pay + ' ¥' + grandTotal}}</text>
+      <text class="pay-text">{{paying ? copy.paying : (mockPayment ? copy.mockPay : copy.pay) + ' ¥' + grandTotal}}</text>
     </view>
   </view>
 
