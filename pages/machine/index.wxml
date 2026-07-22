@@ -112,8 +112,8 @@
               <text class="price-unit">/{{item.unit}}</text>
             </view>
             <text class="card-rating">⭐{{item.ratingText}} · {{item.order_count}}{{copy.orderUnit}}</text>
-            <view class="book-btn">
-              <text class="book-btn-text">{{copy.book}}</text>
+            <view class="book-btn {{item.payment_ready ? '' : 'disabled'}}">
+              <text class="book-btn-text">{{item.payment_ready ? copy.book : copy.paymentPending}}</text>
             </view>
           </view>
         </view>

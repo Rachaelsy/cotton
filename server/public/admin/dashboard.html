@@ -1062,7 +1062,7 @@
       <tr>
         <td>${u.id}</td><td>${u.phone}</td><td>${u.real_name||'—'}</td>
         <td>${u.company_name||'—'}</td><td>${u.product_category||'—'}</td>
-        <td>${u.sub_mchid ? '已开通' : (u.wechat_applyment_state || '草稿')}</td>
+        <td>${u.sub_mchid ? (u.wechat_applyment_state === 'MANUAL_BOUND' ? '已绑定，待微信校验' : '已开通') : (u.wechat_applyment_state || '草稿')}</td>
         <td>${fmt(u.created_at)}</td>
         <td>
           <button class="act-btn approve" onclick="openApprove(${u.id},'${esc(u.company_name)}','${esc(u.phone)}','${esc(u.real_name)}','${esc(u.business_license)}','${esc(u.product_category)}','${esc(u.wechat_applyment_state || '')}','${esc(u.sub_mchid || '')}')">审批</button>

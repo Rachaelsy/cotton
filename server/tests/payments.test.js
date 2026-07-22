@@ -1,6 +1,7 @@
 const assert = require('assert')
 const express = require('express')
 const jwt = require('jsonwebtoken')
+const paymentAttach = require('../utils/payment-attach')
 
 process.env.JWT_SECRET = 'payments-route-test-secret'
 
@@ -9,6 +10,7 @@ const wxpayPath = require.resolve('../utils/wechat-pay')
 const calls = []
 let orderMode = 'ready'
 let machineMode = 'full'
+let prepayError = null
 
 const mockDb = {
   async query(sql, params = []) {
@@ -20,6 +22,9 @@ const mockDb = {
     if (/UPDATE machine_orders SET pay_mode=\?/i.test(compact)) {
       machineMode = params[0]
       return [{ affectedRows: 1 }]
+    }
+    if (/UPDATE machine_orders SET status='cancelled',reject_reason='支付超时自动取消'/i.test(compact)) {
+      return [{ affectedRows: 0 }]
     }
     if (/UPDATE orders SET wechat_out_trade_no=\?/i.test(compact)) {
       return [{ affectedRows: 1 }]
@@ -36,6 +41,7 @@ const mockDb = {
         status: balance ? 'completed' : 'pending',
         pay_mode: machineMode === 'full' ? 'full' : 'deposit',
         pay_status: balance ? 'partial' : 'unpaid',
+        pay_expires_at: '2099-01-01T00:00:00.000Z',
         paid_amount: balance ? '80.00' : '0.00',
         deposit_status: balance ? 'paid' : 'unpaid',
         balance_status: 'unpaid',
@@ -135,6 +141,7 @@ const mockWxpay = {
   getNotifyConfig() { return null },
   async partnerJsapiPrepay({ cfg, order, openid }) {
     calls.push({ type: 'partnerJsapiPrepay', cfg, order, openid })
+    if (prepayError) throw prepayError
     return { prepay_id: 'prepay-id-for-test' }
   },
   async jsapiPrepay({ cfg, order, openid }) {
@@ -179,6 +186,14 @@ async function request(baseUrl, token, body) {
 }
 
 async function run() {
+  assert.deepStrictEqual(
+    paymentAttach.parseCompactPaymentAttach('{"t":"s","i":8}'),
+    { orderType: 'supply', orderId: 8, paymentStage: 'full' }
+  )
+  assert.deepStrictEqual(
+    paymentAttach.parseCompactPaymentAttach('{"t":"m","i":18,"s":"b"}'),
+    { orderType: 'machine', orderId: 18, paymentStage: 'balance' }
+  )
   const app = express()
   app.use(express.json())
   app.use('/api/pay', paymentsRouter)
@@ -211,6 +226,8 @@ async function run() {
     assert.strictEqual(prepayCall.order.amountFen, 2580)
     assert.strictEqual(prepayCall.order.timeExpire, '2099-01-01T00:00:00+00:00')
     assert.strictEqual(prepayCall.order.profitSharing, true)
+    assert.deepStrictEqual(prepayCall.order.attach, { t: 's', i: 8 })
+    assert(Buffer.byteLength(JSON.stringify(prepayCall.order.attach), 'utf8') <= 128)
 
     calls.length = 0
     orderMode = 'selfOperated'
@@ -222,7 +239,7 @@ async function run() {
     assert.strictEqual(selfPartnerCall.order.subMchid, '1700000999')
     assert.strictEqual(selfPartnerCall.order.amountFen, 990)
     assert.strictEqual(selfPartnerCall.order.profitSharing, false)
-    assert.strictEqual(selfPartnerCall.order.attach.paymentMode, 'self_operated')
+    assert.deepStrictEqual(selfPartnerCall.order.attach, { t: 's', i: 9 })
 
     calls.length = 0
     orderMode = 'selfMissingSub'
@@ -244,7 +261,8 @@ async function run() {
     assert.strictEqual(machineDeposit.status, 200)
     const depositPrepay = calls.find(item => item.type === 'partnerJsapiPrepay')
     assert.strictEqual(depositPrepay.order.amountFen, 8000)
-    assert.strictEqual(depositPrepay.order.attach.paymentStage, 'deposit')
+    assert.deepStrictEqual(depositPrepay.order.attach, { t: 'm', i: 18, s: 'd' })
+    assert(Buffer.byteLength(JSON.stringify(depositPrepay.order.attach), 'utf8') <= 128)
     assert.match(depositPrepay.order.outTradeNo, /^M_18_D_/)
     assert(depositPrepay.order.outTradeNo.length <= 32)
 
@@ -256,7 +274,7 @@ async function run() {
     assert.strictEqual(machineBalance.status, 200)
     const balancePrepay = calls.find(item => item.type === 'partnerJsapiPrepay')
     assert.strictEqual(balancePrepay.order.amountFen, 72000)
-    assert.strictEqual(balancePrepay.order.attach.paymentStage, 'balance')
+    assert.deepStrictEqual(balancePrepay.order.attach, { t: 'm', i: 18, s: 'b' })
     assert.match(balancePrepay.order.outTradeNo, /^M_18_B_/)
     assert(balancePrepay.order.outTradeNo.length <= 32)
 
@@ -269,7 +287,16 @@ async function run() {
     assert.strictEqual(machinePrepay.order.subMchid, '1700000003')
     assert.strictEqual(machinePrepay.order.amountFen, 80000)
     assert.strictEqual(machinePrepay.order.profitSharing, true)
-    assert.strictEqual(machinePrepay.order.attach.orderType, 'machine')
+    assert.deepStrictEqual(machinePrepay.order.attach, { t: 'm', i: 18, s: 'f' })
+
+    prepayError = Object.assign(new Error('NO_AUTH: 受理关系不存在'), {
+      statusCode: 403,
+      wxpay: { code: 'NO_AUTH', message: '受理关系不存在' }
+    })
+    const noRelationship = await request(baseUrl, token, { orderType: 'machine', orderId: 18, payMode: 'full' })
+    assert.strictEqual(noRelationship.status, 409)
+    assert.match(noRelationship.json.msg, /农机手.*受理关系/)
+    prepayError = null
 
     console.log('payments route tests passed')
   } finally {

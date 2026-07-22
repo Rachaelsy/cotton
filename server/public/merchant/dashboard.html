@@ -1928,8 +1928,9 @@ async function loadMerchantApplyment() {
   if (!r || r.code !== 200) { alert(r?.msg || '获取微信支付状态失败'); return }
   const d = r.data || {}
   const enabled = document.getElementById('payEnabled')
-  enabled.textContent = d.payment_enabled ? '可收款' : '未开通'
-  enabled.classList.toggle('enabled', !!d.payment_enabled)
+  const manualBound = d.state === 'MANUAL_BOUND'
+  enabled.textContent = manualBound ? '已绑定，待微信校验' : (d.payment_enabled ? '可收款' : '未开通')
+  enabled.classList.toggle('enabled', !!d.payment_enabled && !manualBound)
   document.getElementById('paySubMchid').textContent = d.sub_mchid || '未绑定'
   document.getElementById('payState').textContent = d.state_label || '未提交'
   document.getElementById('payBusinessCode').textContent = d.business_code || '-'
@@ -1972,7 +1973,7 @@ async function bindMerchantSubMchid() {
   const subMchid = payVal('sub_mchid')
   if (!/^\d{8,32}$/.test(subMchid)) { alert('请输入正确子商户号'); return }
   const r = await applymentApi('POST', '/sub-mchid', { sub_mchid: subMchid }).catch(() => null)
-  if (r && r.code === 200) { alert('子商户号已绑定'); await loadMerchantApplyment() } else alert(r?.msg || '绑定失败')
+  if (r && r.code === 200) { alert(r.msg || '子商户号已保存'); await loadMerchantApplyment() } else alert(r?.msg || '绑定失败')
 }
 
 /* ════════════════════════════════════════════

@@ -23,7 +23,7 @@
     </view>
 
     <!-- 支付方式 -->
-    <view wx:if="{{paymentStage === 'balance'}}" class="mode-card">
+    <view wx:if="{{order && paymentStage === 'balance'}}" class="mode-card">
       <view class="mode-item on">
         <view class="mode-info">
           <text class="mode-name">{{copy.balance}}</text>
@@ -33,7 +33,7 @@
         <view class="radio radio-on"></view>
       </view>
     </view>
-    <view wx:else class="mode-card">
+    <view wx:elif="{{order}}" class="mode-card">
       <view class="mode-item {{payMode === 'deposit' ? 'on' : ''}}" bindtap="onPayMode" data-mode="deposit">
         <view class="mode-info">
           <text class="mode-name">{{copy.depositPay}} <text class="mode-badge">{{copy.recommend}}</text></text>
@@ -52,10 +52,10 @@
       </view>
     </view>
 
-    <view class="trust">{{copy.trust}}</view>
+    <view wx:if="{{order}}" class="trust">{{copy.trust}}</view>
   </view>
 
-  <view class="action-bar">
+  <view wx:if="{{order && payable}}" class="action-bar">
     <view class="bar-btn {{paying ? 'disabled' : ''}}" bindtap="onPay">
       <text class="bar-btn-text">{{paying ? copy.paying : copy.confirm + ' ¥' + (paymentStage === 'deposit' ? order.deposit : (paymentStage === 'balance' ? balanceAmount : order.total_price))}}</text>
     </view>

@@ -51,11 +51,13 @@
       <view class="dc-row"><text class="dc-icon">{{order.machine_icon}}</text><text class="dc-name">{{order.machine_name}}</text></view>
       <view class="dc-line"><text class="dc-k">{{copy.plot}}</text><text class="dc-v">{{order.plot_name || copy.none}}</text></view>
       <view wx:if="{{order.work_address}}" class="dc-line"><text class="dc-k">{{copy.address}}</text><text class="dc-v">{{order.work_address}}</text></view>
-      <view class="dc-line"><text class="dc-k">{{copy.area}}</text><text class="dc-v">{{order.work_area}}{{copy.mu}}</text></view>
-      <view class="dc-line"><text class="dc-k">{{copy.date}}</text><text class="dc-v">{{order.work_date}}</text></view>
+      <view class="dc-line"><text class="dc-k">{{order.billing_unit === '天' ? copy.rentalDays : copy.area}}</text><text class="dc-v">{{order.work_area}}{{order.billing_unit || copy.mu}}</text></view>
+      <view class="dc-line"><text class="dc-k">{{order.billing_unit === '天' ? copy.period : copy.date}}</text><text class="dc-v">{{order.work_date}}{{order.work_end_date && order.work_end_date !== order.work_date ? ' ~ ' + order.work_end_date : ''}}</text></view>
       <view class="dc-line"><text class="dc-k">{{copy.total}}</text><text class="dc-v">¥{{order.total_price}}</text></view>
-      <view class="dc-line"><text class="dc-k">{{copy.paid}}</text><text class="dc-v hl">¥{{order.paid_amount || (order.pay_mode === 'full' ? order.total_price : order.deposit)}}</text></view>
+      <view class="dc-line"><text class="dc-k">{{copy.paid}}</text><text class="dc-v hl">¥{{order.paid_amount_text}}</text></view>
       <view class="dc-line"><text class="dc-k">{{copy.payStatus}}</text><text class="dc-v">{{order.pay_status === 'paid' ? copy.paidFull : (order.pay_status === 'partial' ? copy.paidDeposit : (order.pay_status === 'refunded' ? copy.refunded : copy.unpaid))}}</text></view>
+      <view wx:if="{{order.status === 'pending' && order.pay_status === 'unpaid' && order.pay_expires_text}}" class="dc-line"><text class="dc-k">{{copy.paymentDeadline}}</text><text class="dc-v">{{order.pay_expires_text}}</text></view>
+      <view wx:if="{{order.refund_status_text}}" class="dc-line"><text class="dc-k">{{copy.refundStatus}}</text><text class="dc-v refund-state">{{order.refund_status_text}}</text></view>
     </view>
 
     <view style="height:160rpx"></view>
@@ -64,8 +66,10 @@
   <!-- 底部操作 -->
   <view wx:if="{{order}}" class="action-bar">
     <view wx:if="{{order.status === 'completed' && order.pay_status === 'partial'}}" class="bar-btn solid" bindtap="onPayBalance"><text class="bb-text">{{copy.balance}}</text></view>
+    <view wx:if="{{order.status === 'pending' && order.pay_status === 'unpaid'}}" class="bar-btn solid" bindtap="onPayInitial"><text class="bb-text">{{copy.payNow}}</text></view>
     <view wx:if="{{order.status === 'pending'}}" class="bar-btn outline" bindtap="onCancel"><text class="bb-out">{{copy.cancel}}</text></view>
-    <view wx:if="{{order.status === 'completed' && order.pay_status === 'paid'}}" class="bar-btn solid" bindtap="onReview"><text class="bb-text">{{copy.review}}</text></view>
+    <view wx:if="{{order.status === 'completed' && order.pay_status === 'paid' && !order.has_review}}" class="bar-btn solid" bindtap="onReview"><text class="bb-text">{{copy.review}}</text></view>
+    <view wx:if="{{order.status === 'completed' && order.pay_status === 'paid' && order.has_review}}" class="bar-btn disabled"><text class="bb-out">{{copy.reviewed}}</text></view>
     <view wx:if="{{order.status !== 'pending' && order.status !== 'completed' && !cancelled}}" class="bar-btn solid" bindtap="onContact"><text class="bb-text">{{copy.contactOperator}}</text></view>
     <view wx:if="{{cancelled}}" class="bar-btn outline" bindtap="onBack"><text class="bb-out">{{copy.back}}</text></view>
   </view>

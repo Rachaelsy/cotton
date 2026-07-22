@@ -30,6 +30,7 @@ router.get('/', async (req, res) => {
              m.spec_badges, m.params,
              m.description, m.status, m.rating_avg, m.order_count,
              o.org_name, o.response_time, o.rating_avg AS org_rating,
+             CASE WHEN COALESCE(o.sub_mchid,'')<>'' THEN 1 ELSE 0 END AS payment_ready,
              ${distExpr} AS distance_km
       FROM machines m
       JOIN operators o ON o.id = m.operator_id
@@ -79,10 +80,11 @@ router.get('/:id', async (req, res) => {
     const [[m]] = await db.query(`
       SELECT m.*, ${distExpr} AS distance_km,
              o.org_name, o.contact, o.phone AS org_phone, o.service_area,
-             o.response_time, o.rating_avg AS org_rating, o.location_name AS org_location
+             o.response_time, o.rating_avg AS org_rating, o.location_name AS org_location,
+             CASE WHEN COALESCE(o.sub_mchid,'')<>'' THEN 1 ELSE 0 END AS payment_ready
       FROM machines m
       JOIN operators o ON o.id = m.operator_id
-      WHERE m.id = ?
+      WHERE m.id = ? AND m.status IN ('on','busy') AND o.apply_status='approved'
     `, params)
     if (!m) return fail(res, '机具不存在', 404)
     m.spec_badges = parseJSON(m.spec_badges, [])

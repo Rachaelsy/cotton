@@ -104,8 +104,8 @@
       <text class="ac-icon">📞</text>
       <text class="ac-text">{{copy.contact}}</text>
     </view>
-    <view class="action-book" bindtap="onBook">
-      <text class="ab-text">{{copy.book}}</text>
+    <view class="action-book {{machine.payment_ready ? '' : 'disabled'}}" bindtap="onBook">
+      <text class="ab-text">{{machine.payment_ready ? copy.book : copy.unavailable}}</text>
     </view>
   </view>
 </view>

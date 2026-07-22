@@ -5,6 +5,7 @@ const { fetchQweatherWeather } = require('./utils/qweather')
 const { normalizeCoordinates, calculateCenter } = require('./utils/plot-geometry')
 const weatherObservations = require('./utils/weather-observations')
 const { cancelPendingSupplyOrder } = require('./utils/order-lifecycle')
+const { expireUnpaidMachineOrders } = require('./utils/machine-order-lifecycle')
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -138,13 +139,24 @@ async function autoExpireOrders() {
   }
 }
 
+async function autoExpireMachineOrders() {
+  try {
+    const count = await expireUnpaidMachineOrders()
+    if (count) console.log(`[scheduler] 农机预约超时关单: ${count} 笔`)
+  } catch (e) {
+    console.error('[scheduler] autoExpireMachineOrders:', e.message)
+  }
+}
+
 function startScheduler() {
   autoConfirmReceipt()
   releaseFunds()
   autoExpireOrders()
+  autoExpireMachineOrders()
   setInterval(autoConfirmReceipt, 60 * 60 * 1000)
   setInterval(releaseFunds,       60 * 60 * 1000)
   setInterval(autoExpireOrders,   5  * 60 * 1000)   // 每 5 分钟扫一次
+  setInterval(autoExpireMachineOrders, 5 * 60 * 1000)
   setTimeout(collectWeatherObservations, 15 * 1000)
   setInterval(collectWeatherObservations, 60 * 60 * 1000)
   console.log('[scheduler] 已启动（自动确认收货 + 资金解冻 + 超时关单 + 地块气象采集）')

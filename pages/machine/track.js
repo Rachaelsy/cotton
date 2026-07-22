@@ -17,6 +17,11 @@ function localizedSteps(lang) {
   return STEPS.map(step => ({ ...step, label: machineI18n.statusLabel(step.key, lang) }))
 }
 
+function displayTime(value) {
+  if (!value) return ''
+  return String(value).replace('T', ' ').replace(/\.\d{3}Z$/, '').slice(0, 16)
+}
+
 Page({
   data: {
     statusBarHeight: 20,
@@ -70,8 +75,20 @@ Page({
           { id: 1, latitude: farmerLat, longitude: farmerLng, title: this.data.copy.plot, width: 30, height: 30 },
           { id: 2, latitude: opLat, longitude: opLng, title: this.data.copy.contactOperator, width: 30, height: 30 }
         ] : []
+        const statusLabel = o.status === 'pending' && o.pay_status === 'unpaid'
+          ? this.data.copy.awaitingPayment
+          : machineI18n.statusLabel(o.status, this.data.lang)
+        const refundStatusText = o.refund_status === 'FAILED'
+          ? this.data.copy.refundFailed
+          : (o.refund_status && o.refund_status !== 'SUCCESS' ? this.data.copy.refundProcessing : '')
         this.setData({
-          order: { ...o, status_label: machineI18n.statusLabel(o.status, this.data.lang) }, cancelled,
+          order: {
+            ...o,
+            status_label: statusLabel,
+            paid_amount_text: Number(o.paid_amount || 0).toFixed(2),
+            pay_expires_text: displayTime(o.pay_expires_at),
+            refund_status_text: refundStatusText
+          }, cancelled,
           stepIndex: stepIndex < 0 ? 0 : stepIndex,
           mapVisible,
           mapLatitude: mapVisible ? (farmerLat + opLat) / 2 : 0,
@@ -124,8 +141,13 @@ Page({
     wx.navigateTo({ url: `/pages/machine/pay?id=${this.data.orderId}&stage=balance` })
   },
 
+  onPayInitial() {
+    app.globalData.machineOrder = this.data.order
+    wx.navigateTo({ url: `/pages/machine/pay?id=${this.data.orderId}` })
+  },
+
   onBack() {
     if (getCurrentPages().length > 1) wx.navigateBack()
-    else wx.redirectTo({ url: '/subpkg-supplies/my-orders/index' })
+    else wx.redirectTo({ url: '/pages/machine/orders' })
   }
 })

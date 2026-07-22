@@ -115,6 +115,11 @@ async function loadOwner(actor) {
 
 function publicApplyment(actor, owner) {
   const payload = parsePayload(owner.wechat_applyment_payload)
+  const storedState = owner.wechat_applyment_state || ''
+  const state = storedState === 'FINISH' && !owner.wechat_applyment_id &&
+    !owner.wechat_business_code && owner.wechat_applyment_msg === '已手动绑定子商户号'
+    ? 'MANUAL_BOUND'
+    : storedState
   return {
     actor_type: actor.role,
     actor_label: ACTOR_META[actor.role].label,
@@ -128,8 +133,8 @@ function publicApplyment(actor, owner) {
     payment_enabled: !!owner.sub_mchid,
     applyment_id: owner.wechat_applyment_id || '',
     business_code: owner.wechat_business_code || '',
-    state: owner.wechat_applyment_state || '',
-    state_label: stateLabel(owner.wechat_applyment_state),
+    state,
+    state_label: stateLabel(state),
     message: owner.wechat_applyment_msg || '',
     updated_at: owner.wechat_applyment_updated_at || null,
     draft: payload || {}
@@ -148,6 +153,7 @@ function stateLabel(state) {
     DRAFT: '资料草稿',
     SUBMIT_FAILED: '提交微信失败',
     FINISH: '已完成',
+    MANUAL_BOUND: '已手动绑定（待微信校验）',
     APPLYMENT_STATE_EDITTING: '编辑中',
     APPLYMENT_STATE_AUDITING: '审核中',
     APPLYMENT_STATE_REJECTED: '已驳回',
@@ -321,13 +327,13 @@ router.post('/sub-mchid', applymentAuth, async (req, res) => {
   try {
     const actor = req.applymentActor
     const [result] = await db.query(
-      `UPDATE ${ACTOR_META[actor.role].table} SET sub_mchid=?, wechat_applyment_state='FINISH',
-       wechat_applyment_msg='已手动绑定子商户号', wechat_applyment_updated_at=NOW()
+      `UPDATE ${ACTOR_META[actor.role].table} SET sub_mchid=?, wechat_applyment_state='MANUAL_BOUND',
+       wechat_applyment_msg='子商户号已手动保存，付款时由微信校验受理关系', wechat_applyment_updated_at=NOW()
        WHERE id=?`,
       [subMchid, actor.id]
     )
     if (result.affectedRows === 0) return fail(res, `${ACTOR_META[actor.role].label}不存在`, 404)
-    return ok(res, { sub_mchid: subMchid }, '子商户号已绑定')
+    return ok(res, { sub_mchid: subMchid, state: 'MANUAL_BOUND' }, '子商户号已保存，请确认它与当前服务商已建立受理关系')
   } catch (error) {
     console.error('[wechat-applyment-sub-mchid]', error)
     return fail(res, '绑定子商户号失败', 500)

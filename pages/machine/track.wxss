@@ -50,11 +50,13 @@
 .dc-k { font-size: 26rpx; color: #8A948B; }
 .dc-v { font-size: 26rpx; color: #18231A; font-weight: 600; }
 .dc-v.hl { color: #BF641A; font-weight: 800; }
+.dc-v.refund-state { color: #C93D35; max-width: 68%; text-align: right; }
 
 .action-bar { position: absolute; left: 0; right: 0; bottom: 0; background: #fff;
   display: flex; flex-direction: row; gap: 20rpx; padding: 18rpx 28rpx 40rpx; box-shadow: 0 -4rpx 20rpx rgba(33,61,42,0.05); }
 .bar-btn { flex: 1; border-radius: 999rpx; padding: 24rpx 0; display: flex; align-items: center; justify-content: center; }
 .bar-btn.solid { background: linear-gradient(135deg, #1F6F63, #4AAFA7); }
 .bar-btn.outline { border: 2rpx solid #DDD; background: #fff; }
+.bar-btn.disabled { background: #EEF1EE; }
 .bb-text { font-size: 30rpx; font-weight: 800; color: #fff; }
 .bb-out { font-size: 30rpx; font-weight: 700; color: #8A948B; }

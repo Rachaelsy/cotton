@@ -77,11 +77,14 @@ async function migrate() {
       plot_name     VARCHAR(64)  NOT NULL DEFAULT '',
       work_address  VARCHAR(255) NOT NULL DEFAULT ''       COMMENT '作业地址（农户填写/地图选点）',
       work_date     DATE         NOT NULL                  COMMENT '作业日期',
+      work_end_date DATE         DEFAULT NULL              COMMENT '按天租赁结束日期',
       work_area     DECIMAL(10,2) NOT NULL DEFAULT 0       COMMENT '作业面积（亩）',
       unit_price    DECIMAL(10,2) NOT NULL DEFAULT 0,
+      billing_unit  VARCHAR(8)   NOT NULL DEFAULT '亩'     COMMENT '亩/天',
       total_price   DECIMAL(12,2) NOT NULL DEFAULT 0,
       deposit       DECIMAL(12,2) NOT NULL DEFAULT 0       COMMENT '定金（20%）',
       pay_mode      VARCHAR(8)   NOT NULL DEFAULT 'deposit' COMMENT 'deposit定金/full全款',
+      pay_expires_at DATETIME    DEFAULT NULL               COMMENT '首笔付款截止时间',
       pay_status    VARCHAR(8)   NOT NULL DEFAULT 'unpaid' COMMENT 'unpaid/paid',
       status        VARCHAR(12)  NOT NULL DEFAULT 'pending' COMMENT '订单状态机',
       farmer_lat    DECIMAL(10,7) DEFAULT NULL,
@@ -97,6 +100,8 @@ async function migrate() {
       INDEX idx_farmer (farmer_id),
       INDEX idx_operator (operator_id),
       INDEX idx_machine (machine_id),
+      INDEX idx_machine_work_date (machine_id, work_date, status),
+      INDEX idx_machine_pay_expire (status, pay_status, pay_expires_at),
       INDEX idx_status (status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='农机预约订单'
   `)
@@ -127,6 +132,8 @@ async function migrate() {
 
   // 兼容已存在的表：补充 work_address 字段
   await addColumn('machine_orders', 'work_address', "VARCHAR(255) NOT NULL DEFAULT '' AFTER plot_name")
+  await addColumn('machine_orders', 'work_end_date', 'DATE DEFAULT NULL AFTER work_date')
+  await addColumn('machine_orders', 'billing_unit', "VARCHAR(8) NOT NULL DEFAULT '亩' AFTER unit_price")
 
   console.log('🎉 农机租赁模块建表完成')
   process.exit(0)

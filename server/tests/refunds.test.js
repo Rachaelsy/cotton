@@ -76,7 +76,10 @@ async function run() {
       }
       if (/profit_sharing_return_state IN/i.test(sql)) return [[undefined], []]
       if (/SELECT \* FROM wechat_refunds WHERE out_refund_no=\?/i.test(sql)) {
-        return [[{ id: 31, order_type: 'machine', order_id: 18, status: 'SUCCESS' }], []]
+        return [[{ id: 31, order_type: 'machine', order_id: 18, payment_stage: 'deposit', status: 'SUCCESS' }], []]
+      }
+      if (/SELECT payment_stage,status FROM wechat_refunds/i.test(sql)) {
+        return [[{ payment_stage: 'deposit', status: 'SUCCESS' }], []]
       }
       return [{ affectedRows: 1 }]
     }
@@ -97,6 +100,7 @@ async function run() {
   refunds.__setWxpayForTest(mockWxpay)
   const machineRefund = await refunds.createMachineRefund({ orderId: 18, farmerId: 42, reason: '农户取消预约' })
   assert.strictEqual(machineRefund.status, 'SUCCESS')
+  assert.strictEqual(machineRefund.refunds.length, 1)
   assert.strictEqual(refundRequest.transactionId, 'wx-deposit-transaction')
   assert.strictEqual(refundRequest.refundFen, 8000)
   assert.strictEqual(refundRequest.totalFen, 8000)
@@ -105,6 +109,18 @@ async function run() {
   assert.strictEqual(profitSharingReturn.out_order_no, 'PS_MACHINE_18_DEPOSIT')
   assert.strictEqual(profitSharingReturn.amount, 800)
   assert(sqlCalls.some(call => /UPDATE machine_orders SET pay_status='refunded'/.test(call.sql)))
+
+  assert.deepStrictEqual(
+    refunds.machinePaidStages({
+      pay_mode: 'deposit', pay_status: 'paid', deposit_status: 'paid', balance_status: 'paid',
+      deposit_paid_amount: '80.00', balance_paid_amount: '720.00',
+      deposit_transaction_id: 'wx-deposit', balance_transaction_id: 'wx-balance'
+    }).map(item => ({ stage: item.paymentStage, amount: item.amount, transactionId: item.transactionId })),
+    [
+      { stage: 'deposit', amount: 80, transactionId: 'wx-deposit' },
+      { stage: 'balance', amount: 720, transactionId: 'wx-balance' }
+    ]
+  )
   refunds.__setDbForTest()
   refunds.__setWxpayForTest()
 

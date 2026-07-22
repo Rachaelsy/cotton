@@ -55,7 +55,8 @@ function saveDraft(row, params) {
 
 function bindSub(row, params) {
   row.sub_mchid = params[0]
-  row.wechat_applyment_state = 'FINISH'
+  row.wechat_applyment_state = 'MANUAL_BOUND'
+  row.wechat_applyment_msg = '子商户号已手动保存，付款时由微信校验受理关系'
 }
 
 const mockDb = {
@@ -141,6 +142,8 @@ async function run() {
     const savedSub = await request(baseUrl, merchantToken, 'POST', '/api/wechat-applyment/sub-mchid', { sub_mchid: '1700000001' })
     assert.strictEqual(savedSub.status, 200)
     assert.strictEqual(merchantRow.sub_mchid, '1700000001')
+    assert.strictEqual(merchantRow.wechat_applyment_state, 'MANUAL_BOUND')
+    assert.match(savedSub.json.msg, /受理关系/)
 
     const merchantDraft = await request(baseUrl, merchantToken, 'POST', '/api/wechat-applyment/draft', {
       contact: { name: '张三', mobile: '13800138000' },
@@ -169,6 +172,7 @@ async function run() {
     const operatorSub = await request(baseUrl, operatorToken, 'POST', '/api/wechat-applyment/sub-mchid', { sub_mchid: '1700000002' })
     assert.strictEqual(operatorSub.status, 200)
     assert.strictEqual(operatorRow.sub_mchid, '1700000002')
+    assert.strictEqual(operatorRow.wechat_applyment_state, 'MANUAL_BOUND')
 
     const missingMediaConfig = await fetch(`${baseUrl}/api/wechat-applyment/media`, {
       method: 'POST',

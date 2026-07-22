@@ -120,6 +120,7 @@
       <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">📊</span>工作台</div>
       <div class="nav-item" data-panel="machines"><span class="nav-icon">🚜</span>机具管理</div>
       <div class="nav-item" data-panel="orders"><span class="nav-icon">📋</span>接单中心<span class="nav-badge" id="navBadge" style="display:none">0</span></div>
+      <div class="nav-item" data-panel="reviews"><span class="nav-icon">⭐</span>服务评价</div>
       <div class="nav-item" data-panel="pay"><span class="nav-icon">💳</span>微信收款</div>
       <div class="nav-item" data-panel="profile"><span class="nav-icon">⚙️</span>资料设置</div>
     </div>
@@ -178,6 +179,15 @@
           </div>
           <table><thead><tr><th>单号</th><th>机具</th><th>农户/联系</th><th>作业地址/地块</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
           <tbody id="orderList"><tr class="empty-row"><td colspan="7">加载中…</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- 服务评价 -->
+      <div class="panel" id="panel-reviews">
+        <div class="card">
+          <div class="card-head"><div class="card-title">农户服务评价</div></div>
+          <table><thead><tr><th>订单/机具</th><th>农户</th><th>评分</th><th>评价与回复</th><th>操作</th></tr></thead>
+          <tbody id="reviewList"><tr class="empty-row"><td colspan="5">加载中…</td></tr></tbody></table>
         </div>
       </div>
 
@@ -430,6 +440,9 @@
       picker.click()
     }
     function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000) }
+    function esc(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]))
+    }
     function logout() { localStorage.clear(); location.replace('/operator/login.html') }
     function getGeo(latId, lngId) {
       if (!navigator.geolocation) { toast('浏览器不支持定位'); return }
@@ -444,11 +457,12 @@
     function switchPanel(name) {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.panel === name))
       document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name))
-      const titles = { dashboard: '工作台', machines: '机具管理', orders: '接单中心', pay: '微信收款', profile: '资料设置' }
+      const titles = { dashboard: '工作台', machines: '机具管理', orders: '接单中心', reviews: '服务评价', pay: '微信收款', profile: '资料设置' }
       document.getElementById('pageTitle').textContent = titles[name]
       if (name === 'dashboard') loadDashboard()
       if (name === 'machines') loadMachines()
       if (name === 'orders') loadOrders()
+      if (name === 'reviews') loadReviews()
       if (name === 'pay') { loadApplyment(); loadOperatorFinance() }
       if (name === 'profile') loadProfile()
     }
@@ -498,7 +512,7 @@
       const o = await api('/operator/orders')
       const tb = document.getElementById('recentOrders')
       if (o.code === 200 && o.data.length) {
-        tb.innerHTML = o.data.slice(0, 6).map(x => `<tr><td>${x.order_no}</td><td>${x.machine_icon} ${x.machine_name}</td><td>${x.farmer_name || '-'}</td><td>${x.work_area}亩</td><td>¥${x.total_price}</td><td>${statusBadge(x.status)}</td></tr>`).join('')
+        tb.innerHTML = o.data.slice(0, 6).map(x => `<tr><td>${esc(x.order_no)}</td><td>${esc(x.machine_icon)} ${esc(x.machine_name)}</td><td>${esc(x.farmer_name || '-')}</td><td>${Number(x.work_area || 0)}${esc(x.billing_unit || '亩')}</td><td>¥${Number(x.total_price || 0).toFixed(2)}</td><td>${statusBadge(x.status)}</td></tr>`).join('')
       } else tb.innerHTML = '<tr class="empty-row"><td colspan="6">暂无预约</td></tr>'
     }
     function statusBadge(s) {
@@ -665,8 +679,9 @@
       if (r.code !== 200) { toast(r.msg || '获取微信支付状态失败'); return }
       const d = r.data || {}
       const enabled = document.getElementById('payEnabled')
-      enabled.textContent = d.payment_enabled ? '可收款' : '未开通'
-      enabled.classList.toggle('enabled', !!d.payment_enabled)
+      const manualBound = d.state === 'MANUAL_BOUND'
+      enabled.textContent = manualBound ? '已绑定，待微信校验' : (d.payment_enabled ? '可收款' : '未开通')
+      enabled.classList.toggle('enabled', !!d.payment_enabled && !manualBound)
       document.getElementById('paySubMchid').textContent = d.sub_mchid || '未绑定'
       document.getElementById('payState').textContent = d.state_label || '未提交'
       document.getElementById('payBusinessCode').textContent = d.business_code || '-'
@@ -740,7 +755,7 @@
       const subMchid = payVal('sub_mchid')
       if (!/^\d{8,32}$/.test(subMchid)) { toast('请输入正确子商户号'); return }
       const r = await api('/wechat-applyment/sub-mchid', { method: 'POST', body: JSON.stringify({ sub_mchid: subMchid }) })
-      if (r.code === 200) { toast('子商户号已绑定'); await loadApplyment() } else toast(r.msg || '绑定失败')
+      if (r.code === 200) { toast(r.msg || '子商户号已保存'); await loadApplyment() } else toast(r.msg || '绑定失败')
     }
 
     // 机具管理
@@ -801,7 +816,7 @@
       if (r.code === 200) { toast(r.msg || '已保存'); closeMachineModal(); loadMachines() } else toast(r.msg || '保存失败')
     }
     async function setStatus(id, status) { const r = await api('/operator/machines/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) }); if (r.code === 200) { toast(r.msg); loadMachines() } else toast(r.msg) }
-    async function delMachine(id) { if (!confirm('确定删除该机具？')) return; const r = await api('/operator/machines/' + id, { method: 'DELETE' }); if (r.code === 200) { toast('已删除'); loadMachines() } else toast(r.msg) }
+    async function delMachine(id) { if (!confirm('确定删除该机具？已有订单时系统会改为下架并保留历史记录。')) return; const r = await api('/operator/machines/' + id, { method: 'DELETE' }); if (r.code === 200) { toast(r.msg || '操作成功'); loadMachines() } else toast(r.msg) }
 
     // 接单中心
     async function loadOrders() {
@@ -811,12 +826,15 @@
       if (r.code === 200 && r.data.length) {
         tb.innerHTML = r.data.map(o => {
           let actions = ''
-          if (o.status === 'pending') actions = `<button class="btn btn-primary btn-sm" onclick="acceptOrder(${o.id})">接单</button> <button class="btn btn-danger btn-sm" onclick="rejectOrder(${o.id})">拒单</button>`
+          if (o.status === 'pending' && ['partial', 'paid'].includes(o.pay_status)) actions = `<button class="btn btn-primary btn-sm" onclick="acceptOrder(${o.id})">接单</button> <button class="btn btn-danger btn-sm" onclick="rejectOrder(${o.id})">拒单</button>`
+          else if (o.status === 'pending') actions = `<span style="color:#B45309">等待农户付款</span> <button class="btn btn-danger btn-sm" onclick="rejectOrder(${o.id})">拒单</button>`
           else if (NEXT[o.status]) actions = `<button class="btn btn-primary btn-sm" onclick="advance(${o.id},'${NEXT[o.status].s}')">${NEXT[o.status].t}</button>`
           else if (o.status === 'completed' || o.status === 'cancelled') actions = `<button class="btn btn-danger btn-sm" onclick="deleteOrder(${o.id})">删除</button>`
           else actions = '<span style="color:#BBB">—</span>'
-          const addr = o.work_address ? `<div style="color:#00838F;font-weight:600">📍 ${o.work_address}</div>` : '<div style="color:#DC2626">⚠ 未填地址</div>'
-          return `<tr><td>${o.order_no}</td><td>${o.machine_icon} ${o.machine_name}</td><td>${o.farmer_name || '-'}<br><span style="color:#888">${o.contact_phone || ''}</span></td><td>${addr}<span style="color:#555">${o.plot_name || '不指定地块'} · ${o.work_area}亩</span><br><span style="color:#888">${o.work_date}</span></td><td>¥${o.total_price}<br><span style="color:#888">定金¥${o.deposit}</span></td><td>${statusBadge(o.status)}</td><td>${actions}</td></tr>`
+          const addr = o.work_address ? `<div style="color:#00838F;font-weight:600">📍 ${esc(o.work_address)}</div>` : '<div style="color:#DC2626">⚠ 未填地址</div>'
+          const payLabel = o.pay_status === 'paid' ? '已付清' : o.pay_status === 'partial' ? '已付定金' : o.pay_status === 'refunded' ? '已退款' : '未付款'
+          const dateText = o.work_end_date && o.work_end_date !== o.work_date ? `${o.work_date} 至 ${o.work_end_date}` : o.work_date
+          return `<tr><td>${esc(o.order_no)}</td><td>${esc(o.machine_icon)} ${esc(o.machine_name)}</td><td>${esc(o.farmer_name || '-')}<br><span style="color:#888">${esc(o.contact_phone || '')}</span></td><td>${addr}<span style="color:#555">${esc(o.plot_name || '不指定地块')} · ${Number(o.work_area || 0)}${esc(o.billing_unit || '亩')}</span><br><span style="color:#888">${esc(dateText)}</span></td><td>¥${Number(o.total_price || 0).toFixed(2)}<br><span style="color:#888">${payLabel} ¥${Number(o.paid_amount || 0).toFixed(2)}</span></td><td>${statusBadge(o.status)}</td><td>${actions}</td></tr>`
         }).join('')
       } else tb.innerHTML = '<tr class="empty-row"><td colspan="7">暂无订单</td></tr>'
     }
@@ -828,6 +846,31 @@
     async function acceptOrder(id) { const r = await api('/operator/orders/' + id + '/accept', { method: 'PATCH' }); if (r.code === 200) { toast(r.msg); loadOrders() } else toast(r.msg) }
     async function rejectOrder(id) { const reason = prompt('拒单理由（选填）：') ?? ''; const r = await api('/operator/orders/' + id + '/reject', { method: 'PATCH', body: JSON.stringify({ reason }) }); if (r.code === 200) { toast(r.msg); loadOrders() } else toast(r.msg) }
     async function advance(id, status) { const r = await api('/operator/orders/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) }); if (r.code === 200) { toast(r.msg); loadOrders() } else toast(r.msg) }
+
+    let operatorReviews = []
+    async function loadReviews() {
+      const r = await api('/operator/reviews')
+      const tb = document.getElementById('reviewList')
+      if (r.code !== 200 || !r.data.length) {
+        operatorReviews = []
+        tb.innerHTML = '<tr class="empty-row"><td colspan="5">暂无评价</td></tr>'
+        return
+      }
+      operatorReviews = r.data
+      tb.innerHTML = r.data.map(item => {
+        const scores = `及时 ${item.score_timely} / 质量 ${item.score_quality} / 态度 ${item.score_attitude} / 价格 ${item.score_price}`
+        const reply = item.reply ? `<div style="margin-top:8px;color:#1F6F63">回复：${esc(item.reply)}</div>` : '<div style="margin-top:8px;color:#999">尚未回复</div>'
+        return `<tr><td>${esc(item.order_no)}<br><span style="color:#888">${esc(item.machine_name)}</span></td><td>${esc(item.farmer_name || '匿名农户')}<br><span style="color:#888">${esc(item.created_at)}</span></td><td><strong style="color:#B45309">${Number(item.rating || 0).toFixed(1)} 分</strong><br><span style="color:#888">${scores}</span></td><td>${esc(item.content || '未填写文字评价')}${reply}</td><td><button class="btn btn-outline btn-sm" onclick="replyReview(${item.id})">${item.reply ? '修改回复' : '回复'}</button></td></tr>`
+      }).join('')
+    }
+    async function replyReview(id) {
+      const item = operatorReviews.find(review => Number(review.id) === Number(id))
+      const reply = prompt('回复农户评价（最多255字）：', item && item.reply || '')
+      if (reply == null) return
+      if (!reply.trim()) return toast('请填写回复内容')
+      const r = await api('/operator/reviews/' + id + '/reply', { method: 'PATCH', body: JSON.stringify({ reply: reply.trim() }) })
+      if (r.code === 200) { toast(r.msg); loadReviews() } else toast(r.msg || '回复失败')
+    }
 
     // 资料
     async function loadProfile() {

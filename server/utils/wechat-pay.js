@@ -276,6 +276,16 @@ function uploadMediaImage(cfg, file) {
   })
 }
 
+function serializeAttach(value) {
+  const attach = typeof value === 'string' ? value : JSON.stringify(value || {})
+  if (Buffer.byteLength(attach, 'utf8') > 128) {
+    const error = new Error('微信支付附加数据超过128字节，请精简 attach 字段')
+    error.statusCode = 400
+    throw error
+  }
+  return attach
+}
+
 function buildPartnerJsapiBody({ cfg, order, openid }) {
   const body = {
     sp_appid: cfg.spAppid,
@@ -286,7 +296,7 @@ function buildPartnerJsapiBody({ cfg, order, openid }) {
     notify_url: cfg.notifyUrl,
     amount: { total: Number(order.amountFen), currency: 'CNY' },
     payer: { sp_openid: openid },
-    attach: JSON.stringify(order.attach || {})
+    attach: serializeAttach(order.attach)
   }
   if (order.timeExpire) body.time_expire = order.timeExpire
   if (order.profitSharing) body.settle_info = { profit_sharing: true }
@@ -306,7 +316,7 @@ function buildJsapiBody({ cfg, order, openid }) {
     notify_url: cfg.notifyUrl,
     amount: { total: Number(order.amountFen), currency: 'CNY' },
     payer: { openid },
-    attach: JSON.stringify(order.attach || {})
+    attach: serializeAttach(order.attach)
   }
   if (order.timeExpire) body.time_expire = order.timeExpire
   return body
@@ -406,6 +416,7 @@ module.exports = {
   buildJsapiBody,
   jsapiPrepay,
   buildPartnerJsapiBody,
+  serializeAttach,
   partnerJsapiPrepay,
   queryTransaction,
   queryPartnerTransaction,

@@ -10,12 +10,22 @@ async function addColumnIfMissing(column, ddl) {
   if (!rows.length) await db.query(`ALTER TABLE wechat_refunds ADD COLUMN ${ddl}`)
 }
 
+async function addIndexIfMissing(indexName, ddl) {
+  const [rows] = await db.query(
+    `SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='wechat_refunds' AND INDEX_NAME=?`,
+    [indexName]
+  )
+  if (!rows.length) await db.query(`ALTER TABLE wechat_refunds ADD INDEX ${indexName} ${ddl}`)
+}
+
 async function migrate() {
   await db.query(`
     CREATE TABLE IF NOT EXISTS wechat_refunds (
       id                    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       order_type            VARCHAR(20) NOT NULL DEFAULT 'supply',
       order_id              INT UNSIGNED NOT NULL,
+      payment_stage         VARCHAR(16) NOT NULL DEFAULT 'full',
       aftersale_id          INT UNSIGNED DEFAULT NULL,
       out_trade_no          VARCHAR(64) NOT NULL DEFAULT '',
       out_refund_no         VARCHAR(64) NOT NULL,
@@ -42,6 +52,7 @@ async function migrate() {
       updated_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY uniq_out_refund_no (out_refund_no),
       INDEX idx_order (order_type, order_id),
+      INDEX idx_order_stage (order_type, order_id, payment_stage),
       INDEX idx_aftersale (aftersale_id),
       INDEX idx_status (status),
       INDEX idx_sub_mchid (sub_mchid)
@@ -50,6 +61,8 @@ async function migrate() {
   await addColumnIfMissing('profit_sharing_return_no', "profit_sharing_return_no VARCHAR(64) NOT NULL DEFAULT ''")
   await addColumnIfMissing('profit_sharing_return_state', "profit_sharing_return_state VARCHAR(32) NOT NULL DEFAULT ''")
   await addColumnIfMissing('profit_sharing_return_payload', 'profit_sharing_return_payload MEDIUMTEXT')
+  await addColumnIfMissing('payment_stage', "payment_stage VARCHAR(16) NOT NULL DEFAULT 'full' AFTER order_id")
+  await addIndexIfMissing('idx_order_stage', '(order_type,order_id,payment_stage)')
   console.log('[migrate] wechat_refunds ready')
   process.exit(0)
 }

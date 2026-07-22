@@ -27,12 +27,19 @@
         <view class="oc-icon"><text>{{item.machine_icon}}</text></view>
         <view class="oc-mid">
           <text class="oc-name">{{item.machine_name}}</text>
-          <text class="oc-meta">{{item.plot_name || copy.noPlot}} · {{item.work_area}}{{copy.mu}} · {{item.work_date}}</text>
+          <text class="oc-meta">{{item.plot_name || copy.noPlot}} · {{item.work_area}}{{item.billing_unit || copy.mu}} · {{item.work_date}}{{item.work_end_date && item.work_end_date !== item.work_date ? ' ~ ' + item.work_end_date : ''}}</text>
+          <text class="oc-pay">{{item.pay_status_label}}</text>
         </view>
       </view>
       <view class="oc-foot">
         <text class="oc-total">{{copy.total}} ¥{{item.total_price}} · {{copy.deposit}} ¥{{item.deposit}}</text>
         <view class="oc-foot-right">
+          <view wx:if="{{item.status === 'pending' && item.pay_status === 'unpaid'}}" class="oc-pay-btn" catchtap="onPay" data-id="{{item.id}}" data-stage="deposit">
+            <text class="oc-pay-btn-text">{{copy.payNow}}</text>
+          </view>
+          <view wx:if="{{item.status === 'completed' && item.pay_status === 'partial'}}" class="oc-pay-btn" catchtap="onPay" data-id="{{item.id}}" data-stage="balance">
+            <text class="oc-pay-btn-text">{{copy.payBalance}}</text>
+          </view>
           <view wx:if="{{item.status === 'completed' || item.status === 'cancelled'}}" class="oc-del" catchtap="onDelete" data-id="{{item.id}}">
             <text class="oc-del-text">{{copy.delete}}</text>
           </view>

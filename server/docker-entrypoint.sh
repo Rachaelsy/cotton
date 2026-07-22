@@ -72,6 +72,7 @@ run_optional_node db/migrate_experts.js
 run_optional_node db/migrate_expert_contents.js
 run_optional_node db/migrate_expert_questions.js
 run_optional_node db/migrate_farmer_improvements.js
+run_optional_node db/migrate_machine_reliability.js
 run_optional_node db/migrate_feedbacks.js
 run_optional_node db/migrate_marketing.js
 run_optional_node db/seed.js

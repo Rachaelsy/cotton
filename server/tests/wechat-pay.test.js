@@ -162,6 +162,10 @@ async function run() {
   assert.deepStrictEqual(partnerBody.payer, { sp_openid: 'openid-under-sp-appid' })
   assert.strictEqual(partnerBody.amount.total, 2580)
   assert.strictEqual(JSON.parse(partnerBody.attach).subMchid, '1700000001')
+  assert.throws(
+    () => wxpay.serializeAttach({ value: 'x'.repeat(130) }),
+    /超过128字节/
+  )
 
   const directBody = wxpay.buildJsapiBody({
     cfg,

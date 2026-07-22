@@ -7,6 +7,7 @@ const db      = require('../db/database')
 const commissionRequests = require('../utils/commission-requests')
 const applymentRegistration = require('../utils/applyment-registration')
 const refunds = require('../utils/refunds')
+const machineLifecycle = require('../utils/machine-order-lifecycle')
 const router  = express.Router()
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -274,6 +275,12 @@ router.post('/machines', operatorAuth, async (req, res) => {
   } = req.body
   if (!name || !name.trim()) return fail(res, '请填写机具名称')
   if (!price || isNaN(price) || price <= 0) return fail(res, '请填写正确的单价')
+  if (price_orig !== null && price_orig !== '' && (!Number.isFinite(Number(price_orig)) || Number(price_orig) < Number(price))) {
+    return fail(res, '原价不能低于当前单价')
+  }
+  if (!Number.isFinite(Number(service_radius)) || Number(service_radius) < 1 || Number(service_radius) > 500) {
+    return fail(res, '服务范围应为1到500公里')
+  }
   const ge = geoError(latitude, longitude)
   if (ge) return fail(res, ge)
   try {
@@ -298,6 +305,14 @@ router.put('/machines/:id', operatorAuth, async (req, res) => {
   } = req.body
   const ge = geoError(latitude, longitude)
   if (ge) return fail(res, ge)
+  if (!name || !name.trim()) return fail(res, '请填写机具名称')
+  if (!Number.isFinite(Number(price)) || Number(price) <= 0) return fail(res, '请填写正确的单价')
+  if (price_orig !== null && price_orig !== '' && (!Number.isFinite(Number(price_orig)) || Number(price_orig) < Number(price))) {
+    return fail(res, '原价不能低于当前单价')
+  }
+  if (!Number.isFinite(Number(service_radius)) || Number(service_radius) < 1 || Number(service_radius) > 500) {
+    return fail(res, '服务范围应为1到500公里')
+  }
   try {
     const [[m]] = await db.query('SELECT id FROM machines WHERE id=? AND operator_id=?',
       [req.params.id, req.operator.operator_id])
@@ -305,7 +320,7 @@ router.put('/machines/:id', operatorAuth, async (req, res) => {
     await db.query(
       `UPDATE machines SET name=?,category=?,icon=?,price=?,price_orig=?,unit=?,
        latitude=?,longitude=?,location_name=?,service_radius=?,spec_badges=?,params=?,description=? WHERE id=?`,
-      [name, category || '其他', icon || '🚜', parseFloat(price),
+      [name.trim(), category || '其他', icon || '🚜', parseFloat(price),
        price_orig ? parseFloat(price_orig) : null, unit || '亩',
        latitude || null, longitude || null, location_name || '', parseFloat(service_radius) || 50,
        JSON.stringify(spec_badges || []), JSON.stringify(params || []), description || '',
@@ -334,6 +349,11 @@ router.delete('/machines/:id', operatorAuth, async (req, res) => {
     const [[m]] = await db.query('SELECT id FROM machines WHERE id=? AND operator_id=?',
       [req.params.id, req.operator.operator_id])
     if (!m) return fail(res, '机具不存在或无权限', 404)
+    const [[used]] = await db.query('SELECT COUNT(*) AS n FROM machine_orders WHERE machine_id=?', [req.params.id])
+    if (Number(used.n || 0) > 0) {
+      await db.query("UPDATE machines SET status='off' WHERE id=?", [req.params.id])
+      return ok(res, null, '该机具已有订单记录，已为您下架并保留历史数据')
+    }
     await db.query('DELETE FROM machines WHERE id=?', [req.params.id])
     return ok(res, null, '已删除')
   } catch (e) { console.error('[op-machine-del]', e); return fail(res, '删除失败', 500) }
@@ -346,11 +366,13 @@ router.delete('/machines/:id', operatorAuth, async (req, res) => {
 // GET /api/operator/orders — 订单列表（可按 status 筛选）
 router.get('/orders', operatorAuth, async (req, res) => {
   try {
+    await machineLifecycle.expireUnpaidMachineOrders({ operatorId: req.operator.operator_id })
     await refunds.syncPendingMachineRefunds({ operatorId: req.operator.operator_id }).catch(error => {
       console.error('[machine-refund-sync-operator]', error.message)
     })
     const { status } = req.query
-    let sql = `SELECT *, DATE_FORMAT(work_date,'%Y-%m-%d') AS work_date
+    let sql = `SELECT *, DATE_FORMAT(work_date,'%Y-%m-%d') AS work_date,
+                      DATE_FORMAT(work_end_date,'%Y-%m-%d') AS work_end_date
                FROM machine_orders WHERE operator_id=? AND operator_deleted=0`
     const params = [req.operator.operator_id]
     if (status && status !== 'all') { sql += ' AND status=?'; params.push(status) }
@@ -367,7 +389,13 @@ router.patch('/orders/:id/accept', operatorAuth, async (req, res) => {
       [req.params.id, req.operator.operator_id])
     if (!o) return fail(res, '订单不存在', 404)
     if (o.status !== 'pending') return fail(res, '该订单已处理')
-    await db.query("UPDATE machine_orders SET status='accepted', accepted_at=NOW() WHERE id=?", [req.params.id])
+    if (!['partial', 'paid'].includes(o.pay_status)) return fail(res, '农户尚未支付订金或全款，暂不能接单', 409)
+    if (o.refund_status && !['FAILED', ''].includes(o.refund_status)) return fail(res, '该订单正在退款，不能接单', 409)
+    const [changed] = await db.query(
+      "UPDATE machine_orders SET status='accepted',accepted_at=NOW() WHERE id=? AND operator_id=? AND status='pending' AND pay_status IN ('partial','paid')",
+      [req.params.id, req.operator.operator_id]
+    )
+    if (!changed.affectedRows) return fail(res, '订单状态已变化，请刷新后重试', 409)
     await db.query('UPDATE machines SET order_count=order_count+1 WHERE id=?', [o.machine_id])
     return ok(res, null, '已接单')
   } catch (e) { console.error('[op-accept]', e); return fail(res, '操作失败', 500) }
@@ -381,16 +409,28 @@ router.patch('/orders/:id/reject', operatorAuth, async (req, res) => {
       [req.params.id, req.operator.operator_id])
     if (!o) return fail(res, '订单不存在', 404)
     if (o.status !== 'pending') return fail(res, '该订单已处理')
-    if (!['partial', 'paid'].includes(o.pay_status)) return fail(res, '农户尚未完成订金或全款支付')
+    const [changed] = await db.query(
+      "UPDATE machine_orders SET status='cancelled',reject_reason=? WHERE id=? AND operator_id=? AND status='pending'",
+      [reason || '机手已拒单', req.params.id, req.operator.operator_id]
+    )
+    if (!changed.affectedRows) return fail(res, '订单状态已变化，请刷新后重试', 409)
     let refund = null
+    let refundError = null
     if (['partial', 'paid'].includes(o.pay_status)) {
-      refund = await refunds.createMachineRefund({
-        orderId: Number(req.params.id), operatorId: req.operator.operator_id,
-        reason: `农机手拒绝预约：${reason || '无法接单'}`
-      })
+      try {
+        refund = await refunds.createMachineRefund({
+          orderId: Number(req.params.id), operatorId: req.operator.operator_id,
+          reason: `农机手拒绝预约：${reason || '无法接单'}`
+        })
+      } catch (error) {
+        refundError = error
+        console.error('[op-reject-refund]', error)
+        await db.query("UPDATE machine_orders SET refund_status='FAILED' WHERE id=?", [req.params.id])
+      }
     }
-    await db.query("UPDATE machine_orders SET status='cancelled', reject_reason=? WHERE id=?",
-      [reason || '机手已拒单', req.params.id])
+    if (refundError) {
+      return ok(res, { refund_status: 'FAILED' }, '已拒单，但退款发起失败，请联系平台客服处理')
+    }
     return ok(res, { refund_status: refund && refund.status || '' },
       refund ? '已拒单，付款正在原路退回' : '已拒单')
   } catch (e) { console.error('[op-reject]', e); return fail(res, '操作失败', 500) }
@@ -405,6 +445,7 @@ router.patch('/orders/:id/status', operatorAuth, async (req, res) => {
     const [[o]] = await db.query('SELECT * FROM machine_orders WHERE id=? AND operator_id=?',
       [req.params.id, req.operator.operator_id])
     if (!o) return fail(res, '订单不存在', 404)
+    if (!['partial', 'paid'].includes(o.pay_status)) return fail(res, '订单尚未付款，不能推进作业状态', 409)
     if (FLOW[o.status] !== status)
       return fail(res, `当前状态(${o.status})不能推进到 ${status}`)
     const done = status === 'completed' ? ', completed_at=NOW()' : ''
@@ -426,14 +467,45 @@ router.delete('/orders/:id', operatorAuth, async (req, res) => {
   } catch (e) { console.error('[op-order-delete]', e); return fail(res, '删除失败', 500) }
 })
 
+// GET /api/operator/reviews — 农户评价
+router.get('/reviews', operatorAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT mr.id,mr.order_id,mr.machine_id,mr.farmer_name,mr.rating,mr.content,mr.reply,
+              mr.score_timely,mr.score_quality,mr.score_attitude,mr.score_price,
+              mo.order_no,mo.machine_name,DATE_FORMAT(mr.created_at,'%Y-%m-%d %H:%i') AS created_at
+         FROM machine_reviews mr JOIN machine_orders mo ON mo.id=mr.order_id
+        WHERE mr.operator_id=? ORDER BY mr.created_at DESC`,
+      [req.operator.operator_id]
+    )
+    return ok(res, rows)
+  } catch (e) { console.error('[op-reviews]', e); return fail(res, '评价加载失败', 500) }
+})
+
+// PATCH /api/operator/reviews/:id/reply — 回复评价
+router.patch('/reviews/:id/reply', operatorAuth, async (req, res) => {
+  const reply = String(req.body.reply || '').trim()
+  if (!reply) return fail(res, '请填写回复内容')
+  if (reply.length > 255) return fail(res, '回复不能超过255个字')
+  try {
+    const [result] = await db.query(
+      'UPDATE machine_reviews SET reply=? WHERE id=? AND operator_id=?',
+      [reply, req.params.id, req.operator.operator_id]
+    )
+    if (!result.affectedRows) return fail(res, '评价不存在或无权回复', 404)
+    return ok(res, null, '回复已发布')
+  } catch (e) { console.error('[op-review-reply]', e); return fail(res, '回复失败', 500) }
+})
+
 // GET /api/operator/stats — 工作台统计
 router.get('/stats', operatorAuth, async (req, res) => {
   try {
     const oid = req.operator.operator_id
+    await machineLifecycle.expireUnpaidMachineOrders({ operatorId: oid })
     const [[mc]] = await db.query("SELECT COUNT(*) AS n FROM machines WHERE operator_id=? AND status!='off'", [oid])
-    const [[pend]] = await db.query("SELECT COUNT(*) AS n FROM machine_orders WHERE operator_id=? AND status='pending'", [oid])
+    const [[pend]] = await db.query("SELECT COUNT(*) AS n FROM machine_orders WHERE operator_id=? AND status='pending' AND pay_status IN ('partial','paid')", [oid])
     const [[active]] = await db.query("SELECT COUNT(*) AS n FROM machine_orders WHERE operator_id=? AND status IN ('accepted','departed','arrived','working')", [oid])
-    const [[income]] = await db.query("SELECT IFNULL(SUM(total_price),0) AS s FROM machine_orders WHERE operator_id=? AND status='completed'", [oid])
+    const [[income]] = await db.query("SELECT IFNULL(SUM(paid_amount),0) AS s FROM machine_orders WHERE operator_id=? AND status='completed' AND pay_status='paid' AND fund_status!='refunded'", [oid])
     return ok(res, {
       machine_count: mc.n, pending_count: pend.n,
       active_count: active.n, total_income: parseFloat(income.s)

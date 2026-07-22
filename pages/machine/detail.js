@@ -63,6 +63,10 @@ Page({
   },
 
   onBook() {
+    if (!this.data.machine || !Number(this.data.machine.payment_ready)) {
+      wx.showToast({ title: this.data.copy.paymentPending, icon: 'none' })
+      return
+    }
     if (!auth.isLoggedIn()) {
       wx.showModal({
         title: this.data.copy.loginTitle,

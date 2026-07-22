@@ -12,8 +12,9 @@ async function columnExists(table, column) {
 }
 
 async function addColumn(table, column, ddl) {
-  if (await columnExists(table, column)) return
+  if (await columnExists(table, column)) return false
   await db.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`)
+  return true
 }
 
 async function indexExists(table, indexName) {
@@ -36,6 +37,22 @@ async function migrateMachinePayments() {
   await addColumn('machine_orders', 'deposit_paid_at', 'DATETIME DEFAULT NULL AFTER paid_at')
   await addColumn('machine_orders', 'balance_paid_at', 'DATETIME DEFAULT NULL AFTER deposit_paid_at')
   await addColumn('machine_orders', 'refund_status', "VARCHAR(24) NOT NULL DEFAULT '' AFTER fund_status")
+  await addColumn('machine_orders', 'pay_expires_at', 'DATETIME DEFAULT NULL AFTER pay_mode')
+  await addColumn('machine_orders', 'work_end_date', 'DATE DEFAULT NULL AFTER work_date')
+  const billingUnitAdded = await addColumn('machine_orders', 'billing_unit', "VARCHAR(8) NOT NULL DEFAULT '亩' AFTER unit_price")
+  await db.query('UPDATE machine_orders SET work_end_date=work_date WHERE work_end_date IS NULL')
+  if (billingUnitAdded) {
+    await db.query(`
+      UPDATE machine_orders mo LEFT JOIN machines m ON m.id=mo.machine_id
+         SET mo.billing_unit=CASE WHEN m.unit='天' THEN '天' ELSE '亩' END
+    `)
+  }
+  if (!(await indexExists('machine_orders', 'idx_machine_work_date'))) {
+    await db.query('ALTER TABLE machine_orders ADD INDEX idx_machine_work_date (machine_id,work_date,status)')
+  }
+  if (!(await indexExists('machine_orders', 'idx_machine_pay_expire'))) {
+    await db.query('ALTER TABLE machine_orders ADD INDEX idx_machine_pay_expire (status,pay_status,pay_expires_at)')
+  }
 
   await db.query(`
     UPDATE machine_orders

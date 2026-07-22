@@ -14,21 +14,27 @@ Page({
     payMode: 'deposit',  // deposit | full
     paymentStage: 'deposit',
     balanceAmount: '0.00',
+    requestedStage: 'deposit',
+    loading: true,
+    payable: false,
     paying: false
   },
 
   onLoad(query) {
     const info = wx.getSystemInfoSync()
-    const order = app.globalData.machineOrder || null
+    const cachedOrder = app.globalData.machineOrder || null
+    const order = cachedOrder && String(cachedOrder.id) === String(query.id) ? cachedOrder : null
+    const requestedStage = query.stage === 'balance' ? 'balance' : (query.mode === 'full' ? 'full' : 'deposit')
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
       orderId: query.id,
       order,
       balanceAmount: order ? Math.max(0, Number(order.total_price || 0) - Number(order.deposit || 0)).toFixed(2) : '0.00',
-      paymentStage: query.stage === 'balance' ? 'balance' : (query.mode === 'full' ? 'full' : 'deposit'),
-      payMode: query.stage === 'balance' ? 'balance' : (query.mode === 'full' ? 'full' : 'deposit')
+      requestedStage,
+      paymentStage: requestedStage,
+      payMode: requestedStage
     })
-    if (!order) this.loadOrder()
+    this.loadOrder()
   },
 
   onShow() {
@@ -41,11 +47,20 @@ Page({
       const res = await auth.request('GET', `/api/machine-orders/${this.data.orderId}`)
       if (res.code !== 200) throw new Error(res.msg || this.data.copy.loadFail)
       const order = res.data
+      let paymentStage = this.data.requestedStage
+      if (order.pay_status === 'partial') paymentStage = 'balance'
+      const payable = (paymentStage === 'balance' && order.status === 'completed' && order.pay_status === 'partial') ||
+        (paymentStage !== 'balance' && order.status === 'pending' && order.pay_status === 'unpaid')
       this.setData({
         order,
+        paymentStage,
+        payMode: paymentStage,
+        loading: false,
+        payable,
         balanceAmount: Math.max(0, Number(order.total_price || 0) - Number(order.deposit_paid_amount || order.deposit || 0)).toFixed(2)
       })
     } catch (error) {
+      this.setData({ loading: false })
       wx.showToast({ title: error.message || this.data.copy.loadFail, icon: 'none' })
     }
   },
@@ -57,7 +72,7 @@ Page({
   },
 
   async onPay() {
-    if (this.data.paying) return
+    if (this.data.paying || !this.data.order || !this.data.payable) return
     this.setData({ paying: true })
     try {
       const prepay = await auth.request('POST', '/api/pay/wechat/prepay', {
@@ -82,7 +97,7 @@ Page({
       }, 1200)
     } catch (e) {
       this.setData({ paying: false })
-      wx.showToast({ title: e.message || this.data.copy.incomplete, icon: 'none' })
+      wx.showToast({ title: e.message || e.errMsg || this.data.copy.incomplete, icon: 'none' })
     }
   },
 

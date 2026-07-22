@@ -1,4 +1,5 @@
 // pages/machine/orders.js — 我的农机预约
+const app = getApp()
 const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
 const machineI18n = require('../../utils/machine-i18n')
@@ -35,7 +36,18 @@ Page({
     try {
       const res = await auth.request('GET', '/api/machine-orders/my' + qs)
       if (res.code === 200) {
-        const orders = (res.data || []).map(o => ({ ...o, status_label: machineI18n.statusLabel(o.status, this.data.lang), badgeCls: BADGE[o.status] || 'b-progress' }))
+        const orders = (res.data || []).map(o => {
+          const payLabel = o.pay_status === 'paid' ? this.data.copy.paidFull
+            : o.pay_status === 'partial' ? this.data.copy.paidDeposit
+              : o.pay_status === 'refunded' ? this.data.copy.refunded : this.data.copy.awaitingPayment
+          return {
+            ...o,
+            status_label: o.status === 'pending' && o.pay_status === 'unpaid'
+              ? this.data.copy.awaitingPayment : machineI18n.statusLabel(o.status, this.data.lang),
+            pay_status_label: payLabel,
+            badgeCls: BADGE[o.status] || 'b-progress'
+          }
+        })
         this.setData({ orders, loading: false })
       } else {
         this.setData({ orders: [], loading: false })
@@ -73,6 +85,14 @@ Page({
         } catch (e) { wx.showToast({ title: this.data.copy.network, icon: 'none' }) }
       }
     })
+  },
+
+  onPay(e) {
+    const id = e.currentTarget.dataset.id
+    const stage = e.currentTarget.dataset.stage || 'deposit'
+    const order = this.data.orders.find(item => String(item.id) === String(id))
+    if (order) app.globalData.machineOrder = order
+    wx.navigateTo({ url: `/pages/machine/pay?id=${id}${stage === 'balance' ? '&stage=balance' : ''}` })
   },
 
   onBack() {

@@ -28,13 +28,14 @@ function machinePaymentStage(order) {
   return order.pay_mode === 'deposit' || order.deposit_status === 'paid' ? 'deposit' : 'full'
 }
 
-function machineOutTradeNo(order) {
-  return paymentOrderNo.machineOutTradeNo(order, machinePaymentStage(order))
+function machineOutTradeNo(order, paymentStage = machinePaymentStage(order)) {
+  return paymentOrderNo.machineOutTradeNo(order, paymentStage)
 }
 
-function outRefundNo(order, sequence = Date.now()) {
+function outRefundNo(order, sequence = Date.now(), paymentStage = '') {
   const type = order.order_type === 'machine' || order.kind === 'machine' ? 'MACHINE' : 'SUPPLY'
-  const base = `RF_${type}_${order.id}_${sequence}`
+  const stage = type === 'MACHINE' && paymentStage ? `_${String(paymentStage).toUpperCase()}` : ''
+  const base = `RF_${type}_${order.id}${stage}_${sequence}`
   return base.slice(0, 64)
 }
 
@@ -160,14 +161,18 @@ async function findSuccessfulProfitSharing(orderType, orderId, paymentStage = ''
   return row
 }
 
-async function findProfitSharingReturn(orderType, orderId) {
+async function findProfitSharingReturn(orderType, orderId, paymentStage = '') {
+  const params = [orderType, orderId]
+  const stageFilter = paymentStage ? ' AND payment_stage=?' : ''
+  if (paymentStage) params.push(paymentStage)
   const [[row]] = await db.query(
     `SELECT id, profit_sharing_return_no, profit_sharing_return_state
      FROM wechat_refunds
      WHERE order_type=? AND order_id=?
+       ${stageFilter}
        AND profit_sharing_return_state IN ('SUCCESS','FINISHED','PROCESSING')
      ORDER BY id DESC LIMIT 1`,
-    [orderType, orderId]
+    params
   )
   return row || null
 }
@@ -238,10 +243,7 @@ function extractRefundMeta(result) {
 async function markRefundSuccess(row) {
   if (!row) return
   if (row.order_type === 'machine') {
-    await db.query(
-      "UPDATE machine_orders SET pay_status='refunded',refund_status='SUCCESS',fund_status='refunded' WHERE id=?",
-      [row.order_id]
-    )
+    await refreshMachineRefundStatus(row.order_id)
     return
   }
   if (row.order_type !== 'supply') return
@@ -297,32 +299,82 @@ function validateRefundableMachineOrder(order) {
   }
 }
 
-async function createMachineRefund({ orderId, farmerId = null, operatorId = null, reason = '' }) {
-  const order = await loadMachineRefundOrder(orderId, { farmerId, operatorId })
-  validateRefundableMachineOrder(order)
-  const [[existing]] = await db.query(
-    "SELECT * FROM wechat_refunds WHERE order_type='machine' AND order_id=? ORDER BY id DESC LIMIT 1",
-    [order.id]
-  )
-  if (existing && isActiveRefundStatus(existing.status)) {
-    if (isSuccessRefundStatus(existing.status)) await markRefundSuccess(existing)
-    return { alreadyExists: true, refund: existing, status: existing.status }
+function machinePaidStages(order) {
+  const stages = []
+  const depositPaid = order.deposit_status === 'paid' ||
+    (order.pay_mode === 'deposit' && ['partial', 'paid'].includes(order.pay_status) && Number(order.deposit_paid_amount || 0) > 0)
+  if (depositPaid) {
+    stages.push({
+      paymentStage: 'deposit',
+      amount: Number(order.deposit_paid_amount || order.deposit || 0),
+      transactionId: order.deposit_transaction_id ||
+        (order.balance_status !== 'paid' ? order.transaction_id : '')
+    })
   }
 
-  const cfg = wxpay.getServiceProviderConfig()
-  if (!cfg) {
-    const error = new Error('微信支付服务商未配置，无法发起真实退款')
-    error.statusCode = 501
-    throw error
+  if (order.pay_mode === 'full' && order.balance_status === 'paid') {
+    stages.push({
+      paymentStage: 'full',
+      amount: Number(order.balance_paid_amount || order.paid_amount || order.total_price || 0),
+      transactionId: order.balance_transaction_id || order.transaction_id
+    })
+  } else if (order.pay_mode === 'deposit' && order.balance_status === 'paid') {
+    stages.push({
+      paymentStage: 'balance',
+      amount: Number(order.balance_paid_amount || 0),
+      transactionId: order.balance_transaction_id || ''
+    })
   }
-  const stage = machinePaymentStage(order)
-  const businessAmount = stage === 'deposit'
-    ? Number(order.deposit_paid_amount || order.deposit || 0)
-    : Number(order.balance_paid_amount || order.paid_amount || order.total_price || 0)
-  const totalFen = getWechatPayChargeFen({ amount: businessAmount })
-  const transactionId = stage === 'deposit'
-    ? order.deposit_transaction_id || order.transaction_id
-    : order.balance_transaction_id || order.transaction_id
+
+  if (!stages.length && order.pay_status === 'paid') {
+    stages.push({
+      paymentStage: order.pay_mode === 'deposit' ? 'deposit' : 'full',
+      amount: Number(order.paid_amount || order.total_price || 0),
+      transactionId: order.transaction_id || ''
+    })
+  }
+  return stages
+}
+
+async function refreshMachineRefundStatus(orderId) {
+  const order = await loadMachineRefundOrder(orderId)
+  if (!order) return ''
+  const stages = machinePaidStages(order)
+  if (!stages.length) return ''
+  const [rows] = await db.query(
+    "SELECT payment_stage,status FROM wechat_refunds WHERE order_type='machine' AND order_id=? ORDER BY id DESC",
+    [orderId]
+  )
+  const latest = new Map()
+  for (const row of rows) {
+    if (!latest.has(row.payment_stage)) latest.set(row.payment_stage, String(row.status || '').toUpperCase())
+  }
+  const statuses = stages.map(stage => latest.get(stage.paymentStage) || '')
+  if (statuses.every(isSuccessRefundStatus)) {
+    await db.query(
+      "UPDATE machine_orders SET pay_status='refunded',refund_status='SUCCESS',fund_status='refunded' WHERE id=?",
+      [orderId]
+    )
+    return 'SUCCESS'
+  }
+  const status = statuses.some(value => value === 'FAILED')
+    ? 'FAILED'
+    : statuses.some(isActiveRefundStatus) ? 'PROCESSING' : ''
+  if (status) await db.query('UPDATE machine_orders SET refund_status=? WHERE id=?', [status, orderId])
+  return status
+}
+
+async function createMachineStageRefund({ order, stage, cfg, reason }) {
+  const [[existing]] = await db.query(
+    "SELECT * FROM wechat_refunds WHERE order_type='machine' AND order_id=? AND payment_stage=? ORDER BY id DESC LIMIT 1",
+    [order.id, stage.paymentStage]
+  )
+  if (existing && isActiveRefundStatus(existing.status)) {
+    return { alreadyExists: true, refund: existing, status: String(existing.status).toUpperCase() }
+  }
+
+  const totalFen = getWechatPayChargeFen({ amount: stage.amount })
+  const transactionId = stage.transactionId
   if (!transactionId || totalFen <= 0) {
     const error = new Error('该订单缺少真实微信交易记录，可能是早期模拟支付订单，不能发起微信退款')
     error.statusCode = 409
@@ -332,8 +384,8 @@ async function createMachineRefund({ orderId, farmerId = null, operatorId = null
   const refund = {
     subMchid: order.sub_mchid,
     transactionId,
-    outTradeNo: machineOutTradeNo(order),
-    outRefundNo: outRefundNo(order),
+    outTradeNo: machineOutTradeNo(order, stage.paymentStage),
+    outRefundNo: outRefundNo(order, Date.now(), stage.paymentStage),
     reason: reason || '农机预约取消退款',
     notifyUrl: getRefundNotifyUrl(cfg),
     refundFen: totalFen,
@@ -343,17 +395,17 @@ async function createMachineRefund({ orderId, farmerId = null, operatorId = null
   const payload = wxpay.buildPartnerRefundBody({ refund })
   await db.query(
     `INSERT INTO wechat_refunds
-      (order_type,order_id,out_trade_no,out_refund_no,transaction_id,sub_mchid,
+      (order_type,order_id,payment_stage,out_trade_no,out_refund_no,transaction_id,sub_mchid,
        amount_fen,total_fen,currency,reason,status,request_payload)
-     VALUES ('machine',?,?,?,?,?,?,?,?,?,'PENDING',?)`,
-    [order.id, refund.outTradeNo, refund.outRefundNo, transactionId, refund.subMchid,
+     VALUES ('machine',?,?,?,?,?,?,?,?,?,?,'PENDING',?)`,
+    [order.id, stage.paymentStage, refund.outTradeNo, refund.outRefundNo, transactionId, refund.subMchid,
       totalFen, totalFen, refund.currency, refund.reason, JSON.stringify(payload)]
   )
   try {
     await returnProfitSharingIfNeeded({
       order,
       orderType: 'machine',
-      paymentStage: stage,
+      paymentStage: stage.paymentStage,
       cfg,
       outRefundNo: refund.outRefundNo,
       reason: refund.reason
@@ -368,8 +420,6 @@ async function createMachineRefund({ orderId, farmerId = null, operatorId = null
         meta.successTime, JSON.stringify(result), refund.outRefundNo]
     )
     const [[saved]] = await db.query('SELECT * FROM wechat_refunds WHERE out_refund_no=?', [refund.outRefundNo])
-    await db.query('UPDATE machine_orders SET refund_status=? WHERE id=?', [meta.status, order.id])
-    if (isSuccessRefundStatus(meta.status)) await markRefundSuccess(saved)
     return { alreadyExists: false, refund: saved, status: meta.status, result }
   } catch (error) {
     const wx = error.wxpay || {}
@@ -377,8 +427,46 @@ async function createMachineRefund({ orderId, farmerId = null, operatorId = null
       "UPDATE wechat_refunds SET status='FAILED',error_code=?,error_msg=?,result_payload=? WHERE out_refund_no=?",
       [wx.code || '', error.message || wx.message || '微信退款失败', JSON.stringify(wx), refund.outRefundNo]
     )
-    await db.query("UPDATE machine_orders SET refund_status='FAILED' WHERE id=?", [order.id])
     throw error
+  }
+}
+
+async function createMachineRefund({ orderId, farmerId = null, operatorId = null, reason = '' }) {
+  const order = await loadMachineRefundOrder(orderId, { farmerId, operatorId })
+  validateRefundableMachineOrder(order)
+  const stages = machinePaidStages(order)
+  if (!stages.length) {
+    const error = new Error('该订单缺少可退款的真实支付记录')
+    error.statusCode = 409
+    throw error
+  }
+  const cfg = wxpay.getServiceProviderConfig()
+  if (!cfg) {
+    const error = new Error('微信支付服务商未配置，无法发起真实退款')
+    error.statusCode = 501
+    throw error
+  }
+
+  const refunds = []
+  const errors = []
+  for (const stage of stages) {
+    try {
+      refunds.push(await createMachineStageRefund({ order, stage, cfg, reason }))
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  const aggregateStatus = await refreshMachineRefundStatus(order.id)
+  if (errors.length) {
+    const error = new Error(errors.map(item => item.message).join('；'))
+    error.statusCode = errors[0].statusCode || 502
+    throw error
+  }
+  return {
+    alreadyExists: refunds.every(item => item.alreadyExists),
+    refund: refunds[0] && refunds[0].refund,
+    refunds,
+    status: aggregateStatus || (refunds.every(item => isSuccessRefundStatus(item.status)) ? 'SUCCESS' : 'PROCESSING')
   }
 }
 
@@ -501,7 +589,7 @@ async function returnProfitSharingIfNeeded({ order, cfg, outRefundNo, reason, or
   }
   if (!profitSharing) return null
 
-  const existingReturn = await findProfitSharingReturn(orderType, order.id)
+  const existingReturn = await findProfitSharingReturn(orderType, order.id, paymentStage)
   if (existingReturn) return null
 
   const outReturnNo = outProfitSharingReturnNo(order, Date.now(), paymentStage)
@@ -720,6 +808,8 @@ module.exports = {
   syncRefundRow,
   syncPendingSupplyRefunds,
   syncPendingMachineRefunds,
+  machinePaidStages,
+  refreshMachineRefundStatus,
   __setDbForTest,
   __setWxpayForTest
 }
