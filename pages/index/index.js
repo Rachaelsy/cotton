@@ -17,7 +17,8 @@ const MODULES = [
   { id: 9, key: 'pest', icon: '🔬', bg: '#FCE4EC', action: 'pest' },
   { id: 10, key: 'trade', icon: '💰', bg: '#FFEBEE', action: 'trade' },
   { id: 11, key: 'loans', icon: '🏦', bg: '#E0F2F1', action: 'loans' },
-  { id: 12, key: 'insurance', icon: '🛡', bg: '#E8EAF6', action: 'insurance' }
+  { id: 12, key: 'insurance', icon: '🛡', bg: '#E8EAF6', action: 'insurance' },
+  { id: 13, key: 'knowledge', icon: '▤', bg: '#E4F3F8', newTag: true, action: 'knowledge' }
 ]
 const DEVELOPING_MODULES = ['trade', 'loans', 'insurance']
 
@@ -332,7 +333,8 @@ Page({
       fert: this._buildPlotPageUrl('/pages/fert/index'),
       records: '/pages/records/index',
       machine: '/pages/machine/index',
-      expert: '/pages/expert/index'
+      expert: '/pages/expert/index',
+      knowledge: '/pages/knowledge/index'
     }
     if (action === 'supplies') {
       wx.navigateTo({ url: '/subpkg-supplies/supplies/index' })

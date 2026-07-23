@@ -1,0 +1,9 @@
+page { background: #f5f7f3; }
+.loading {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #607067;
+  font-size: 28rpx;
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>课程详情 · 棉知学堂</title>
+  <link rel="icon" href="/admin/assets/cotton-field-sky.png">
+  <link rel="stylesheet" href="/knowledge/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/knowledge/"><span class="brand-mark">棉</span><span><span class="brand-name">棉知学堂</span><span class="brand-sub">公共棉花知识服务</span></span></a>
+      <nav class="main-nav"><a class="nav-tab active" href="/knowledge/">课程学习</a><a class="nav-tab" href="/knowledge/?view=forum">棉友问答</a></nav>
+      <div class="header-actions"><a class="portal-link" href="/">平台首页</a><button class="btn secondary" id="accountBtn">登录</button></div>
+    </div>
+  </header>
+  <div class="admin-preview-bar hidden" id="adminPreviewBar">
+    <div class="admin-preview-inner"><span class="admin-mode-label">管理员浏览模式</span><span>当前页面会显示全部评论及审核操作</span><a class="btn admin-bar-btn" href="/knowledge/admin.html?view=comments" id="adminCommentsLink">评论管理</a></div>
+  </div>
+
+  <main class="detail-main">
+    <div class="breadcrumb"><a href="/knowledge/">知识讲堂</a> / <span id="breadcrumbTitle">内容详情</span></div>
+    <div id="detailLoading" class="loading">正在加载学习内容...</div>
+    <div id="detailContent" class="detail-grid hidden">
+      <article>
+        <div class="media-stage" id="mediaStage"></div>
+        <h1 class="detail-title" id="title"></h1>
+        <p class="detail-subtitle" id="subtitle"></p>
+        <div class="detail-meta" id="meta"></div>
+        <div class="gallery hidden" id="gallery"></div>
+        <div class="article-body" id="articleBody"></div>
+        <section class="course-quiz hidden" id="courseQuiz">
+          <div class="quiz-heading"><div><span class="eyebrow">KNOWLEDGE CHECK</span><h2>课后小测</h2><p>完成后立即查看答案解析，也可以让 AI 针对错题换一种方式讲解。</p></div><strong id="quizProgress"></strong></div>
+          <div class="quiz-list" id="quizList"></div>
+          <div class="quiz-submit-row"><button class="btn" id="submitQuiz">提交答案</button><strong id="quizScore"></strong></div>
+        </section>
+        <div class="detail-actions"><button class="btn secondary" id="favoriteBtn">收藏</button><a class="btn ghost" href="/knowledge/?view=forum">去问答社区</a></div>
+        <div class="inline-admin-actions hidden" id="detailAdminActions"><strong>课程管理</strong><a class="small-btn primary" id="adminEditContent">编辑课程</a><button class="small-btn" id="adminToggleContent">下架课程</button><a class="small-btn" id="adminCourseComments">管理本课评论</a></div>
+
+        <section class="comments">
+          <div class="section-head"><div><h2>学习讨论</h2><p>围绕本节内容交流，不发布广告和无关信息。</p></div><strong id="commentCount">0 条评论</strong></div>
+          <div class="reply-context hidden" id="replyContext"><span>正在回复 <strong id="replyNickname"></strong></span><button type="button" id="cancelReply" aria-label="取消回复">×</button></div>
+          <div class="comment-compose"><textarea id="commentInput" maxlength="800" placeholder="登录后写下你的理解或问题"></textarea><button class="btn" id="commentBtn">发表评论</button></div>
+          <div class="comment-list" id="commentList"></div>
+        </section>
+      </article>
+      <aside class="detail-aside">
+        <section class="aside-section">
+          <h3>小棉 AI 学习助手</h3>
+          <div class="ai-chat" id="aiChat"><div class="ai-msg">我会结合当前课程内容回答棉花种植问题。关键农事决策还需结合地块和当地农技意见。</div></div>
+          <div class="ai-compose"><input id="aiInput" placeholder="针对本课继续提问"><button class="btn" id="aiBtn">发送</button></div>
+        </section>
+        <section class="aside-section"><h3>同类内容</h3><div class="related-list" id="relatedList"></div></section>
+      </aside>
+    </div>
+  </main>
+
+  <div class="modal-backdrop hidden" id="loginModal">
+    <div class="modal">
+      <div class="modal-head"><h3>登录知识讲堂</h3><button class="icon-btn" id="closeLogin" aria-label="关闭">×</button></div>
+      <form class="modal-body" id="loginForm">
+        <div class="form-grid"><div class="field full"><label for="loginPhone">手机号</label><input id="loginPhone" name="phone" autocomplete="username" maxlength="11" required></div><div class="field full"><label for="loginPassword">密码</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required></div></div>
+        <p class="auth-note">还没有账号？<a class="auth-inline-link" href="/knowledge/?auth=register">立即注册</a></p>
+        <p class="form-message" id="loginMessage"></p><div class="form-actions"><button class="btn" type="submit">登录</button></div>
+        <div class="auth-divider"><span>或</span></div>
+        <a class="btn wechat-login hidden" id="wechatLoginBtn" href="/api/auth/wechat-web/start">微信扫码登录</a>
+      </form>
+    </div>
+  </div>
+  <script src="/knowledge/detail.js"></script>
+</body>
+</html>

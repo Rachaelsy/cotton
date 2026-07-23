@@ -2,6 +2,7 @@
 const express  = require('express')
 const bcrypt   = require('bcryptjs')
 const jwt      = require('jsonwebtoken')
+const crypto   = require('crypto')
 const db       = require('../db/database')
 const { authMiddleware } = require('../middleware/auth')
 
@@ -73,6 +74,127 @@ function sessionUserResponse(user, role = user.role) {
     is_verified: !!user.is_verified,
     avatar_url: user.avatar_url || null
   }
+}
+
+function hashTicket(ticket) {
+  return crypto.createHash('sha256').update(ticket).digest('hex')
+}
+
+async function issueKnowledgeWebTicket(userId, executor = db) {
+  const ticket = crypto.randomBytes(32).toString('base64url')
+  await executor.query(
+    `INSERT INTO knowledge_web_login_tickets (token_hash,user_id,expires_at)
+     VALUES (?,?,DATE_ADD(NOW(),INTERVAL 2 MINUTE))`,
+    [hashTicket(ticket), userId]
+  )
+  db.query(
+    `DELETE FROM knowledge_web_login_tickets
+      WHERE expires_at<DATE_SUB(NOW(),INTERVAL 1 DAY)
+         OR used_at<DATE_SUB(NOW(),INTERVAL 1 DAY)`
+  ).catch(() => {})
+  return ticket
+}
+
+async function consumeKnowledgeWebTicket(ticket) {
+  let conn
+  try {
+    conn = await db.getConnection()
+    await conn.beginTransaction()
+    const [[record]] = await conn.query(
+      `SELECT id,user_id,expires_at,used_at
+         FROM knowledge_web_login_tickets
+        WHERE token_hash=? FOR UPDATE`,
+      [hashTicket(ticket)]
+    )
+    if (!record || record.used_at || new Date(record.expires_at).getTime() <= Date.now()) {
+      await conn.rollback()
+      return null
+    }
+    const [[user]] = await conn.query('SELECT * FROM users WHERE id=? AND is_active=1', [record.user_id])
+    if (!user) {
+      await conn.rollback()
+      return null
+    }
+    const profile = await loadFarmerProfile(user.id, conn)
+    if (!profile) {
+      await conn.rollback()
+      return null
+    }
+    await conn.query('UPDATE knowledge_web_login_tickets SET used_at=NOW() WHERE id=?', [record.id])
+    await conn.commit()
+    return { user, profile }
+  } catch (error) {
+    if (conn) await conn.rollback()
+    throw error
+  } finally {
+    if (conn) conn.release()
+  }
+}
+
+async function exchangeMiniProgramCode(loginCode) {
+  const appid = process.env.WX_APPID
+  const secret = process.env.WX_SECRET
+  if (!appid || !secret || !loginCode) return null
+  const url = new URL('https://api.weixin.qq.com/sns/jscode2session')
+  url.search = new URLSearchParams({
+    appid, secret, js_code: loginCode, grant_type: 'authorization_code'
+  }).toString()
+  const response = await fetch(url)
+  const result = await response.json()
+  if (!response.ok || result.errcode || !result.openid) {
+    throw new Error(result.errmsg || '微信身份刷新失败')
+  }
+  return result
+}
+
+function wechatWebConfig() {
+  const appid = String(process.env.WECHAT_WEB_APPID || '').trim()
+  const secret = String(process.env.WECHAT_WEB_SECRET || '').trim()
+  const explicitRedirect = String(process.env.WECHAT_WEB_REDIRECT_URI || '').trim()
+  const publicBase = String(process.env.PUBLIC_BASE_URL || '').replace(/\/+$/, '')
+  const redirectUri = explicitRedirect || (
+    publicBase && !publicBase.includes('TODO_')
+      ? `${publicBase}/api/auth/wechat-web/callback`
+      : ''
+  )
+  return { appid, secret, redirectUri, enabled: !!(appid && secret && redirectUri) }
+}
+
+function createWechatOauthState() {
+  const payload = `${Date.now().toString(36)}.${crypto.randomBytes(16).toString('base64url')}`
+  const signature = crypto.createHmac('sha256', process.env.JWT_SECRET).update(payload).digest('base64url')
+  return `${payload}.${signature}`
+}
+
+function verifyWechatOauthState(state) {
+  const parts = String(state || '').split('.')
+  if (parts.length !== 3) return false
+  const payload = `${parts[0]}.${parts[1]}`
+  const expected = crypto.createHmac('sha256', process.env.JWT_SECRET).update(payload).digest()
+  let received
+  try { received = Buffer.from(parts[2], 'base64url') } catch { return false }
+  if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) return false
+  const issuedAt = Number.parseInt(parts[0], 36)
+  return Number.isFinite(issuedAt) && Date.now() - issuedAt >= 0 && Date.now() - issuedAt <= 10 * 60 * 1000
+}
+
+function normalizeKnowledgeReturn(value) {
+  const candidate = String(value || '/knowledge/').trim()
+  if (!candidate.startsWith('/knowledge/') || candidate.startsWith('//')) return '/knowledge/'
+  try {
+    const url = new URL(candidate, 'http://knowledge.local')
+    return `${url.pathname}${url.search}`
+  } catch {
+    return '/knowledge/'
+  }
+}
+
+function appendQuery(pathname, params) {
+  return `${pathname}${pathname.includes('?') ? '&' : '?'}${params}`
+}
+
+function redirectKnowledgeAuthError(res, message, returnTo = '/knowledge/') {
+  res.redirect(appendQuery(normalizeKnowledgeReturn(returnTo), `wechat_error=${encodeURIComponent(message)}`))
 }
 
 // ─────────────────────────────────────────────
@@ -269,6 +391,134 @@ router.get('/verify', authMiddleware, async (req, res) => {
 })
 
 // ─────────────────────────────────────────────
+// 知识讲堂登录桥接：小程序账号无感登录网页
+// ─────────────────────────────────────────────
+router.post('/web-bridge', authMiddleware, async (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  try {
+    const [[user]] = await db.query('SELECT id,openid FROM users WHERE id=? AND is_active=1', [req.user.id])
+    if (!user) return fail(res, '账号不存在或已被禁用', 404)
+    const profile = await loadFarmerProfile(user.id)
+    if (!profile) return fail(res, '当前账号没有农户身份', 403)
+
+    const loginCode = String(req.body.loginCode || '').trim()
+    if (loginCode) {
+      try {
+        const identity = await exchangeMiniProgramCode(loginCode)
+        if (user.openid && user.openid !== identity.openid) {
+          return fail(res, '当前微信与登录农户账号不一致，请重新登录小程序', 409)
+        }
+        await db.query(
+          `UPDATE users
+              SET openid=COALESCE(openid,?),
+                  unionid=COALESCE(?,unionid)
+            WHERE id=?`,
+          [identity.openid, identity.unionid || null, user.id]
+        )
+      } catch (error) {
+        console.warn('[knowledge-web-bridge-identity]', error.message)
+      }
+    }
+
+    const ticket = await issueKnowledgeWebTicket(user.id)
+    return ok(res, { ticket, expires_in: 120 }, '网页登录凭证已生成')
+  } catch (error) {
+    console.error('[knowledge-web-bridge]', error)
+    return fail(res, '暂时无法打开已登录的知识讲堂', 500)
+  }
+})
+
+router.post('/web-bridge/exchange', async (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  const ticket = String(req.body.ticket || '').trim()
+  if (!/^[A-Za-z0-9_-]{40,80}$/.test(ticket)) return fail(res, '登录凭证无效', 400)
+  try {
+    const session = await consumeKnowledgeWebTicket(ticket)
+    if (!session) return fail(res, '登录凭证已使用或已过期，请从小程序重新进入', 401)
+    const user = farmerSessionUser(session.user)
+    const token = signToken(user)
+    return ok(res, {
+      token,
+      ...sessionUserResponse(user, 'farmer'),
+      ...session.profile
+    }, '已登录知识讲堂')
+  } catch (error) {
+    console.error('[knowledge-web-bridge-exchange]', error)
+    return fail(res, '登录凭证兑换失败', 500)
+  }
+})
+
+// ─────────────────────────────────────────────
+// 微信开放平台网站应用扫码登录
+// ─────────────────────────────────────────────
+router.get('/wechat-web/status', (_req, res) => {
+  const config = wechatWebConfig()
+  return ok(res, { enabled: config.enabled })
+})
+
+router.get('/wechat-web/start', (_req, res) => {
+  const config = wechatWebConfig()
+  if (!config.enabled) return redirectKnowledgeAuthError(res, '微信扫码登录尚未完成开放平台配置')
+  const returnTo = normalizeKnowledgeReturn(_req.query.return_to)
+  const callbackUrl = new URL(config.redirectUri)
+  callbackUrl.searchParams.set('return_to', returnTo)
+  const params = new URLSearchParams({
+    appid: config.appid,
+    redirect_uri: callbackUrl.toString(),
+    response_type: 'code',
+    scope: 'snsapi_login',
+    state: createWechatOauthState()
+  })
+  res.redirect(`https://open.weixin.qq.com/connect/qrconnect?${params}#wechat_redirect`)
+})
+
+router.get('/wechat-web/callback', async (req, res) => {
+  res.set('Cache-Control', 'no-store')
+  const config = wechatWebConfig()
+  const returnTo = normalizeKnowledgeReturn(req.query.return_to)
+  if (!config.enabled) return redirectKnowledgeAuthError(res, '微信扫码登录尚未完成开放平台配置', returnTo)
+  if (!req.query.code || !verifyWechatOauthState(req.query.state)) {
+    return redirectKnowledgeAuthError(res, '微信登录请求已失效，请重新扫码', returnTo)
+  }
+  try {
+    const params = new URLSearchParams({
+      appid: config.appid,
+      secret: config.secret,
+      code: String(req.query.code),
+      grant_type: 'authorization_code'
+    })
+    const response = await fetch(`https://api.weixin.qq.com/sns/oauth2/access_token?${params}`)
+    const identity = await response.json()
+    if (!response.ok || identity.errcode || !identity.openid) {
+      throw new Error(identity.errmsg || '微信授权信息获取失败')
+    }
+
+    const [users] = identity.unionid
+      ? await db.query(
+          'SELECT * FROM users WHERE unionid=? OR wechat_web_openid=? ORDER BY unionid=? DESC LIMIT 1',
+          [identity.unionid, identity.openid, identity.unionid]
+        )
+      : await db.query('SELECT * FROM users WHERE wechat_web_openid=? LIMIT 1', [identity.openid])
+    const user = users[0]
+    if (!user || !user.is_active) {
+      return redirectKnowledgeAuthError(res, '未找到已绑定的农户账号，请先从小程序登录并进入一次知识讲堂', returnTo)
+    }
+    const profile = await loadFarmerProfile(user.id)
+    if (!profile) return redirectKnowledgeAuthError(res, '该微信账号尚未注册农户身份', returnTo)
+
+    await db.query(
+      'UPDATE users SET wechat_web_openid=?,unionid=COALESCE(?,unionid) WHERE id=?',
+      [identity.openid, identity.unionid || null, user.id]
+    )
+    const ticket = await issueKnowledgeWebTicket(user.id)
+    return res.redirect(appendQuery(returnTo, `bridge=${encodeURIComponent(ticket)}&source=wechat`))
+  } catch (error) {
+    console.error('[wechat-web-callback]', error)
+    return redirectKnowledgeAuthError(res, '微信扫码登录失败，请稍后重试', returnTo)
+  }
+})
+
+// ─────────────────────────────────────────────
 // POST /api/auth/wx-login  微信登录 + 手机号绑定
 // ─────────────────────────────────────────────
 /**
@@ -290,7 +540,7 @@ router.post('/wx-login', async (req, res) => {
     const sessionResp = await fetch(sessionUrl)
     const session = await sessionResp.json()
     if (session.errcode) return fail(res, `微信接口错误：${session.errmsg || session.errcode}`)
-    const { openid } = session
+    const { openid, unionid } = session
 
     // ── 2. 获取 access_token ───────────────────
     const tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`
@@ -312,19 +562,28 @@ router.post('/wx-login', async (req, res) => {
     const [byOpenid] = await db.query('SELECT * FROM users WHERE openid=?', [openid])
     if (byOpenid.length > 0) {
       user = byOpenid[0]
-    } else {
+    } else if (unionid) {
+      const [byUnionid] = await db.query('SELECT * FROM users WHERE unionid=?', [unionid])
+      if (byUnionid.length > 0) user = byUnionid[0]
+    }
+    if (!user) {
       const [byPhone] = await db.query('SELECT * FROM users WHERE phone=?', [phone])
       if (byPhone.length > 0) {
         user = byPhone[0]
-        await db.query('UPDATE users SET openid=? WHERE id=?', [openid, user.id])
       }
+    }
+    if (user) {
+      await db.query(
+        'UPDATE users SET openid=?,unionid=COALESCE(?,unionid) WHERE id=?',
+        [openid, unionid || null, user.id]
+      )
     }
 
     // ── 5. 不存在则自动注册为农户 ───────────────
     if (!user) {
       const [result] = await db.query(
-        'INSERT INTO users (phone, openid, role, is_active) VALUES (?, ?, ?, 1)',
-        [phone, openid, 'farmer']
+        'INSERT INTO users (phone,openid,unionid,role,is_active) VALUES (?,?,?,?,1)',
+        [phone, openid, unionid || null, 'farmer']
       )
       await createFarmerProfile(result.insertId)
       const [newRow] = await db.query('SELECT * FROM users WHERE id=?', [result.insertId])

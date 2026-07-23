@@ -1,0 +1,2 @@
+<view wx:if="{{!url}}" class="loading">正在进入知识讲堂...</view>
+<web-view wx:else src="{{url}}"></web-view>

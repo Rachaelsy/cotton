@@ -76,7 +76,8 @@ const COPY = {
       trade: '棉花交易',
       loans: '农业贷款',
       insurance: '农业保险',
-      expert: '专家讲堂'
+      expert: '专家讲堂',
+      knowledge: '知识讲堂'
     },
     my: {
       verified: '✓ 已认证',
@@ -336,7 +337,8 @@ const COPY = {
       trade: 'پاختا سودىسى',
       loans: 'دېھقانچىلىق قەرزى',
       insurance: 'دېھقانچىلىق سۇغۇرتىسى',
-      expert: 'مۇتەخەسسىس دەرسى'
+      expert: 'مۇتەخەسسىس دەرسى',
+      knowledge: 'پاختا بىلىم دەرسخانىسى'
     },
     my: {
       verified: '✓ دەلىللەندى',

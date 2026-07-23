@@ -534,11 +534,269 @@
       }
       .join-actions { grid-template-columns: 1fr; }
     }
+
+    /* Unified public portal */
+    body {
+      background: #eef2ed;
+    }
+
+    .page {
+      width: 100%;
+      max-width: none;
+      padding: 0;
+      gap: 0;
+      grid-template-columns: minmax(0, 1.12fr) minmax(480px, .88fr);
+      align-items: stretch;
+    }
+
+    .intro {
+      position: relative;
+      isolation: isolate;
+      max-width: none;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-end;
+      padding: 64px 8% 70px;
+      overflow: hidden;
+      color: #fff;
+      background: url("./assets/knowledge-hero-v2.webp") center / cover no-repeat;
+    }
+
+    .intro::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: rgba(10, 31, 24, .44);
+    }
+
+    .intro-content {
+      width: min(660px, 100%);
+    }
+
+    .brand {
+      min-height: 50px;
+      margin-bottom: 54px;
+      padding: 7px 14px 7px 8px;
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 7px;
+      background: rgba(15, 40, 31, .38);
+      box-shadow: none;
+      backdrop-filter: blur(14px);
+    }
+
+    .cotton-mark {
+      transform: scale(.82);
+    }
+
+    .brand-title,
+    .brand-sub {
+      color: #fff;
+    }
+
+    .brand-sub {
+      color: rgba(255,255,255,.72);
+    }
+
+    .intro h1 {
+      max-width: 640px;
+      margin-bottom: 18px;
+      color: #fff;
+      font-size: 56px;
+      line-height: 1.1;
+      text-shadow: none;
+    }
+
+    .intro .lead {
+      max-width: 610px;
+      color: rgba(255,255,255,.86);
+      font-size: 17px;
+      line-height: 1.8;
+      text-shadow: none;
+    }
+
+    .knowledge-gateway {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 24px;
+      align-items: center;
+      width: min(570px, 100%);
+      min-height: 118px;
+      margin-top: 30px;
+      padding: 20px 22px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.36);
+      border-radius: 8px;
+      color: #fff;
+      background: rgba(13, 49, 38, .76);
+      text-decoration: none;
+      backdrop-filter: blur(16px);
+      transition: transform .2s ease, background .2s ease;
+    }
+
+    .knowledge-gateway:hover {
+      transform: translateY(-3px);
+      background: rgba(13, 58, 43, .9);
+    }
+
+    .gateway-kicker {
+      grid-column: 1 / -1;
+      color: #f4c96d;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .knowledge-gateway strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 23px;
+      line-height: 1.3;
+    }
+
+    .knowledge-gateway em {
+      display: block;
+      margin-top: 5px;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+      font-style: normal;
+    }
+
+    .gateway-arrow {
+      grid-column: 2;
+      grid-row: 2 / 4;
+      width: 46px;
+      height: 46px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,.38);
+      border-radius: 50%;
+      font-size: 24px;
+    }
+
+    .points {
+      margin-top: 20px;
+    }
+
+    .point {
+      min-height: 30px;
+      padding: 5px 10px;
+      border-color: rgba(255,255,255,.24);
+      border-radius: 5px;
+      color: rgba(255,255,255,.82);
+      background: rgba(16, 39, 31, .34);
+      box-shadow: none;
+      font-size: 12px;
+    }
+
+    .login-panel {
+      width: min(600px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 54px 54px 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border: 0;
+      border-radius: 0;
+      background: #fff;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .panel-title {
+      font-size: 28px;
+    }
+
+    .panel-desc {
+      margin: 8px 0 24px;
+    }
+
+    .role-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .role-card {
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: 34px minmax(0,1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 11px 12px;
+      background: #f8faf8;
+      box-shadow: none;
+    }
+
+    .role-icon {
+      margin: 0;
+    }
+
+    .role-name {
+      margin-bottom: 2px;
+    }
+
+    input {
+      background: #f8faf8;
+    }
+
+    .login-btn {
+      background: #176541;
+      box-shadow: none;
+    }
+
+    body.role-operator .login-btn { background: #176d92; box-shadow: none; }
+    body.role-admin .login-btn { background: #9b6725; box-shadow: none; }
+    body.role-expert .login-btn { background: #4c4335; box-shadow: none; }
+
+    @media (max-width: 980px) {
+      body { background: #fff; }
+      .page { grid-template-columns: 1fr; }
+      .intro {
+        min-height: 590px;
+        padding: 44px 32px 48px;
+        background-position: 57% center;
+      }
+      .intro h1 { font-size: 46px; }
+      .login-panel {
+        min-height: auto;
+        max-width: 660px;
+        padding: 48px 32px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page { padding: 0; }
+      .intro {
+        min-height: 560px;
+        padding: 28px 18px 30px;
+      }
+      .brand {
+        align-items: center;
+        margin-bottom: 38px;
+      }
+      .intro h1 { font-size: 38px; }
+      .intro .lead { font-size: 15px; }
+      .knowledge-gateway {
+        min-height: 108px;
+        padding: 16px;
+      }
+      .knowledge-gateway strong { font-size: 20px; }
+      .gateway-arrow { width: 40px; height: 40px; }
+      .login-panel { padding: 38px 18px 28px; }
+      .role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .role-card {
+        min-height: 88px;
+        display: grid;
+        grid-template-columns: 32px minmax(0,1fr);
+      }
+    }
   </style>
 </head>
 <body class="role-merchant">
   <main class="page">
     <section class="intro" aria-label="Cotton 平台介绍">
+      <div class="intro-content">
       <div class="brand">
         <span class="cotton-mark" aria-hidden="true"></span>
         <span>
@@ -547,13 +805,19 @@
         </span>
       </div>
 
-      <h1>请选择身份登录</h1>
-      <p class="lead">管理员、商户、农机手都从这里进入。新商户和新农机手可以先提交入驻申请，审核通过后再登录工作台。</p>
+      <h1>从一块棉田，连接整个服务体系</h1>
+      <p class="lead">登录工作台管理业务，也可以直接进入公共知识讲堂学习课程、查阅田间资料，与棉友交流真实种植问题。</p>
+      <a class="knowledge-gateway" href="/knowledge/">
+        <span class="gateway-kicker">PUBLIC LEARNING · 无需登录即可浏览</span>
+        <span><strong>进入棉知学堂</strong><em>课程 · 图文 · AI 问答 · 棉友论坛</em></span>
+        <span class="gateway-arrow" aria-hidden="true">→</span>
+      </a>
 
       <div class="points" aria-label="平台入口">
         <span class="point">管理员审核入驻</span>
         <span class="point">商户管理订单</span>
         <span class="point">农机手接单作业</span>
+      </div>
       </div>
     </section>
 

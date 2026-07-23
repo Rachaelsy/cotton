@@ -22,8 +22,24 @@ async function main() {
     console.log('[migrate] users.openid exists, skipped')
   }
 
+  if (!(await hasColumn('users', 'unionid'))) {
+    await db.query('ALTER TABLE users ADD COLUMN unionid VARCHAR(64) DEFAULT NULL AFTER openid')
+    await db.query('ALTER TABLE users ADD UNIQUE INDEX uk_users_unionid (unionid)')
+    console.log('[migrate] users.unionid added')
+  } else {
+    console.log('[migrate] users.unionid exists, skipped')
+  }
+
+  if (!(await hasColumn('users', 'wechat_web_openid'))) {
+    await db.query('ALTER TABLE users ADD COLUMN wechat_web_openid VARCHAR(64) DEFAULT NULL AFTER unionid')
+    await db.query('ALTER TABLE users ADD UNIQUE INDEX uk_users_wechat_web_openid (wechat_web_openid)')
+    console.log('[migrate] users.wechat_web_openid added')
+  } else {
+    console.log('[migrate] users.wechat_web_openid exists, skipped')
+  }
+
   await db.query('ALTER TABLE users MODIFY COLUMN password VARCHAR(72) NULL DEFAULT NULL')
-  console.log('[migrate] users.openid ready; password nullable')
+  console.log('[migrate] WeChat identities ready; password nullable')
   process.exit(0)
 }
 
