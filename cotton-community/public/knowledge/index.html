@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="棉花种植知识、视频课程、图文资料和棉友问答社区">
+  <title>棉知学堂 · 棉花种植知识讲堂</title>
+  <link rel="icon" href="/assets/cotton-field-sky.png">
+  <link rel="stylesheet" href="/knowledge/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/knowledge/">
+        <span class="brand-mark">棉</span>
+        <span><span class="brand-name">棉知学堂</span><span class="brand-sub">从田间问题出发的棉花知识库</span></span>
+      </a>
+      <nav class="main-nav" aria-label="知识讲堂视图">
+        <button class="nav-tab active" data-view="courses">课程学习</button>
+        <button class="nav-tab" data-view="forum">棉友问答</button>
+      </nav>
+      <div class="header-actions">
+        <input class="header-search" id="globalSearch" type="search" placeholder="搜索课程或问题" aria-label="搜索">
+        <a class="portal-link" href="/knowledge/">服务首页</a>
+        <button class="btn secondary" id="accountBtn">登录</button>
+        <button class="btn" id="registerBtn">注册</button>
+      </div>
+    </div>
+  </header>
+  <div class="admin-preview-bar hidden" id="adminPreviewBar">
+    <div class="admin-preview-inner"><span class="admin-mode-label">管理员浏览模式</span><span>可在公开页面直接编辑课程和调整上架状态</span><a class="btn admin-bar-btn" href="/knowledge/admin.html">进入运营后台</a></div>
+  </div>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-kicker">COTTON FIELD NOTES · 公共知识服务</div>
+      <h1>棉知学堂</h1>
+      <p>从播种到采收，把每一个田间判断讲得清楚、看得明白。无需登录即可学习，也可以带着真实问题来交流。</p>
+      <div class="hero-actions">
+        <a class="btn hero-primary" href="#coursesView">浏览课程</a>
+        <button class="btn hero-secondary" id="heroForumBtn">进入棉友问答</button>
+      </div>
+      <div class="hero-meta">
+        <span><strong id="heroCourseCount">0</strong> 节公开内容</span>
+        <span><strong id="heroQuestionCount">0</strong> 个公开问题</span>
+        <span>登录后可收藏、评论并同步进度</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="page-shell">
+    <section id="coursesView">
+      <div class="content-layout">
+        <div>
+          <div class="section-head">
+            <div><span class="section-kicker">CURATED LEARNING</span><h2>从现在的田间问题开始</h2><p>视频、图文和观察清单，按自己的节奏学习。</p></div>
+          </div>
+          <div class="filters" id="courseFilters"></div>
+          <div class="course-grid" id="courseGrid"><div class="loading">正在加载内容...</div></div>
+        </div>
+        <aside class="learning-panel">
+          <span class="panel-kicker">MY LEARNING</span>
+          <h3>继续学习</h3>
+          <p id="learningHint">登录后自动保存最近观看位置。</p>
+          <div class="continue-list" id="continueList"></div>
+          <div class="ai-callout">
+            <b>小棉 AI 助学</b>
+            <p>打开任意课程后，可以围绕当前内容继续提问。AI 建议仅作学习参考，关键农事决策请结合当地情况。</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="forumView" class="hidden">
+      <div class="forum-toolbar">
+        <div><h2>棉友问答</h2><p>公开分享田间问题，让有经验的人一起回答。</p></div>
+        <button class="btn gold" id="askBtn">发起提问</button>
+      </div>
+      <div class="filters" id="forumFilters">
+        <button class="filter-btn active" data-category="all">全部问题</button>
+        <button class="filter-btn" data-category="planting">栽培技术</button>
+        <button class="filter-btn" data-category="pest">病虫害</button>
+        <button class="filter-btn" data-category="water">水肥管理</button>
+        <button class="filter-btn" data-category="machine">农机作业</button>
+        <button class="filter-btn" data-category="other">其他问题</button>
+      </div>
+      <div class="forum-list" id="forumList"><div class="loading">正在加载问题...</div></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">棉知学堂 · 面向所有人的棉花种植公共知识服务</footer>
+
+  <div class="modal-backdrop hidden" id="loginModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <div class="modal-head"><h3 id="loginTitle">登录知识讲堂</h3><button class="icon-btn" data-close="loginModal" aria-label="关闭">×</button></div>
+      <form class="modal-body" id="loginForm">
+        <div class="auth-switch"><button class="auth-tab active" id="loginAuthTab" type="button">登录</button><button class="auth-tab" id="registerAuthTab" type="button">注册</button></div>
+        <div class="form-grid">
+          <div class="field full"><label for="loginPhone">手机号</label><input id="loginPhone" name="phone" inputmode="numeric" autocomplete="username" maxlength="11" required></div>
+          <div class="field full"><label for="loginPassword">密码</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required></div>
+        </div>
+        <p class="form-message" id="loginMessage"></p>
+        <div class="form-actions"><button type="button" class="btn secondary" data-close="loginModal">取消</button><button class="btn" type="submit">登录</button></div>
+      </form>
+      <form class="modal-body hidden" id="registerForm">
+        <div class="auth-switch"><button class="auth-tab" id="loginAuthTabFromRegister" type="button">登录</button><button class="auth-tab active" type="button">注册</button></div>
+        <p class="auth-note">注册为学习用户后，可保存进度、收藏、评论并参与棉友问答。已有商户或农机手账号也可使用原密码完成注册。</p>
+        <div class="form-grid">
+          <div class="field full"><label for="registerName">姓名或称呼</label><input id="registerName" name="real_name" autocomplete="name" maxlength="30" required></div>
+          <div class="field full"><label for="registerPhone">手机号</label><input id="registerPhone" name="phone" inputmode="numeric" autocomplete="username" maxlength="11" required></div>
+          <div class="field full"><label for="registerPassword">设置密码</label><input id="registerPassword" name="password" type="password" autocomplete="new-password" minlength="6" maxlength="20" required></div>
+          <div class="field full"><label for="registerPasswordConfirm">确认密码</label><input id="registerPasswordConfirm" name="password_confirm" type="password" autocomplete="new-password" minlength="6" maxlength="20" required></div>
+          <div class="field"><label for="registerLocation">所在地区（选填）</label><input id="registerLocation" maxlength="100" placeholder="例如：新疆喀什"></div>
+          <div class="field"><label for="registerLandSize">种植面积（选填）</label><input id="registerLandSize" type="number" min="0" step="0.1" placeholder="亩"></div>
+        </div>
+        <p class="form-message" id="registerMessage"></p>
+        <div class="form-actions"><button type="button" class="btn secondary" data-close="loginModal">取消</button><button class="btn" type="submit">注册并登录</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="questionModal">
+    <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="questionTitle">
+      <div class="modal-head"><h3 id="questionTitle">发起一个公开问题</h3><button class="icon-btn" data-close="questionModal" aria-label="关闭">×</button></div>
+      <form class="modal-body" id="questionForm">
+        <div class="form-grid">
+          <div class="field full"><label for="qTitle">问题标题</label><input id="qTitle" maxlength="160" placeholder="例如：棉花现蕾期叶片发黄应该先检查什么？" required></div>
+          <div class="field"><label for="qCategory">问题分类</label><select id="qCategory"><option value="planting|栽培技术">栽培技术</option><option value="pest|病虫害">病虫害</option><option value="water|水肥管理">水肥管理</option><option value="machine|农机作业">农机作业</option><option value="other|其他问题">其他问题</option></select></div>
+          <div class="field"><label for="qTags">关键词</label><input id="qTags" placeholder="现蕾期，黄叶，滴灌"></div>
+          <div class="field full"><label for="qBody">详细描述</label><textarea id="qBody" maxlength="5000" placeholder="写清地块情况、棉花生育期、已经观察到的现象和采取过的措施。" required></textarea></div>
+        </div>
+        <p class="form-message" id="questionMessage"></p>
+        <div class="form-actions"><button type="button" class="btn secondary" data-close="questionModal">取消</button><button class="btn gold" type="submit">公开发布</button></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/knowledge/index.js"></script>
+</body>
+</html>

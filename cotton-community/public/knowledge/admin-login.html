@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>管理员登录 · 棉知学堂</title>
+  <link rel="icon" href="/assets/cotton-field-sky.png">
+  <link rel="stylesheet" href="/knowledge/styles.css">
+  <style>
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #edf2ee; }
+    .admin-login-shell { width: min(920px, calc(100% - 32px)); display: grid; grid-template-columns: 1.15fr .85fr; background: #fff; border: 1px solid #d6dfd8; box-shadow: 0 24px 70px rgba(18, 48, 37, .13); }
+    .admin-login-visual { min-height: 560px; padding: 48px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(rgba(9, 39, 29, .2), rgba(9, 39, 29, .78)), url('/assets/knowledge-hero-v2.webp') center / cover; }
+    .admin-login-visual h1 { margin: 12px 0; font-size: 42px; }
+    .admin-login-visual p { max-width: 420px; line-height: 1.8; color: rgba(255,255,255,.84); }
+    .admin-login-panel { padding: 52px 42px; display: flex; flex-direction: column; justify-content: center; }
+    .admin-login-panel h2 { margin: 0 0 8px; font-size: 28px; }
+    .admin-login-panel .field { margin-top: 18px; }
+    .admin-login-panel .btn { width: 100%; margin-top: 24px; min-height: 48px; }
+    .admin-login-links { display: flex; justify-content: space-between; margin-top: 24px; font-size: 14px; }
+    @media (max-width: 720px) {
+      .admin-login-shell { grid-template-columns: 1fr; }
+      .admin-login-visual { min-height: 220px; padding: 28px; }
+      .admin-login-visual h1 { font-size: 32px; }
+      .admin-login-panel { padding: 36px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="admin-login-shell">
+    <section class="admin-login-visual">
+      <span class="brand-mark">棉</span>
+      <div><p>COMMUNITY OPERATIONS</p><h1>棉知学堂运营台</h1><p>课程、评论与棉友问答在独立社区中管理，账号权限仍与棉花平台共用。</p></div>
+    </section>
+    <section class="admin-login-panel">
+      <p class="eyebrow">ADMIN ACCESS</p>
+      <h2>管理员登录</h2>
+      <p class="question-excerpt">使用棉花平台管理员账号登录。</p>
+      <form id="adminLoginForm">
+        <div class="field"><label for="phone">手机号</label><input id="phone" inputmode="numeric" autocomplete="username" maxlength="11" required></div>
+        <div class="field"><label for="password">密码</label><input id="password" type="password" autocomplete="current-password" required></div>
+        <p class="form-message" id="message"></p>
+        <button class="btn" id="submitBtn" type="submit">进入运营台</button>
+      </form>
+      <div class="admin-login-links"><a href="/knowledge/">返回公开学堂</a><a href="/platform/admin">返回平台后台</a></div>
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById('adminLoginForm')
+    const message = document.getElementById('message')
+    const submit = document.getElementById('submitBtn')
+    form.addEventListener('submit', async event => {
+      event.preventDefault()
+      message.textContent = '正在登录...'
+      submit.disabled = true
+      try {
+        const response = await fetch('/api/community-auth/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: document.getElementById('phone').value.trim(),
+            password: document.getElementById('password').value
+          })
+        })
+        const result = await response.json()
+        if (!response.ok || result.code !== 200) throw new Error(result.msg || '登录失败')
+        localStorage.setItem('admin_token', result.data.token)
+        localStorage.setItem('admin_name', result.data.real_name || '管理员')
+        location.href = '/knowledge/admin.html'
+      } catch (error) {
+        message.textContent = error.message
+      } finally {
+        submit.disabled = false
+      }
+    })
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
+
+const root = path.resolve(__dirname, '..')
+const read = file => fs.readFileSync(path.join(root, file), 'utf8')
+
+const server = read('server.js')
+const auth = read('routes/auth.js')
+const ai = read('routes/ai.js')
+const compose = read('docker-compose.yml')
+const env = read('.env.example')
+
+assert(server.includes("app.use('/api/community-auth'"), 'community should own its authentication endpoints')
+assert(server.includes("app.use('/api/knowledge'"), 'community should own its knowledge API')
+assert(server.includes("app.use('/api/community-ai'"), 'community should own course AI Q&A without colliding with cotton-app')
+assert(server.includes("app.get('/api/community-health'"), 'community should expose an unambiguous health endpoint')
+assert(server.includes("app.get('/platform'"), 'community should link back to cotton-app by URL')
+assert(auth.includes('SELECT * FROM users WHERE phone=?'), 'community login should read the shared users table')
+assert(auth.includes('INSERT INTO farmers'), 'new learning accounts should be created in the shared platform schema')
+assert(auth.includes('is_admin'), 'community should support shared administrator accounts')
+assert(ai.includes('棉花种植学习助手'), 'AI prompt should be scoped to cotton learning')
+assert(compose.includes('cotton-shared') && compose.includes('cotton-db'), 'Docker should join the shared database network')
+assert(env.includes('JWT_SECRET=') && env.includes('PLATFORM_BASE_URL='), 'shared identity and platform URL should be configurable')
+
+console.log('community boundary tests passed')

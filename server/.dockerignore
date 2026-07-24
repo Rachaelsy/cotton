@@ -1,5 +1,0 @@
-.env
-*.pem
-cert/
-node_modules/
-npm-debug.log

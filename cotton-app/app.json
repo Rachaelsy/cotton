@@ -1,0 +1,101 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/login/index",
+    "pages/ai/index",
+    "pages/my/index",
+    "pages/profile/index",
+    "pages/feedback/index",
+    "pages/support-chat/index",
+    "pages/verification/index",
+    "pages/favorites/index",
+    "pages/fields/index",
+    "pages/fields/draw",
+    "pages/fields/detail",
+    "pages/pest/index",
+    "pages/pest/result",
+    "pages/pest/detail",
+    "pages/weather/index",
+    "pages/water/index",
+    "pages/fert/index",
+    "pages/trade/index",
+    "pages/records/index",
+    "pages/machine/index",
+    "pages/machine/detail",
+    "pages/machine/booking",
+    "pages/machine/pay",
+    "pages/machine/track",
+    "pages/machine/review",
+    "pages/machine/orders",
+    "pages/loans/index",
+    "pages/insurance/index",
+    "pages/expert/index",
+    "pages/expert/detail"
+  ],
+  "subpackages": [
+    {
+      "root": "subpkg-supplies",
+      "name": "supplies",
+      "pages": [
+        "supplies/index",
+        "supplies-detail/index",
+        "supplies-store/index",
+        "supplies-cart/index",
+        "supplies-checkout/index",
+        "supplies-pay/index",
+        "supplies-pay-success/index",
+        "supplies-order/index",
+        "supplies-aftersale/index",
+        "supplies-review/index",
+        "marketing-coupons/index",
+        "my-orders/index"
+      ]
+    }
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationStyle": "custom",
+    "backgroundColor": "#F5EEE6"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#888888",
+    "selectedColor": "#C8902E",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/ai/index", "text": "AI问答" },
+      { "pagePath": "pages/my/index", "text": "我的" }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于按距离查找附近农机、地块定位与边界绘制，获取您的当前位置"
+    },
+    "scope.record": {
+      "desc": "用于 AI 问答语音提问，将您的语音转成文字后获取回答"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation", "chooseLocation", "startLocationUpdate"],
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.7",
+      "provider": "wx069ba97219f66d99"
+    }
+  },
+  "style": "v2",
+  "renderer": "skyline",
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "defaultContentBox": true,
+      "tagNameStyleIsolation": "legacy",
+      "disableABTest": true,
+      "sdkVersionBegin": "3.0.0",
+      "sdkVersionEnd": "15.255.255"
+    }
+  },
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

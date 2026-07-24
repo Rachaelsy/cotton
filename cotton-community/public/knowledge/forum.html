@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>棉友问答 · 棉知学堂</title><link rel="icon" href="/assets/cotton-field-sky.png"><link rel="stylesheet" href="/knowledge/styles.css">
+</head>
+<body>
+  <header class="site-header"><div class="header-inner">
+    <a class="brand" href="/knowledge/"><span class="brand-mark">棉</span><span><span class="brand-name">棉知学堂</span><span class="brand-sub">公共棉花知识服务</span></span></a>
+    <nav class="main-nav"><a class="nav-tab" href="/knowledge/">课程学习</a><a class="nav-tab active" href="/knowledge/?view=forum">棉友问答</a></nav>
+    <div class="header-actions"><a class="portal-link" href="/knowledge/">服务首页</a><button class="btn secondary" id="accountBtn">登录</button></div>
+  </div></header>
+  <div class="admin-preview-bar hidden" id="adminPreviewBar">
+    <div class="admin-preview-inner"><span class="admin-mode-label">管理员浏览模式</span><span>可直接隐藏问题或不当回答</span><a class="btn admin-bar-btn" href="/knowledge/admin.html?view=forum">社区管理</a></div>
+  </div>
+  <main class="forum-detail">
+    <div class="breadcrumb"><a href="/knowledge/?view=forum">棉友问答</a> / 问题详情</div>
+    <div id="loading" class="loading">正在加载问题...</div>
+    <div id="content" class="hidden">
+      <section class="question-header"><div class="tag-row" id="questionTags"></div><h1 id="questionTitle"></h1><div class="question-full-body" id="questionBody"></div><div class="detail-meta" id="questionMeta"></div><div class="inline-admin-actions hidden" id="forumAdminActions"><strong>问题管理</strong><button class="small-btn danger" id="adminHideQuestion">隐藏问题</button></div></section>
+      <div class="answers-head"><h2><span id="answerCount">0</span> 个回答</h2><span id="solvedState"></span></div>
+      <div id="answerList"></div>
+      <form class="answer-form" id="answerForm"><h2>写下你的回答</h2><p class="question-excerpt">尽量说明判断依据和操作步骤，不发布未经核实的药剂剂量。</p><textarea id="answerBody" maxlength="5000" placeholder="登录后分享你的经验和建议"></textarea><div class="form-actions"><button class="btn" type="submit">发布回答</button></div></form>
+    </div>
+  </main>
+  <script src="/knowledge/forum.js"></script>
+</body>
+</html>

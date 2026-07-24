@@ -1,0 +1,35 @@
+services:
+  community:
+    build: .
+    container_name: cotton-community
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      DB_HOST: cotton-db
+    ports:
+      - "3100:3100"
+    volumes:
+      - community_uploads:/app/public/uploads
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3100/api/community-health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    networks:
+      - cotton_shared
+
+networks:
+  cotton_shared:
+    name: cotton-shared
+    external: true
+
+volumes:
+  community_uploads:

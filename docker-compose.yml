@@ -1,17 +1,15 @@
 services:
-
-  # ── MySQL 数据库 ───────────────────────────────
   db:
     image: docker.m.daocloud.io/library/mysql:8.0
     container_name: cotton-db
     restart: always
     command: --skip-name-resolve
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:?DB_PASS must be set in the root .env file}
       MYSQL_DATABASE: ${DB_NAME:-cotton}
-      MYSQL_ROOT_HOST: '%'
+      MYSQL_ROOT_HOST: "%"
     ports:
-      - "3306:3306"
+      - "127.0.0.1:${DB_HOST_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -20,16 +18,17 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    networks:
+      - cotton_shared
 
-  # ── Node.js 应用 ───────────────────────────────
   app:
     build:
-      context: ./server
+      context: ./cotton-app/server
       dockerfile: Dockerfile
     container_name: cotton-app
     restart: always
     env_file:
-      - ./server/.env
+      - ./cotton-app/server/.env
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -38,20 +37,7 @@ services:
       DB_USER: root
       DB_PASS: ${DB_PASS}
       DB_NAME: ${DB_NAME:-cotton}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES: ${JWT_EXPIRES:-7d}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      SILICONFLOW_API_KEY: ${SILICONFLOW_API_KEY:-}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      WEATHER_PROVIDER: ${WEATHER_PROVIDER:-qweather}
-      QWEATHER_API_HOST: ${QWEATHER_API_HOST:-}
-      QWEATHER_API_KEY: ${QWEATHER_API_KEY:-}
-      QWEATHER_JWT_KID: ${QWEATHER_JWT_KID:-}
-      QWEATHER_JWT_SUB: ${QWEATHER_JWT_SUB:-}
-      QWEATHER_JWT_PRIVATE_KEY_PATH: ${QWEATHER_JWT_PRIVATE_KEY_PATH:-}
-      QWEATHER_JWT_PRIVATE_KEY: ${QWEATHER_JWT_PRIVATE_KEY:-}
-      QWEATHER_TIMEOUT_MS: ${QWEATHER_TIMEOUT_MS:-8000}
+      COMMUNITY_BASE_URL: ${COMMUNITY_BASE_URL:-}
     volumes:
       - uploads:/app/public/uploads
       - identity_uploads:/app/private/identity
@@ -60,21 +46,82 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/ping').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    networks:
+      - cotton_shared
 
-  # ── Nginx 反向代理 ─────────────────────────────
+  community:
+    build:
+      context: ./cotton-community
+      dockerfile: Dockerfile
+    container_name: cotton-community
+    restart: always
+    env_file:
+      - ./cotton-app/server/.env
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME:-cotton}
+      PLATFORM_BASE_URL: ${PLATFORM_BASE_URL:-}
+      KNOWLEDGE_LOCAL_UPLOAD_MAX_MB: ${KNOWLEDGE_LOCAL_UPLOAD_MAX_MB:-250}
+    volumes:
+      - community_uploads:/app/public/uploads
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3100/api/community-health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    networks:
+      - cotton_shared
+
   nginx:
     image: docker.m.daocloud.io/library/nginx:alpine
     container_name: cotton-nginx
     restart: always
     ports:
       - "80:80"
-      - "443:443"
     volumes:
-      - ./server/nginx-docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/proxy_params:/etc/nginx/proxy_params:ro
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+      community:
+        condition: service_healthy
+    networks:
+      - cotton_shared
 
 volumes:
   mysql_data:
+    name: cotton_mysql_data
   uploads:
+    name: cotton_uploads
   identity_uploads:
+    name: cotton_identity_uploads
+  community_uploads:
+    name: cotton-community_community_uploads
+
+networks:
+  cotton_shared:
+    name: cotton-shared

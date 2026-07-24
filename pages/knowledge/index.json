@@ -1,8 +1,0 @@
-{
-  "navigationStyle": "default",
-  "navigationBarTitleText": "知识讲堂",
-  "navigationBarBackgroundColor": "#FFFFFF",
-  "navigationBarTextStyle": "black",
-  "renderer": "webview",
-  "componentFramework": "glass-easel"
-}

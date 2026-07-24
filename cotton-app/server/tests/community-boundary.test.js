@@ -1,0 +1,27 @@
+const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
+
+const serverDir = path.resolve(__dirname, '..')
+const read = file => fs.readFileSync(path.join(serverDir, file), 'utf8')
+
+const index = read('index.js')
+const login = read('public/admin/login.html')
+const dashboard = read('public/admin/dashboard.html')
+const packageJson = JSON.parse(read('package.json'))
+const entrypoint = read('docker-entrypoint.sh')
+
+assert(index.includes("app.get('/community'"), 'cotton-app should expose a public community redirect')
+assert(index.includes("app.get('/community/admin'"), 'cotton-app should expose an admin community redirect')
+assert(index.includes('COMMUNITY_BASE_URL'), 'community URL should be environment driven')
+assert(!index.includes("app.use('/knowledge'"), 'cotton-app must not serve community pages')
+assert(!index.includes("app.use('/api/knowledge'"), 'cotton-app must not mount community APIs')
+assert(login.includes('href="/community"'), 'platform login should link to the independent community')
+assert(dashboard.includes("window.location.href='/community/admin'"), 'admin dashboard should link to the community operations page')
+assert(!packageJson.scripts['migrate:knowledge'], 'knowledge migrations belong to cotton-community')
+assert(!packageJson.scripts.test.includes('knowledge-hall.test.js'), 'knowledge tests belong to cotton-community')
+assert(!entrypoint.includes('migrate_knowledge_hall.js'), 'cotton-app startup must not mutate community tables')
+assert(!fs.existsSync(path.join(serverDir, 'routes', 'knowledge.js')), 'community route must be removed from cotton-app')
+assert(!fs.existsSync(path.join(serverDir, 'public', 'knowledge')), 'community static site must be removed from cotton-app')
+
+console.log('community project boundary tests passed')

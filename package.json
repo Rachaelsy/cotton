@@ -1,0 +1,11 @@
+{
+  "name": "cotton-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "validate": "node scripts/validate-layout.js",
+    "test:app": "npm --prefix cotton-app/server test",
+    "test:community": "npm --prefix cotton-community test",
+    "test": "npm run validate && npm run test:app && npm run test:community"
+  }
+}
