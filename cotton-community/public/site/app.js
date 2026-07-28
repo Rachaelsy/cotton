@@ -32,6 +32,17 @@
   const pestById = id => data.pests.find(item => item.id === id)
   const activityById = id => data.activities.find(item => item.id === id)
 
+  async function publicServiceRequest(path, payload) {
+    const response = await fetch(`/api/public-service${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    const result = await response.json().catch(() => ({ code: response.status, msg: '请求失败，请稍后重试' }))
+    if (!response.ok || result.code !== 200) throw new Error(result.msg || '请求失败，请稍后重试')
+    return result
+  }
+
   function setMeta(title, description) {
     document.title = `${title} · ${data.company.name}`
     const meta = document.querySelector('meta[name="description"]')
@@ -217,11 +228,6 @@
                <a class="button light" href="${publicLink('/experts')}">专家咨询</a>
             </div>
           </div>
-          <div class="hero-facts" aria-label="公益服务内容">
-            <div><strong>6</strong><span>个生育期专题</span></div>
-            <div><strong>免费</strong><span>公开浏览与学习</span></div>
-            <div><strong>持续</strong><span>评论、问答与记录</span></div>
-          </div>
         </div>
       </section>
       <section class="service-ribbon public-ribbon">
@@ -237,7 +243,7 @@
           ${sectionHeading('PUBLIC SERVICE AREAS', '六大公益服务专区', '知识公开浏览，咨询和学习记录在登录后与棉花平台账号同步。')}
           <div class="public-sector-grid">
             <a class="public-sector-card" href="${publicLink('/training')}"><span>01</span><strong>棉花种植培训</strong><p>从播种、苗期到采收的全生育期管理文章与田间清单。</p><b>进入专区 →</b></a>
-            <a class="public-sector-card" href="${publicLink('/academy')}"><span>02</span><strong>图文课程</strong><p>图文、图片、小测试、评论与 AI 解答组成的互动课程。</p><b>进入专区 →</b></a>
+            <a class="public-sector-card" href="${publicLink('/courses')}"><span>02</span><strong>图文课程</strong><p>图文、图片、小测试、评论与 AI 解答组成的互动课程。</p><b>进入专区 →</b></a>
             <a class="public-sector-card" href="${publicLink('/policies')}"><span>03</span><strong>政策资讯</strong><p>整理权威信息的阅读方法、适用范围与来源核验要点。</p><b>进入专区 →</b></a>
             <a class="public-sector-card" href="${publicLink('/experts')}"><span>04</span><strong>专家咨询</strong><p>查看共享专家队伍，提交田间问题并跟踪后台回复。</p><b>进入专区 →</b></a>
             <a class="public-sector-card" href="${publicLink('/pests')}"><span>05</span><strong>病虫害知识</strong><p>按症状、发生阶段和调查方法建立规范排查顺序。</p><b>进入专区 →</b></a>
@@ -264,10 +270,10 @@
           <div class="public-service-copy">
             <span class="eyebrow">QUESTIONS & SUPPORT</span>
             <h2>从学习资料走到专家咨询</h2>
-            <p>公益平台把共享专家、课程评论、棉友论坛与 AI 助学连接起来。登录后可提交问题、查看回复并保留学习记录。</p>
+            <p>公益平台把共享专家、课程评论、棉友问答与 AI 助学连接起来。登录后可提交问题、查看回复并保留学习记录。</p>
             <div class="hero-actions">
               <a class="button primary" href="${publicLink('/experts')}">进入专家咨询</a>
-              <a class="button outline" href="${publicLink('/academy')}">进入互动学堂</a>
+              <a class="button outline" href="${publicLink('/forum')}">进入棉友问答</a>
             </div>
           </div>
           <div class="public-service-image"><img src="/assets/cotton-seedling-leaf-inspection-v1.jpg" alt="技术人员查看棉花叶片"></div>
@@ -349,7 +355,7 @@
 
       <section class="cross-platform-band business-cross-band">
         <div class="shell cross-platform-inner">
-          <div><span class="eyebrow">PUBLIC KNOWLEDGE</span><h2>培训和农技交流已归入公益平台</h2><p>商品信息可与公益培训相互关联，账号和学习记录保持一致。</p></div>
+          <div><span class="eyebrow">PUBLIC KNOWLEDGE</span><h2>查找种植培训与农技交流</h2><p>公益平台提供免费培训、图文课程、政策资讯、专家咨询和棉友问答。</p></div>
           <a class="button light" href="${publicLink('/')}">前往公益平台</a>
         </div>
       </section>
@@ -503,7 +509,7 @@
         </div>
       </section>
       <section class="academy-band">
-        <div class="shell academy-band-inner"><div><span class="eyebrow">QUESTIONS & DISCUSSION</span><h2>需要针对具体问题继续交流？</h2><p>互动学堂保留评论、回复、论坛提问、学习记录和 AI 助学功能。</p></div><a class="button light" href="${link('/academy')}">进入互动学堂</a></div>
+        <div class="shell academy-band-inner"><div><span class="eyebrow">QUESTIONS & DISCUSSION</span><h2>需要针对具体问题继续交流？</h2><p>公益平台提供课程评论、回复、公开提问、学习记录和 AI 助学功能。</p></div><a class="button light" href="${publicLink('/forum')}">进入棉友问答</a></div>
       </section>`
 
     document.getElementById('trainingFilters').addEventListener('click', event => {
@@ -534,7 +540,7 @@
   function expertCard(expert) {
     const specialties = Array.isArray(expert.specialties) ? expert.specialties : []
     const loggedIn = Boolean(localStorage.getItem('knowledge_token'))
-    const actionHref = loggedIn ? '#expertQuestionForm' : publicLink('/academy?auth=login')
+    const actionHref = loggedIn ? '#expertQuestionForm' : publicLink('/login?next=%2Fpublic%2Fexperts')
     const actionText = loggedIn ? '向平台专家组提问' : '登录后向专家提问'
     return `
       <article class="expert-card">
@@ -595,7 +601,8 @@
                 <span class="eyebrow">ACCOUNT REQUIRED</span>
                 <h2>登录后提交问题</h2>
                 <p>专家咨询使用棉花平台统一账号。登录后可以查看自己的历史问题与专家回复。</p>
-                <a class="button primary" href="${publicLink('/academy?auth=login')}">登录 / 注册</a>
+                <a class="button primary" href="${publicLink('/login?next=%2Fpublic%2Fexperts')}">登录</a>
+                <a class="button outline" href="${publicLink('/login?mode=register&next=%2Fpublic%2Fexperts')}">注册</a>
               </div>`}
           </div>
         </div>
@@ -712,7 +719,7 @@
             <span class="eyebrow">CONTINUE LEARNING</span>
             <h2>继续学习</h2>
             ${related.map(article => `<a href="${link(`/training/${article.id}`)}"><span>${escapeHtml(article.categoryName)}</span><strong>${escapeHtml(article.title)}</strong></a>`).join('')}
-            <a class="button outline full" href="${link('/academy')}">进入互动学堂</a>
+            <a class="button outline full" href="${publicLink('/courses')}">浏览图文课程</a>
           </aside>
         </div>
       </article>
@@ -857,23 +864,42 @@
             </dl>
             <form id="activityInterestForm">
               <label><span>姓名或称呼</span><input name="name" maxlength="40" required></label>
-              <label><span>联系电话</span><input name="phone" inputmode="tel" maxlength="20" required></label>
-              <button class="button primary full" type="submit">保存参与意向到本机</button>
+              <label><span>联系电话</span><input name="phone" inputmode="tel" maxlength="20" autocomplete="tel" required></label>
+              <label><span>所在地区</span><input name="region" maxlength="80" placeholder="例如：新疆阿克苏"></label>
+              <label><span>希望了解的问题</span><textarea name="message" maxlength="1200" placeholder="可填写地块阶段、关注问题或希望参加的形式"></textarea></label>
+              <input class="form-trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+              <label class="consent"><input type="checkbox" name="consent" required><span>同意平台为联系和组织本次公益服务使用以上信息。</span></label>
+              <button class="button primary full" type="submit">提交参与意向</button>
               <p id="activityFormMessage" aria-live="polite"></p>
             </form>
           </aside>
         </div>
       </article>`
 
-    document.getElementById('activityInterestForm').addEventListener('submit', event => {
+    document.getElementById('activityInterestForm').addEventListener('submit', async event => {
       event.preventDefault()
       const form = event.currentTarget
       const values = Object.fromEntries(new FormData(form).entries())
-      const entries = JSON.parse(localStorage.getItem('cotton-public-activity-interest') || '[]')
-      entries.push({ ...values, activityId: item.id, createdAt: new Date().toISOString() })
-      localStorage.setItem('cotton-public-activity-interest', JSON.stringify(entries.slice(-20)))
-      document.getElementById('activityFormMessage').textContent = '参与意向仅保存在当前设备，尚未提交至服务器，请勿将其视为正式报名。'
-      form.reset()
+      const button = form.querySelector('button[type="submit"]')
+      const message = document.getElementById('activityFormMessage')
+      button.disabled = true
+      button.textContent = '正在提交...'
+      message.textContent = ''
+      try {
+        const result = await publicServiceRequest('/activity-interests', {
+          ...values,
+          activityId: item.id,
+          activityName: item.title,
+          sourcePath: location.pathname
+        })
+        message.textContent = `${result.msg}。这是一项参与意向，不等同于正式报名。`
+        form.reset()
+      } catch (error) {
+        message.textContent = error.message
+      } finally {
+        button.disabled = false
+        button.textContent = '提交参与意向'
+      }
     })
   }
 
@@ -884,7 +910,7 @@
     const businessNews = data.news.filter(item => item.category !== 'policy')
 
     main.innerHTML = `
-      ${pageHero('NEWS & INSIGHTS', '新闻资讯', '整理棉花产业、质量标准和加工动态，内容保留官方来源；农业政策统一归入公益平台。', 'news-hero')}
+      ${pageHero('NEWS & INSIGHTS', '新闻资讯', '整理棉花产业、质量标准和加工动态，内容保留官方来源；农业政策可在公益平台查阅。', 'news-hero')}
       <section class="section-block">
         <div class="shell news-layout">
           <div>
@@ -1008,13 +1034,13 @@
     const selectedProduct = productById(productId)
 
     main.innerHTML = `
-      ${pageHero('BUSINESS CONTACT', '商务联系', '产品信息、供货服务、渠道合作或公司业务需求，可以先在这里整理和登记。', 'contact-hero')}
+      ${pageHero('BUSINESS CONTACT', '商务联系', '可在此提交产品信息、供货服务、渠道合作或公司业务需求，工作人员会根据所填信息安排联系。', 'contact-hero')}
       <section class="section-block">
         <div class="shell contact-layout">
           <div class="contact-info">
             <span class="eyebrow">BUSINESS DESK</span>
             <h2>商务团队</h2>
-            <p>平台暂未公开线下电话和详细办公地址。当前可以登记产品资料、供货或合作需求；表单接入正式服务工单前，页面会明确提示保存状态。</p>
+            <p>平台暂未公开线下电话和详细办公地址。您可以在此提交产品资料、供货或合作需求，管理员会在网站后台查看并安排联系。</p>
             <dl>
               <div><dt>联系渠道</dt><dd>${data.company.phone ? escapeHtml(data.company.phone) : '本页商务需求表单'}</dd></div>
               <div><dt>服务时间</dt><dd>${escapeHtml(data.company.hours)}</dd></div>
@@ -1024,7 +1050,7 @@
             <div class="response-note"><strong>提交前建议准备</strong><p>所在地区、关注的产品类别、预计需求量、合作方式和希望进一步了解的资料。</p></div>
           </div>
           <form class="contact-form" id="contactForm">
-            <div class="form-heading"><span class="eyebrow">REQUEST NOTE</span><h2>登记服务需求</h2><p>带 * 的项目为必填项，当前记录仅保存在本机。</p></div>
+            <div class="form-heading"><span class="eyebrow">REQUEST NOTE</span><h2>提交服务需求</h2><p>带 * 的项目为必填项，提交后可由平台管理员查看和处理。</p></div>
             <div class="form-grid">
               <label><span>姓名或称呼 *</span><input name="name" maxlength="30" autocomplete="name" required></label>
               <label><span>联系电话 *</span><input name="phone" inputmode="tel" maxlength="20" autocomplete="tel" required></label>
@@ -1032,22 +1058,39 @@
               <label><span>所在地区</span><input name="region" maxlength="80" placeholder="例如：新疆阿克苏"></label>
               <label class="full"><span>咨询产品</span><select name="product"><option value="">不指定产品</option>${data.products.map(item => `<option value="${item.id}" ${selectedProduct?.id === item.id ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</select></label>
               <label class="full"><span>需求描述 *</span><textarea name="message" maxlength="1200" required placeholder="请写明关注的产品、数量范围、所在地区或合作需求。">${selectedProduct ? `我想了解“${escapeHtml(selectedProduct.name)}”的规格、供货条件和服务方式。` : ''}</textarea></label>
+              <input class="form-trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
             </div>
-            <label class="consent"><input type="checkbox" name="consent" required><span>我已知晓当前内容仅保存在本机，尚未提交至服务人员。</span></label>
-            <div class="form-submit"><button class="button primary" type="submit">保存需求到本机</button><span id="formMessage" role="status"></span></div>
+            <label class="consent"><input type="checkbox" name="consent" required><span>同意平台为处理本次需求使用以上信息并通过所填号码与我联系。</span></label>
+            <div class="form-submit"><button class="button primary" type="submit">提交商务需求</button><span id="formMessage" role="status"></span></div>
           </form>
         </div>
       </section>`
 
-    document.getElementById('contactForm').addEventListener('submit', event => {
+    document.getElementById('contactForm').addEventListener('submit', async event => {
       event.preventDefault()
       const form = event.currentTarget
       const entries = Object.fromEntries(new FormData(form).entries())
-      const requests = JSON.parse(localStorage.getItem('cotton-service-requests') || '[]')
-      requests.push({ ...entries, createdAt: new Date().toISOString() })
-      localStorage.setItem('cotton-service-requests', JSON.stringify(requests.slice(-20)))
-      document.getElementById('formMessage').textContent = '需求仅保存在当前设备，尚未提交至服务器，请勿将其视为已受理。'
-      form.reset()
+      const button = form.querySelector('button[type="submit"]')
+      const message = document.getElementById('formMessage')
+      const product = productById(entries.product)
+      button.disabled = true
+      button.textContent = '正在提交...'
+      message.textContent = ''
+      try {
+        const result = await publicServiceRequest('/business-inquiries', {
+          ...entries,
+          productId: product?.id || '',
+          productName: product?.name || '',
+          sourcePath: location.pathname
+        })
+        message.textContent = result.msg
+        form.reset()
+      } catch (error) {
+        message.textContent = error.message
+      } finally {
+        button.disabled = false
+        button.textContent = '提交商务需求'
+      }
     })
   }
 
@@ -1077,6 +1120,8 @@
     const nav = document.getElementById('mainNav')
 
     if (platform === 'public') {
+      let account = null
+      try { account = JSON.parse(localStorage.getItem('knowledge_user') || 'null') } catch {}
       document.body.dataset.platform = 'public'
       brand.href = publicLink('/')
       brand.setAttribute('aria-label', '棉知公益平台首页')
@@ -1086,13 +1131,14 @@
       nav.innerHTML = `
         <a href="${publicLink('/')}" data-nav="home">公益首页</a>
         <a href="${publicLink('/training')}" data-nav="training">种植培训</a>
+        <a href="${publicLink('/courses')}" data-nav="courses">图文课程</a>
         <a href="${publicLink('/policies')}" data-nav="policies">政策资讯</a>
         <a href="${publicLink('/experts')}" data-nav="experts">专家咨询</a>
         <a href="${publicLink('/pests')}" data-nav="pests">病虫害</a>
         <a href="${publicLink('/activities')}" data-nav="activities">公益活动</a>
         <a class="platform-switch-link" href="${businessLink('/')}">商业平台</a>`
-      action.href = publicLink('/academy')
-      action.textContent = '图文课程 / 登录'
+      action.href = publicLink('/login')
+      action.textContent = account ? (account.real_name || account.name || '我的账号') : '登录'
     } else if (platform === 'business') {
       document.body.dataset.platform = 'business'
       brand.href = businessLink('/')
@@ -1132,12 +1178,28 @@
     })
   }
 
+  const learningViews = window.COTTON_LEARNING?.create({
+    main,
+    escapeHtml,
+    publicLink,
+    setMeta,
+    setActiveNav,
+    pageHero,
+    sectionHeading,
+    renderNotFound
+  })
+
   setupHeader()
 
   if (platform === 'hub' && (routePath === '/' || routePath === '/index.html')) renderHub()
   else if (platform === 'public' && pageGroup === 'home') renderPublicHome()
   else if (platform === 'public' && pageGroup === 'training' && pathParts.length === 1) renderTraining()
   else if (platform === 'public' && pageGroup === 'training') renderTrainingDetail(trainingById(pathParts[1]))
+  else if (platform === 'public' && pageGroup === 'courses' && pathParts.length === 1) learningViews?.renderCourses()
+  else if (platform === 'public' && pageGroup === 'courses') learningViews?.renderCourseDetail(pathParts[1])
+  else if (platform === 'public' && pageGroup === 'forum' && pathParts.length === 1) learningViews?.renderForum()
+  else if (platform === 'public' && pageGroup === 'forum') learningViews?.renderForumDetail(pathParts[1])
+  else if (platform === 'public' && pageGroup === 'login') learningViews?.renderLogin()
   else if (platform === 'public' && (pageGroup === 'consult' || pageGroup === 'experts')) renderExperts()
   else if (platform === 'public' && pageGroup === 'policies' && pathParts.length === 1) renderPolicies()
   else if (platform === 'public' && pageGroup === 'policies') renderNewsDetail(newsById(pathParts[1]), 'public')

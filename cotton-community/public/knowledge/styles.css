@@ -318,7 +318,7 @@ img, video { display: block; max-width: 100%; }
 .admin-top .admin-links { margin-left: auto; display: flex; gap: 10px; }
 .admin-top a { color: rgba(255,255,255,.85); font-size: 13px; }
 .admin-shell { width: min(1320px, calc(100% - 40px)); margin: 0 auto; padding: 28px 0 60px; }
-.stats-row { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; margin-bottom: 24px; }
+.stats-row { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 12px; margin-bottom: 24px; }
 .stat-card { padding: 18px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
 .stat-card span { display: block; color: var(--muted); font-size: 12px; }
 .stat-card strong { display: block; margin-top: 7px; font-size: 26px; }
@@ -345,6 +345,12 @@ img, video { display: block; max-width: 100%; }
 .checkbox-row input { width: 18px; height: 18px; }
 .admin-filterbar { display: grid; grid-template-columns: 160px minmax(190px,1fr) 130px minmax(220px,1fr) auto auto; gap: 9px; margin-bottom: 16px; }
 .admin-filterbar select, .admin-filterbar input { min-width: 0; height: 40px; padding: 0 11px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.request-filterbar { grid-template-columns: 180px 180px auto auto; justify-content: start; }
+.request-table { min-width: 1120px; }
+.request-contact { min-width: 145px; line-height: 1.55; }
+.request-message { min-width: 280px; max-width: 480px; line-height: 1.65; }
+.status-pill.contacted { color: #235a78; background: #e3f0f7; }
+.status-pill.closed { color: #59615c; background: #ecefed; }
 .table-link { color: var(--green); font-weight: 750; }
 .table-link:hover { text-decoration: underline; }
 .comment-cell { min-width: 260px; max-width: 460px; line-height: 1.65; }

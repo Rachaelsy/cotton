@@ -69,6 +69,28 @@ async function run() {
   `)
 
   await db.query(`
+    CREATE TABLE IF NOT EXISTS community_service_requests (
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      kind ENUM('business','activity') NOT NULL,
+      reference_id VARCHAR(120) DEFAULT '',
+      reference_name VARCHAR(160) DEFAULT '',
+      contact_name VARCHAR(64) NOT NULL,
+      contact_phone VARCHAR(32) NOT NULL,
+      region VARCHAR(100) DEFAULT '',
+      category VARCHAR(64) DEFAULT '',
+      message TEXT,
+      status ENUM('pending','contacted','closed') NOT NULL DEFAULT 'pending',
+      admin_note TEXT,
+      source_path VARCHAR(255) DEFAULT '',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_service_request_status (status,created_at),
+      INDEX idx_service_request_kind (kind,created_at),
+      INDEX idx_service_request_phone (contact_phone,created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益活动意向与商务服务需求'
+  `)
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS knowledge_contents (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       type ENUM('video','article','gallery') NOT NULL DEFAULT 'article',
@@ -97,7 +119,7 @@ async function run() {
       INDEX idx_status_sort (status,is_featured,sort_order,id),
       INDEX idx_category (category_key,status),
       INDEX idx_type (type,status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共知识讲堂内容'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台课程内容'
   `)
 
   if (!(await hasColumn('knowledge_contents', 'quiz_json'))) {
@@ -120,7 +142,7 @@ async function run() {
       INDEX idx_content_status (content_id,status,id),
       INDEX idx_user (user_id,id),
       CONSTRAINT fk_knowledge_comment_content FOREIGN KEY (content_id) REFERENCES knowledge_contents(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识讲堂评论'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益课程评论'
   `)
 
   await db.query(`
@@ -138,7 +160,7 @@ async function run() {
       UNIQUE KEY uk_knowledge_progress (content_id,user_id),
       INDEX idx_user_viewed (user_id,last_viewed_at),
       CONSTRAINT fk_knowledge_progress_content FOREIGN KEY (content_id) REFERENCES knowledge_contents(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识讲堂观看和阅读进度'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益课程观看和阅读进度'
   `)
 
   await db.query(`
@@ -150,7 +172,7 @@ async function run() {
       UNIQUE KEY uk_knowledge_favorite (content_id,user_id),
       INDEX idx_user_created (user_id,created_at),
       CONSTRAINT fk_knowledge_favorite_content FOREIGN KEY (content_id) REFERENCES knowledge_contents(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识讲堂收藏'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益课程收藏'
   `)
 
   await db.query(`
@@ -173,7 +195,7 @@ async function run() {
       INDEX idx_forum_status (status,updated_at,id),
       INDEX idx_forum_user (user_id,id),
       INDEX idx_forum_category (category_key,status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识讲堂公开问答'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台公开问答'
   `)
 
   await db.query(`
@@ -191,7 +213,7 @@ async function run() {
       INDEX idx_answer_question (question_id,status,id),
       INDEX idx_answer_user (user_id,id),
       CONSTRAINT fk_knowledge_answer_question FOREIGN KEY (question_id) REFERENCES knowledge_questions(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识讲堂问题回答'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台问题回答'
   `)
 
   await db.query(`
@@ -203,10 +225,10 @@ async function run() {
       UNIQUE KEY uk_answer_vote (answer_id,user_id),
       INDEX idx_vote_user (user_id,id),
       CONSTRAINT fk_knowledge_vote_answer FOREIGN KEY (answer_id) REFERENCES knowledge_answers(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识讲堂回答点赞'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台回答点赞'
   `)
 
-  // 知识讲堂已改为独立网页模块，不再保留小程序到网页的临时登录票据。
+  // 公益课程使用网页登录，不再保留小程序到网页的临时登录票据。
   await db.query('DROP TABLE IF EXISTS knowledge_web_login_tickets')
   await db.query(
     `UPDATE knowledge_contents
@@ -640,11 +662,11 @@ async function run() {
     console.log(`[migrate] interactive knowledge course created: ${course.title}`)
   }
 
-  console.log('[migrate] public service and knowledge hall tables ready')
+  console.log('[migrate] public service and learning tables ready')
   process.exit(0)
 }
 
 run().catch(error => {
-  console.error('[migrate] knowledge hall failed:', error.message)
+  console.error('[migrate] public learning migration failed:', error.message)
   process.exit(1)
 })

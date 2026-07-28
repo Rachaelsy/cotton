@@ -204,7 +204,7 @@ router.get('/home', optionalAuth, async (req, res) => {
     })
   } catch (error) {
     console.error('[knowledge-home]', error)
-    return fail(res, '知识讲堂加载失败', 500)
+    return fail(res, '公益课程加载失败', 500)
   }
 })
 
@@ -558,9 +558,11 @@ router.get('/admin/stats', adminAuth, async (_req, res) => {
   try {
     const [[content]] = await db.query("SELECT COUNT(*) AS total,SUM(status='published') AS published,SUM(view_count) AS views,SUM(comment_count) AS comments FROM knowledge_contents")
     const [[learners]] = await db.query('SELECT COUNT(DISTINCT user_id) AS learners FROM knowledge_progress')
+    const [[requests]] = await db.query("SELECT COUNT(*) AS pending FROM community_service_requests WHERE status='pending'")
     return ok(res, {
       total: Number(content.total || 0), published: Number(content.published || 0), views: Number(content.views || 0),
-      comments: Number(content.comments || 0), learners: Number(learners.learners || 0)
+      comments: Number(content.comments || 0), learners: Number(learners.learners || 0),
+      pendingRequests: Number(requests.pending || 0)
     })
   } catch (error) {
     console.error('[knowledge-admin-stats]', error)
@@ -771,6 +773,50 @@ router.delete('/admin/comments/:id', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('[knowledge-admin-comment-delete]', error)
     return fail(res, '评论删除失败', 500)
+  }
+})
+
+router.get('/admin/service-requests', adminAuth, async (req, res) => {
+  const conditions = []
+  const params = []
+  if (['business', 'activity'].includes(req.query.kind)) {
+    conditions.push('kind=?')
+    params.push(req.query.kind)
+  }
+  if (['pending', 'contacted', 'closed'].includes(req.query.status)) {
+    conditions.push('status=?')
+    params.push(req.query.status)
+  }
+  try {
+    const [rows] = await db.query(
+      `SELECT id,kind,reference_id,reference_name,contact_name,contact_phone,region,category,message,status,admin_note,source_path,created_at,updated_at
+       FROM community_service_requests
+       ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
+       ORDER BY FIELD(status,'pending','contacted','closed'),created_at DESC
+       LIMIT 500`,
+      params
+    )
+    return ok(res, rows)
+  } catch (error) {
+    console.error('[knowledge-admin-service-requests]', error)
+    return fail(res, '服务需求加载失败', 500)
+  }
+})
+
+router.patch('/admin/service-requests/:id', adminAuth, async (req, res) => {
+  const status = ['pending', 'contacted', 'closed'].includes(req.body.status) ? req.body.status : ''
+  const adminNote = String(req.body.admin_note || '').trim().slice(0, 2000)
+  if (!status) return fail(res, '需求状态无效')
+  try {
+    const [result] = await db.query(
+      'UPDATE community_service_requests SET status=?,admin_note=? WHERE id=?',
+      [status, adminNote, req.params.id]
+    )
+    if (!result.affectedRows) return fail(res, '服务需求不存在', 404)
+    return ok(res, null, '服务需求状态已更新')
+  } catch (error) {
+    console.error('[knowledge-admin-service-request-update]', error)
+    return fail(res, '服务需求更新失败', 500)
   }
 })
 

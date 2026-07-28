@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>知识讲堂管理 · 棉花智能体</title><link rel="icon" href="/assets/cotton-field-sky.png"><link rel="stylesheet" href="/knowledge/styles.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>网站运营管理 · 棉花智能体</title><link rel="icon" href="/assets/cotton-field-sky.png"><link rel="stylesheet" href="/knowledge/styles.css"></head>
 <body class="admin-page">
-  <header class="admin-top"><div class="admin-top-inner"><span class="brand-mark">棉</span><h1>知识讲堂运营台</h1><div class="admin-links"><a href="/public/" target="_blank">公益平台</a><a href="/business/" target="_blank">商业平台</a><a href="/platform/admin">返回管理后台</a></div></div></header>
+  <header class="admin-top"><div class="admin-top-inner"><span class="brand-mark">棉</span><h1>公益与商业网站运营台</h1><div class="admin-links"><a href="/public/" target="_blank">公益平台</a><a href="/business/" target="_blank">商业平台</a><a href="/platform/admin">返回管理后台</a></div></div></header>
   <main class="admin-shell">
     <section class="stats-row">
       <div class="stat-card"><span>全部内容</span><strong id="statTotal">0</strong></div>
@@ -10,11 +10,12 @@
       <div class="stat-card"><span>累计学习</span><strong id="statViews">0</strong></div>
       <div class="stat-card"><span>注册学习用户</span><strong id="statLearners">0</strong></div>
       <div class="stat-card"><span>课程评论</span><strong id="statComments">0</strong></div>
+      <div class="stat-card"><span>待处理需求</span><strong id="statRequests">0</strong></div>
     </section>
-    <nav class="admin-tabs"><button class="admin-tab active" data-view="contents">内容管理</button><button class="admin-tab" data-view="comments">课程评论</button><button class="admin-tab" data-view="forum">问答社区</button></nav>
+    <nav class="admin-tabs"><button class="admin-tab active" data-view="contents">内容管理</button><button class="admin-tab" data-view="comments">课程评论</button><button class="admin-tab" data-view="forum">问答社区</button><button class="admin-tab" data-view="requests">服务需求</button></nav>
 
     <section id="contentsPanel">
-      <div class="admin-toolbar"><div><h2>学习内容</h2><p class="question-excerpt">上传视频、图片或编辑图文，发布后立即出现在公开知识讲堂。</p></div><button class="btn" id="addContentBtn">新增内容</button></div>
+      <div class="admin-toolbar"><div><h2>学习内容</h2><p class="question-excerpt">上传视频、图片或编辑图文，发布后立即出现在公益平台图文课程专区。</p></div><button class="btn" id="addContentBtn">新增内容</button></div>
       <div class="data-table-wrap"><table class="data-table"><thead><tr><th>封面</th><th>标题</th><th>类型/分类</th><th>状态</th><th>浏览</th><th>评论</th><th>排序</th><th>操作</th></tr></thead><tbody id="contentTable"><tr><td colspan="8">加载中...</td></tr></tbody></table></div>
     </section>
     <section id="commentsPanel" class="hidden">
@@ -33,6 +34,16 @@
       <div class="admin-toolbar"><div><h2>问答社区</h2><p class="question-excerpt">问题和回答均由用户发布，管理员只负责秩序治理。</p></div></div>
       <h3>问题</h3><div class="data-table-wrap"><table class="data-table"><thead><tr><th>标题</th><th>提问者</th><th>分类</th><th>回答</th><th>状态</th><th>操作</th></tr></thead><tbody id="questionTable"></tbody></table></div>
       <h3 style="margin-top:28px">最新回答</h3><div class="data-table-wrap"><table class="data-table"><thead><tr><th>问题</th><th>回答者</th><th>回答内容</th><th>点赞</th><th>状态</th><th>操作</th></tr></thead><tbody id="answerTable"></tbody></table></div>
+    </section>
+    <section id="requestsPanel" class="hidden">
+      <div class="admin-toolbar"><div><h2>服务需求</h2><p class="question-excerpt">查看商业合作需求和公益活动参与意向，联系用户后及时更新处理状态。</p></div><strong id="requestResultCount">0 条结果</strong></div>
+      <div class="admin-filterbar request-filterbar">
+        <select id="requestKind"><option value="">全部来源</option><option value="business">商业需求</option><option value="activity">公益活动</option></select>
+        <select id="requestStatus"><option value="">全部状态</option><option value="pending">待处理</option><option value="contacted">已联系</option><option value="closed">已完成</option></select>
+        <button class="btn" id="requestFilterBtn">筛选</button>
+        <button class="btn secondary" id="requestResetBtn">重置</button>
+      </div>
+      <div class="data-table-wrap"><table class="data-table request-table"><thead><tr><th>来源</th><th>事项</th><th>联系人</th><th>需求内容</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead><tbody id="requestTable"></tbody></table></div>
     </section>
   </main>
 

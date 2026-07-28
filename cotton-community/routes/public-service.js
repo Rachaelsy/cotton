@@ -5,6 +5,8 @@ const db = require('../db/database')
 const router = express.Router()
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, status = 400) => res.status(status).json({ code: status, msg, data: null })
+const submissionWindows = new Map()
+const businessCategories = new Set(['产品资料', '供货服务', '渠道合作', '公司合作', '其他商务需求'])
 
 function parseJson(value, fallback = []) {
   if (Array.isArray(value)) return value
@@ -31,6 +33,74 @@ function userAuth(req, res, next) {
   req.viewer = tokenPayload(req)
   if (!req.viewer || !req.viewer.id) return fail(res, '请先登录后再向专家提问', 401)
   next()
+}
+
+function cleanText(value, max) {
+  return String(value || '').trim().slice(0, max)
+}
+
+function validPhone(value) {
+  const phone = String(value || '').replace(/[\s-]/g, '')
+  return /^(?:\+?86)?1\d{10}$/.test(phone) || /^0\d{9,11}$/.test(phone)
+}
+
+function allowSubmission(req, kind) {
+  const now = Date.now()
+  const key = `${kind}:${req.ip || req.socket.remoteAddress || 'unknown'}`
+  const recent = (submissionWindows.get(key) || []).filter(timestamp => now - timestamp < 10 * 60 * 1000)
+  if (recent.length >= 5) return false
+  recent.push(now)
+  submissionWindows.set(key, recent)
+  if (submissionWindows.size > 2000) {
+    for (const [itemKey, timestamps] of submissionWindows) {
+      if (!timestamps.some(timestamp => now - timestamp < 10 * 60 * 1000)) submissionWindows.delete(itemKey)
+    }
+  }
+  return true
+}
+
+async function insertServiceRequest(req, res, kind, fields) {
+  if (req.body.website) return ok(res, null, '提交成功')
+  if (!fields.contactName) return fail(res, '请填写姓名或称呼')
+  if (!validPhone(fields.contactPhone)) return fail(res, '请填写正确的联系电话')
+  if (!allowSubmission(req, kind)) return fail(res, '提交过于频繁，请稍后再试', 429)
+
+  try {
+    const normalizedPhone = String(fields.contactPhone).replace(/[\s-]/g, '')
+    const [[duplicate]] = await db.query(
+      `SELECT id FROM community_service_requests
+       WHERE kind=? AND contact_phone=? AND reference_id=? AND created_at>=DATE_SUB(NOW(),INTERVAL 2 MINUTE)
+       ORDER BY id DESC LIMIT 1`,
+      [kind, normalizedPhone, fields.referenceId]
+    )
+    if (duplicate) {
+      return ok(res, { id: Number(duplicate.id) }, kind === 'business'
+        ? '相同需求已提交，请勿重复发送'
+        : '相同参与意向已提交，请勿重复发送')
+    }
+    const [result] = await db.query(
+      `INSERT INTO community_service_requests
+       (kind,reference_id,reference_name,contact_name,contact_phone,region,category,message,source_path)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [
+        kind,
+        fields.referenceId,
+        fields.referenceName,
+        fields.contactName,
+        normalizedPhone,
+        fields.region,
+        fields.category,
+        fields.message,
+        fields.sourcePath
+      ]
+    )
+    return ok(res, { id: Number(result.insertId) }, kind === 'business'
+      ? '商务需求已提交，工作人员会根据填写的联系方式与您沟通'
+      : '参与意向已提交，活动信息确认后工作人员会与您联系')
+  } catch (error) {
+    console.error(`[public-service-${kind}-request]`, error)
+    return fail(res, '提交失败，请稍后重试', 500)
+  }
 }
 
 function normalizeExpert(row) {
@@ -63,6 +133,39 @@ function normalizeQuestion(row) {
     createdAt: row.created_at
   }
 }
+
+router.post('/business-inquiries', async (req, res) => {
+  const category = cleanText(req.body.type, 64)
+  const message = cleanText(req.body.message, 1200)
+  if (!businessCategories.has(category)) return fail(res, '请选择有效的需求类型')
+  if (message.length < 10) return fail(res, '请把需求描述得更完整一些')
+  return insertServiceRequest(req, res, 'business', {
+    referenceId: cleanText(req.body.productId, 120),
+    referenceName: cleanText(req.body.productName, 160),
+    contactName: cleanText(req.body.name, 64),
+    contactPhone: cleanText(req.body.phone, 32),
+    region: cleanText(req.body.region, 100),
+    category,
+    message,
+    sourcePath: cleanText(req.body.sourcePath, 255)
+  })
+})
+
+router.post('/activity-interests', async (req, res) => {
+  const referenceId = cleanText(req.body.activityId, 120)
+  const referenceName = cleanText(req.body.activityName, 160)
+  if (!referenceId || !referenceName) return fail(res, '活动信息无效，请刷新页面后重试')
+  return insertServiceRequest(req, res, 'activity', {
+    referenceId,
+    referenceName,
+    contactName: cleanText(req.body.name, 64),
+    contactPhone: cleanText(req.body.phone, 32),
+    region: cleanText(req.body.region, 100),
+    category: '公益活动意向',
+    message: cleanText(req.body.message, 1200),
+    sourcePath: cleanText(req.body.sourcePath, 255)
+  })
+})
 
 router.get('/experts', async (_req, res) => {
   try {

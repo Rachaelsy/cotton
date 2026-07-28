@@ -3,7 +3,7 @@
 本仓库统一管理两个可以独立开发、共同部署的项目：
 
 - `cotton-app/`：微信小程序、业务后台、农资与农机交易、支付和核心 API。
-- `cotton-community/`：棉知公益平台、农业商业平台、互动学堂和统一内容运营台。公益平台
+- `cotton-community/`：棉知公益平台、农业商业平台和统一内容运营台。公益平台
   包含种植培训、图文课程、政策资讯、专家咨询、病虫害知识和公益活动。
 
 二者共用 MySQL 数据库与账号体系，但各自维护依赖和代码边界。整个 `cotton/`
@@ -20,7 +20,7 @@ cd cotton-app\server
 npm install
 npm start
 
-# 终端 2：棉知学堂
+# 终端 2：公益与商业网站
 cd cotton-community
 npm install
 npm run migrate
@@ -31,7 +31,7 @@ npm start
 - 棉知双平台入口：`http://localhost:3100/knowledge/`
 - 公益平台：`http://localhost:3100/public/`
 - 商业平台：`http://localhost:3100/business/`
-- 学堂健康检查：`http://localhost:3100/api/community-health`
+- 社区服务健康检查：`http://localhost:3100/api/community-health`
 
 ## 统一测试
 
@@ -44,10 +44,10 @@ npm test
 ## Docker 部署
 
 生产环境只使用仓库根目录的 `docker-compose.yml`。它会启动 MySQL、核心平台、
-棉知学堂和统一 Nginx，并在同一域名下提供：
+公益与商业网站和统一 Nginx，并在同一域名下提供：
 
 - `/`、`/admin/`、业务 API：`cotton-app`
-- `/public/`、`/business/`、`/knowledge/`、学堂 API 和学堂上传文件：`cotton-community`
+- `/public/`、`/business/`、`/knowledge/`、公益课程 API 和课程上传文件：`cotton-community`
 
 正式域名下的公开入口为 `https://你的域名/public/` 和
 `https://你的域名/business/`。`/knowledge/` 保留为双平台总入口和内容运营后台路径。

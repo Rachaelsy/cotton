@@ -3,14 +3,21 @@ const path = require('path')
 
 const router = express.Router()
 const siteShell = path.join(__dirname, '../public/site/index.html')
-const academyPage = path.join(__dirname, '../public/knowledge/index.html')
-const academyDetailPage = path.join(__dirname, '../public/knowledge/detail.html')
-const forumDetailPage = path.join(__dirname, '../public/knowledge/forum.html')
 
 const redirectWithQuery = target => (req, res) => {
   const queryIndex = req.url.indexOf('?')
   const query = queryIndex >= 0 ? req.url.slice(queryIndex) : ''
   res.redirect(302, `${target}${query}`)
+}
+
+const redirectLegacyCourse = (req, res) => {
+  const id = Number.parseInt(req.query.id, 10)
+  res.redirect(301, id > 0 ? `/public/courses/${id}` : '/public/courses')
+}
+
+const redirectLegacyQuestion = (req, res) => {
+  const id = Number.parseInt(req.query.id, 10)
+  res.redirect(301, id > 0 ? `/public/forum/${id}` : '/public/forum')
 }
 
 for (const route of [
@@ -20,6 +27,11 @@ for (const route of [
   '/public/',
   '/public/training',
   '/public/training/:id',
+  '/public/courses',
+  '/public/courses/:id',
+  '/public/forum',
+  '/public/forum/:id',
+  '/public/login',
   '/public/consult',
   '/public/experts',
   '/public/policies',
@@ -40,13 +52,13 @@ for (const route of [
   router.get(route, (_req, res) => res.sendFile(siteShell))
 }
 
-router.get('/public/academy', (_req, res) => res.sendFile(academyPage))
-router.get('/public/detail.html', (_req, res) => res.sendFile(academyDetailPage))
-router.get('/public/forum.html', (_req, res) => res.sendFile(forumDetailPage))
+router.get('/public/academy', (_req, res) => res.redirect(301, '/public/courses'))
+router.get('/public/detail.html', redirectLegacyCourse)
+router.get('/public/forum.html', redirectLegacyQuestion)
 
-router.get('/academy', redirectWithQuery('/public/academy'))
-router.get('/detail.html', redirectWithQuery('/public/detail.html'))
-router.get('/forum.html', redirectWithQuery('/public/forum.html'))
+router.get('/academy', (_req, res) => res.redirect(301, '/public/courses'))
+router.get('/detail.html', redirectLegacyCourse)
+router.get('/forum.html', redirectLegacyQuestion)
 router.get('/training', redirectWithQuery('/public/training'))
 router.get('/training/:id', (req, res) => res.redirect(302, `/public/training/${encodeURIComponent(req.params.id)}`))
 router.get('/products', redirectWithQuery('/business/products'))

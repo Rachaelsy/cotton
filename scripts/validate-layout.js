@@ -46,10 +46,10 @@ for (const route of [
 
 const appServer = read('cotton-app/server/index.js')
 const communityServer = read('cotton-community/server.js')
-const detailClient = read('cotton-community/public/knowledge/detail.js')
+const learningClient = read('cotton-community/public/site/learning.js')
 assert(!appServer.includes("COMMUNITY_BASE_URL || 'http://localhost"), 'app has a cloud-unsafe community redirect default')
 assert(!communityServer.includes("PLATFORM_BASE_URL || 'http://localhost"), 'community has a cloud-unsafe platform redirect default')
 assert(communityServer.includes("app.use('/api/community-ai'"), 'community AI route is not isolated')
-assert(detailClient.includes('/api/community-ai/chat'), 'community client does not use the isolated AI route')
+assert(learningClient.includes('/api/community-ai/chat'), 'community client does not use the isolated AI route')
 
 console.log('project layout validation passed')

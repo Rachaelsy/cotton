@@ -1,6 +1,6 @@
 const token = localStorage.getItem('admin_token') || ''
 if (!token) location.href = '/knowledge/admin-login.html'
-const state = { contents:[], comments:[], questions:[], answers:[] }
+const state = { contents:[], comments:[], questions:[], answers:[], requests:[] }
 const $ = id => document.getElementById(id)
 const esc = value => String(value == null ? '' : value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char])
 const typeName = { video:'视频课', article:'图文课', gallery:'图集课' }
@@ -9,7 +9,7 @@ async function api(path, options={}) {
   const response=await fetch(`/api/knowledge/admin${path}`,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`,...(options.headers||{})}})
   const result=await response.json().catch(()=>({msg:'请求失败'})); if(response.status===401){localStorage.removeItem('admin_token');location.href='/knowledge/admin-login.html';throw new Error('登录已过期')} if(!response.ok||result.code!==200)throw new Error(result.msg||'请求失败'); return result.data
 }
-async function loadStats(){const d=await api('/stats');$('statTotal').textContent=d.total;$('statPublished').textContent=d.published;$('statViews').textContent=d.views;$('statLearners').textContent=d.learners;$('statComments').textContent=d.comments}
+async function loadStats(){const d=await api('/stats');$('statTotal').textContent=d.total;$('statPublished').textContent=d.published;$('statViews').textContent=d.views;$('statLearners').textContent=d.learners;$('statComments').textContent=d.comments;$('statRequests').textContent=d.pendingRequests||0}
 async function loadContents(){state.contents=await api('/contents');renderContents();populateCommentFilters()}
 function renderContents(){
   $('contentTable').innerHTML=state.contents.length?state.contents.map(item=>`<tr><td><img class="thumb" src="${esc(item.coverUrl||'/assets/cotton-field-sky.png')}" alt=""></td><td><strong>${esc(item.title)}</strong><br><span class="question-excerpt">${esc(item.subtitle)}</span></td><td>${typeName[item.type]||item.type}<br>${esc(item.categoryName)}</td><td><span class="status-pill ${item.status}">${item.status==='published'?'已上架':'草稿'}</span>${item.isFeatured?'<br><span class="status-pill">推荐</span>':''}</td><td>${item.viewCount}</td><td>${item.commentCount}</td><td>${item.sortOrder}</td><td><div class="table-actions"><button class="small-btn primary" data-edit="${item.id}">编辑</button><button class="small-btn" data-toggle="${item.id}" data-status="${item.status}">${item.status==='published'?'下架':'上架'}</button><button class="small-btn danger" data-delete="${item.id}">删除</button></div></td></tr>`).join(''):'<tr><td colspan="8">暂无内容</td></tr>'
@@ -38,7 +38,7 @@ async function loadComments(){
   $('commentResultCount').textContent=`${state.comments.length} 条结果`
   $('commentTable').innerHTML=state.comments.length?state.comments.map(x=>`<tr>
     <td><span class="status-pill">${esc(x.category_name)}</span></td>
-    <td><a class="table-link" href="/public/detail.html?id=${x.content_id}" target="_blank">${esc(x.content_title)}</a></td>
+    <td><a class="table-link" href="/public/courses/${x.content_id}" target="_blank">${esc(x.content_title)}</a></td>
     <td>${esc(x.nickname)}</td><td class="comment-cell">${x.parent_id?`<div class="comment-reply-target">${x.parent_nickname?`回复 @${esc(x.parent_nickname)}`:'原评论已删除'}</div>`:''}${esc(x.body)}</td>
     <td>${new Date(x.created_at).toLocaleString('zh-CN')}</td>
     <td><span class="status-pill ${x.status}">${x.status==='visible'?'公开':'隐藏'}</span></td>
@@ -48,7 +48,44 @@ async function loadComments(){
   document.querySelectorAll('[data-comment-delete]').forEach(b=>b.addEventListener('click',()=>deleteComment(b.dataset.commentDelete)))
 }
 async function loadForum(){const d=await api('/forum');state.questions=d.questions||[];state.answers=d.answers||[];$('questionTable').innerHTML=state.questions.length?state.questions.map(q=>`<tr><td>${esc(q.title)}</td><td>${esc(q.nickname)}</td><td>${esc(q.categoryName)}</td><td>${q.answerCount}</td><td><span class="status-pill ${q.status==='hidden'?'hidden':''}">${esc(q.status)}</span></td><td><button class="small-btn" data-qstatus="${q.id}" data-status="${q.status}">${q.status==='hidden'?'恢复':'隐藏'}</button></td></tr>`).join(''):'<tr><td colspan="6">暂无问题</td></tr>';$('answerTable').innerHTML=state.answers.length?state.answers.map(a=>`<tr><td>${esc(a.question_title)}</td><td>${esc(a.nickname)}</td><td>${esc(String(a.body).slice(0,180))}</td><td>${a.vote_count}</td><td><span class="status-pill ${a.status}">${a.status==='visible'?'公开':'隐藏'}</span></td><td><button class="small-btn" data-astatus="${a.id}" data-status="${a.status}">${a.status==='visible'?'隐藏':'恢复'}</button></td></tr>`).join(''):'<tr><td colspan="6">暂无回答</td></tr>';document.querySelectorAll('[data-qstatus]').forEach(b=>b.addEventListener('click',()=>forumQuestionStatus(b.dataset.qstatus,b.dataset.status)));document.querySelectorAll('[data-astatus]').forEach(b=>b.addEventListener('click',()=>forumAnswerStatus(b.dataset.astatus,b.dataset.status)))}
-function showPanel(view){document.querySelectorAll('.admin-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===view));$('contentsPanel').classList.toggle('hidden',view!=='contents');$('commentsPanel').classList.toggle('hidden',view!=='comments');$('forumPanel').classList.toggle('hidden',view!=='forum');if(view==='comments')loadComments().catch(e=>alert(e.message));if(view==='forum')loadForum().catch(e=>alert(e.message))}
+const requestStatusName={pending:'待处理',contacted:'已联系',closed:'已完成'}
+const requestKindName={business:'商业需求',activity:'公益活动'}
+async function loadRequests(){
+  const params=new URLSearchParams()
+  if($('requestKind').value)params.set('kind',$('requestKind').value)
+  if($('requestStatus').value)params.set('status',$('requestStatus').value)
+  state.requests=await api(`/service-requests${params.size?`?${params}`:''}`)
+  $('requestResultCount').textContent=`${state.requests.length} 条结果`
+  $('requestTable').innerHTML=state.requests.length?state.requests.map(item=>`<tr>
+    <td><span class="status-pill">${requestKindName[item.kind]||esc(item.kind)}</span><br><span class="question-excerpt">${esc(item.category)}</span></td>
+    <td><strong>${esc(item.reference_name||item.category||'一般需求')}</strong>${item.region?`<br><span class="question-excerpt">${esc(item.region)}</span>`:''}</td>
+    <td class="request-contact">${esc(item.contact_name)}<br><a class="table-link" href="tel:${esc(item.contact_phone)}">${esc(item.contact_phone)}</a></td>
+    <td class="request-message">${esc(item.message||'未补充说明')}${item.admin_note?`<div class="comment-reply-target">处理备注：${esc(item.admin_note)}</div>`:''}</td>
+    <td>${new Date(item.created_at).toLocaleString('zh-CN')}</td>
+    <td><span class="status-pill ${item.status}">${requestStatusName[item.status]||esc(item.status)}</span></td>
+    <td><div class="table-actions"><button class="small-btn primary" data-request-next="${item.id}">${item.status==='pending'?'标记已联系':item.status==='contacted'?'标记完成':'重新处理'}</button><button class="small-btn" data-request-note="${item.id}">备注</button></div></td>
+  </tr>`).join(''):'<tr><td colspan="7">当前筛选下暂无服务需求</td></tr>'
+  document.querySelectorAll('[data-request-next]').forEach(button=>button.addEventListener('click',()=>advanceRequest(Number(button.dataset.requestNext))))
+  document.querySelectorAll('[data-request-note]').forEach(button=>button.addEventListener('click',()=>editRequestNote(Number(button.dataset.requestNote))))
+}
+async function updateRequest(item,status,adminNote=item.admin_note||''){
+  await api(`/service-requests/${item.id}`,{method:'PATCH',body:JSON.stringify({status,admin_note:adminNote})})
+  await Promise.all([loadRequests(),loadStats()])
+}
+async function advanceRequest(id){
+  const item=state.requests.find(request=>request.id===id)
+  if(!item)return
+  const status=item.status==='pending'?'contacted':item.status==='contacted'?'closed':'pending'
+  try{await updateRequest(item,status)}catch(e){alert(e.message)}
+}
+async function editRequestNote(id){
+  const item=state.requests.find(request=>request.id===id)
+  if(!item)return
+  const note=prompt('填写内部处理备注（用户不可见）',item.admin_note||'')
+  if(note===null)return
+  try{await updateRequest(item,item.status,note)}catch(e){alert(e.message)}
+}
+function showPanel(view){document.querySelectorAll('.admin-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===view));$('contentsPanel').classList.toggle('hidden',view!=='contents');$('commentsPanel').classList.toggle('hidden',view!=='comments');$('forumPanel').classList.toggle('hidden',view!=='forum');$('requestsPanel').classList.toggle('hidden',view!=='requests');if(view==='comments')loadComments().catch(e=>alert(e.message));if(view==='forum')loadForum().catch(e=>alert(e.message));if(view==='requests')loadRequests().catch(e=>alert(e.message))}
 document.querySelectorAll('.admin-tab').forEach(t=>t.addEventListener('click',()=>showPanel(t.dataset.view)))
 function openModal(){ $('contentModal').classList.remove('hidden') }
 function closeModal(){ $('contentModal').classList.add('hidden'); $('contentForm').reset(); $('contentId').value=''; $('contentMessage').textContent='' }
@@ -87,6 +124,10 @@ $('commentStatus').addEventListener('change',()=>loadComments().catch(e=>alert(e
 $('commentSearchBtn').addEventListener('click',()=>loadComments().catch(e=>alert(e.message)))
 $('commentQuery').addEventListener('keydown',event=>{if(event.key==='Enter')loadComments().catch(e=>alert(e.message))})
 $('commentResetBtn').addEventListener('click',()=>{$('commentCategory').value='';populateCommentFilters();$('commentContent').value='';$('commentStatus').value='';$('commentQuery').value='';loadComments().catch(e=>alert(e.message))})
+$('requestFilterBtn').addEventListener('click',()=>loadRequests().catch(e=>alert(e.message)))
+$('requestKind').addEventListener('change',()=>loadRequests().catch(e=>alert(e.message)))
+$('requestStatus').addEventListener('change',()=>loadRequests().catch(e=>alert(e.message)))
+$('requestResetBtn').addEventListener('click',()=>{$('requestKind').value='';$('requestStatus').value='';loadRequests().catch(e=>alert(e.message))})
 Promise.all([loadStats(),loadContents()]).then(()=>{
   const query=new URLSearchParams(location.search)
   const editId=Number(query.get('edit'))
@@ -96,4 +137,5 @@ Promise.all([loadStats(),loadContents()]).then(()=>{
     showPanel('comments')
     if(commentContent){$('commentContent').value=commentContent;loadComments().catch(e=>alert(e.message))}
   } else if(query.get('view')==='forum') showPanel('forum')
+  else if(query.get('view')==='requests') showPanel('requests')
 }).catch(error=>alert(error.message))
