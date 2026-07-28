@@ -179,7 +179,7 @@ function renderDetail(data) {
     $('adminCommentsLink').href = `/knowledge/admin.html?view=comments&content=${item.id}`
     $('adminToggleContent').textContent = item.status === 'published' ? '下架课程' : '上架课程'
   }
-  $('relatedList').innerHTML = data.related.length ? data.related.map(row => `<a class="related-item" href="/knowledge/detail.html?id=${row.id}"><img src="${escapeHtml(row.coverUrl || '/assets/cotton-field-sky.png')}" alt=""><strong>${escapeHtml(row.title)}</strong></a>`).join('') : '<p class="question-excerpt">暂无同类内容</p>'
+  $('relatedList').innerHTML = data.related.length ? data.related.map(row => `<a class="related-item" href="/public/detail.html?id=${row.id}"><img src="${escapeHtml(row.coverUrl || '/assets/cotton-field-sky.png')}" alt=""><strong>${escapeHtml(row.title)}</strong></a>`).join('') : '<p class="question-excerpt">暂无同类内容</p>'
   $('detailLoading').classList.add('hidden'); $('detailContent').classList.remove('hidden')
 }
 
@@ -338,7 +338,7 @@ $('adminToggleContent').addEventListener('click', async () => {
   if (!confirm(status === 'draft' ? '下架后普通用户将无法继续打开本课程，确定下架？' : '确定重新上架本课程？')) return
   try {
     await adminApi(`/contents/${id}/status`, { method:'PATCH', body:JSON.stringify({ status }) })
-    if (status === 'draft') location.href = '/knowledge/'
+    if (status === 'draft') location.href = '/public/academy'
     else location.reload()
   } catch (error) { alert(error.message) }
 })

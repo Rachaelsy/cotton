@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cotton 棉花平台登录</title>
+  <link rel="icon" href="/admin/assets/cotton-field-sky.png">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -615,15 +616,23 @@
       text-shadow: none;
     }
 
+    .knowledge-gateways {
+      width: min(700px, 100%);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 30px;
+    }
+
     .knowledge-gateway {
       position: relative;
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 4px 24px;
       align-items: center;
-      width: min(570px, 100%);
+      width: 100%;
       min-height: 118px;
-      margin-top: 30px;
+      margin-top: 0;
       padding: 20px 22px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,.36);
@@ -638,6 +647,14 @@
     .knowledge-gateway:hover {
       transform: translateY(-3px);
       background: rgba(13, 58, 43, .9);
+    }
+
+    .knowledge-gateway.business {
+      background: rgba(94, 60, 21, .76);
+    }
+
+    .knowledge-gateway.business:hover {
+      background: rgba(108, 68, 20, .92);
     }
 
     .gateway-kicker {
@@ -777,6 +794,7 @@
       }
       .intro h1 { font-size: 38px; }
       .intro .lead { font-size: 15px; }
+      .knowledge-gateways { grid-template-columns: 1fr; }
       .knowledge-gateway {
         min-height: 108px;
         padding: 16px;
@@ -806,12 +824,19 @@
       </div>
 
       <h1>从一块棉田，连接整个服务体系</h1>
-      <p class="lead">登录工作台管理业务，也可以直接进入公共知识讲堂学习课程、查阅田间资料，与棉友交流真实种植问题。</p>
-      <a class="knowledge-gateway" href="/community">
-        <span class="gateway-kicker">PUBLIC LEARNING · 无需登录即可浏览</span>
-        <span><strong>进入棉知学堂</strong><em>课程 · 图文 · AI 问答 · 棉友论坛</em></span>
-        <span class="gateway-arrow" aria-hidden="true">→</span>
-      </a>
+      <p class="lead">登录工作台管理业务，也可以直接进入公益知识服务或农业商业服务，两端共用账号和数据关系。</p>
+      <div class="knowledge-gateways">
+        <a class="knowledge-gateway" href="/community/public">
+          <span class="gateway-kicker">PUBLIC SERVICE · 免费开放</span>
+          <span><strong>公益平台</strong><em>培训 · AI 助学 · 棉友问答</em></span>
+          <span class="gateway-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="knowledge-gateway business" href="/community/business">
+          <span class="gateway-kicker">AGRI BUSINESS · 商业服务</span>
+          <span><strong>商业平台</strong><em>农资产品 · 产业资讯 · 商务合作</em></span>
+          <span class="gateway-arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
 
       <div class="points" aria-label="平台入口">
         <span class="point">管理员审核入驻</span>

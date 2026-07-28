@@ -10,9 +10,9 @@
 <body>
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="/knowledge/"><span class="brand-mark">棉</span><span><span class="brand-name">棉知学堂</span><span class="brand-sub">公共棉花知识服务</span></span></a>
-      <nav class="main-nav"><a class="nav-tab active" href="/knowledge/">课程学习</a><a class="nav-tab" href="/knowledge/?view=forum">棉友问答</a></nav>
-      <div class="header-actions"><a class="portal-link" href="/knowledge/">服务首页</a><button class="btn secondary" id="accountBtn">登录</button></div>
+      <a class="brand" href="/public/academy"><span class="brand-mark">棉</span><span><span class="brand-name">棉知学堂</span><span class="brand-sub">公共棉花知识服务</span></span></a>
+      <nav class="main-nav"><a class="nav-tab active" href="/public/academy">课程学习</a><a class="nav-tab" href="/public/academy?view=forum">棉友问答</a></nav>
+      <div class="header-actions"><a class="portal-link" href="/public/">公益首页</a><button class="btn secondary" id="accountBtn">登录</button></div>
     </div>
   </header>
   <div class="admin-preview-bar hidden" id="adminPreviewBar">
@@ -20,7 +20,7 @@
   </div>
 
   <main class="detail-main">
-    <div class="breadcrumb"><a href="/knowledge/">知识讲堂</a> / <span id="breadcrumbTitle">内容详情</span></div>
+    <div class="breadcrumb"><a href="/public/academy">知识讲堂</a> / <span id="breadcrumbTitle">内容详情</span></div>
     <div id="detailLoading" class="loading">正在加载学习内容...</div>
     <div id="detailContent" class="detail-grid hidden">
       <article>
@@ -35,7 +35,7 @@
           <div class="quiz-list" id="quizList"></div>
           <div class="quiz-submit-row"><button class="btn" id="submitQuiz">提交答案</button><strong id="quizScore"></strong></div>
         </section>
-        <div class="detail-actions"><button class="btn secondary" id="favoriteBtn">收藏</button><a class="btn ghost" href="/knowledge/?view=forum">去问答社区</a></div>
+        <div class="detail-actions"><button class="btn secondary" id="favoriteBtn">收藏</button><a class="btn ghost" href="/public/academy?view=forum">去问答社区</a></div>
         <div class="inline-admin-actions hidden" id="detailAdminActions"><strong>课程管理</strong><a class="small-btn primary" id="adminEditContent">编辑课程</a><button class="small-btn" id="adminToggleContent">下架课程</button><a class="small-btn" id="adminCourseComments">管理本课评论</a></div>
 
         <section class="comments">
@@ -61,7 +61,7 @@
       <div class="modal-head"><h3>登录知识讲堂</h3><button class="icon-btn" id="closeLogin" aria-label="关闭">×</button></div>
       <form class="modal-body" id="loginForm">
         <div class="form-grid"><div class="field full"><label for="loginPhone">手机号</label><input id="loginPhone" name="phone" autocomplete="username" maxlength="11" required></div><div class="field full"><label for="loginPassword">密码</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required></div></div>
-        <p class="auth-note">还没有账号？<a class="auth-inline-link" href="/knowledge/?auth=register">立即注册</a></p>
+        <p class="auth-note">还没有账号？<a class="auth-inline-link" href="/public/academy?auth=register">立即注册</a></p>
         <p class="form-message" id="loginMessage"></p><div class="form-actions"><button class="btn" type="submit">登录</button></div>
       </form>
     </div>

@@ -21,12 +21,12 @@ const noCache = (_req, res, next) => {
 }
 
 app.use('/knowledge/site', express.static(path.join(__dirname, 'public/site')))
-app.use('/knowledge', noCache, require('./routes/site'))
+const siteRouter = require('./routes/site')
+app.use('/knowledge', noCache, siteRouter)
 app.use('/knowledge', noCache, express.static(path.join(__dirname, 'public/knowledge')))
 app.use('/assets', express.static(path.join(__dirname, 'public/assets')))
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')))
-
-app.get(['/', '/index.html'], (_req, res) => res.redirect('/knowledge/'))
+app.use('/', noCache, siteRouter)
 
 const platformBaseUrl = String(process.env.PLATFORM_BASE_URL || '').replace(/\/+$/, '')
 const platformUrl = pathname => platformBaseUrl ? `${platformBaseUrl}${pathname}` : pathname
@@ -36,6 +36,7 @@ app.get('/platform/admin', (_req, res) => res.redirect(platformUrl('/admin/dashb
 app.use('/api/community-auth', require('./routes/auth'))
 app.use('/api/knowledge', require('./routes/knowledge'))
 app.use('/api/community-ai', require('./routes/ai'))
+app.use('/api/public-service', require('./routes/public-service'))
 
 app.get('/api/community-health', async (_req, res) => {
   try {
@@ -54,7 +55,7 @@ app.use((error, _req, res, _next) => {
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3100
-  app.listen(port, () => console.log(`棉知农业服务网站已启动：http://localhost:${port}/knowledge/`))
+  app.listen(port, () => console.log(`棉知农业服务网站已启动：http://localhost:${port}/public/`))
 }
 
 module.exports = app

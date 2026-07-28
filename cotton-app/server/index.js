@@ -48,6 +48,8 @@ app.get(['/', '/index.html'], (_req, res) => res.redirect('/admin/login.html'))
 const communityBaseUrl = String(process.env.COMMUNITY_BASE_URL || '').replace(/\/+$/, '')
 const communityUrl = pathname => communityBaseUrl ? `${communityBaseUrl}${pathname}` : pathname
 app.get('/community', (_req, res) => res.redirect(communityUrl('/knowledge/')))
+app.get('/community/public', (_req, res) => res.redirect(communityUrl('/public/')))
+app.get('/community/business', (_req, res) => res.redirect(communityUrl('/business/')))
 app.get('/community/admin', (_req, res) => res.redirect(communityUrl('/knowledge/admin.html')))
 
 // ── 路由 ────────────────────────────────────

@@ -38,7 +38,7 @@ async function loadComments(){
   $('commentResultCount').textContent=`${state.comments.length} 条结果`
   $('commentTable').innerHTML=state.comments.length?state.comments.map(x=>`<tr>
     <td><span class="status-pill">${esc(x.category_name)}</span></td>
-    <td><a class="table-link" href="/knowledge/detail.html?id=${x.content_id}" target="_blank">${esc(x.content_title)}</a></td>
+    <td><a class="table-link" href="/public/detail.html?id=${x.content_id}" target="_blank">${esc(x.content_title)}</a></td>
     <td>${esc(x.nickname)}</td><td class="comment-cell">${x.parent_id?`<div class="comment-reply-target">${x.parent_nickname?`回复 @${esc(x.parent_nickname)}`:'原评论已删除'}</div>`:''}${esc(x.body)}</td>
     <td>${new Date(x.created_at).toLocaleString('zh-CN')}</td>
     <td><span class="status-pill ${x.status}">${x.status==='visible'?'公开':'隐藏'}</span></td>

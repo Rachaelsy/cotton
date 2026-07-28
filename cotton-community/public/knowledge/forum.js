@@ -17,7 +17,7 @@ async function adminApi(path, options={}){
   const result=await response.json().catch(()=>({msg:'管理操作失败'}));if(!response.ok||result.code!==200)throw new Error(result.msg||'管理操作失败');return result.data
 }
 async function initAdminMode(){if(!state.adminToken)return;try{await adminApi('/stats');state.isAdmin=true;$('adminPreviewBar').classList.remove('hidden');$('forumAdminActions').classList.remove('hidden');if(!state.token)$('accountBtn').textContent='管理员'}catch{}}
-function requireLogin(){ if(state.token)return true; if(confirm('回答、点赞和采纳需要先登录，是否返回首页登录？')) location.href='/knowledge/'; return false }
+function requireLogin(){ if(state.token)return true; if(confirm('回答、点赞和采纳需要先登录，是否返回互动学堂登录？')) location.href='/public/academy'; return false }
 function render(){
   const q=state.question; document.title=`${q.title} · 棉知学堂`; $('questionTitle').textContent=q.title; $('questionBody').textContent=q.body
   $('questionTags').innerHTML=`<span class="tag">${esc(q.categoryName)}</span>${q.tags.map(x=>`<span class="tag">${esc(x)}</span>`).join('')}`
@@ -34,7 +34,7 @@ function render(){
 }
 async function load(){const data=await api(`/forum/${id}`);state.question=data.question;state.answers=data.answers||[];state.viewer=data.viewer;render()}
 $('accountBtn').textContent=state.user?(state.user.real_name||state.user.company_name||'已登录'):'登录'
-$('accountBtn').addEventListener('click',()=>{if(state.isAdmin&&!state.token){location.href='/knowledge/admin.html';return}if(state.token){if(confirm('退出当前账号？')){localStorage.removeItem('knowledge_token');localStorage.removeItem('knowledge_user');location.reload()}}else location.href='/knowledge/'})
+$('accountBtn').addEventListener('click',()=>{if(state.isAdmin&&!state.token){location.href='/knowledge/admin.html';return}if(state.token){if(confirm('退出当前账号？')){localStorage.removeItem('knowledge_token');localStorage.removeItem('knowledge_user');location.reload()}}else location.href='/public/academy'})
 $('answerForm').addEventListener('submit',async event=>{event.preventDefault();if(!requireLogin())return;const body=$('answerBody').value.trim();if(body.length<5)return alert('回答至少需要5个字');try{await api(`/forum/${id}/answers`,{method:'POST',body:JSON.stringify({body})});$('answerBody').value='';await load()}catch(e){alert(e.message)}})
-$('adminHideQuestion').addEventListener('click',async()=>{if(!state.isAdmin||!confirm('隐藏这个问题及其公开入口？'))return;try{await adminApi(`/forum/questions/${id}/status`,{method:'PATCH',body:JSON.stringify({status:'hidden'})});location.href='/knowledge/?view=forum'}catch(e){alert(e.message)}})
+$('adminHideQuestion').addEventListener('click',async()=>{if(!state.isAdmin||!confirm('隐藏这个问题及其公开入口？'))return;try{await adminApi(`/forum/questions/${id}/status`,{method:'PATCH',body:JSON.stringify({status:'hidden'})});location.href='/public/academy?view=forum'}catch(e){alert(e.message)}})
 if(!id)$('loading').textContent='缺少问题编号';else initAdminMode().then(load).catch(error=>$('loading').textContent=error.message)

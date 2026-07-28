@@ -2,14 +2,14 @@ window.COTTON_SITE_DATA = {
   company: {
     name: '棉知农业服务',
     shortName: '棉知农业',
-    phone: '0991-0000000',
-    hours: '周一至周六 09:30-19:30',
-    address: '新疆乌鲁木齐市（演示地址）',
+    phone: '',
+    hours: '需求表单全天可填写',
+    address: '服务覆盖新疆主要棉区',
     serviceAreas: ['北疆棉区', '南疆棉区', '东疆棉区']
   },
 
   productCategories: [
-    { id: 'all', name: '全部产品' },
+    { id: 'all', name: '全部品类' },
     { id: 'seed', name: '棉花种子' },
     { id: 'fertilizer', name: '肥料营养' },
     { id: 'pesticide', name: '植保产品' },
@@ -20,24 +20,24 @@ window.COTTON_SITE_DATA = {
   products: [
     {
       id: 'early-maturity-cotton-seed',
-      name: '高密早熟棉种组合',
+      name: '机采棉品种选型服务',
       category: 'seed',
       categoryName: '棉花种子',
       visual: 'seed',
-      badge: '北疆适配',
-      summary: '面向新疆早熟棉区的示范品种组合，兼顾集中成熟、整齐度与机采适应性。',
-      highlights: ['早熟稳健', '株型紧凑', '适宜机采'],
+      badge: '审定信息核验',
+      summary: '根据种植区域、积温、播期与机采方式核对审定品种信息，形成候选品种清单。',
+      highlights: ['审定区域', '生育期', '机采性状'],
       service: '提供品种选择、播前准备与合理密植建议。',
       specs: [
         ['产品形态', '包衣棉种'],
         ['建议区域', '新疆早熟棉区'],
-        ['包装规格', '按实际批次咨询'],
-        ['储存要求', '阴凉、干燥、避光']
+        ['核验资料', '审定编号、生产经营许可证'],
+        ['批次要求', '标签、发芽率与检验信息']
       ],
       sections: [
         {
           title: '产品定位',
-          body: '本组合用于第一版商品展示，重点表达公司可根据积温、土壤、播期和机采方式协助选择适宜品种。正式销售时应展示真实品种审定编号、生产经营许可证和批次信息。'
+          body: '平台按经营品类展示选型服务，不把通用品类名称当作具体商品。实际供货时必须展示品种名称、审定编号、生产经营许可证、检验结果和批次标签。'
         },
         {
           title: '选种建议',
@@ -47,18 +47,18 @@ window.COTTON_SITE_DATA = {
     },
     {
       id: 'balanced-cotton-fertilizer',
-      name: '棉田平衡型复合肥',
+      name: '棉田基肥配套与测土选型',
       category: 'fertilizer',
       categoryName: '肥料营养',
       visual: 'fertilizer',
-      badge: '基肥推荐',
-      summary: '用于棉田播前基肥和生育期养分衔接，强调氮磷钾配合与土壤检测。',
-      highlights: ['养分均衡', '颗粒均匀', '测土建议'],
+      badge: '测土后选型',
+      summary: '结合土壤检测、前茬、目标产量和滴灌追肥计划，核对复合肥养分与执行标准。',
+      highlights: ['土壤检测', '养分标识', '执行标准'],
       service: '结合地块土壤检测和目标产量提供施肥方案。',
       specs: [
         ['产品形态', '颗粒复合肥'],
         ['适用阶段', '播前基肥'],
-        ['包装规格', '40kg/袋（模拟）'],
+        ['供货信息', '以实际库存与批次标签为准'],
         ['执行标准', '以正式产品标签为准']
       ],
       sections: [
@@ -74,18 +74,18 @@ window.COTTON_SITE_DATA = {
     },
     {
       id: 'seedling-water-soluble-fertilizer',
-      name: '苗期滴灌水溶肥',
+      name: '苗期滴灌水溶肥选型',
       category: 'fertilizer',
       categoryName: '肥料营养',
       visual: 'nutrition',
       badge: '滴灌适用',
       summary: '面向苗期根系建立和稳健生长的水溶营养方案，适配常见滴灌系统。',
-      highlights: ['溶解性好', '滴灌施用', '苗期管理'],
+      highlights: ['溶解性核验', '混配检查', '滴灌适配'],
       service: '提供溶解测试、施用节奏和设备冲洗提醒。',
       specs: [
         ['产品形态', '水溶性粉剂'],
         ['适用阶段', '苗期至蕾期前'],
-        ['包装规格', '10kg/袋（模拟）'],
+        ['供货信息', '以实际成分与批次标签为准'],
         ['注意事项', '避免与不相容产品混配']
       ],
       sections: [
@@ -101,7 +101,7 @@ window.COTTON_SITE_DATA = {
     },
     {
       id: 'cotton-pest-green-control',
-      name: '棉田绿色防控方案包',
+      name: '棉田绿色防控产品选型',
       category: 'pesticide',
       categoryName: '植保产品',
       visual: 'pesticide',
@@ -112,7 +112,7 @@ window.COTTON_SITE_DATA = {
       specs: [
         ['产品类型', '植保方案组合'],
         ['适用对象', '以正式标签登记为准'],
-        ['包装规格', '按方案配置'],
+        ['选型依据', '登记作物、防治对象与当地预警'],
         ['安全要求', '严格遵循农药标签']
       ],
       sections: [
@@ -128,13 +128,13 @@ window.COTTON_SITE_DATA = {
     },
     {
       id: 'weather-resistant-mulch-film',
-      name: '高强耐候棉田农膜',
+      name: '棉田地膜规格选型',
       category: 'film',
       categoryName: '农膜材料',
       visual: 'film',
       badge: '地膜覆盖',
       summary: '适配棉田机械铺膜作业，兼顾铺展性、耐候性和田间覆盖完整度。',
-      highlights: ['铺展平整', '机械适配', '耐候稳定'],
+      highlights: ['合规厚度', '机械适配', '残膜回收'],
       service: '根据播种机型、幅宽和种植模式协助确认规格。',
       specs: [
         ['产品材质', '聚乙烯农用薄膜'],
@@ -155,19 +155,19 @@ window.COTTON_SITE_DATA = {
     },
     {
       id: 'labyrinth-drip-tape',
-      name: '迷宫式滴灌带',
+      name: '棉田滴灌带规格选型',
       category: 'irrigation',
       categoryName: '滴灌材料',
       visual: 'irrigation',
       badge: '水肥一体化',
-      summary: '用于棉田滴灌铺设的常用管带，支持不同流量、壁厚和滴头间距组合。',
-      highlights: ['出水均匀', '规格齐全', '铺设便捷'],
+      summary: '根据地块长度、轮灌分区、工作压力和铺设机具核对流量、壁厚与滴头间距。',
+      highlights: ['流量核算', '压力匹配', '铺设适配'],
       service: '提供地块分区、工作压力与过滤配置建议。',
       specs: [
-        ['产品结构', '迷宫流道滴灌带'],
+        ['产品结构', '按真实供货规格核对'],
         ['常用场景', '棉田水肥一体化'],
         ['工作参数', '按地块方案确认'],
-        ['配套要求', '过滤、施肥与压力控制']
+        ['批次要求', '壁厚、流量、间距与检测信息']
       ],
       sections: [
         {
@@ -182,19 +182,19 @@ window.COTTON_SITE_DATA = {
     },
     {
       id: 'drip-filter-set',
-      name: '滴灌首部过滤组件',
+      name: '滴灌首部过滤系统选型',
       category: 'irrigation',
       categoryName: '滴灌材料',
       visual: 'irrigation',
       badge: '系统配套',
-      summary: '面向中小地块的过滤、施肥和压力监测组件，帮助提升滴灌系统稳定性。',
-      highlights: ['过滤防堵', '压力监测', '便于维护'],
+      summary: '依据水源、水质、设计流量与滴头流道核对过滤、施肥和压力监测组件。',
+      highlights: ['水质核验', '流量匹配', '维护方案'],
       service: '支持现场接口核对、安装指导和季前检查。',
       specs: [
-        ['组件范围', '过滤器、压力表、连接件'],
+        ['组件范围', '过滤、压力监测、施肥与连接组件'],
         ['适用水源', '需根据水质检测选型'],
         ['接口规格', '按现有主管确认'],
-        ['维护方式', '定期排污和清洗']
+        ['供货要求', '按设计流量与接口清单核对']
       ],
       sections: [
         {
@@ -209,19 +209,19 @@ window.COTTON_SITE_DATA = {
     },
     {
       id: 'flower-boll-micronutrients',
-      name: '花铃期微量元素组合',
+      name: '花铃期营养诊断与产品选型',
       category: 'fertilizer',
       categoryName: '肥料营养',
       visual: 'nutrition',
       badge: '花铃期',
-      summary: '结合长势和缺素表现使用的中微量元素补充方案，强调诊断后施用。',
+      summary: '先区分水分、盐分、根系、病虫害与缺素表现，再按检测和真实标签选择营养产品。',
       highlights: ['按需补充', '滴灌叶喷可选', '避免过量'],
       service: '协助区分缺素、盐害、根系和病害等相似症状。',
       specs: [
-        ['产品形态', '水溶性营养组合'],
+        ['产品范围', '符合登记或标准的营养产品'],
         ['适用阶段', '蕾期至花铃期'],
         ['使用方式', '以实际标签为准'],
-        ['诊断要求', '建议结合叶片与土壤分析']
+        ['供货要求', '核对成分、标准、批次与标签']
       ],
       sections: [
         {
@@ -254,6 +254,8 @@ window.COTTON_SITE_DATA = {
       categoryName: '播种',
       image: '/assets/course-lifecycle-v1.webp',
       readTime: '8 分钟',
+      source: '农业农村部棉花专家指导组、全国农业技术推广服务中心',
+      sourceUrl: 'https://zzys.moa.gov.cn/gzjl/201904/t20190419_6296334.htm',
       summary: '从积温、墒情、地温、整地、种子和机具六个方面建立播前检查清单。',
       lead: '播种质量决定群体起点。与其追求“越早越好”，不如让温度、墒情、种床和机具共同达到适播状态。',
       sections: [
@@ -282,6 +284,8 @@ window.COTTON_SITE_DATA = {
       categoryName: '苗期管理',
       image: '/assets/course-seedling-v2.webp',
       readTime: '7 分钟',
+      source: '农业农村部《棉花前期生产技术指导意见》',
+      sourceUrl: 'https://zzys.moa.gov.cn/gzjl/201904/t20190419_6296334.htm',
       summary: '用缺苗、弱苗、叶色与根系四类观察，避免只凭地表干湿判断苗期滴水。',
       lead: '苗期的核心不是追求叶片快速变大，而是形成均匀、稳健、根系良好的群体。',
       sections: [
@@ -307,6 +311,8 @@ window.COTTON_SITE_DATA = {
       categoryName: '水肥管理',
       image: '/assets/course-irrigation-decision-v1.webp',
       readTime: '10 分钟',
+      source: '农业农村部棉花生产中后期管理技术指导意见',
+      sourceUrl: 'https://zzys.moa.gov.cn/gzdt/202008/t20200828_6351070.htm',
       summary: '建立“灌前判断—运行检查—灌后复盘”的水肥管理闭环。',
       lead: '滴灌不是按日历重复操作。每次灌水前，都要重新判断根层水分、作物需水和未来天气。',
       sections: [
@@ -332,6 +338,8 @@ window.COTTON_SITE_DATA = {
       categoryName: '病虫害防治',
       image: '/assets/course-scouting-v2.webp',
       readTime: '9 分钟',
+      source: '全国农业技术推广服务中心《2025年棉花重大病虫害防控技术方案》',
+      sourceUrl: 'https://www.natesc.org.cn/admin/UeditorUploadFiles/file/20250228/6387632541475976564699731.pdf',
       summary: '从症状分布、虫口密度和防治指标出发，减少凭单张照片直接用药。',
       lead: '相似症状可能来自病害、虫害、药害、缺素或根区问题。准确描述分布规律，是诊断的第一步。',
       sections: [
@@ -357,6 +365,8 @@ window.COTTON_SITE_DATA = {
       categoryName: '花铃期管理',
       image: '/assets/course-water-v2.webp',
       readTime: '8 分钟',
+      source: '农业农村部《2022年棉花中后期生产管理技术指导意见》',
+      sourceUrl: 'https://zzys.moa.gov.cn/tzgg/202207/t20220718_6404939.htm',
       summary: '通过株高、果枝、蕾铃和叶色综合判断，保持合理群体结构。',
       lead: '花铃期既要防止早衰，也要避免旺长。单看株高或叶色都不够，需要连续观察群体变化。',
       sections: [
@@ -382,6 +392,8 @@ window.COTTON_SITE_DATA = {
       categoryName: '采收管理',
       image: '/assets/course-cotton-products-v1.webp',
       readTime: '9 分钟',
+      source: '新疆维吾尔自治区发展和改革委员会采收质量倡议',
+      sourceUrl: 'https://xjdrc.xinjiang.gov.cn/xjfgw/c108299/202509/d3838b62dd2f43c2aec8c47523f7ba9b.shtml',
       summary: '围绕吐絮成熟、田间清洁、脱叶催熟和机具协调安排采收。',
       lead: '机采质量不仅取决于采棉机。前期群体整齐度、脱叶效果、田间异物控制和作业时机都会影响最终品质。',
       sections: [
@@ -402,139 +414,335 @@ window.COTTON_SITE_DATA = {
     }
   ],
 
+  pests: [
+    {
+      id: 'cotton-aphid-scouting',
+      name: '棉蚜',
+      type: '虫害',
+      riskStage: '苗期至蕾期重点观察',
+      image: '/assets/cotton-seedling-leaf-inspection-v1.jpg',
+      source: '全国农业技术推广服务中心 2025 年棉花重大病虫害防控技术方案',
+      sourceUrl: 'https://www.natesc.org.cn/admin/UeditorUploadFiles/file/20250228/6387632541475976564699731.pdf',
+      summary: '重点检查嫩叶背面、卷叶和蜜露，结合田间分布与天敌数量判断是否需要处置。',
+      signals: ['嫩叶背面可见蚜虫聚集', '叶片卷缩并伴有蜜露', '地头或局部区域先出现异常'],
+      inspection: ['沿对角线设置固定样点', '同时查看叶片正反面', '记录有蚜株率与天敌情况'],
+      actions: ['清除田边明显虫源并保持田间通风', '保护瓢虫、草蛉等自然天敌', '达到属地防治指标后再选择登记药剂']
+    },
+    {
+      id: 'spider-mite-field-check',
+      name: '棉叶螨',
+      type: '虫害',
+      riskStage: '高温干旱期重点观察',
+      image: '/assets/course-scouting-v2.webp',
+      source: '全国农业技术推广服务中心 2025 年棉花重大病虫害防控技术方案',
+      sourceUrl: 'https://www.natesc.org.cn/admin/UeditorUploadFiles/file/20250228/6387632541475976564699731.pdf',
+      summary: '叶片失绿并不一定都是缺素，应检查叶背虫体、点状斑驳和由地边向田内扩展的趋势。',
+      signals: ['叶面出现细小失绿斑点', '叶背可见螨体或细丝', '常从道路、地边或杂草附近扩展'],
+      inspection: ['分别检查地边与田内样点', '用放大镜观察叶背', '连续记录扩展速度与受害叶比例'],
+      actions: ['及时处理田边寄主杂草', '避免只依据一片叶子判断整块田', '确需施药时注意作用机制轮换与均匀覆盖']
+    },
+    {
+      id: 'cotton-bollworm-monitoring',
+      name: '棉铃虫',
+      type: '虫害',
+      riskStage: '蕾期至花铃期重点观察',
+      image: '/assets/course-water-v2.webp',
+      source: '全国农业技术推广服务中心 2025 年棉花重大病虫害防控技术方案',
+      sourceUrl: 'https://www.natesc.org.cn/admin/UeditorUploadFiles/file/20250228/6387632541475976564699731.pdf',
+      summary: '把诱捕监测、卵量、幼虫龄期和蕾铃受害情况放在一起，抓住低龄幼虫防控窗口。',
+      signals: ['嫩尖、蕾和幼铃出现取食孔', '田间发现卵或低龄幼虫', '落蕾增加且可见虫粪'],
+      inspection: ['固定样株检查顶部和蕾铃', '记录卵量、幼虫龄期与受害率', '结合当地虫情测报判断发生代次'],
+      actions: ['优先利用监测预警确定调查窗口', '保护天敌并减少不必要的广谱用药', '按照属地植保意见和产品标签选择防治时机']
+    },
+    {
+      id: 'cotton-wilt-differential',
+      name: '枯萎、黄萎类症状辨识',
+      type: '病害',
+      riskStage: '全生育期持续观察',
+      image: '/assets/cotton-seedling-inspection-v1.jpg',
+      source: '全国农业技术推广服务中心 2025 年棉花重大病虫害防控技术方案',
+      sourceUrl: 'https://www.natesc.org.cn/admin/UeditorUploadFiles/file/20250228/6387632541475976564699731.pdf',
+      summary: '萎蔫和黄化可能与病害、根区积水、盐害或药害有关，需要结合分布、根茎和管理记录综合排查。',
+      signals: ['植株萎蔫或叶片黄化', '异常呈点片状或沿水路分布', '剖查根茎后维管组织颜色异常'],
+      inspection: ['拍摄整株、根茎和相邻正常植株', '记录近期灌水、用肥、用药与天气', '必要时送样进行规范检测'],
+      actions: ['避免携带病残体和带病土壤跨地块传播', '改善排水并减少根区胁迫', '不要在病因未确认前盲目混配多种药剂']
+    },
+    {
+      id: 'seedling-damping-off',
+      name: '苗期立枯与烂种风险',
+      type: '病害',
+      riskStage: '播种至齐苗期重点观察',
+      image: '/assets/course-seedling-v2.webp',
+      source: '全国农业技术推广服务中心 2025 年棉花重大病虫害防控技术方案',
+      sourceUrl: 'https://www.natesc.org.cn/admin/UeditorUploadFiles/file/20250228/6387632541475976564699731.pdf',
+      summary: '低温、高湿、播深不一和种床条件不良都会放大苗期病害风险，应先区分不出苗与出苗后倒伏。',
+      signals: ['种子腐烂或幼芽未能出土', '幼苗茎基部缢缩倒伏', '低洼或湿度较高区域发生更重'],
+      inspection: ['挖查未出苗穴位的种子与幼芽', '比较不同播深和地势区域', '核对播种后温度、灌水与覆土情况'],
+      actions: ['播前校准播深并改善种床一致性', '避免低温条件下过量灌水', '种子处理与补救措施应遵循当地技术规程']
+    },
+    {
+      id: 'herbicide-injury-check',
+      name: '药害与病虫害的区分',
+      type: '非生物胁迫',
+      riskStage: '用药后重点观察',
+      image: '/assets/course-lifecycle-v1.webp',
+      source: '农业农村部棉花生产技术资料与平台田间调查模板',
+      sourceUrl: 'https://zzys.moa.gov.cn/gzjl/201904/t20190419_6296334.htm',
+      summary: '药害常与施药轨迹、重喷区域和天气条件相关，先还原操作记录，再判断是否属于病虫害。',
+      signals: ['症状沿喷幅或作业路线分布', '重喷、地头转弯处表现更重', '用药后短时间内集中出现异常'],
+      inspection: ['保留药剂名称、批次、配比和施药时间', '比较作业区与未作业对照区', '记录风速、温度和相邻地块用药'],
+      actions: ['立即停止重复使用可疑方案', '保留包装、照片和完整操作记录', '联系属地技术人员或生产企业进行现场核验']
+    }
+  ],
+
+  activities: [
+    {
+      id: 'seedling-field-open-day',
+      title: '棉花苗期田间开放日',
+      status: '地块征集中',
+      date: '根据苗期农时组织',
+      location: '根据报名地块与农时确定',
+      format: '田间公益服务',
+      capacity: '按地块条件分组',
+      image: '/assets/cotton-seedling-inspection-v1.jpg',
+      summary: '在固定样点完成出苗整齐度、根系、叶色和滴灌运行检查，现场演示如何整理巡田记录。',
+      description: '活动面向棉花种植户和农业从业者免费开放。参与者将按小组完成苗情调查，并把观察结果整理成可重复使用的田间检查清单。',
+      agenda: ['签到与安全说明', '固定样点调查演示', '分组完成苗情记录', '集中交流与问题整理'],
+      notice: '当前征集可开展固定样点调查的合作地块。确定组织单位、日期、安全条件和联系人后，平台再发布正式活动通知。'
+    },
+    {
+      id: 'water-fertilizer-record-workshop',
+      title: '滴灌水肥记录公益工作坊',
+      status: '资料开放',
+      date: '可随时提交学习需求',
+      location: '线上图文与直播',
+      format: '在线公益资源',
+      capacity: '不限人数',
+      image: '/assets/course-irrigation-decision-v1.webp',
+      summary: '用一张简洁记录表串联灌前判断、首末端检查、施肥时段和灌后复盘。',
+      description: '工作坊使用脱敏地块记录，演示如何减少无效字段，让每次灌水记录真正服务于下一轮管理决策。',
+      agenda: ['灌水记录常见问题', '首末端压力与湿润深度', '记录模板实操', '在线问题交流'],
+      notice: '登记需求后，平台根据农时和集中问题安排线上场次。涉及具体水肥量时，以属地规程、土壤条件和现场判断为准。'
+    },
+    {
+      id: 'pest-scouting-volunteer-day',
+      title: '病虫害识别与田间调查志愿服务',
+      status: '需求征集中',
+      date: '根据病虫发生期组织',
+      location: '申请地块或线上协作',
+      format: '志愿调查服务',
+      capacity: '按问题区域分组',
+      image: '/assets/course-scouting-v2.webp',
+      summary: '学习规范拍摄、样点调查和问题描述，减少仅凭一张局部照片直接下结论。',
+      description: '活动将组织志愿者协助种植户建立病虫害调查记录，重点训练症状分布、叶片正反面和近期管理史的完整表达。',
+      agenda: ['常见症状辨识', '规范取样与拍照', '样点调查练习', '专家集中答疑'],
+      notice: '现场服务需先核对病虫发生情况、地块许可、天气与人员安全；未确认前不发布具体集合信息。'
+    },
+    {
+      id: 'harvest-quality-public-class',
+      title: '机采前质量管理公开课',
+      status: '课程筹备',
+      date: '采收季前发布',
+      location: '线上公开课',
+      format: '在线公益资源',
+      capacity: '不限人数',
+      image: '/assets/course-cotton-products-v1.webp',
+      summary: '围绕吐絮成熟、脱叶效果、田间异物控制和批次记录，梳理机采前的准备顺序。',
+      description: '公开课从田间一致性出发，解释采收时机、异性纤维控制和地块批次记录之间的关系。',
+      agenda: ['机采前成熟度评估', '田间异物控制', '作业与运输衔接', '质量追溯记录'],
+      notice: '课程不提供具体药剂和剂量建议，脱叶催熟请遵循属地技术规程和产品标签。'
+    }
+  ],
+
   newsCategories: [
     { id: 'all', name: '全部资讯' },
     { id: 'policy', name: '农业政策' },
     { id: 'industry', name: '行业资讯' },
-    { id: 'company', name: '公司动态' }
+    { id: 'quality', name: '质量与标准' }
   ],
 
   news: [
     {
-      id: 'policy-reading-service',
-      title: '农业政策信息如何读：先确认发布主体与适用范围',
+      id: 'cotton-target-price-2026-2028',
+      title: '2026—2028年新疆棉花目标价格政策发布',
       category: 'policy',
-      categoryName: '农业政策',
-      date: '2026-07-20',
+      categoryName: '政策资讯',
+      date: '2026-06-26',
       image: '/assets/cotton-field-sky.png',
-      summary: '建立政策信息核验清单，避免将地区性、阶段性内容误解为普遍规则。',
-      source: '棉知资料整理',
+      summary: '国家发展改革委、财政部明确，2026—2028年新疆棉花目标价格为每吨18600元，固定补贴产量为510万吨。',
+      source: '新疆维吾尔自治区财政厅',
+      sourceUrl: 'https://czt.xinjiang.gov.cn/xjczt/c115021/202606/fb2c15ac574e4bb588da8f6e8a73b9bb.shtml',
       content: [
         {
-          title: '优先查阅权威来源',
-          paragraphs: ['涉及补贴、保险、用水、农资监管和质量标准的信息，应优先核对政府部门官方网站、正式文件及属地通知。短视频和转发截图只能作为线索。']
+          title: '目标价格与补贴产量',
+          paragraphs: ['经国务院同意，2026—2028年在新疆继续实施棉花目标价格政策。目标价格保持为每吨18600元，并以固定产量510万吨进行补贴。']
         },
         {
-          title: '确认四项关键信息',
-          bullets: ['文件发布主体', '政策适用地区', '申报或执行时间', '对象、条件和材料要求']
+          title: '实施方向',
+          bullets: ['保持合理种植规模并优化生产布局', '完善优质棉补贴机制', '规范资金管理与产量统计', '探索完善优质棉质量认定标准']
         },
         {
-          title: '本站说明',
-          paragraphs: ['第一版资讯使用模拟内容展示页面结构，不作为政策申报依据。正式运营后将为每条政策标注原始链接、发布日期与适用区域。']
+          title: '农户需要继续关注',
+          paragraphs: ['国家通知明确总体政策，具体申报、交售、信息核验和补贴发放流程仍需以自治区及属地后续实施通知为准。']
         }
       ]
     },
     {
-      id: 'cotton-quality-traceability',
-      title: '从地块记录到批次管理，棉花质量追溯正在前移',
-      category: 'industry',
-      categoryName: '行业资讯',
-      date: '2026-07-18',
+      id: 'national-cotton-variety-standard-2025',
+      title: '国家级棉花品种审定标准完成2025年修订',
+      category: 'policy',
+      categoryName: '种业政策',
+      date: '2025-12-12',
+      image: '/assets/course-lifecycle-v1.webp',
+      summary: '修订标准自2025年12月1日起实施，强化棉花品种抗病性、机收适应性、产量与DNA指纹差异要求。',
+      source: '农业农村部种业管理司',
+      sourceUrl: 'https://zys.moa.gov.cn/gzdt/202512/t20251212_6479674.htm',
+      content: [
+        {
+          title: '提高抗病性要求',
+          paragraphs: ['标准提高了枯萎病、黄萎病抗性相关要求，以回应连作条件下病害风险加重的问题。']
+        },
+        {
+          title: '强化机收与产量指标',
+          bullets: ['生育期和株型符合机收要求', '关注结铃吐絮与脱叶剂敏感度', '提高区域试验和生产试验增产点率要求', '明确不同纤维品质类型的产量指标']
+        },
+        {
+          title: '选种时如何使用',
+          paragraphs: ['审定标准是品种进入国家级审定的重要依据。具体到地块选种，还应核对审定适宜区域、品种说明、当地示范表现与实际播期。']
+        }
+      ]
+    },
+    {
+      id: 'policy-source-verification',
+      title: '涉农政策信息核验指南：从原文到属地实施',
+      category: 'policy',
+      categoryName: '政策阅读',
+      date: '2026-07-28',
+      image: '/assets/cotton-seedling-leaf-inspection-v1.jpg',
+      summary: '用发布主体、文号、适用区域、执行期限和属地通知五项信息核验补贴与项目申报消息。',
+      source: '中国政府网政策栏目与棉知公益平台整理',
+      sourceUrl: 'https://www.gov.cn/zhengce/',
+      content: [
+        {
+          title: '先找到原始文件',
+          paragraphs: ['优先查找中国政府网、部委网站、自治区政府网站或属地正式通知。转发截图只能作为线索，不能替代带有发布主体、日期和完整附件的原文。']
+        },
+        {
+          title: '核对五项关键信息',
+          bullets: ['发布主体与文件文号', '适用行政区域', '申报主体和条件', '执行或申报期限', '属地办理渠道和材料要求']
+        },
+        {
+          title: '总体政策不等于办理细则',
+          paragraphs: ['国家或自治区文件往往给出总体方向，具体信息采集、交售核验、申报材料和发放时间仍以属地实施通知为准。']
+        }
+      ]
+    },
+    {
+      id: 'xinjiang-cotton-quality-chain-2026',
+      title: '新疆推进棉花从种子到坯布全链条质量管控',
+      category: 'quality',
+      categoryName: '质量与标准',
+      date: '2026-06-08',
       image: '/assets/course-cotton-products-v1.webp',
-      summary: '品种、用药、采收和交售记录，正在成为连接田间管理与品质评价的重要基础。',
-      source: '棉知行业观察',
+      summary: '新疆通过标准、计量、认证、检验检测和政策工具协同，推动种植、收购、加工、仓储与检验数据衔接。',
+      source: '新疆维吾尔自治区市场监督管理局',
+      sourceUrl: 'https://scjgj.xinjiang.gov.cn/xjaic/qjxx/202606/a8c08aa9bf4f46f4a9ecbfb0f0c30bb7.shtml',
       content: [
         {
-          title: '追溯从田间开始',
-          paragraphs: ['地块位置、品种批次、播种日期、水肥与植保记录，可帮助解释不同批次在成熟度、杂质和纤维品质上的差异。']
+          title: '全链条协同',
+          paragraphs: ['官方信息显示，新疆正在推动种植、收购、加工、专业仓储和检验数据全流程衔接，并以统一品种、统一标准、统一管理稳定源头品质。']
         },
         {
-          title: '记录要可执行',
-          bullets: ['字段尽量少而明确', '在作业发生时记录', '关键投入品保留批次', '异常情况同时保存照片']
+          title: '质量基础设施',
+          bullets: ['标准规范库', '计量参数库', '认证项目库', '检验检测机构库', '质量政策工具箱']
         },
         {
-          title: '服务机会',
-          paragraphs: ['农业服务企业可以把产品供应、技术指导与标准化记录结合起来，为农户提供更连续的生产支持。']
+          title: '对生产端的意义',
+          paragraphs: ['地块、品种、投入品、采收和交售记录越完整，越有利于批次追溯、质量问题定位和后续分级服务。']
         }
       ]
     },
     {
-      id: 'summer-field-service',
-      title: '公司开展花铃期田间巡查与水肥记录服务',
-      category: 'company',
-      categoryName: '公司动态',
-      date: '2026-07-16',
-      image: '/assets/course-water-v2.webp',
-      summary: '第一版示例动态：围绕固定样点、滴灌运行和蕾铃变化整理巡田记录。',
-      source: '棉知农业服务',
-      content: [
-        {
-          title: '服务内容',
-          paragraphs: ['巡查从固定样点开始，记录群体长势、蕾铃、叶色、滴灌首末端和异常区域，并把观察结果整理成下一次管理前的核对清单。']
-        },
-        {
-          title: '不替代属地技术指导',
-          paragraphs: ['线上记录与远程沟通用于提高信息完整度。涉及农药使用、重大病害和灾害处置时，应结合现场专业人员意见。']
-        }
-      ]
-    },
-    {
-      id: 'input-label-compliance',
-      title: '购买农资时，标签上的这些信息不能忽略',
-      category: 'industry',
-      categoryName: '行业资讯',
-      date: '2026-07-12',
-      image: '/assets/cotton-seedling-inspection-v1.jpg',
-      summary: '从登记、标准、有效期、批次和使用范围入手，提升投入品选择的可核验性。',
-      source: '棉知行业观察',
-      content: [
-        {
-          title: '购买前核对',
-          bullets: ['产品名称与有效成分', '登记或执行标准信息', '生产日期和有效期', '生产企业与追溯批次', '适用作物和使用范围']
-        },
-        {
-          title: '保存购买记录',
-          paragraphs: ['保留发票、包装、批次和使用记录。出现质量争议或田间异常时，完整记录能帮助更快定位问题。']
-        }
-      ]
-    },
-    {
-      id: 'training-content-launch',
-      title: '棉花全生育期图文培训专区完成第一版上线',
-      category: 'company',
-      categoryName: '公司动态',
-      date: '2026-07-08',
-      image: '/assets/knowledge-hero-v2.webp',
-      summary: '从播种到采收设置六个专题，公开提供可复用的观察方法和管理清单。',
-      source: '棉知农业服务',
-      content: [
-        {
-          title: '六个专题',
-          paragraphs: ['首批内容覆盖播种、苗期管理、水肥管理、病虫害防治、花铃期管理和采收管理，并与互动学堂的评论、问答和 AI 助学能力衔接。']
-        },
-        {
-          title: '持续更新',
-          paragraphs: ['正式运营后，内容将按棉区、生育期和问题类型进一步细分，并补充来源、审核人与更新时间。']
-        }
-      ]
-    },
-    {
-      id: 'water-saving-management',
-      title: '棉田节水不只是减少灌次，更需要提高每次灌水质量',
-      category: 'industry',
-      categoryName: '行业资讯',
-      date: '2026-07-03',
+      id: 'xinjiang-cotton-digital-quality-2026',
+      title: '数字化追溯助力新疆棉花质量提升',
+      category: 'quality',
+      categoryName: '质量与标准',
+      date: '2026-06-09',
       image: '/assets/course-irrigation-decision-v1.webp',
-      summary: '通过分区、压力、湿润深度和作物反馈评估灌水效果。',
-      source: '棉知行业观察',
+      summary: '自治区市场监管部门发布棉花质量提升进展，强调质量补贴、数智溯源和闭环监管协同。',
+      source: '新疆维吾尔自治区市场监督管理局',
+      sourceUrl: 'https://scjgj.xinjiang.gov.cn/xjaic/qjxx/202606/c5cc602b1a644fd397bb9e06ad3c218c.shtml',
       content: [
         {
-          title: '关注有效水',
-          paragraphs: ['灌水是否进入主要根层、各轮灌区是否均匀、是否出现深层渗漏，比单纯统计灌水次数更能反映管理质量。']
+          title: '质量提升的三条路径',
+          paragraphs: ['官方信息将相关工作概括为政策赋能、数字化转型和质量安全闭环监管，目标是推动棉花产业从产量优势走向质量优势。']
         },
         {
-          title: '可记录的指标',
-          bullets: ['轮灌区起止时间', '首末端压力', '代表点湿润深度', '灌前灌后苗情', '过滤器排污情况']
+          title: '数字记录需要落到批次',
+          bullets: ['地块与种植主体信息', '品种和关键投入品批次', '采收与交售时间', '加工、仓储和检验结果']
+        }
+      ]
+    },
+    {
+      id: 'xinjiang-cotton-output-2025',
+      title: '2025年新疆棉花总产首次突破600万吨',
+      category: 'industry',
+      categoryName: '行业资讯',
+      date: '2026-01-08',
+      image: '/assets/cotton-field-sky.png',
+      summary: '新疆官方发布，2025年棉花生产继续向优势产区集中，并推进机械化、集约化和标准化生产。',
+      source: '新疆维吾尔自治区人民政府',
+      sourceUrl: 'https://www.xinjiang.gov.cn/xinjiang/gongzuodt/202601/957e6c61b1494f908704744001df38d0.shtml',
+      content: [
+        {
+          title: '生产布局继续优化',
+          paragraphs: ['官方信息显示，棉花生产进一步向优势主产县市区和兵团团场集中，并通过高产优质栽培技术路线提升生产组织水平。']
+        },
+        {
+          title: '规模之外更关注质量',
+          paragraphs: ['产量数据需要与品种结构、纤维品质、资源利用、机采质量和产业链消化能力一起理解，不能只把总产作为唯一评价指标。']
+        }
+      ]
+    },
+    {
+      id: 'sustainable-cotton-development-2025',
+      title: '新疆棉区持续推进节水节肥与可持续生产',
+      category: 'industry',
+      categoryName: '行业资讯',
+      date: '2025-06-20',
+      image: '/assets/knowledge-hero-v2.webp',
+      summary: '新疆农业农村部门转载的行业信息显示，可持续棉花项目正在通过智慧化手段推动节水节肥和提质增效。',
+      source: '新疆维吾尔自治区农业农村厅',
+      sourceUrl: 'https://nynct.xinjiang.gov.cn/xjnynct/c113577/202506/7cace886da754556bf986dbdd0780dd7.shtml',
+      content: [
+        {
+          title: '可持续生产关注什么',
+          paragraphs: ['公开信息将科学种植、减少不必要的农药化肥投入、降低环境影响与保持产量品质联系起来。']
+        },
+        {
+          title: '需要可核验的生产记录',
+          bullets: ['水肥投入与灌溉记录', '病虫调查与防治依据', '投入品名称和批次', '采收、交售和质量信息']
+        }
+      ]
+    },
+    {
+      id: 'kashgar-textile-project-2025',
+      title: '喀什棉纺项目建设延伸新疆棉花产业链',
+      category: 'industry',
+      categoryName: '行业资讯',
+      date: '2025-09-29',
+      image: '/assets/course-cotton-products-v1.webp',
+      summary: '新疆财政厅发布项目进展，喀什纺纱项目聚焦中高端纱线生产，进一步连接棉花原料与纺织加工。',
+      source: '新疆维吾尔自治区财政厅',
+      sourceUrl: 'https://czt.xinjiang.gov.cn/xjczt/c115018/202509/d8b66c3518e0446b8f72eddf44f70399.shtml',
+      content: [
+        {
+          title: '项目定位',
+          paragraphs: ['公开信息显示，项目面向中高端普梳、精梳纱生产，目标是提升新疆优质棉在本地的加工转化能力。']
+        },
+        {
+          title: '产业链延伸的关注点',
+          paragraphs: ['加工能力扩展也会提高对原棉稳定性、批次一致性、清洁度和可追溯信息的要求，生产端质量管理因此更加重要。']
         }
       ]
     }

@@ -40,7 +40,7 @@ function accountLabel() {
 function courseCard(item) {
   const cover = item.coverUrl || '/assets/cotton-field-sky.png'
   return `<article class="course-card">
-    <a class="course-card-link" href="/knowledge/detail.html?id=${item.id}">
+    <a class="course-card-link" href="/public/detail.html?id=${item.id}">
       <div class="course-cover">
       <img src="${escapeHtml(cover)}" alt="${escapeHtml(item.title)}">
       <span class="course-type">${typeName[item.type] || '知识课'}</span>
@@ -95,7 +95,7 @@ async function initAdminMode() {
 function renderContinue() {
   const rows = state.courses.filter(item => item.progressPercent > 0).sort((a,b) => b.progressPercent - a.progressPercent).slice(0, 3)
   $('learningHint').textContent = state.token ? (rows.length ? '从上次停下的位置继续。' : '开始学习后会在这里显示进度。') : '登录后自动保存最近观看位置。'
-  $('continueList').innerHTML = rows.length ? rows.map(item => `<a class="continue-item" href="/knowledge/detail.html?id=${item.id}">
+  $('continueList').innerHTML = rows.length ? rows.map(item => `<a class="continue-item" href="/public/detail.html?id=${item.id}">
     <img src="${escapeHtml(item.coverUrl || '/assets/cotton-field-sky.png')}" alt="">
     <span><strong>${escapeHtml(item.title)}</strong><span class="mini-progress"><span style="width:${item.progressPercent}%"></span></span></span>
   </a>`).join('') : `<button class="btn secondary" id="historyLoginBtn">${state.token ? '浏览课程开始学习' : '登录查看学习记录'}</button>`
@@ -105,7 +105,7 @@ function renderContinue() {
 
 function questionRow(item) {
   const excerpt = item.body.length > 150 ? `${item.body.slice(0,150)}...` : item.body
-  return `<a class="question-row" href="/knowledge/forum.html?id=${item.id}">
+  return `<a class="question-row" href="/public/forum.html?id=${item.id}">
     <div class="question-score"><strong>${item.answerCount}</strong>个回答</div>
     <div><h3 class="question-title">${item.status === 'solved' ? '<span class="solved">已解决 · </span>' : ''}${escapeHtml(item.title)}</h3><p class="question-excerpt">${escapeHtml(excerpt)}</p><div class="tag-row"><span class="tag">${escapeHtml(item.categoryName)}</span>${item.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div></div>
     <div class="question-by">${escapeHtml(item.nickname)}<br>${dateText(item.updatedAt)}<br>${item.viewCount} 次浏览</div>
@@ -261,7 +261,7 @@ $('questionForm').addEventListener('submit', async event => {
       title: $('qTitle').value, body: $('qBody').value, category_key, category_name, tags: $('qTags').value
     }) })
     closeModal('questionModal'); $('questionForm').reset(); message.textContent = ''
-    window.location.href = `/knowledge/forum.html?id=${data.id}`
+    window.location.href = `/public/forum.html?id=${data.id}`
   } catch (error) { message.textContent = error.message }
 })
 
@@ -269,7 +269,7 @@ async function initialize() {
   accountLabel()
   const params = new URLSearchParams(location.search)
   if (params.get('view') === 'forum') switchView('forum')
-  if (params.get('auth') === 'register') openAuth('register')
+  if (['login', 'register'].includes(params.get('auth'))) openAuth(params.get('auth'))
   await Promise.all([loadCourses(), loadForum(), initAdminMode()])
 }
 

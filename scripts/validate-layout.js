@@ -31,11 +31,14 @@ assert(compose.includes('name: cotton_mysql_data'), 'Compose must preserve the e
 
 const nginx = read('deploy/nginx.conf')
 for (const route of [
+  '/public/',
+  '/business/',
   '/knowledge/',
   '/uploads/knowledge/',
   '/api/knowledge/',
   '/api/community-auth/',
   '/api/community-ai/',
+  '/api/public-service/',
   '/api/community-health'
 ]) {
   assert(nginx.includes(route), `Nginx is missing community route: ${route}`)

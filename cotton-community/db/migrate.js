@@ -28,6 +28,47 @@ async function run() {
   }
 
   await db.query(`
+    CREATE TABLE IF NOT EXISTS experts (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      phone VARCHAR(20) NOT NULL UNIQUE,
+      password VARCHAR(100) NOT NULL,
+      name VARCHAR(64) NOT NULL,
+      title VARCHAR(64) DEFAULT '',
+      org VARCHAR(128) DEFAULT 'Cotton 棉花平台',
+      avatar VARCHAR(16) DEFAULT '专',
+      specialties VARCHAR(512) DEFAULT '[]',
+      bio TEXT,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_experts_active (is_active)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='共享专家账号'
+  `)
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS expert_questions (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      user_id INT UNSIGNED DEFAULT NULL,
+      farmer_name VARCHAR(64) DEFAULT '',
+      farmer_phone VARCHAR(32) DEFAULT '',
+      category VARCHAR(64) DEFAULT '',
+      crop_stage VARCHAR(64) DEFAULT '',
+      plot_id INT UNSIGNED DEFAULT NULL,
+      plot_name VARCHAR(128) DEFAULT '',
+      question TEXT NOT NULL,
+      images TEXT DEFAULT NULL,
+      status ENUM('pending','replied','closed') NOT NULL DEFAULT 'pending',
+      reply TEXT,
+      replied_by INT UNSIGNED DEFAULT NULL,
+      replied_at DATETIME DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_expert_questions_user_created (user_id,created_at),
+      INDEX idx_expert_questions_status_created (status,created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='共享专家咨询记录'
+  `)
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS knowledge_contents (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       type ENUM('video','article','gallery') NOT NULL DEFAULT 'article',
@@ -599,7 +640,7 @@ async function run() {
     console.log(`[migrate] interactive knowledge course created: ${course.title}`)
   }
 
-  console.log('[migrate] knowledge hall tables ready')
+  console.log('[migrate] public service and knowledge hall tables ready')
   process.exit(0)
 }
 
