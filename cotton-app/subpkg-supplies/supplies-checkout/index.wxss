@@ -316,6 +316,50 @@
 .coupon-hint { color: #7B827D; }
 .coupon-error { color: #B74232; }
 
+.points-card {
+  border: 1rpx solid #DCE9DF;
+}
+
+.points-main {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.points-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.points-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
+}
+
+.points-title {
+  color: #18231A;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.points-balance {
+  color: #2F7D4A;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.points-rule,
+.points-result {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 21rpx;
+  line-height: 1.45;
+}
+
+.points-rule { color: #7B827D; }
+.points-result { color: #2F7D4A; font-weight: 700; }
+
 /* ===== 配送 ===== */
 .delivery-row {
   display: flex;
@@ -440,6 +484,7 @@
 }
 
 .co-discount-val { color: #B74232; }
+.co-points-val { color: #2F7D4A; }
 
 .co-pay-btn {
   background: linear-gradient(135deg, #D97918, #FF3B30);

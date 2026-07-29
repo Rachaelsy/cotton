@@ -43,11 +43,23 @@
         <text class="card-no-label">{{copy.orderNo}}</text>
         <text class="card-no-val">{{item.orderNo}}</text>
       </view>
+      <view class="card-points-row" wx:if="{{item.pointsUsed > 0}}">
+        <view>
+          <text class="card-points-label">{{copy.points}} · {{item.pointsUsed}}积分</text>
+          <text class="card-points-note">{{copy.pointsFunded}}</text>
+        </view>
+        <text class="card-points-value">-¥{{item.pointsDiscount}}</text>
+      </view>
     </view>
 
     <!-- 合计 -->
     <view class="total-card">
-    <text class="total-label">{{copy.total}}</text>
+      <view>
+        <text class="total-label">{{copy.total}}</text>
+        <text class="total-points-note" wx:if="{{grandPointsUsed > 0}}">
+          {{copy.points}} · {{grandPointsUsed}} · -¥{{grandPointsDiscount}}
+        </text>
+      </view>
       <text class="total-val">¥{{grandTotal}}</text>
     </view>
 

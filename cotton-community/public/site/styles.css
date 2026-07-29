@@ -3554,6 +3554,12 @@ body[data-platform="business"] .main-nav .platform-switch-link {
   font-weight: 750;
 }
 
+.learning-course-foot strong {
+  margin-left: auto;
+  color: var(--green-700);
+  font-size: 12px;
+}
+
 .learning-course-copy h3 {
   min-height: 58px;
   margin: 10px 0;
@@ -3804,6 +3810,62 @@ body[data-platform="business"] .main-nav .platform-switch-link {
   margin: 0;
   font-size: 13px;
   font-weight: 700;
+}
+
+.course-points-note {
+  margin: 0 0 18px;
+  padding: 14px 15px;
+  border-left: 3px solid var(--gold);
+  background: #f2f7f1;
+}
+
+.course-points-note strong,
+.course-points-note span {
+  display: block;
+}
+
+.course-points-note strong {
+  color: var(--green-800);
+  font-size: 14px;
+}
+
+.course-points-note span {
+  margin-top: 4px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.learning-reward-notice {
+  position: fixed;
+  z-index: 120;
+  right: 24px;
+  bottom: 24px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 18px 20px;
+  color: #fff;
+  background: var(--green-800);
+  box-shadow: 0 18px 44px rgba(15, 50, 36, .24);
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.learning-reward-notice.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.learning-reward-notice strong,
+.learning-reward-notice span {
+  display: block;
+}
+
+.learning-reward-notice span {
+  margin-top: 5px;
+  color: rgba(255, 255, 255, .76);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .course-account-link,
@@ -4533,6 +4595,38 @@ body[data-platform="business"] .main-nav .platform-switch-link {
 
 .public-account-panel p {
   margin: 0;
+  color: var(--ink-soft);
+}
+
+.account-points-summary {
+  margin-top: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.account-points-summary strong {
+  color: var(--green-700);
+  font-size: 18px;
+}
+
+.public-sso-loading {
+  min-height: calc(100vh - 86px);
+  padding: 64px 24px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: #f3f6f1;
+}
+
+.public-sso-loading h1 {
+  margin: 10px 0;
+  font-size: 34px;
+}
+
+.public-sso-loading p {
   color: var(--ink-soft);
 }
 

@@ -6,6 +6,7 @@ const wxpay = require('../utils/wechat-pay')
 const profitSharing = require('../utils/profit-sharing')
 const refunds = require('../utils/refunds')
 const marketing = require('../utils/marketing')
+const points = require('../utils/points')
 const paymentOrderNo = require('../utils/payment-order-no')
 const machineLifecycle = require('../utils/machine-order-lifecycle')
 const paymentAttach = require('../utils/payment-attach')
@@ -159,7 +160,7 @@ async function loadSupplyOrder(orderId, principal, statuses = ['pending_payment'
   const placeholders = statuses.map(() => '?').join(',')
   const owner = ownerCondition(principal, 'o')
   const [[row]] = await db.query(
-    `SELECT o.id,o.order_no,o.total,o.original_subtotal,o.commission_base,o.status,o.pay_expires_at,
+    `SELECT o.id,o.order_no,o.total,o.original_subtotal,o.commission_base,o.points_used,o.points_discount,o.status,o.pay_expires_at,
             o.wechat_out_trade_no,o.wechat_transaction_id,o.payment_mode,o.paid_at,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
             MIN(i.merchant_id) AS merchant_id,MIN(m.sub_mchid) AS sub_mchid,
@@ -177,6 +178,8 @@ function normalizeSupplyOrder(row) {
   return {
     kind: 'supply', id: row.id, orderNo: row.order_no, amount: Number(row.total || 0),
     commissionBase: Number(row.commission_base || row.original_subtotal || row.total || 0),
+    pointsUsed: Number(row.points_used || 0),
+    pointsDiscount: Number(row.points_discount || 0),
     payExpiresAt: row.pay_expires_at,
     wechatOutTradeNo: row.wechat_out_trade_no || '',
     wechatTransactionId: row.wechat_transaction_id || '',
@@ -205,7 +208,7 @@ async function loadPayerOpenid(principal) {
 
 async function loadSupplyOrderForNotify(orderId) {
   const [[row]] = await db.query(
-    `SELECT o.id,o.order_no,o.total,o.original_subtotal,o.commission_base,o.status,o.pay_expires_at,
+    `SELECT o.id,o.order_no,o.total,o.original_subtotal,o.commission_base,o.points_used,o.points_discount,o.status,o.pay_expires_at,
             o.wechat_out_trade_no,o.wechat_transaction_id,o.payment_mode,o.paid_at,
             COUNT(DISTINCT i.merchant_id) AS merchant_count,
             MIN(i.merchant_id) AS merchant_id,MIN(m.sub_mchid) AS sub_mchid,
@@ -377,6 +380,11 @@ async function markSupplyPaid(order, principal, transaction, paymentMode = 'wech
   )
   if (result.affectedRows > 0) {
     await marketing.markOrderPaid(order.id)
+    if (order.pointsUsed > 0) {
+      await points.settleOrderPoints(order.id).catch(error => {
+        console.error('[points-settle-after-payment]', error)
+      })
+    }
     const [items] = await db.query('SELECT merchant_id FROM order_items WHERE order_id=?', [order.id])
     notifyNewOrder(order.id, order.orderNo || '', items).catch(error => console.error('[notify-order]', error))
   }
@@ -431,6 +439,11 @@ async function markPaidByNotify(type, orderId, paymentStage, paidFen, transactio
   if (order.status === 'pending_ship') {
     await recordSupplyPaymentTrace(order, transaction, 'wechat')
     await marketing.markOrderPaid(orderId)
+    if (order.pointsUsed > 0) {
+      await points.settleOrderPoints(orderId).catch(error => {
+        console.error('[points-settle-notify-retry]', error)
+      })
+    }
     return { ok: true, order }
   }
   if (order.status !== 'pending_payment') return { ok: false, message: 'supply order status invalid' }

@@ -19,11 +19,14 @@ function calculateCommissionFen(amount, commissionRate) {
 
 function calculateOrderCommissionFen(order = {}) {
   const paymentFen = Math.max(0, Math.round(Number(order.amount || 0) * 100))
+  const pointsDiscountFen = Math.max(0, Math.round(Number(order.pointsDiscount || 0) * 100))
+  const paymentBeforePointsFen = paymentFen + pointsDiscountFen
   const commissionFen = calculateCommissionFen(
     order.commissionBase == null ? order.amount : order.commissionBase,
     order.commissionRate
   )
-  return Math.min(paymentFen, commissionFen)
+  // 积分优惠由平台承担：先从平台佣金中扣除积分金额，商户结算额不变。
+  return Math.min(paymentFen, Math.max(0, Math.min(paymentBeforePointsFen, commissionFen) - pointsDiscountFen))
 }
 
 function normalizePaymentStage(orderType, paymentStage) {
@@ -74,7 +77,7 @@ function buildPlatformReceiver({ cfg, subMchid }) {
 function buildProfitSharingBody({ cfg, order }) {
   const amount = order.amountFen != null
     ? Number(order.amountFen)
-    : calculateCommissionFen(order.amount, order.commissionRate)
+    : calculateOrderCommissionFen(order)
   return {
     sub_mchid: order.subMchid,
     appid: cfg.spAppid,

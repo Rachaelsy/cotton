@@ -15,6 +15,7 @@ const identityData = require('../utils/identity-data')
 const { broadcastAnnouncement } = require('../utils/notify')
 const supportMessages = require('../utils/support-messages')
 const supportRealtime = require('../utils/support-realtime')
+const points = require('../utils/points')
 
 // ── 图片上传配置 ─────────────────────────────────────────
 const uploadDir = path.join(__dirname, '../public/uploads/products')
@@ -784,6 +785,65 @@ router.post('/applications/:id/approve', adminAuth, async (req, res) => {
   }
 })
 
+router.get('/points', adminAuth, async (req, res) => {
+  try {
+    const keyword = String(req.query.keyword || '').trim()
+    const params = []
+    let where = ''
+    if (keyword) {
+      where = ' AND (u.phone LIKE ? OR u.real_name LIKE ? OR f.location LIKE ?)'
+      const pattern = `%${keyword}%`
+      params.push(pattern, pattern, pattern)
+    }
+    const [rows] = await db.query(`
+      SELECT u.id AS user_id,u.phone,u.real_name,u.is_active,f.location,
+             COALESCE(a.balance,0) AS balance,COALESCE(a.locked_points,0) AS locked_points,
+             COALESCE(a.total_earned,0) AS total_earned,COALESCE(a.total_used,0) AS total_used,
+             a.updated_at,
+             (SELECT COUNT(*) FROM farmer_points_transactions t
+               WHERE t.user_id=u.id AND t.type='course_reward' AND t.status='completed') AS completed_courses
+        FROM farmers f JOIN users u ON u.id=f.user_id
+        LEFT JOIN farmer_points_accounts a ON a.user_id=u.id
+       WHERE 1=1${where}
+       ORDER BY COALESCE(a.balance,0) DESC,u.id DESC
+       LIMIT 500
+    `, params)
+    const [[summary]] = await db.query(`
+      SELECT COALESCE(SUM(balance),0) AS available_points,
+             COALESCE(SUM(locked_points),0) AS locked_points,
+             COALESCE(SUM(total_earned),0) AS total_earned,
+             COALESCE(SUM(total_used),0) AS total_used
+        FROM farmer_points_accounts
+    `)
+    return res.json({ code: 200, data: { rows, summary, rules: points.publicRules() } })
+  } catch (error) {
+    console.error('[admin-points]', error)
+    return res.status(500).json({ code: 500, msg: '积分账户加载失败', data: null })
+  }
+})
+
+router.post('/points/:userId/adjust', adminAuth, async (req, res) => {
+  try {
+    const userId = Number(req.params.userId)
+    const [[farmer]] = await db.query(
+      'SELECT f.user_id FROM farmers f JOIN users u ON u.id=f.user_id WHERE f.user_id=? AND u.is_active=1',
+      [userId]
+    )
+    if (!farmer) return res.status(404).json({ code: 404, msg: '农户账号不存在或已停用', data: null })
+    const account = await points.adjustPoints({
+      userId,
+      points: req.body.points,
+      reason: req.body.reason,
+      operatorId: req.admin.id
+    })
+    return res.json({ code: 200, msg: '积分调整已记入账本', data: account })
+  } catch (error) {
+    const status = /不足|必须|原因/.test(error.message) ? 400 : 500
+    console.error('[admin-points-adjust]', error)
+    return res.status(status).json({ code: status, msg: error.message || '积分调整失败', data: null })
+  }
+})
+
 router.post('/applications/:id/submit-applyment', adminAuth, async (req, res) => {
   try {
     const userId = req.params.id
@@ -954,7 +1014,7 @@ router.get('/orders', adminAuth, async (req, res) => {
     let sql = `
       SELECT o.id, o.order_no, o.farmer_name, o.farmer_phone,
              o.receiver_name, o.receiver_phone, o.address,
-             o.subtotal, o.delivery_fee, o.total,
+             o.subtotal, o.delivery_fee, o.total,o.points_used,o.points_discount,
              o.pay_method, o.status, o.logistics_no, o.note,
              o.created_at,
              GROUP_CONCAT(
@@ -985,19 +1045,11 @@ router.get('/orders', adminAuth, async (req, res) => {
 
 // ── PATCH /api/admin/orders/:id/status ──────────────────
 router.patch('/orders/:id/status', adminAuth, async (req, res) => {
-  try {
-    const { status, logistics_no } = req.body
-    const valid = ['pending_ship', 'shipped', 'completed', 'refund']
-    if (!valid.includes(status)) return res.status(400).json({ code: 400, msg: '状态无效' })
-    const fields = ['status=?']
-    const params = [status]
-    if (logistics_no) { fields.push('logistics_no=?'); params.push(logistics_no) }
-    params.push(req.params.id)
-    await db.query(`UPDATE orders SET ${fields.join(',')} WHERE id=?`, params)
-    res.json({ code: 200, msg: '已更新' })
-  } catch (e) {
-    console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
-  }
+  return res.status(410).json({
+    code: 410,
+    msg: '订单状态必须由支付、发货、收货或退款流程更新，后台不能直接改写',
+    data: null
+  })
 })
 
 // ── PATCH /api/admin/users/:id/status ───────────────────
@@ -1294,6 +1346,7 @@ router.get('/finance', adminAuth, async (req, res) => {
         m.id AS merchant_id, m.company_name, m.commission_rate, u.phone,
         COALESCE(fin.total_sales, 0) AS total_sales,
         COALESCE(fin.total_commission, 0) AS total_commission,
+        COALESCE(fin.points_subsidy, 0) AS points_subsidy,
         COALESCE(fin.available_amount, 0) AS available_amount,
         COALESCE(fin.frozen_amount, 0) AS frozen_amount
       FROM merchants m
@@ -1301,13 +1354,15 @@ router.get('/finance', adminAuth, async (req, res) => {
       LEFT JOIN (
         SELECT q.merchant_id,
           SUM(CASE WHEN q.status='completed' THEN q.paid_amount ELSE 0 END) AS total_sales,
-          SUM(CASE WHEN q.status='completed' THEN LEAST(q.paid_amount, q.commission_base * q.commission_rate / 100) ELSE 0 END) AS total_commission,
+          SUM(CASE WHEN q.status='completed' THEN GREATEST(LEAST(q.paid_amount, q.commission_base * q.commission_rate / 100) - q.points_discount, 0) ELSE 0 END) AS total_commission,
+          SUM(CASE WHEN q.status='completed' THEN q.points_discount ELSE 0 END) AS points_subsidy,
           SUM(CASE WHEN q.fund_status='available' THEN GREATEST(q.paid_amount - LEAST(q.paid_amount, q.commission_base * q.commission_rate / 100), 0) ELSE 0 END) AS available_amount,
           SUM(CASE WHEN q.fund_status='frozen' THEN GREATEST(q.paid_amount - LEAST(q.paid_amount, q.commission_base * q.commission_rate / 100), 0) ELSE 0 END) AS frozen_amount
         FROM (
           SELECT oi.merchant_id, o.id AS order_id, o.status, o.fund_status,
                  SUM(oi.subtotal) AS paid_amount,
                  SUM(COALESCE(NULLIF(oi.original_price,0),oi.price) * oi.qty) AS commission_base,
+                 MAX(COALESCE(o.points_discount,0)) AS points_discount,
                  m2.commission_rate
             FROM order_items oi
             JOIN orders o ON o.id=oi.order_id

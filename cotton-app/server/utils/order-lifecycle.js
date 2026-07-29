@@ -1,11 +1,12 @@
 const db = require('../db/database')
 const marketing = require('./marketing')
+const points = require('./points')
 
 async function cancelPendingSupplyOrder(orderId) {
   const conn = await db.getConnection()
   try {
     await conn.beginTransaction()
-    const [[order]] = await conn.query('SELECT id,status FROM orders WHERE id=? FOR UPDATE', [orderId])
+    const [[order]] = await conn.query('SELECT id,status,points_used FROM orders WHERE id=? FOR UPDATE', [orderId])
     if (!order || order.status !== 'pending_payment') {
       await conn.rollback()
       return false
@@ -16,6 +17,7 @@ async function cancelPendingSupplyOrder(orderId) {
       await conn.query('UPDATE products SET stock=stock+? WHERE id=?', [item.qty, item.product_id])
     }
     await marketing.releaseOrderMarketing(orderId, conn)
+    if (Number(order.points_used || 0) > 0) await points.releaseOrderPoints(orderId, conn)
     await conn.query("UPDATE orders SET status='cancelled',pay_expires_at=NULL WHERE id=?", [orderId])
     await conn.commit()
     return true

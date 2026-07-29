@@ -4,8 +4,8 @@ const layout = require('../../utils/layout')
 const i18n = require('../../utils/i18n')
 
 const COPY = {
-  zh: { title:'确认订单',shipping:'收货信息',fill:'请填写收货信息',edit:'编辑',fillAddress:'+ 填写地址',name:'收货人姓名',phone:'手机号',address:'省市区乡镇 详细地址',chooseLocation:'地图选择收货位置',locationSelected:'已选择配送位置',confirm:'确定',goods:'订单商品',discount:'优惠',autoPromo:'商品活动优惠',coupon:'优惠券',noCoupon:'不使用优惠券',delivery:'配送方式',deliveryWay:'送货到地头',payment:'支付方式',wechat:'微信支付',safe:'快捷安全',remark:'订单备注',remarkPh:'如有特殊要求请填写…',subtotal:'商品原价',saved:'商户优惠',fee:'运费',submit:'提交订单',submitting:'提交中…',needName:'请填写收货人姓名',needPhone:'请填写手机号',needAddress:'请填写收货地址',locationPermission:'需要位置权限才能选择收货位置',settings:'去设置',orderFail:'下单失败',orderFailDesc:'提交订单失败，请重试',network:'网络异常，请重试' },
-  ug: { title:'زاكازنى جەزملەش',shipping:'تاپشۇرۇۋېلىش ئۇچۇرى',fill:'تاپشۇرۇۋېلىش ئۇچۇرىنى تولدۇرۇڭ',edit:'تەھرىرلەش',fillAddress:'+ ئادرېس تولدۇرۇش',name:'تاپشۇرۇۋالغۇچى نامى',phone:'تېلېفون نومۇرى',address:'رايون، يېزا ۋە تەپسىلىي ئادرېس',chooseLocation:'خەرىتىدىن ئادرېس تاللاش',locationSelected:'يەتكۈزۈش ئورنى تاللاندى',confirm:'جەزملەش',goods:'زاكاز مەھسۇلاتى',discount:'ئېتىبار',autoPromo:'مەھسۇلات ئېتىبارى',coupon:'ئېتىبار بېلىتى',noCoupon:'بېلەت ئىشلەتمەسلىك',delivery:'يەتكۈزۈش ئۇسۇلى',deliveryWay:'ئېتىز بېشىغىچە يەتكۈزۈش',payment:'تۆلەش ئۇسۇلى',wechat:'WeChat تۆلەش',safe:'تېز ۋە بىخەتەر',remark:'زاكاز ئىزاھى',remarkPh:'ئالاھىدە تەلەپ بولسا يېزىڭ…',subtotal:'مەھسۇلات ئەسلى باھاسى',saved:'سودىگەر ئېتىبارى',fee:'توشۇش ھەققى',submit:'زاكاز تاپشۇرۇش',submitting:'تاپشۇرۇۋاتىدۇ…',needName:'تاپشۇرۇۋالغۇچى نامىنى تولدۇرۇڭ',needPhone:'تېلېفوننى تولدۇرۇڭ',needAddress:'ئادرېسنى تولدۇرۇڭ',locationPermission:'ئورۇن ئىجازىتى كېرەك',settings:'تەڭشەك',orderFail:'زاكاز مەغلۇپ',orderFailDesc:'زاكاز تاپشۇرۇلمىدى، قايتا سىناڭ',network:'تور نورمال ئەمەس، قايتا سىناڭ' }
+  zh: { title:'确认订单',shipping:'收货信息',fill:'请填写收货信息',edit:'编辑',fillAddress:'+ 填写地址',name:'收货人姓名',phone:'手机号',address:'省市区乡镇 详细地址',chooseLocation:'地图选择收货位置',locationSelected:'已选择配送位置',confirm:'确定',goods:'订单商品',discount:'优惠',autoPromo:'商品活动优惠',coupon:'优惠券',noCoupon:'不使用优惠券',points:'平台积分',pointsUse:'使用积分抵扣',pointsRule:'100积分抵1元，平台承担优惠，不影响商户结算',pointsLogin:'登录后学习课程可获得并使用积分',pointsSaved:'积分抵扣',delivery:'配送方式',deliveryWay:'送货到地头',payment:'支付方式',wechat:'微信支付',safe:'快捷安全',remark:'订单备注',remarkPh:'如有特殊要求请填写…',subtotal:'商品原价',saved:'商户优惠',fee:'运费',submit:'提交订单',submitting:'提交中…',needName:'请填写收货人姓名',needPhone:'请填写手机号',needAddress:'请填写收货地址',locationPermission:'需要位置权限才能选择收货位置',settings:'去设置',orderFail:'下单失败',orderFailDesc:'提交订单失败，请重试',network:'网络异常，请重试' },
+  ug: { title:'زاكازنى جەزملەش',shipping:'تاپشۇرۇۋېلىش ئۇچۇرى',fill:'تاپشۇرۇۋېلىش ئۇچۇرىنى تولدۇرۇڭ',edit:'تەھرىرلەش',fillAddress:'+ ئادرېس تولدۇرۇش',name:'تاپشۇرۇۋالغۇچى نامى',phone:'تېلېفون نومۇرى',address:'رايون، يېزا ۋە تەپسىلىي ئادرېس',chooseLocation:'خەرىتىدىن ئادرېس تاللاش',locationSelected:'يەتكۈزۈش ئورنى تاللاندى',confirm:'جەزملەش',goods:'زاكاز مەھسۇلاتى',discount:'ئېتىبار',autoPromo:'مەھسۇلات ئېتىبارى',coupon:'ئېتىبار بېلىتى',noCoupon:'بېلەت ئىشلەتمەسلىك',points:'سۇپىنىڭ نومۇرى',pointsUse:'نومۇر بىلەن كېمەيتىش',pointsRule:'100 نومۇر 1 يۈەن، ئېتىبارنى سۇپا ئۈستىگە ئالىدۇ',pointsLogin:'كىرىپ دەرس ئۆگىنىپ نومۇرغا ئېرىشەلەيسىز',pointsSaved:'نومۇر ئېتىبارى',delivery:'يەتكۈزۈش ئۇسۇلى',deliveryWay:'ئېتىز بېشىغىچە يەتكۈزۈش',payment:'تۆلەش ئۇسۇلى',wechat:'WeChat تۆلەش',safe:'تېز ۋە بىخەتەر',remark:'زاكاز ئىزاھى',remarkPh:'ئالاھىدە تەلەپ بولسا يېزىڭ…',subtotal:'مەھسۇلات ئەسلى باھاسى',saved:'سودىگەر ئېتىبارى',fee:'توشۇش ھەققى',submit:'زاكاز تاپشۇرۇش',submitting:'تاپشۇرۇۋاتىدۇ…',needName:'تاپشۇرۇۋالغۇچى نامىنى تولدۇرۇڭ',needPhone:'تېلېفوننى تولدۇرۇڭ',needAddress:'ئادرېسنى تولدۇرۇڭ',locationPermission:'ئورۇن ئىجازىتى كېرەك',settings:'تەڭشەك',orderFail:'زاكاز مەغلۇپ',orderFailDesc:'زاكاز تاپشۇرۇلمىدى، قايتا سىناڭ',network:'تور نورمال ئەمەس، قايتا سىناڭ' }
 }
 
 const DELIVERY_FEE = 0
@@ -16,12 +16,19 @@ Page({
     lang: i18n.getLanguage(),
     copy: COPY[i18n.getLanguage()],
     capsuleSafeRight: 0,
+    isLoggedIn: false,
     cartItems: [],
     cartTotal: '0',
     orderGroups: [],
     promotionDiscount: '0.00',
     couponDiscount: '0.00',
     merchantDiscount: '0.00',
+    pointsBalance: 0,
+    maxPointsUsable: 0,
+    pointsUsed: 0,
+    pointsDiscount: '0.00',
+    usePoints: false,
+    pointsEligible: false,
     marketingLoading: true,
     deliveryFee: DELIVERY_FEE,
     totalWithFee: '0',
@@ -35,6 +42,7 @@ Page({
   },
 
   onLoad() {
+    const auth = require('../../utils/auth')
     const info = wx.getSystemInfoSync()
     const cart = app.globalData.cart
     const cartTotal = cart.reduce((s, c) => s + c.price * c.qty, 0)
@@ -45,6 +53,7 @@ Page({
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
       capsuleSafeRight: layout.getCapsuleSafeRight(),
+      isLoggedIn: auth.isLoggedIn(),
       cartItems: cart,
       orderGroups,
       cartTotal: cartTotal.toFixed(2),
@@ -142,11 +151,13 @@ Page({
     })
   },
 
-  async _quoteGroup(group, userCouponId = null) {
+  async _quoteGroup(group, userCouponId = null, options = {}) {
     const auth = require('../../utils/auth')
     const res = await auth.request('POST', '/api/marketing/quote', {
       items: group.items.map(item => ({ id: item.id, qty: item.qty })),
-      user_coupon_id: userCouponId || undefined
+      user_coupon_id: userCouponId || undefined,
+      use_points: options.usePoints === true,
+      points_to_use: options.pointsToUse
     })
     if (res.code !== 200) throw new Error(res.msg || '优惠计算失败')
     return res.data
@@ -155,16 +166,23 @@ Page({
   async _loadMarketing(groups) {
     const auth = require('../../utils/auth')
     let coupons = []
+    let pointsBalance = 0
     if (auth.isLoggedIn()) {
-      try {
-        const mine = await auth.request('GET', '/api/marketing/coupons/mine?status=available')
-        if (mine.code === 200) coupons = mine.data || []
-      } catch { coupons = [] }
+      const [mineResult, pointsResult] = await Promise.allSettled([
+        auth.request('GET', '/api/marketing/coupons/mine?status=available'),
+        auth.request('GET', '/api/points/me?limit=1')
+      ])
+      const mine = mineResult.status === 'fulfilled' ? mineResult.value : null
+      const points = pointsResult.status === 'fulfilled' ? pointsResult.value : null
+      if (mine && mine.code === 200) coupons = mine.data || []
+      if (points && points.code === 200) {
+        pointsBalance = Number(points.data.account && points.data.account.balance || 0)
+      }
     }
     const pricedGroups = []
     for (const group of groups) {
       try {
-        const baseQuote = await this._quoteGroup(group)
+        const baseQuote = await this._quoteGroup(group, null, { usePoints: false })
         const merchantId = Number(baseQuote.merchant_id || group.merchant_id)
         const eligible = coupons.filter(coupon => Number(coupon.merchant_id) === merchantId).slice(0, 20)
         const couponOptions = [{ user_coupon_id: null, label: this.data.copy.noCoupon, quote: baseQuote }]
@@ -173,7 +191,7 @@ Page({
         let bestTotal = Number(baseQuote.payable_total)
         for (const coupon of eligible) {
           try {
-            const quote = await this._quoteGroup(group, coupon.user_coupon_id)
+            const quote = await this._quoteGroup(group, coupon.user_coupon_id, { usePoints: false })
             if (!quote.coupon_applied) {
               if (quote.coupon_reason) unavailableReasons.push(`${coupon.name}：${quote.coupon_reason}`)
               continue
@@ -197,7 +215,38 @@ Page({
         pricedGroups.push({ ...group, marketingError: error.message || '优惠价格暂时无法计算' })
       }
     }
-    this._applyMarketingGroups(pricedGroups)
+    const usePoints = pointsBalance >= 100
+    this.setData({ pointsBalance, usePoints })
+    await this._applyPointsAcrossGroups(pricedGroups, usePoints)
+  },
+
+  async _applyPointsAcrossGroups(groups, usePoints) {
+    let remaining = usePoints ? Number(this.data.pointsBalance || 0) : 0
+    const priced = []
+    for (const group of groups) {
+      if (!usePoints || remaining < 100 || group.marketingError) {
+        priced.push({
+          ...group,
+          points_used: 0,
+          points_discount: 0,
+          max_points_usable: 0,
+          payable_total: group.payable_before_points || group.payable_total
+        })
+        continue
+      }
+      try {
+        const quote = await this._quoteGroup(group, group.user_coupon_id, {
+          usePoints: true,
+          pointsToUse: remaining
+        })
+        const used = Number(quote.points_used || 0)
+        remaining = Math.max(0, remaining - used)
+        priced.push({ ...group, ...quote, items: group.items })
+      } catch {
+        priced.push({ ...group, points_used: 0, points_discount: 0 })
+      }
+    }
+    this._applyMarketingGroups(priced)
   },
 
   _applyMarketingGroups(groups) {
@@ -205,6 +254,9 @@ Page({
     const original = sum('original_subtotal')
     const promotion = sum('promotion_discount')
     const coupon = sum('coupon_discount')
+    const pointsUsed = sum('points_used')
+    const pointsDiscount = sum('points_discount')
+    const maxPointsUsable = sum('max_points_usable')
     const total = sum('payable_total') + DELIVERY_FEE
     this.setData({
       orderGroups: groups,
@@ -212,6 +264,10 @@ Page({
       promotionDiscount: promotion.toFixed(2),
       couponDiscount: coupon.toFixed(2),
       merchantDiscount: (promotion + coupon).toFixed(2),
+      pointsUsed,
+      pointsDiscount: pointsDiscount.toFixed(2),
+      maxPointsUsable,
+      pointsEligible: maxPointsUsable >= 100 || pointsUsed >= 100,
       totalWithFee: total.toFixed(2),
       marketingLoading: false
     })
@@ -227,13 +283,29 @@ Page({
     if (!group || !option) return
     this.setData({ marketingLoading: true })
     try {
-      const quote = option.quote || await this._quoteGroup(group, option.user_coupon_id)
+      const quote = option.quote || await this._quoteGroup(group, option.user_coupon_id, { usePoints: false })
       groups[groupIndex] = { ...group, ...quote, items: group.items, selectedCouponIndex, selectedCouponLabel: option.label, user_coupon_id: option.user_coupon_id }
-      this._applyMarketingGroups(groups)
+      await this._applyPointsAcrossGroups(groups, this.data.usePoints)
     } catch (error) {
       this.setData({ marketingLoading: false })
       wx.showToast({ title: error.message || '优惠券不可用', icon: 'none' })
     }
+  },
+
+  async onPointsToggle(e) {
+    if (this.data.marketingLoading) return
+    const usePoints = !!e.detail.value
+    this.setData({ usePoints, marketingLoading: true })
+    await this._applyPointsAcrossGroups(this.data.orderGroups, usePoints)
+  },
+
+  async _rollbackCreatedOrders(createdOrders) {
+    const auth = require('../../utils/auth')
+    await Promise.all((createdOrders || []).map(order => (
+      order.orderId
+        ? auth.guestRequest('PATCH', `/api/orders/${order.orderId}/cancel`).catch(() => null)
+        : Promise.resolve()
+    )))
   },
 
   async onPay() {
@@ -302,7 +374,9 @@ Page({
           address: shippingInfo.address,
           receiverLatitude: shippingInfo.addressLatitude,
           receiverLongitude: shippingInfo.addressLongitude,
-          user_coupon_id: identity.type === 'user' ? (group.user_coupon_id || undefined) : undefined
+          user_coupon_id: identity.type === 'user' ? (group.user_coupon_id || undefined) : undefined,
+          use_points: identity.type === 'user' && this.data.usePoints,
+          points_to_use: identity.type === 'user' ? Number(group.points_used || 0) : undefined
         })
         if (res.code === 200) {
           orderObj.orderId = res.data.orderId
@@ -314,12 +388,16 @@ Page({
           orderObj.promotionDiscount = res.data.promotionDiscount
           orderObj.couponDiscount = res.data.couponDiscount
           orderObj.merchantDiscount = res.data.merchantDiscount
+          orderObj.pointsUsed = res.data.pointsUsed
+          orderObj.pointsDiscount = res.data.pointsDiscount
         } else {
+          await this._rollbackCreatedOrders(createdOrders)
           this.setData({ submitting: false })
           wx.showModal({ title: this.data.copy.orderFail, content: res.msg || this.data.copy.orderFailDesc, showCancel: false })
           return
         }
       } catch (e) {
+        await this._rollbackCreatedOrders(createdOrders)
         this.setData({ submitting: false })
         wx.showModal({
           title: this.data.copy.orderFail,

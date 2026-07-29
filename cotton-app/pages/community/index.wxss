@@ -1,0 +1,4 @@
+.state { min-height: 100vh; padding: 80rpx 48rpx; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28rpx; color: #66736A; background: #F3F6F1; font-size: 28rpx; text-align: center; }
+.state button { width: 260rpx; margin: 0; border-radius: 8rpx; color: #FFFFFF; background: #1F6A43; font-size: 27rpx; }
+.state button::after { border: 0; }
+.error { color: #7C3D31; }

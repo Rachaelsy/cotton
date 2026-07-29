@@ -6,6 +6,7 @@ const { normalizeCoordinates, calculateCenter } = require('./utils/plot-geometry
 const weatherObservations = require('./utils/weather-observations')
 const { cancelPendingSupplyOrder } = require('./utils/order-lifecycle')
 const { expireUnpaidMachineOrders } = require('./utils/machine-order-lifecycle')
+const points = require('./utils/points')
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -148,18 +149,31 @@ async function autoExpireMachineOrders() {
   }
 }
 
+async function reconcilePoints() {
+  try {
+    const result = await points.reconcileLockedOrderPoints()
+    if (result.settled || result.returned) {
+      console.log(`[scheduler] 积分对账: 核销 ${result.settled} 笔，返还 ${result.returned} 笔`)
+    }
+  } catch (error) {
+    console.error('[scheduler] reconcilePoints:', error.message)
+  }
+}
+
 function startScheduler() {
   autoConfirmReceipt()
   releaseFunds()
   autoExpireOrders()
   autoExpireMachineOrders()
+  reconcilePoints()
   setInterval(autoConfirmReceipt, 60 * 60 * 1000)
   setInterval(releaseFunds,       60 * 60 * 1000)
   setInterval(autoExpireOrders,   5  * 60 * 1000)   // 每 5 分钟扫一次
   setInterval(autoExpireMachineOrders, 5 * 60 * 1000)
+  setInterval(reconcilePoints, 5 * 60 * 1000)
   setTimeout(collectWeatherObservations, 15 * 1000)
   setInterval(collectWeatherObservations, 60 * 60 * 1000)
-  console.log('[scheduler] 已启动（自动确认收货 + 资金解冻 + 超时关单 + 地块气象采集）')
+  console.log('[scheduler] 已启动（自动确认收货 + 资金解冻 + 超时关单 + 积分对账 + 地块气象采集）')
 }
 
-module.exports = { startScheduler, collectWeatherObservations }
+module.exports = { startScheduler, collectWeatherObservations, reconcilePoints }

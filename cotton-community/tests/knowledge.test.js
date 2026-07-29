@@ -20,6 +20,7 @@ const styles = read('public/knowledge/styles.css')
 for (const table of [
   'knowledge_contents', 'knowledge_comments', 'knowledge_progress', 'knowledge_favorites',
   'knowledge_questions', 'knowledge_answers', 'knowledge_answer_votes', 'community_service_requests'
+  , 'farmer_points_accounts', 'farmer_points_transactions', 'community_sso_tickets'
 ]) {
   assert(migration.includes(table), `migration should manage ${table}`)
 }
@@ -36,6 +37,10 @@ assert(siteApp.includes('data-nav="courses"') && siteApp.includes("action.textCo
 assert(siteHtml.includes('/knowledge/site/learning.js'), 'shared public shell should load integrated learning views')
 assert(learningJs.includes('/api/community-auth/register') && learningJs.includes('publicRegisterForm'), 'public platform should provide independent registration')
 assert(learningJs.includes('/api/community-auth/login') && learningJs.includes('publicLoginForm'), 'course login should use community authentication')
+assert(learningJs.includes('/api/community-auth/ticket-login'), 'miniapp users should exchange a one-time ticket on the public platform')
+assert(route.includes("router.get('/me/points'") && route.includes('awardCourseCompletion'), 'course completion should award shared farmer points')
+assert(route.includes('const duration = canonicalDuration || 300'), 'course completion must use server-owned duration')
+assert(route.includes('progress_seconds=GREATEST(progress_seconds,VALUES(progress_seconds))'), 'saved course progress must not move backwards')
 assert(learningJs.includes('/api/community-ai/chat'), 'course detail should retain AI Q&A')
 assert(route.includes('parent_nickname') && learningJs.includes('parent_id'), 'comments should support replies')
 assert(learningJs.includes('/contents/${id}/progress') && learningJs.includes('/contents/${id}/favorite'), 'learning progress and favorites should survive the integration')

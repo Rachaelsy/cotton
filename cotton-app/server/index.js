@@ -46,11 +46,32 @@ app.use('/uploads',  express.static(path.join(__dirname, 'public/uploads')))
 // 访问 cyaia.cn 或首页文件时，进入统一身份登录页。
 app.get(['/', '/index.html'], (_req, res) => res.redirect('/admin/login.html'))
 const communityBaseUrl = String(process.env.COMMUNITY_BASE_URL || '').replace(/\/+$/, '')
-const communityUrl = pathname => communityBaseUrl ? `${communityBaseUrl}${pathname}` : pathname
-app.get('/community', (_req, res) => res.redirect(communityUrl('/knowledge/')))
-app.get('/community/public', (_req, res) => res.redirect(communityUrl('/public/')))
-app.get('/community/business', (_req, res) => res.redirect(communityUrl('/business/')))
-app.get('/community/admin', (_req, res) => res.redirect(communityUrl('/knowledge/admin.html')))
+function communityUrl(req, pathname) {
+  if (communityBaseUrl) return `${communityBaseUrl}${pathname}`
+
+  // Nginx already routes these paths by service name. A direct local request
+  // to port 3000 needs an absolute URL so it does not fall back into cotton-app.
+  const forwardedPort = String(req.get('x-forwarded-port') || '')
+  const host = String(req.get('host') || '')
+  if (!forwardedPort && host) {
+    try {
+      const target = new URL(`${req.protocol}://${host}`)
+      if (target.port === String(process.env.PORT || 3000)) {
+        target.port = String(process.env.COMMUNITY_DIRECT_PORT || 3100)
+        target.pathname = pathname
+        target.search = ''
+        target.hash = ''
+        return target.toString()
+      }
+    } catch {}
+  }
+  return pathname
+}
+const redirectCommunity = pathname => (req, res) => res.redirect(communityUrl(req, pathname))
+app.get('/community', redirectCommunity('/knowledge/'))
+app.get('/community/public', redirectCommunity('/public/'))
+app.get('/community/business', redirectCommunity('/business/'))
+app.get('/community/admin', redirectCommunity('/knowledge/admin.html'))
 
 // ── 路由 ────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'))
@@ -62,6 +83,7 @@ app.use('/api/farm-records', require('./routes/farm-records'))
 app.use('/api/feedback', require('./routes/feedback'))
 app.use('/api/weather',  require('./routes/weather'))
 app.use('/api/marketing', require('./routes/marketing'))
+app.use('/api/points',   require('./routes/points'))
 app.use('/api/verification', require('./routes/verification'))
 app.use('/api/expert',   require('./routes/expert'))
 app.use('/api/pay',      require('./routes/payments'))

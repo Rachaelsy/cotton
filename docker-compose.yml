@@ -38,6 +38,9 @@ services:
       DB_PASS: ${DB_PASS}
       DB_NAME: ${DB_NAME:-cotton}
       COMMUNITY_BASE_URL: ${COMMUNITY_BASE_URL:-}
+      COMMUNITY_DIRECT_PORT: ${COMMUNITY_HOST_PORT:-3100}
+    ports:
+      - "${APP_HOST_BIND:-127.0.0.1}:${APP_HOST_PORT:-3000}:3000"
     volumes:
       - uploads:/app/public/uploads
       - identity_uploads:/app/private/identity
@@ -77,6 +80,8 @@ services:
       DB_NAME: ${DB_NAME:-cotton}
       PLATFORM_BASE_URL: ${PLATFORM_BASE_URL:-}
       KNOWLEDGE_LOCAL_UPLOAD_MAX_MB: ${KNOWLEDGE_LOCAL_UPLOAD_MAX_MB:-250}
+    ports:
+      - "${COMMUNITY_HOST_BIND:-127.0.0.1}:${COMMUNITY_HOST_PORT:-3100}:3100"
     volumes:
       - community_uploads:/app/public/uploads
     depends_on:

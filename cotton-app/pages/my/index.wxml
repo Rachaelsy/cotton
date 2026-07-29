@@ -41,13 +41,13 @@
         </view>
         <view class="uc-divider"></view>
         <view class="uc-stat">
-          <text class="uc-stat-val">12</text>
-          <text class="uc-stat-label">{{copy.orders}}</text>
+          <text class="uc-stat-val">{{pointsBalance}}</text>
+          <text class="uc-stat-label">学习积分</text>
         </view>
         <view class="uc-divider"></view>
         <view class="uc-stat">
-          <text class="uc-stat-val">8</text>
-          <text class="uc-stat-label">{{copy.favoritesCount}}</text>
+          <text class="uc-stat-val">{{orderCount}}</text>
+          <text class="uc-stat-label">{{copy.orders}}</text>
         </view>
       </view>
     </view>
@@ -132,6 +132,37 @@
           <view wx:if="{{isLoggedIn && orderCount > 0}}" class="mi-badge-warn">
             <text class="mi-badge-text">{{orderCount}}{{copy.running}}</text>
           </view>
+          <text class="mi-arr">›</text>
+        </view>
+      </view>
+
+      <view class="mi-div"></view>
+
+      <view class="menu-item {{!isLoggedIn ? 'item-dim' : ''}}" bindtap="onPoints">
+        <view class="mi-icon green">
+          <text class="mi-symbol">积</text>
+        </view>
+        <view class="mi-body">
+          <text class="mi-title">学习积分</text>
+          <text class="mi-sub">学习课程得积分，购买农资可抵扣</text>
+        </view>
+        <view class="mi-right">
+          <text wx:if="{{isLoggedIn}}" class="mi-verified">{{pointsBalance}}分</text>
+          <text class="mi-arr">›</text>
+        </view>
+      </view>
+
+      <view class="mi-div"></view>
+
+      <view class="menu-item" bindtap="onCommunity">
+        <view class="mi-icon blue">
+          <text class="mi-symbol">学</text>
+        </view>
+        <view class="mi-body">
+          <text class="mi-title">公益学习平台</text>
+          <text class="mi-sub">课程、政策、病虫害知识与棉友问答</text>
+        </view>
+        <view class="mi-right">
           <text class="mi-arr">›</text>
         </view>
       </view>

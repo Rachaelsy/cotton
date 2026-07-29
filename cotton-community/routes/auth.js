@@ -1,6 +1,7 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
 const db = require('../db/database')
 
 const router = express.Router()
@@ -92,6 +93,53 @@ router.post('/register', async (req, res) => {
     return fail(res, '服务器错误，请稍后重试', 500)
   } finally {
     if (conn) conn.release()
+  }
+})
+
+router.post('/ticket-login', async (req, res) => {
+  const ticket = String(req.body.ticket || '').trim()
+  if (!ticket || ticket.length > 128) return fail(res, '登录票据无效', 400)
+  const ticketHash = crypto.createHash('sha256').update(ticket).digest('hex')
+  const conn = await db.getConnection()
+  try {
+    await conn.beginTransaction()
+    const [[record]] = await conn.query(
+      `SELECT id,user_id FROM community_sso_tickets
+        WHERE ticket_hash=? AND used_at IS NULL AND expires_at>NOW() FOR UPDATE`,
+      [ticketHash]
+    )
+    if (!record) {
+      await conn.rollback()
+      return fail(res, '登录票据已失效，请从小程序重新进入', 401)
+    }
+    const [[user]] = await conn.query(
+      `SELECT u.*,f.location,f.land_size,f.crop_type
+         FROM users u LEFT JOIN farmers f ON f.user_id=u.id
+        WHERE u.id=? AND u.is_active=1 LIMIT 1`,
+      [record.user_id]
+    )
+    if (!user) {
+      await conn.rollback()
+      return fail(res, '账号不存在或已被禁用', 403)
+    }
+    await conn.query('UPDATE community_sso_tickets SET used_at=NOW() WHERE id=?', [record.id])
+    await conn.commit()
+    return ok(res, {
+      token: signUser(user, 'farmer'),
+      role: 'farmer',
+      real_name: user.real_name || '',
+      phone: user.phone || '',
+      avatar_url: user.avatar_url || null,
+      location: user.location || '',
+      land_size: Number(user.land_size || 0),
+      crop_type: user.crop_type || '棉花'
+    }, '已同步小程序账号')
+  } catch (error) {
+    await conn.rollback().catch(() => {})
+    console.error('[community-ticket-login]', error)
+    return fail(res, '账号同步失败，请稍后重试', 500)
+  } finally {
+    conn.release()
   }
 })
 

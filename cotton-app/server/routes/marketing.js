@@ -1,6 +1,8 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
 const marketing = require('../utils/marketing')
+const points = require('../utils/points')
+const db = require('../db/database')
 
 const router = express.Router()
 const ok = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -71,12 +73,20 @@ router.post('/coupons/:id/claim', farmerAuth, async (req, res) => {
 
 router.post('/quote/best', optionalFarmerAuth, async (req, res) => {
   try {
-    const result = await marketing.priceOrderWithBestCoupon(require('../db/database'), {
+    const result = await marketing.priceOrderWithBestCoupon(db, {
       items: req.body.items,
       userId: req.user && req.user.id
     })
+    const pointsQuote = await points.quoteRedemption(db, {
+      userId: req.user && req.user.id,
+      pricing: result.pricing,
+      usePoints: req.body.use_points !== false && req.body.usePoints !== false,
+      requestedPoints: req.body.points_to_use ?? req.body.pointsToUse,
+      lock: false
+    })
     return ok(res, {
       ...marketing.publicQuote(result.pricing),
+      ...points.publicQuote(pointsQuote),
       user_coupon_id: result.selectedUserCouponId,
       auto_coupon_applied: !!result.selectedUserCouponId,
       evaluated_coupons: result.evaluatedCoupons
@@ -87,13 +97,23 @@ router.post('/quote/best', optionalFarmerAuth, async (req, res) => {
 router.post('/quote', optionalFarmerAuth, async (req, res) => {
   try {
     if (req.body.user_coupon_id && !req.user) return fail(res, '请登录后使用优惠券', 403)
-    const pricing = await marketing.priceOrder(require('../db/database'), {
+    const pricing = await marketing.priceOrder(db, {
       items: req.body.items,
       userId: req.user && req.user.id,
       userCouponId: Number(req.body.user_coupon_id) || null,
       lock: false
     })
-    return ok(res, marketing.publicQuote(pricing), '优惠计算成功')
+    const pointsQuote = await points.quoteRedemption(db, {
+      userId: req.user && req.user.id,
+      pricing,
+      usePoints: req.body.use_points !== false && req.body.usePoints !== false,
+      requestedPoints: req.body.points_to_use ?? req.body.pointsToUse,
+      lock: false
+    })
+    return ok(res, {
+      ...marketing.publicQuote(pricing),
+      ...points.publicQuote(pointsQuote)
+    }, '优惠计算成功')
   } catch (error) { return handleError(res, error, '优惠计算失败') }
 })
 

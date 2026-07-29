@@ -1,0 +1,49 @@
+<view class="page">
+  <view class="nav" style="padding-top: {{statusBarHeight}}px; padding-right: calc(28rpx + {{capsuleSafeRight}}px)">
+    <view class="back" bindtap="onBack"><text>‹</text></view>
+    <text class="nav-title">学习积分</text>
+    <view class="nav-space"></view>
+  </view>
+
+  <scroll-view class="content" scroll-y>
+    <view class="balance-panel">
+      <text class="balance-label">可用积分</text>
+      <text class="balance-value">{{account.balance}}</text>
+      <text class="balance-yuan">约可抵 ¥{{accountYuan}}</text>
+      <view class="balance-stats">
+        <view><text>{{account.totalEarned}}</text><text>累计获得</text></view>
+        <view><text>{{account.totalUsed}}</text><text>累计使用</text></view>
+        <view><text>{{account.lockedPoints}}</text><text>订单冻结</text></view>
+      </view>
+    </view>
+
+    <view class="actions">
+      <view class="action primary" bindtap="onLearn"><text class="action-title">去公益平台学习</text><text>完成课程得积分</text></view>
+      <view class="action" bindtap="onSupplies"><text class="action-title">购买农资</text><text>结算时自动抵扣</text></view>
+    </view>
+
+    <view class="rules" wx:if="{{rules}}">
+      <text class="section-title">积分规则</text>
+      <view class="rule-row"><text>课程奖励</text><text>入门20 / 进阶30 / 高阶40</text></view>
+      <view class="rule-row"><text>每日上限</text><text>{{rules.daily_course_cap}}积分</text></view>
+      <view class="rule-row"><text>抵扣比例</text><text>{{rules.points_per_yuan}}积分抵1元</text></view>
+      <view class="rule-row"><text>单笔上限</text><text>{{rules.max_redeem_points_per_order}}积分</text></view>
+      <text class="rule-note">积分优惠由平台承担，可与商户优惠券同时使用；订单取消或退款后积分会自动返还。</text>
+    </view>
+
+    <view class="ledger">
+      <text class="section-title">积分明细</text>
+      <view wx:if="{{loading}}" class="empty">正在加载...</view>
+      <view wx:elif="{{!transactions.length}}" class="empty">完成第一门课程后，积分记录会显示在这里</view>
+      <view wx:else class="ledger-row" wx:for="{{transactions}}" wx:key="id">
+        <view class="ledger-copy">
+          <text class="ledger-title">{{item.label}}</text>
+          <text class="ledger-desc">{{item.description}}</text>
+          <text class="ledger-time">{{item.time}}</text>
+        </view>
+        <text class="ledger-points {{item.points > 0 ? 'plus' : 'minus'}}">{{item.sign}}{{item.points}}</text>
+      </view>
+    </view>
+    <view class="bottom-safe"></view>
+  </scroll-view>
+</view>

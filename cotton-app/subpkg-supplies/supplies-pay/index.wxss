@@ -171,6 +171,42 @@
   color: #58655B;
 }
 
+.card-points-row {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #F6F8F3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.card-points-row > view {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.card-points-label {
+  color: #1E6A4A;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.card-points-note,
+.total-points-note {
+  color: #829087;
+  font-size: 20rpx;
+}
+
+.card-points-value {
+  color: #1E6A4A;
+  font-size: 26rpx;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
 /* ===== 合计卡片 ===== */
 .total-card {
   background: #ffffff;
@@ -184,9 +220,15 @@
 }
 
 .total-label {
+  display: block;
   font-size: 28rpx;
   color: #58655B;
   font-weight: 600;
+}
+
+.total-points-note {
+  display: block;
+  margin-top: 6rpx;
 }
 
 .total-val {

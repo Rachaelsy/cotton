@@ -76,6 +76,8 @@ run_optional_node db/migrate_farmer_improvements.js
 run_optional_node db/migrate_machine_reliability.js
 run_optional_node db/migrate_feedbacks.js
 run_optional_node db/migrate_marketing.js
+# 积分字段参与订单计价和支付，迁移失败时不能带病启动。
+node db/migrate_points.js
 run_optional_node db/seed.js
 run_optional_node db/seed_machines.js
 echo "✅ 数据库初始化完成"

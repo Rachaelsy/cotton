@@ -1,6 +1,7 @@
 const defaultDb = require('../db/database')
 const defaultWxpay = require('./wechat-pay')
 const marketing = require('./marketing')
+const points = require('./points')
 const paymentOrderNo = require('./payment-order-no')
 
 let db = defaultDb
@@ -253,6 +254,9 @@ async function markRefundSuccess(row) {
   )
   await marketing.returnCouponAfterRefund(row.order_id, db).catch(error => {
     console.error('[refund-coupon-return]', error.message)
+  })
+  await points.returnOrderPointsAfterRefund(row.order_id, db).catch(error => {
+    console.error('[refund-points-return]', error.message)
   })
   if (row.aftersale_id) {
     await db.query(

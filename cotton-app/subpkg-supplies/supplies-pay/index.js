@@ -5,8 +5,8 @@ const layout = require('../../utils/layout')
 const i18n = require('../../utils/i18n')
 
 const COPY = {
-  zh: { title:'待付款',countdown:'请在',countdownEnd:'内完成支付，超时自动取消',expired:'订单已超时，即将自动关闭',goods:'商品',items:'件',orderNo:'订单号',total:'合计应付',cancelling:'取消中…',cancel:'取消订单',paying:'支付中…',pay:'立即支付',mockPay:'模拟支付',mockNotice:'模拟支付已开启，本次不会扣款',unknown:'未知商家',timeoutTitle:'订单已超时',timeoutContent:'超过30分钟未付款，订单已自动取消，库存已释放',know:'知道了',unavailable:'微信支付暂不可用',syncFail:'支付状态同步失败',incomplete:'支付未完成',cancelContent:'确定取消所有订单吗？库存将立即恢复。',cancelConfirm:'确认取消' },
-  ug: { title:'تۆلەشنى كۈتۈش',countdown:'',countdownEnd:'ئىچىدە تۆلەڭ، ۋاقىت ئۆتسە ئاپتوماتىك بىكار بولىدۇ',expired:'زاكاز ۋاقتى ئۆتتى، ئاپتوماتىك تاقىلىدۇ',goods:'مەھسۇلات',items:'دانە',orderNo:'زاكاز نومۇرى',total:'جەمئىي تۆلەش',cancelling:'بىكار قىلىۋاتىدۇ…',cancel:'زاكازنى بىكار قىلىش',paying:'تۆلەۋاتىدۇ…',pay:'ھازىر تۆلەش',mockPay:'تەقلىدىي تۆلەش',mockNotice:'تەقلىدىي تۆلەش ئېچىلدى، پۇل تۇتۇلمايدۇ',unknown:'نامەلۇم سودىگەر',timeoutTitle:'زاكاز ۋاقتى ئۆتتى',timeoutContent:'30 مىنۇت ئىچىدە تۆلەنمىگەچكە زاكاز بىكار قىلىندى ۋە مال سانى ئەسلىگە كەلدى',know:'بىلدىم',unavailable:'WeChat تۆلەشنى ئىشلەتكىلى بولمايدۇ',syncFail:'تۆلەش ھالىتى ماسلاشمىدى',incomplete:'تۆلەش تاماملانمىدى',cancelContent:'بارلىق زاكاز بىكار قىلىنسۇنمۇ؟ مال سانى ئەسلىگە كېلىدۇ.',cancelConfirm:'بىكار قىلىش' }
+  zh: { title:'待付款',countdown:'请在',countdownEnd:'内完成支付，超时自动取消',expired:'订单已超时，即将自动关闭',goods:'商品',items:'件',orderNo:'订单号',points:'平台积分',pointsFunded:'平台承担，不影响商户结算',total:'合计应付',cancelling:'取消中…',cancel:'取消订单',paying:'支付中…',pay:'立即支付',mockPay:'模拟支付',mockNotice:'模拟支付已开启，本次不会扣款',unknown:'未知商家',timeoutTitle:'订单已超时',timeoutContent:'超过30分钟未付款，订单已自动取消，库存和积分已释放',know:'知道了',unavailable:'微信支付暂不可用',syncFail:'支付状态同步失败',incomplete:'支付未完成',cancelContent:'确定取消所有订单吗？库存和已锁定积分将立即恢复。',cancelConfirm:'确认取消' },
+  ug: { title:'تۆلەشنى كۈتۈش',countdown:'',countdownEnd:'ئىچىدە تۆلەڭ، ۋاقىت ئۆتسە ئاپتوماتىك بىكار بولىدۇ',expired:'زاكاز ۋاقتى ئۆتتى، ئاپتوماتىك تاقىلىدۇ',goods:'مەھسۇلات',items:'دانە',orderNo:'زاكاز نومۇرى',points:'سۇپىنىڭ نومۇرى',pointsFunded:'سۇپىنىڭ ئېتىبارى، سودىگەر ھېسابىغا تەسىر كۆرسەتمەيدۇ',total:'جەمئىي تۆلەش',cancelling:'بىكار قىلىۋاتىدۇ…',cancel:'زاكازنى بىكار قىلىش',paying:'تۆلەۋاتىدۇ…',pay:'ھازىر تۆلەش',mockPay:'تەقلىدىي تۆلەش',mockNotice:'تەقلىدىي تۆلەش ئېچىلدى، پۇل تۇتۇلمايدۇ',unknown:'نامەلۇم سودىگەر',timeoutTitle:'زاكاز ۋاقتى ئۆتتى',timeoutContent:'30 مىنۇت ئىچىدە تۆلەنمىگەچكە زاكاز بىكار قىلىندى، مال سانى ۋە نومۇر ئەسلىگە كەلدى',know:'بىلدىم',unavailable:'WeChat تۆلەشنى ئىشلەتكىلى بولمايدۇ',syncFail:'تۆلەش ھالىتى ماسلاشمىدى',incomplete:'تۆلەش تاماملانمىدى',cancelContent:'بارلىق زاكاز بىكار قىلىنسۇنمۇ؟ مال سانى ۋە قۇلۇپلانغان نومۇر ئەسلىگە كېلىدۇ.',cancelConfirm:'بىكار قىلىش' }
 }
 
 Page({
@@ -17,6 +17,8 @@ Page({
     capsuleSafeRight: 0,
     orders: [],
     grandTotal: '0',
+    grandPointsUsed: 0,
+    grandPointsDiscount: '0.00',
     countdownStr: '30:00',
     secondsLeft: 30 * 60,
     expired: false,
@@ -34,12 +36,16 @@ Page({
     const raw = app.globalData.currentOrders || []
     if (!raw.length) { wx.navigateBack(); return }
 
-    const grandTotal = raw.reduce((s, o) => s + (o.total || 0), 0)
+    const grandTotal = raw.reduce((s, o) => s + Number(o.total || 0), 0)
+    const grandPointsUsed = raw.reduce((s, o) => s + Number(o.pointsUsed || 0), 0)
+    const grandPointsDiscount = raw.reduce((s, o) => s + Number(o.pointsDiscount || 0), 0)
     const orders = raw.map(o => ({
       orderId:   o.orderId,
       orderNo:   o.orderNo || '',
       store:     o.store || this.data.copy.unknown,
       total:     String(o.total || 0),
+      pointsUsed: Number(o.pointsUsed || 0),
+      pointsDiscount: Number(o.pointsDiscount || 0).toFixed(2),
       itemCount: (o.items || []).length,
       firstItem: (o.items || [])[0] || {}
     }))
@@ -57,7 +63,14 @@ Page({
     const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0')
     const ss = String(secondsLeft % 60).padStart(2, '0')
 
-    this.setData({ orders, grandTotal: String(grandTotal), secondsLeft, countdownStr: `${mm}:${ss}` })
+    this.setData({
+      orders,
+      grandTotal: grandTotal.toFixed(2),
+      grandPointsUsed,
+      grandPointsDiscount: grandPointsDiscount.toFixed(2),
+      secondsLeft,
+      countdownStr: `${mm}:${ss}`
+    })
     if (secondsLeft <= 0) {
       this.setData({ expired: true })
     } else {

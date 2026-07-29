@@ -18,6 +18,12 @@ const BASE_URL =
   ENV === 'real'   ? `http://${LOCAL_IP}:3000` :
                      'http://127.0.0.1:3000'
 
+const COMMUNITY_URL =
+  ENV === 'prod'   ? `${PROD_URL}/public` :
+  ENV === 'server' ? `http://${SERVER_IP}/public` :
+  ENV === 'real'   ? `http://${LOCAL_IP}:3100/public` :
+                     'http://127.0.0.1:3100/public'
+
 const TOKEN_KEY = 'cotton_token'
 const USER_KEY  = 'cotton_user'
 const GUEST_TOKEN_KEY = 'cotton_guest_token'
@@ -286,7 +292,7 @@ async function wxLogin(loginCode, phoneCode) {
 }
 
 module.exports = {
-  BASE_URL,
+  BASE_URL, COMMUNITY_URL,
   saveToken, getToken, clearToken,
   saveGuestToken, getGuestToken, clearGuestToken,
   saveUser, getUser,

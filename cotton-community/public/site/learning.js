@@ -1,6 +1,7 @@
 (() => {
   const typeNames = { video: '视频课', article: '图文课', gallery: '图集课' }
   const difficultyNames = { intro: '入门', intermediate: '进阶', advanced: '高级' }
+  const difficultyRewards = { intro: 20, intermediate: 30, advanced: 40 }
   const questionCategories = [
     ['planting', '播种与品种'],
     ['seedling', '苗期管理'],
@@ -32,7 +33,8 @@
         replyingTo: null,
         quizAnswers: [],
         quizSubmitted: false,
-        aiHistory: []
+        aiHistory: [],
+        rewardShown: false
       }
 
       function readJson(key) {
@@ -171,7 +173,7 @@
               <div class="learning-course-meta"><span>${escapeHtml(item.categoryName)}</span><span>${escapeHtml(difficultyNames[item.difficulty] || '入门')}</span></div>
               <h3><a href="${publicLink(`/courses/${item.id}`)}">${escapeHtml(item.title)}</a></h3>
               <p>${escapeHtml(item.subtitle || String(item.content || '').slice(0, 80))}</p>
-              <div class="learning-course-foot"><span>${Number(item.viewCount || 0)} 次学习</span><span>${Number(item.commentCount || 0)} 条评论</span></div>
+              <div class="learning-course-foot"><span>${Number(item.viewCount || 0)} 次学习</span><span>${Number(item.commentCount || 0)} 条评论</span><strong>${item.completed ? '已完成' : `完成 +${difficultyRewards[item.difficulty] || 20}积分`}</strong></div>
               ${state.isAdmin ? `<div class="inline-admin-actions"><a href="/knowledge/admin.html?edit=${item.id}">编辑</a><button type="button" data-course-status="${item.id}" data-status="${escapeHtml(item.status)}">${item.status === 'published' ? '下架' : '上架'}</button></div>` : ''}
             </div>
           </article>`
@@ -392,6 +394,7 @@
           state.quizAnswers = []
           state.quizSubmitted = false
           state.aiHistory = []
+          state.rewardShown = false
           state.replyingTo = null
           setMeta(item.title, item.subtitle || item.content.slice(0, 100))
 
@@ -423,6 +426,7 @@
                     <div><dt>评论</dt><dd>${Number(item.commentCount || 0)} 条</dd></div>
                     <div><dt>来源</dt><dd>${escapeHtml(item.sourceName)}</dd></div>
                   </dl>
+                  <div class="course-points-note"><strong>${item.completed ? '本课已完成' : `农户完成可得 ${difficultyRewards[item.difficulty] || 20} 积分`}</strong><span>农户账号首次完成发放，每日课程奖励最多100积分</span></div>
                   <button class="button outline full" id="favoriteCourse" type="button">${item.isFavorite ? '已收藏' : '收藏课程'}</button>
                   ${state.token ? `<a class="course-account-link" href="${publicLink('/courses?view=history')}">查看学习记录</a>` : `<a class="course-account-link" href="${loginLink(location.pathname)}">登录后保存进度</a>`}
                   <div class="course-related">
@@ -454,10 +458,22 @@
           const saveProgress = async (progress, duration, completed) => {
             if (!state.token) return
             try {
-              await api(`/contents/${id}/progress`, {
+              const result = await api(`/contents/${id}/progress`, {
                 method: 'PUT',
                 body: JSON.stringify({ progress_seconds: progress, duration_seconds: duration, completed })
               })
+              if (result.reward && result.reward.awarded && !state.rewardShown) {
+                state.rewardShown = true
+                const notice = document.createElement('div')
+                notice.className = 'learning-reward-notice'
+                notice.innerHTML = `<strong>课程完成，+${Number(result.reward.points)}积分</strong><span>当前可用积分 ${Number(result.reward.balance)}，可在小程序购买农资时抵扣</span>`
+                document.body.appendChild(notice)
+                setTimeout(() => notice.classList.add('show'), 20)
+                setTimeout(() => {
+                  notice.classList.remove('show')
+                  setTimeout(() => notice.remove(), 240)
+                }, 4200)
+              }
             } catch {}
           }
 
@@ -915,7 +931,29 @@
         setActiveNav('login')
         const params = new URLSearchParams(location.search)
         const next = safeNext(params.get('next'))
+        const ticket = String(params.get('ticket') || '').trim()
         let mode = params.get('mode') === 'register' ? 'register' : 'login'
+
+        if (ticket && !state.token) {
+          main.innerHTML = `
+            <section class="public-sso-loading">
+              <div><span class="eyebrow">ACCOUNT SYNC</span><h1>正在同步小程序账号</h1><p>验证完成后会自动进入公益学习空间。</p></div>
+            </section>`
+          request('/api/community-auth/ticket-login', {
+            method: 'POST',
+            body: JSON.stringify({ ticket })
+          }).then(data => {
+            saveUserSession(data)
+            location.replace(next)
+          }).catch(error => {
+            const cleanUrl = `${publicLink('/login')}?next=${encodeURIComponent(next)}`
+            history.replaceState({}, '', cleanUrl)
+            renderLogin()
+            const message = document.getElementById('publicLoginMessage')
+            if (message) message.textContent = error.message
+          })
+          return
+        }
 
         if (state.token && state.user) {
           main.innerHTML = `
@@ -923,7 +961,7 @@
             <section class="section-block">
               <div class="shell public-account-panel">
                 <span class="account-avatar">${escapeHtml((state.user.real_name || '棉').slice(0, 1))}</span>
-                <div><span class="eyebrow">SIGNED IN</span><h2>${escapeHtml(state.user.real_name || '已登录用户')}</h2><p>当前账号已登录，可以继续学习或查看自己的记录。</p></div>
+                <div><span class="eyebrow">SIGNED IN</span><h2>${escapeHtml(state.user.real_name || '已登录用户')}</h2><p>当前账号已登录，可以继续学习或查看自己的记录。</p><div class="account-points-summary" id="accountPointsSummary">正在读取学习积分...</div></div>
                 <div class="account-actions"><a class="button primary" href="${publicLink('/courses?view=history')}">学习记录</a><a class="button outline" href="${publicLink('/courses?view=favorites')}">我的收藏</a><button class="button outline" id="logoutPublicAccount" type="button">退出登录</button></div>
               </div>
             </section>`
@@ -931,6 +969,16 @@
             if (!confirm('退出当前公益账号？')) return
             clearUserSession()
             location.reload()
+          })
+          api('/me/points').then(data => {
+            if (data.eligible === false) {
+              document.getElementById('accountPointsSummary').innerHTML = '<strong>学习记录已启用</strong><span>积分仅面向已注册农户身份的账号</span>'
+              return
+            }
+            const account = data.account || {}
+            document.getElementById('accountPointsSummary').innerHTML = `<strong>${Number(account.balance || 0)} 积分</strong><span>累计获得 ${Number(account.totalEarned || 0)} · 已使用 ${Number(account.totalUsed || 0)}</span>`
+          }).catch(() => {
+            document.getElementById('accountPointsSummary').textContent = '积分信息暂时无法读取'
           })
           return
         }

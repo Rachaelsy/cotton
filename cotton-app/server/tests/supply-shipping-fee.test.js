@@ -134,9 +134,11 @@ async function run() {
     assert(insertOrder, 'route should insert the order')
     assert.strictEqual(insertOrder.params[1], null, 'guest order should not use a fake user id')
     assert.strictEqual(insertOrder.params[2], 23, 'guest order should persist the WeChat guest owner')
-    assert.strictEqual(insertOrder.params[14], 10.01, 'subtotal should keep server-priced product amount')
-    assert.strictEqual(insertOrder.params[15], 0, 'delivery_fee should be zero')
-    assert.strictEqual(insertOrder.params[16], 10.01, 'total should be subtotal plus zero freight')
+    assert.strictEqual(insertOrder.params[14], 0, 'guest order should not use points')
+    assert.strictEqual(insertOrder.params[15], 0, 'guest order should not have a points discount')
+    assert.strictEqual(insertOrder.params[16], 10.01, 'subtotal should keep server-priced product amount')
+    assert.strictEqual(insertOrder.params[17], 0, 'delivery_fee should be zero')
+    assert.strictEqual(insertOrder.params[18], 10.01, 'total should be subtotal plus zero freight')
     assert(!calls.some(call => call.type === 'rollback'), 'successful order should not rollback')
 
     const outOfRange = await request(baseUrl, {

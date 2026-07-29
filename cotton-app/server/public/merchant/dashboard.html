@@ -308,7 +308,7 @@
     <!-- ══ 1. 店铺中心 ══ -->
     <div class="panel active" id="panel-shop">
       <div class="stats-grid">
-        <div class="stat-card gold"><div class="stat-label">今日销售额（元）</div><div class="stat-value" id="s-sales">—</div><div class="stat-sub">较昨日 +12%</div></div>
+        <div class="stat-card gold"><div class="stat-label">今日销售额（元）</div><div class="stat-value" id="s-sales">—</div><div class="stat-sub">按已支付订单统计</div></div>
         <div class="stat-card blue"><div class="stat-label">今日订单数</div><div class="stat-value" id="s-orders">—</div><div class="stat-sub">月累计 238 单</div></div>
         <div class="stat-card red"> <div class="stat-label">待发货</div><div class="stat-value" id="s-ship">—</div><div class="stat-sub">请尽快处理</div></div>
         <div class="stat-card green"><div class="stat-label">待结算（元）</div><div class="stat-value" id="s-settle">—</div><div class="stat-sub">月结算周期</div></div>
@@ -1372,9 +1372,12 @@ function showOrderDetail(id) {
       <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#888">
         <span>运费</span><span>¥${o.delivery_fee}</span>
       </div>
+      ${Number(o.merchant_discount || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#B45309"><span>商户优惠</span><span>-¥${Number(o.merchant_discount).toFixed(2)}</span></div>` : ''}
+      ${Number(o.points_discount || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#167447"><span>平台积分补贴（${Number(o.points_used || 0)}积分）</span><span>¥${Number(o.points_discount).toFixed(2)}</span></div>` : ''}
       <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;font-weight:800">
-        <span>实付金额</span><span style="color:#C8902E">¥${o.total}</span>
+        <span>顾客微信实付</span><span style="color:#C8902E">¥${Number(o.total).toFixed(2)}</span>
       </div>
+      ${Number(o.points_discount || 0) > 0 ? `<div style="margin-top:6px;padding:9px 11px;background:#EDF7F0;color:#2F6E47;font-size:12px;line-height:1.55">积分优惠由平台承担，本单商户计价金额为 ¥${(Number(o.total) + Number(o.points_discount || 0)).toFixed(2)}，结算不因积分减少。</div>` : ''}
     </div>
     ${o.note ? `<div style="background:#FFF3E0;border-radius:8px;padding:10px 12px;font-size:13px;color:#D97706">买家备注：${esc(o.note)}</div>` : ''}
     ${o.logistics_no ? `<div style="margin-top:10px;font-size:13px;color:#555">物流：<strong>${esc(o.logistics_company_name || '')} ${esc(o.logistics_no)}</strong>${o.logistics_latest ? `<div style="margin-top:6px;color:#777">${esc(o.logistics_latest)}</div>` : ''}</div>` : ''}
@@ -1523,8 +1526,8 @@ function loadSettleTable(data) {
       <td style="font-size:12px;color:#888">${esc(s.id)}</td>
       <td style="font-size:12px;color:#888">${esc(s.order_no)}</td>
       <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(s.prod)}">${esc(s.prod)}</td>
-      <td>¥${s.amount.toFixed(2)}</td>
-      <td style="color:#DC2626">-¥${s.commission.toFixed(2)}</td>
+      <td>¥${s.amount.toFixed(2)}${Number(s.points_discount || 0) > 0 ? `<div style="font-size:11px;color:#758079;margin-top:3px">顾客实付 ¥${Number(s.customer_paid || 0).toFixed(2)}</div>` : ''}</td>
+      <td style="color:#DC2626">-¥${s.commission.toFixed(2)}${Number(s.points_discount || 0) > 0 ? `<div style="font-size:11px;color:#167447;margin-top:3px">其中平台积分承担 ¥${Number(s.points_discount).toFixed(2)}</div>` : ''}</td>
       <td style="font-weight:700;color:#16A34A">¥${s.actual.toFixed(2)}</td>
       <td>${statusHtml}</td>
       <td style="font-size:12px;color:#888">${esc(s.date)}</td>

@@ -6,6 +6,7 @@ const db       = require('../db/database')
 const { notifyNewOrder, notifyAftersale } = require('../utils/notify')
 const refunds  = require('../utils/refunds')
 const marketing = require('../utils/marketing')
+const points = require('../utils/points')
 const { cancelPendingSupplyOrder } = require('../utils/order-lifecycle')
 const { principalAuth, ownerCondition } = require('../middleware/principal')
 const router   = express.Router()
@@ -93,7 +94,8 @@ function validateDeliveryRange(merchant, receiverLatitude, receiverLongitude) {
 router.post('/', principalAuth, async (req, res) => {
   const {
     items, payMethod, userCouponId, user_coupon_id,
-    receiverName, receiverPhone, address, receiverLatitude, receiverLongitude
+    receiverName, receiverPhone, address, receiverLatitude, receiverLongitude,
+    usePoints, use_points, pointsToUse, points_to_use
   } = req.body
 
   if (!items || !items.length) return fail(res, '订单商品不能为空')
@@ -122,6 +124,13 @@ router.post('/', principalAuth, async (req, res) => {
     if (selectedCouponId && !pricing.couponApplied) {
       throw marketing.statusError(pricing.couponReason || '所选优惠券当前不可用', 409)
     }
+    const pointsQuote = await points.quoteRedemption(conn, {
+      userId: req.user && req.user.id,
+      pricing,
+      usePoints: (usePoints === true || use_points === true) && !!req.user,
+      requestedPoints: pointsToUse ?? points_to_use,
+      lock: true
+    })
     const deliveryDistance = validateDeliveryRange(
       pricing.merchant,
       parsedReceiverLatitude,
@@ -154,7 +163,7 @@ router.post('/', principalAuth, async (req, res) => {
     const promotionDiscount = quote.promotion_discount
     const couponDiscount = quote.coupon_discount
     const merchantDiscount = quote.merchant_discount
-    const orderSubtotal = quote.payable_total
+    const orderSubtotal = points.toYuan(pointsQuote.payableFen)
     const orderDeliveryFee = DELIVERY_FEE
     const orderTotal = Number((orderSubtotal + orderDeliveryFee).toFixed(2))
 
@@ -163,8 +172,8 @@ router.post('/', principalAuth, async (req, res) => {
       `INSERT INTO orders (order_no, user_id, guest_id, farmer_name, farmer_phone,
         receiver_name, receiver_phone, address,
         original_subtotal,promotion_discount,coupon_discount,merchant_discount,commission_base,user_coupon_id,
-        subtotal, delivery_fee, total, pay_method, status, pay_expires_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending_payment', DATE_ADD(NOW(), INTERVAL 30 MINUTE))`,
+        points_used,points_discount,subtotal,delivery_fee,total,pay_method,status,pay_expires_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending_payment', DATE_ADD(NOW(), INTERVAL 30 MINUTE))`,
       [
         orderNo, userId, guestId,
         farmerName, farmerPhone,
@@ -176,6 +185,8 @@ router.post('/', principalAuth, async (req, res) => {
         merchantDiscount,
         originalSubtotal,
         pricing.coupon ? pricing.coupon.userCouponId : null,
+        pointsQuote.pointsUsed,
+        points.toYuan(pointsQuote.pointsDiscountFen),
         orderSubtotal,
         orderDeliveryFee,
         orderTotal,
@@ -213,6 +224,11 @@ router.post('/', principalAuth, async (req, res) => {
     }
 
     await marketing.reserveOrderMarketing(conn, orderId, userId, pricing, orderItemIds)
+    await points.reserveOrderPoints(conn, {
+      orderId,
+      userId,
+      pointsUsed: pointsQuote.pointsUsed
+    })
 
     await conn.commit()
     conn.release()
@@ -224,6 +240,9 @@ router.post('/', principalAuth, async (req, res) => {
       promotionDiscount,
       couponDiscount,
       merchantDiscount,
+      pointsUsed: pointsQuote.pointsUsed,
+      pointsDiscount: points.toYuan(pointsQuote.pointsDiscountFen),
+      pointsBalance: Math.max(0, pointsQuote.pointsBalance - pointsQuote.pointsUsed),
       deliveryFee: orderDeliveryFee,
       total: orderTotal,
       couponApplied: pricing.couponApplied,
@@ -317,7 +336,8 @@ router.get('/my', principalAuth, async (req, res) => {
     const owner = ownerCondition(req.principal, 'o')
     let sql = `
       SELECT o.id, o.order_no, o.original_subtotal, o.promotion_discount,
-             o.coupon_discount, o.merchant_discount, o.subtotal, o.delivery_fee, o.total,
+             o.coupon_discount, o.merchant_discount, o.points_used, o.points_discount,
+             o.subtotal, o.delivery_fee, o.total,
              o.pay_method, o.status, o.logistics_no, o.logistics_company,
              o.logistics_company_name, o.logistics_state, o.logistics_status,
              o.logistics_latest, o.logistics_arrival_time, o.logistics_updated_at, o.address,

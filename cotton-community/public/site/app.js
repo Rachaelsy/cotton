@@ -234,7 +234,7 @@
         <div class="shell service-ribbon-grid">
           <div><strong>公益开放</strong><span>培训、政策、病虫害知识无需登录即可浏览</span></div>
           <div><strong>专家咨询</strong><span>登录后提交问题，并持续查看专家回复</span></div>
-          <div><strong>互动学习</strong><span>保存进度、参加小测试并使用 AI 助学</span></div>
+          <div><strong>学习积分</strong><span>农户账号完成课程获得积分，可在小程序购买农资时抵扣</span></div>
           <div><strong>棉区联结</strong><span>通过公益活动连接种植户、专家与志愿者</span></div>
         </div>
       </section>

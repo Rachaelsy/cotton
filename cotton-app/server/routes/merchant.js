@@ -251,8 +251,8 @@ router.get('/stats', merchantAuth, async (req, res) => {
         COUNT(*) AS total_orders,
         SUM(CASE WHEN o.status='pending_ship' THEN 1 ELSE 0 END) AS pending_ship,
         SUM(CASE WHEN DATE(o.created_at)=CURDATE() THEN 1 ELSE 0 END) AS today_orders,
-        SUM(CASE WHEN DATE(o.created_at)=CURDATE() THEN o.total ELSE 0 END) AS today_sales,
-        SUM(CASE WHEN DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m') THEN o.total ELSE 0 END) AS monthly_sales
+        SUM(CASE WHEN DATE(o.created_at)=CURDATE() AND o.status NOT IN ('pending_payment','cancelled','refunded') THEN o.total+COALESCE(o.points_discount,0) ELSE 0 END) AS today_sales,
+        SUM(CASE WHEN DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m') AND o.status NOT IN ('pending_payment','cancelled','refunded') THEN o.total+COALESCE(o.points_discount,0) ELSE 0 END) AS monthly_sales
       FROM orders o
       WHERE EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
     `, [mid])
@@ -266,7 +266,9 @@ router.get('/stats', merchantAuth, async (req, res) => {
     )
     const commissionRate = parseFloat(merchantInfo?.commission_rate || 5) / 100
     const [[frozen]] = await db.query(`
-      SELECT IFNULL(SUM(GREATEST(o.total - LEAST(o.total, COALESCE(NULLIF(o.commission_base,0),o.total) * ?), 0)), 0) AS amount
+      SELECT IFNULL(SUM(GREATEST(
+        o.total+COALESCE(o.points_discount,0)
+        - LEAST(o.total+COALESCE(o.points_discount,0), COALESCE(NULLIF(o.commission_base,0),o.total+COALESCE(o.points_discount,0)) * ?), 0)), 0) AS amount
       FROM orders o
       WHERE o.fund_status='frozen'
         AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
@@ -278,9 +280,10 @@ router.get('/stats', merchantAuth, async (req, res) => {
       "SELECT COUNT(*) AS cnt FROM aftersale_requests WHERE merchant_id=? AND status='pending'", [mid]
     )
     const [wtRows] = await db.query(`
-      SELECT DATE(o.created_at) AS day, SUM(o.total) AS amount
+      SELECT DATE(o.created_at) AS day, SUM(o.total+COALESCE(o.points_discount,0)) AS amount
       FROM orders o
       WHERE o.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        AND o.status NOT IN ('pending_payment','cancelled','refunded')
         AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
       GROUP BY DATE(o.created_at) ORDER BY day ASC
     `, [mid])
@@ -327,7 +330,9 @@ router.get('/finance', merchantAuth, async (req, res) => {
     const commissionRate = parseFloat(merchantInfo?.commission_rate || 5) / 100
     // 已解冻资金（扣除佣金后，提现在微信支付商户平台操作）
     const [[avail]] = await db.query(`
-      SELECT IFNULL(SUM(GREATEST(o.total - LEAST(o.total, COALESCE(NULLIF(o.commission_base,0),o.total) * ?), 0)), 0) AS amount
+      SELECT IFNULL(SUM(GREATEST(
+        o.total+COALESCE(o.points_discount,0)
+        - LEAST(o.total+COALESCE(o.points_discount,0), COALESCE(NULLIF(o.commission_base,0),o.total+COALESCE(o.points_discount,0)) * ?), 0)), 0) AS amount
       FROM orders o
       WHERE o.fund_status='available'
         AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
@@ -335,7 +340,9 @@ router.get('/finance', merchantAuth, async (req, res) => {
 
     // 冻结中余额（扣除佣金后）
     const [[frozen]] = await db.query(`
-      SELECT IFNULL(SUM(GREATEST(o.total - LEAST(o.total, COALESCE(NULLIF(o.commission_base,0),o.total) * ?), 0)), 0) AS amount
+      SELECT IFNULL(SUM(GREATEST(
+        o.total+COALESCE(o.points_discount,0)
+        - LEAST(o.total+COALESCE(o.points_discount,0), COALESCE(NULLIF(o.commission_base,0),o.total+COALESCE(o.points_discount,0)) * ?), 0)), 0) AS amount
       FROM orders o
       WHERE o.fund_status='frozen'
         AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id=o.id AND i.merchant_id=?)
@@ -345,7 +352,7 @@ router.get('/finance', merchantAuth, async (req, res) => {
     const [[m]] = await db.query(`
       SELECT
         COUNT(*) AS monthly_orders,
-        IFNULL(SUM(o.total), 0) AS monthly_sales,
+        IFNULL(SUM(CASE WHEN o.status NOT IN ('pending_payment','cancelled','refunded') THEN o.total+COALESCE(o.points_discount,0) ELSE 0 END), 0) AS monthly_sales,
         IFNULL(SUM(CASE WHEN o.status='refunded' THEN o.total ELSE 0 END), 0) AS monthly_refund
       FROM orders o
       WHERE DATE_FORMAT(o.created_at,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m')
@@ -354,7 +361,7 @@ router.get('/finance', merchantAuth, async (req, res) => {
 
     // 结算明细（已完成的订单，含资金状态和确认时间）
     const [settleRows] = await db.query(`
-      SELECT o.id, o.order_no, o.total, o.commission_base, o.created_at,
+      SELECT o.id, o.order_no, o.total, o.points_used, o.points_discount, o.commission_base, o.created_at,
              o.fund_status, o.confirmed_at, o.auto_confirmed,
              MAX(ps.state) AS profit_sharing_state,
              MAX(ps.amount_fen) AS profit_sharing_amount_fen,
@@ -380,10 +387,13 @@ router.get('/finance', merchantAuth, async (req, res) => {
       monthly_orders:    parseInt(m.monthly_orders)  || 0,
       monthly_refund:    parseFloat(m.monthly_refund || 0).toFixed(2),
       settlements: settleRows.map((s, idx) => {
-        const amount     = parseFloat(s.total)
+        const customerPaid = parseFloat(s.total)
+        const pointsDiscount = parseFloat(s.points_discount || 0)
+        const amount     = parseFloat((customerPaid + pointsDiscount).toFixed(2))
         const commissionBase = parseFloat(s.commission_base || amount)
         const commission = parseFloat(Math.min(amount, commissionBase * commissionRate).toFixed(2))
         const actual     = parseFloat(Math.max(0, amount - commission).toFixed(2))
+        const platformCommission = parseFloat(Math.max(0, commission - pointsDiscount).toFixed(2))
         // 距解冻剩余天数（确认收货后按当前分账冻结配置）
         let daysLeft = null
         if (s.fund_status === 'frozen' && s.confirmed_at) {
@@ -395,7 +405,11 @@ router.get('/finance', merchantAuth, async (req, res) => {
           order_no:     s.order_no,
           prod:         s.prod_names || '商品',
           amount,
+          customer_paid: customerPaid,
+          points_used: Number(s.points_used || 0),
+          points_discount: pointsDiscount,
           commission,
+          platform_commission: platformCommission,
           actual,
           fund_status:  s.fund_status,
           profit_sharing_state: s.profit_sharing_state || '',
@@ -609,7 +623,7 @@ router.get('/orders', merchantAuth, async (req, res) => {
       SELECT o.id, o.order_no, o.farmer_name, o.farmer_phone,
              o.receiver_name, o.receiver_phone, o.address,
              o.original_subtotal, o.promotion_discount, o.coupon_discount,
-             o.merchant_discount, o.subtotal, o.delivery_fee, o.total,
+             o.merchant_discount, o.points_used, o.points_discount, o.subtotal, o.delivery_fee, o.total,
              o.pay_method, o.status, o.logistics_no, o.logistics_company,
              o.logistics_company_name, o.logistics_status, o.logistics_latest,
              o.logistics_updated_at, o.note,
@@ -752,7 +766,7 @@ router.get('/orders/export', async (req, res) => {
     const { status } = req.query
     let sql = `
       SELECT o.order_no, o.farmer_name, o.farmer_phone, o.receiver_name, o.receiver_phone,
-             o.address, o.subtotal, o.delivery_fee, o.total, o.pay_method, o.status,
+             o.address, o.subtotal, o.delivery_fee, o.total, o.points_discount,o.pay_method, o.status,
              o.logistics_no, o.created_at,
              GROUP_CONCAT(CONCAT(i.name,'×',i.qty) SEPARATOR '; ') AS products
       FROM orders o
@@ -767,7 +781,7 @@ router.get('/orders/export', async (req, res) => {
     sql += ' GROUP BY o.id ORDER BY o.created_at DESC'
     const [rows] = await db.query(sql, params)
 
-    const header = ['订单编号','买家姓名','买家电话','收货人','收货电话','收货地址','商品明细','商品小计','运费','实付','支付方式','订单状态','物流单号','下单时间']
+    const header = ['订单编号','买家姓名','买家电话','收货人','收货电话','收货地址','商品明细','商品小计','运费','微信实付','平台积分补贴','支付方式','订单状态','物流单号','下单时间']
     const statusMap = { pending_ship: '待发货', shipped: '已发货', completed: '已完成', aftersale: '售后中', refund: '退款中', refunded: '退款成功' }
     const payMap   = { wechat: '微信支付', transfer: '银行转账', cod: '货到付款' }
 
@@ -783,7 +797,7 @@ router.get('/orders/export', async (req, res) => {
         o.order_no, o.farmer_name, o.farmer_phone,
         o.receiver_name, o.receiver_phone, o.address,
         o.products,
-        o.subtotal, o.delivery_fee, o.total,
+        o.subtotal, o.delivery_fee, o.total, o.points_discount || 0,
         payMap[o.pay_method] || o.pay_method,
         statusMap[o.status] || o.status,
         o.logistics_no || '',

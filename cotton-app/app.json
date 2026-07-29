@@ -30,7 +30,9 @@
     "pages/loans/index",
     "pages/insurance/index",
     "pages/expert/index",
-    "pages/expert/detail"
+    "pages/expert/detail",
+    "pages/points/index",
+    "pages/community/index"
   ],
   "subpackages": [
     {

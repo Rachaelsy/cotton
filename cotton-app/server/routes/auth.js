@@ -2,6 +2,7 @@
 const express  = require('express')
 const bcrypt   = require('bcryptjs')
 const jwt      = require('jsonwebtoken')
+const crypto   = require('crypto')
 const db       = require('../db/database')
 const { authMiddleware } = require('../middleware/auth')
 
@@ -319,6 +320,30 @@ router.get('/verify', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('[verify]', err)
     return fail(res, '服务器错误', 500)
+  }
+})
+
+// 小程序进入公益平台时签发一次性票据。票据只保存哈希，5分钟内仅可兑换一次。
+router.post('/community-ticket', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'farmer') return fail(res, '仅农户账号可进入公益学习空间', 403)
+  try {
+    const [[user]] = await db.query(
+      "SELECT id FROM users WHERE id=? AND is_active=1 LIMIT 1",
+      [req.user.id]
+    )
+    if (!user) return fail(res, '账号不存在或已被禁用', 403)
+    const ticket = crypto.randomBytes(32).toString('base64url')
+    const ticketHash = crypto.createHash('sha256').update(ticket).digest('hex')
+    await db.query('DELETE FROM community_sso_tickets WHERE expires_at<NOW() OR used_at IS NOT NULL')
+    await db.query(
+      `INSERT INTO community_sso_tickets (ticket_hash,user_id,expires_at)
+       VALUES (?,?,DATE_ADD(NOW(),INTERVAL 5 MINUTE))`,
+      [ticketHash, req.user.id]
+    )
+    return ok(res, { ticket, expiresIn: 300 }, '公益平台登录票据已生成')
+  } catch (error) {
+    console.error('[community-ticket]', error)
+    return fail(res, '暂时无法进入公益平台，请稍后重试', 500)
   }
 })
 

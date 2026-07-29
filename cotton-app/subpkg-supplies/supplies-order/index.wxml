@@ -100,6 +100,10 @@
           <text class="kv-k">{{copy.discount}}</text>
           <text class="kv-v" style="color:#B74232">-¥{{order.merchantDiscount}}</text>
         </view>
+        <view wx:if="{{order.pointsDiscount > 0}}" class="kv-row">
+          <text class="kv-k">{{copy.pointsDiscount}}</text>
+          <text class="kv-v" style="color:#2F7D4A">-¥{{order.pointsDiscount}}（{{order.pointsUsed}}积分）</text>
+        </view>
         <view class="kv-row">
           <text class="kv-k">{{copy.freight}}</text>
           <text class="kv-v">¥{{order.deliveryFee || 0}}</text>

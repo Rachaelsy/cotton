@@ -110,6 +110,26 @@
       <view wx:if="{{marketingLoading}}" class="marketing-loading">正在计算可用优惠...</view>
     </view>
 
+    <view class="co-card points-card">
+      <view class="points-main">
+        <view class="points-copy">
+          <view class="points-title-row">
+            <text class="points-title">{{copy.pointsUse}}</text>
+            <text wx:if="{{isLoggedIn}}" class="points-balance">{{pointsBalance}}积分</text>
+          </view>
+          <text class="points-rule">{{isLoggedIn ? copy.pointsRule : copy.pointsLogin}}</text>
+          <text wx:if="{{usePoints && pointsUsed > 0}}" class="points-result">本单使用 {{pointsUsed}} 积分，抵扣 ¥{{pointsDiscount}}</text>
+        </view>
+        <switch
+          wx:if="{{isLoggedIn}}"
+          checked="{{usePoints}}"
+          disabled="{{pointsBalance < 100 || marketingLoading}}"
+          color="#2F7D4A"
+          bindchange="onPointsToggle"
+        />
+      </view>
+    </view>
+
     <!-- 配送方式 -->
     <view class="co-card">
       <view class="co-card-title">
@@ -165,6 +185,10 @@
       <view wx:if="{{merchantDiscount > 0}}" class="co-total-row">
         <text class="co-total-label">{{copy.saved}}</text>
         <text class="co-total-val co-discount-val">-¥{{merchantDiscount}}</text>
+      </view>
+      <view wx:if="{{pointsDiscount > 0}}" class="co-total-row">
+        <text class="co-total-label">{{copy.pointsSaved}}</text>
+        <text class="co-total-val co-points-val">-¥{{pointsDiscount}}</text>
       </view>
       <view class="co-total-row">
         <text class="co-total-label">{{copy.fee}}</text>

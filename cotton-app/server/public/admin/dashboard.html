@@ -270,6 +270,9 @@
     <div class="nav-item" data-panel="farmers" onclick="switchPanel(this)">
       <span class="nav-icon">👨‍🌾</span> 农户管理
     </div>
+    <div class="nav-item" data-panel="points" onclick="switchPanel(this)">
+      <span class="nav-icon">积</span> 积分运营
+    </div>
     <div class="nav-item" data-panel="verifications" onclick="switchPanel(this)">
       <span class="nav-icon">✓</span> 实名审核
       <span class="nav-badge" id="verificationBadge" style="display:none">0</span>
@@ -425,6 +428,26 @@
         <table>
           <thead><tr><th>公告标题</th><th>内容摘要</th><th>发布时间</th><th>操作</th></tr></thead>
           <tbody id="announce-table"><tr class="empty-row"><td colspan="4">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-points">
+      <div class="stats-grid">
+        <div class="stat-card green"><div class="stat-label">农户可用积分</div><div class="stat-value" id="points-available">—</div></div>
+        <div class="stat-card gold"><div class="stat-label">累计发放</div><div class="stat-value" id="points-earned">—</div></div>
+        <div class="stat-card blue"><div class="stat-label">累计抵扣</div><div class="stat-value" id="points-used">—</div></div>
+        <div class="stat-card"><div class="stat-label">订单冻结</div><div class="stat-value" id="points-locked">—</div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">农户积分账户</span>
+          <input id="points-keyword" placeholder="手机号、姓名或地区" style="margin-left:auto;width:220px;padding:8px 10px;border:1px solid #D9DFDA;border-radius:6px" onkeydown="if(event.key==='Enter')loadPoints()">
+          <button class="act-btn edit" onclick="loadPoints()">查询</button>
+        </div>
+        <table>
+          <thead><tr><th>农户</th><th>地区</th><th>可用</th><th>冻结</th><th>累计获得</th><th>累计使用</th><th>完成课程</th><th>操作</th></tr></thead>
+          <tbody id="pointsTable"><tr class="empty-row"><td colspan="8">加载中...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -631,7 +654,7 @@
       <!-- 汇总统计卡 -->
       <div class="stats-grid" id="finance-stats" style="margin-bottom:20px">
         <div class="stat-card gold"><div class="stat-label">平台总销售额</div><div class="stat-value" id="fin-total-sales">—</div><div class="stat-sub">已完成订单</div></div>
-        <div class="stat-card green"><div class="stat-label">平台总佣金</div><div class="stat-value" id="fin-total-commission">—</div><div class="stat-sub">按各商户佣金率计算</div></div>
+        <div class="stat-card green"><div class="stat-label">平台净佣金</div><div class="stat-value" id="fin-total-commission">—</div><div class="stat-sub" id="fin-points-subsidy">已扣除积分补贴</div></div>
         <div class="stat-card blue"><div class="stat-label">商户可结算资金</div><div class="stat-value" id="fin-total-available">—</div><div class="stat-sub">提现在微信支付商户平台处理</div></div>
         <div class="stat-card red"><div class="stat-label">冻结资金</div><div class="stat-value" id="fin-total-frozen">—</div><div class="stat-sub" id="fin-freeze-sub">按当前配置</div></div>
       </div>
@@ -774,6 +797,25 @@
     <div class="mbtns">
       <button class="mbtn cancel" onclick="closeModal('modalProduct')">取消</button>
       <button class="mbtn save" onclick="saveProduct()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="modalPoints">
+  <div class="modal">
+    <h3>调整农户积分</h3>
+    <p id="pointsFarmerName" style="margin:-6px 0 18px;color:#758079"></p>
+    <div class="mfield">
+      <label>变动积分 <span class="req">*</span></label>
+      <input id="pointsAmount" type="number" min="-100000" max="100000" placeholder="增加填正数，扣减填负数">
+    </div>
+    <div class="mfield">
+      <label>调整原因 <span class="req">*</span></label>
+      <textarea id="pointsReason" maxlength="200" rows="4" placeholder="原因会写入积分账本，提交后不可删除"></textarea>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalPoints')">取消</button>
+      <button class="mbtn save" onclick="savePointsAdjustment()">确认记账</button>
     </div>
   </div>
 </div>
@@ -990,7 +1032,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', verifications: '实名审核', merchants: '商户管理', products: '商品管理', marketing: '营销审核', orders: '订单管理', announcements: '平台公告', supportChats: '在线客服', feedbacks: '客服反馈', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', points: '积分运营', verifications: '实名审核', merchants: '商户管理', products: '商品管理', marketing: '营销审核', orders: '订单管理', announcements: '平台公告', supportChats: '在线客服', feedbacks: '客服反馈', expertAccounts: '专家账号', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -1006,6 +1048,7 @@
     else if (panel === 'applications') loadApplications()
     else if (panel === 'operatorApps') loadOperatorApps()
     else if (panel === 'farmers')     loadFarmers()
+    else if (panel === 'points')      loadPoints()
     else if (panel === 'verifications') loadVerifications()
     else if (panel === 'merchants')   loadMerchants()
     else if (panel === 'products')    loadProducts()
@@ -1573,6 +1616,52 @@
     refund:       { label:'售后/退款', cls:'badge-danger'  },
     refunded:     { label:'退款成功',  cls:'badge-danger'  }
   }
+
+  let pointsAdjustUserId = null
+  async function loadPoints() {
+    const keyword = document.getElementById('points-keyword')?.value.trim() || ''
+    const r = await api('GET', `/points${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}`)
+    if (!r || r.code !== 200) return
+    const summary = r.data.summary || {}
+    document.getElementById('points-available').textContent = Number(summary.available_points || 0)
+    document.getElementById('points-earned').textContent = Number(summary.total_earned || 0)
+    document.getElementById('points-used').textContent = Number(summary.total_used || 0)
+    document.getElementById('points-locked').textContent = Number(summary.locked_points || 0)
+    const rows = r.data.rows || []
+    document.getElementById('pointsTable').innerHTML = rows.length ? rows.map(item => `
+      <tr>
+        <td><strong>${item.real_name || '未填写姓名'}</strong><br><span style="color:#88918B">${item.phone}</span></td>
+        <td>${item.location || '—'}</td>
+        <td class="status-on"><strong>${Number(item.balance || 0)}</strong></td>
+        <td>${Number(item.locked_points || 0)}</td>
+        <td>${Number(item.total_earned || 0)}</td>
+        <td>${Number(item.total_used || 0)}</td>
+        <td>${Number(item.completed_courses || 0)}</td>
+        <td><button class="act-btn edit" onclick="openPointsAdjustment(${Number(item.user_id)},decodeURIComponent('${encodeURIComponent(item.real_name || item.phone || '农户')}'),${Number(item.balance || 0)})">调整</button></td>
+      </tr>`).join('') : '<tr class="empty-row"><td colspan="8">没有匹配的积分账户</td></tr>'
+  }
+
+  function openPointsAdjustment(userId, name, balance) {
+    pointsAdjustUserId = userId
+    document.getElementById('pointsFarmerName').textContent = `${name} · 当前可用 ${balance} 积分`
+    document.getElementById('pointsAmount').value = ''
+    document.getElementById('pointsReason').value = ''
+    document.getElementById('modalPoints').classList.add('show')
+  }
+
+  async function savePointsAdjustment() {
+    const amount = Number(document.getElementById('pointsAmount').value)
+    const reason = document.getElementById('pointsReason').value.trim()
+    if (!Number.isInteger(amount) || amount === 0) return alert('请输入非零整数积分')
+    if (!reason) return alert('请填写调整原因')
+    if (!confirm(`确认${amount > 0 ? '增加' : '扣减'} ${Math.abs(amount)} 积分？该记录会永久保留。`)) return
+    const r = await api('POST', `/points/${pointsAdjustUserId}/adjust`, { points: amount, reason })
+    if (r?.code === 200) {
+      closeModal('modalPoints')
+      loadPoints()
+      alert('积分调整已记入账本')
+    } else alert(r?.msg || '积分调整失败')
+  }
   let adminOrdersData = []
 
   const MARKETING_TYPE_LABELS = {
@@ -1702,31 +1791,15 @@
           <td style="font-size:12px;color:#888">${esc(o.order_no)}</td>
           <td>${esc(o.farmer_name||o.receiver_name)}<br><span style="font-size:11px;color:#BBB">${esc(o.farmer_phone||'')}</span></td>
           <td>${item ? esc(item.name)+' ×'+item.qty : '—'}${o.items.length>1?`<br><span style="font-size:11px;color:#BBB">等${o.items.length}件</span>`:''}</td>
-          <td style="font-weight:700;color:#C8902E">¥${o.total}</td>
+          <td style="font-weight:700;color:#C8902E">¥${o.total}${Number(o.points_discount || 0) > 0 ? `<br><span style="font-size:11px;color:#167447">积分抵扣 ¥${Number(o.points_discount).toFixed(2)}</span>` : ''}</td>
           <td><span class="badge ${st.cls}">${st.label}</span></td>
           <td style="font-size:12px;color:#888">${created}</td>
-          <td style="white-space:nowrap">
-            <select style="padding:4px 8px;border:1.5px solid #E0E0E0;border-radius:6px;font-size:12px" onchange="updateOrderStatus(${o.id},this.value,this)">
-              <option value="">改状态</option>
-              <option value="pending_ship">待发货</option>
-              <option value="shipped">已发货</option>
-              <option value="completed">已完成</option>
-              <option value="refund">售后/退款</option>
-            </select>
-          </td>
+          <td style="color:#88918B;font-size:12px">由支付、物流与售后流程更新</td>
         </tr>`
       }).join('')
     } catch(e) {
       tbody.innerHTML = `<tr class="empty-row"><td colspan="7">加载失败：${esc(e.message)} <button onclick="loadAdminOrders()">重试</button></td></tr>`
     }
-  }
-
-  async function updateOrderStatus(id, status, sel) {
-    if (!status) return
-    if (!confirm(`确定将订单状态改为"${ADMIN_ORDER_STATUS[status]?.label || status}"？`)) { sel.value=''; return }
-    const r = await api('PATCH', `/orders/${id}/status`, { status })
-    if (r?.code === 200) { loadAdminOrders() }
-    else { alert(r?.msg || '操作失败'); sel.value='' }
   }
 
   // ── 弹窗通用 ─────────────────────────────────
@@ -2704,12 +2777,13 @@
       if (freezeSub) freezeSub.textContent = freezeDays > 0 ? `${freezeDays}天售后期` : '确认收货后可立即分账'
       document.getElementById('finance-merchant-count').textContent = `${list.length} 家商户`
       // 汇总统计
-      let totalSales = 0, totalCommission = 0, totalFrozen = 0, totalAvailable = 0
+      let totalSales = 0, totalCommission = 0, totalPointsSubsidy = 0, totalFrozen = 0, totalAvailable = 0
       list.forEach(m => {
         const sales = parseFloat(m.total_sales) || 0
         const rate  = parseFloat(m.commission_rate) || 5
         totalSales      += sales
         totalCommission += parseFloat(m.total_commission) || 0
+        totalPointsSubsidy += parseFloat(m.points_subsidy) || 0
         totalFrozen     += parseFloat(m.frozen_amount) || 0
         totalAvailable  += parseFloat(m.available_amount) || 0
       })
@@ -2717,12 +2791,14 @@
       document.getElementById('fin-total-commission').textContent  = '¥' + totalCommission.toFixed(2)
       document.getElementById('fin-total-frozen').textContent      = '¥' + totalFrozen.toFixed(2)
       document.getElementById('fin-total-available').textContent   = '¥' + totalAvailable.toFixed(2)
+      document.getElementById('fin-points-subsidy').textContent = `已承担积分补贴 ¥${totalPointsSubsidy.toFixed(2)}`
 
       if (!list.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无已批准商户</td></tr>'; return }
       tbody.innerHTML = list.map(m => {
         const rate       = parseFloat(m.commission_rate) || 5
         const sales      = parseFloat(m.total_sales) || 0
         const commission = (parseFloat(m.total_commission) || 0).toFixed(2)
+        const pointsSubsidy = parseFloat(m.points_subsidy) || 0
         const available  = parseFloat(m.available_amount) || 0
         const frozen     = parseFloat(m.frozen_amount) || 0
         return `<tr>
@@ -2730,7 +2806,7 @@
           <td style="color:#888;font-size:12px">${esc(m.phone||'—')}</td>
           <td><span class="commission-badge" style="cursor:default">${parseFloat(rate).toFixed(2)}%</span></td>
           <td style="font-weight:700;color:#C8902E">¥${sales.toFixed(2)}</td>
-          <td style="color:#888">¥${commission}</td>
+          <td style="color:#888">¥${commission}${pointsSubsidy > 0 ? `<div style="font-size:11px;color:#167447;margin-top:3px">积分补贴 ¥${pointsSubsidy.toFixed(2)}</div>` : ''}</td>
           <td style="color:#16A34A;font-weight:600">¥${available.toFixed(2)}</td>
           <td style="color:#D97706">¥${frozen.toFixed(2)}</td>
         </tr>`

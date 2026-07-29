@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "migrate": "node db/migrate.js",
-    "test": "node tests/community.test.js && node tests/knowledge.test.js && node tests/site.test.js"
+    "test": "node tests/community.test.js && node tests/knowledge.test.js && node tests/points.test.js && node tests/site.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -18,6 +18,7 @@ Page({
     userInitial: '?',
     orderCount: 0,
     favCount: 0,
+    pointsBalance: 0,
     supportUnread: 0
   },
 
@@ -67,8 +68,9 @@ Page({
       })
       this._loadOrderCount()
       this._loadSupportUnread()
+      this._loadPoints()
     } else {
-      this.setData({ isLoggedIn: false, orderCount: 0, supportUnread: 0 })
+      this.setData({ isLoggedIn: false, orderCount: 0, supportUnread: 0, pointsBalance: 0 })
       if (auth.hasGuestSession()) this._loadOrderCount()
     }
   },
@@ -171,6 +173,24 @@ Page({
       const res = await auth.request('GET', '/api/feedback/unread')
       if (res.code === 200) this.setData({ supportUnread: Number(res.data.total || 0) })
     } catch { /* 忽略，不影响主界面 */ }
+  },
+
+  async _loadPoints() {
+    try {
+      const res = await auth.request('GET', '/api/points/me?limit=1')
+      if (res.code === 200) {
+        this.setData({ pointsBalance: Number(res.data.account && res.data.account.balance || 0) })
+      }
+    } catch { /* 积分加载失败不阻塞个人中心 */ }
+  },
+
+  onPoints() {
+    if (!this.data.isLoggedIn) { wx.navigateTo({ url: '/pages/login/index' }); return }
+    wx.navigateTo({ url: '/pages/points/index' })
+  },
+
+  onCommunity() {
+    wx.navigateTo({ url: '/pages/community/index' })
   },
 
   onFavorites() {

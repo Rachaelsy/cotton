@@ -208,6 +208,7 @@
 .mi-icon.green  { background: #E8F5E9; }
 
 .mi-emoji { font-size: 36rpx; }
+.mi-symbol { color: #2F6E47; font-size: 27rpx; font-weight: 800; }
 
 .mi-body { flex: 1; }
 

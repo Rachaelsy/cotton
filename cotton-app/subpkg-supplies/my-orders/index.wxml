@@ -55,7 +55,7 @@
           <view class="card-foot">
             <text class="order-time">{{item.createDate}}</text>
             <view class="amount-row">
-            <text class="amount-label">{{item.status === 'pending_payment' ? copy.due : copy.paid}}</text>
+            <text class="amount-label">{{item.pointsDiscount > 0 ? '积分已抵 ¥' + item.pointsDiscount : (item.status === 'pending_payment' ? copy.due : copy.paid)}}</text>
               <text class="amount-val">¥{{item.total}}</text>
             </view>
           </view>

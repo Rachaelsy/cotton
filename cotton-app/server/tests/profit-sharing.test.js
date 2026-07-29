@@ -5,6 +5,18 @@ const profitSharing = require('../utils/profit-sharing')
 async function run() {
   assert.strictEqual(profitSharing.calculateCommissionFen(25.8, 5), 129)
   assert.strictEqual(profitSharing.calculateCommissionFen(25.8, 0), 0)
+  assert.strictEqual(profitSharing.calculateOrderCommissionFen({
+    amount: 95,
+    commissionBase: 100,
+    commissionRate: 5,
+    pointsDiscount: 5
+  }), 0)
+  assert.strictEqual(profitSharing.calculateOrderCommissionFen({
+    amount: 98,
+    commissionBase: 100,
+    commissionRate: 5,
+    pointsDiscount: 2
+  }), 300)
 
   const cfg = { spAppid: 'wxspapp', spMchid: '1900000109' }
   const order = {

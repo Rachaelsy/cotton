@@ -4,6 +4,7 @@ const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
 const db = require('../db/database')
+const points = require('../utils/points')
 
 const router = express.Router()
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -255,7 +256,10 @@ router.post('/contents/:id/comments', userAuth, async (req, res) => {
     if (body.length < 2) return fail(res, '评论至少需要2个字')
     if (body.length > 800) return fail(res, '评论不能超过800字')
     const [[content]] = await db.query("SELECT id FROM knowledge_contents WHERE id=? AND status='published'", [req.params.id])
-    if (!content) return fail(res, '内容不存在或尚未上架', 404)
+    if (!content) {
+      await conn.rollback()
+      return fail(res, '内容不存在或尚未上架', 404)
+    }
     const [[user]] = await db.query('SELECT real_name,phone,avatar_url FROM users WHERE id=?', [req.viewer.id])
     const nickname = String(user && user.real_name || req.viewer.real_name || `用户${String(user && user.phone || '').slice(-4)}` || '学习用户').slice(0, 64)
     const parentId = Number.parseInt(req.body.parent_id, 10) || null
@@ -292,27 +296,62 @@ router.delete('/comments/:id', userAuth, async (req, res) => {
 })
 
 router.put('/contents/:id/progress', userAuth, async (req, res) => {
+  const conn = await db.getConnection()
   try {
-    const [[content]] = await db.query("SELECT id,duration_seconds FROM knowledge_contents WHERE id=? AND status='published'", [req.params.id])
-    if (!content) return fail(res, '内容不存在或尚未上架', 404)
-    const duration = Math.max(0, Math.min(86400, Number.parseInt(req.body.duration_seconds, 10) || Number(content.duration_seconds || 0)))
+    await conn.beginTransaction()
+    const [[content]] = await conn.query(
+      "SELECT id,title,type,difficulty,duration_seconds FROM knowledge_contents WHERE id=? AND status='published' FOR UPDATE",
+      [req.params.id]
+    )
+    if (!content) {
+      await conn.rollback()
+      return fail(res, '内容不存在或尚未上架', 404)
+    }
+    const canonicalDuration = Math.max(0, Math.min(86400, Number(content.duration_seconds || 0)))
+    const duration = canonicalDuration || 300
     const progress = Math.max(0, Math.min(duration || 86400, Number.parseInt(req.body.progress_seconds, 10) || 0))
-    const percent = duration > 0 ? Math.min(100, Math.round(progress / duration * 100)) : (req.body.completed ? 100 : 0)
-    const completed = req.body.completed || percent >= 90 ? 1 : 0
-    await db.query(
+    const percent = duration > 0 ? Math.min(100, Math.round(progress / duration * 100)) : 0
+    const completed = percent >= 90 ? 1 : 0
+    const [[previous]] = await conn.query(
+      'SELECT completed FROM knowledge_progress WHERE content_id=? AND user_id=? FOR UPDATE',
+      [content.id, req.viewer.id]
+    )
+    await conn.query(
       `INSERT INTO knowledge_progress
        (content_id,user_id,progress_seconds,duration_seconds,progress_percent,completed,last_viewed_at)
        VALUES (?,?,?,?,?,?,NOW())
        ON DUPLICATE KEY UPDATE
-       progress_seconds=VALUES(progress_seconds),duration_seconds=VALUES(duration_seconds),
+       progress_seconds=GREATEST(progress_seconds,VALUES(progress_seconds)),duration_seconds=VALUES(duration_seconds),
        progress_percent=GREATEST(progress_percent,VALUES(progress_percent)),completed=GREATEST(completed,VALUES(completed)),
        last_viewed_at=NOW()`,
       [content.id, req.viewer.id, progress, duration, percent, completed]
     )
-    return ok(res, { progressSeconds: progress, progressPercent: percent, completed: !!completed })
+    let reward = { awarded: false, points: 0, balance: null, reason: '' }
+    if (completed && !(previous && previous.completed)) {
+      reward = await points.awardCourseCompletion(conn, req.viewer.id, content)
+    }
+    await conn.commit()
+    return ok(res, {
+      progressSeconds: progress,
+      progressPercent: percent,
+      completed: !!completed,
+      reward
+    }, reward.awarded ? `课程完成，获得${reward.points}积分` : '学习进度已保存')
   } catch (error) {
+    await conn.rollback().catch(() => {})
     console.error('[knowledge-progress]', error)
     return fail(res, '学习进度保存失败', 500)
+  } finally {
+    conn.release()
+  }
+})
+
+router.get('/me/points', userAuth, async (req, res) => {
+  try {
+    return ok(res, await points.getSummary(db, req.viewer.id, req.query.limit))
+  } catch (error) {
+    console.error('[knowledge-points]', error)
+    return fail(res, '积分信息加载失败', 500)
   }
 })
 
