@@ -47,9 +47,29 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')))
 app.use('/', noCache, siteRouter)
 
 const platformBaseUrl = String(process.env.PLATFORM_BASE_URL || '').replace(/\/+$/, '')
-const platformUrl = pathname => platformBaseUrl ? `${platformBaseUrl}${pathname}` : pathname
-app.get('/platform', (_req, res) => res.redirect(platformUrl('/')))
-app.get('/platform/admin', (_req, res) => res.redirect(platformUrl('/admin/dashboard.html')))
+function platformUrl(req, pathname) {
+  if (platformBaseUrl) return `${platformBaseUrl}${pathname}`
+
+  // Same-domain traffic can use a relative path and be routed by Nginx.
+  // A direct request to the local community port must switch back to cotton-app.
+  const forwardedPort = String(req.get('x-forwarded-port') || '')
+  const host = String(req.get('host') || '')
+  if (!forwardedPort && host) {
+    try {
+      const target = new URL(`${req.protocol}://${host}`)
+      if (target.port) {
+        target.port = String(process.env.PLATFORM_DIRECT_PORT || 3000)
+        target.pathname = pathname
+        target.search = ''
+        target.hash = ''
+        return target.toString()
+      }
+    } catch {}
+  }
+  return pathname
+}
+app.get('/platform', (req, res) => res.redirect(platformUrl(req, '/admin/login.html')))
+app.get('/platform/admin', (req, res) => res.redirect(platformUrl(req, '/admin/login.html')))
 
 app.use('/api/community-auth', require('./routes/auth'))
 app.use('/api/knowledge', require('./routes/knowledge'))

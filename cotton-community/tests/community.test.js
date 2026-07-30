@@ -19,6 +19,8 @@ assert(server.includes("app.use('/api/community-ai'"), 'community should own cou
 assert(server.includes("app.use('/api/public-service'"), 'community should expose public service APIs')
 assert(server.includes("app.get('/api/community-health'"), 'community should expose an unambiguous health endpoint')
 assert(server.includes("app.get('/platform'"), 'community should link back to cotton-app by URL')
+assert(server.includes("'/admin/login.html'") && !server.includes("'/admin/dashboard.html'"), 'community should return to the unified role login instead of an admin dashboard')
+assert(server.includes('PLATFORM_DIRECT_PORT'), 'direct local community access should switch back to the cotton-app port')
 assert(auth.includes('SELECT * FROM users WHERE phone=?'), 'community login should read the shared users table')
 assert(auth.includes('INSERT INTO farmers'), 'new learning accounts should be created in the shared platform schema')
 assert(auth.includes('is_admin'), 'community should support shared administrator accounts')

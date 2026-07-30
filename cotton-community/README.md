@@ -48,7 +48,7 @@
 
 | 页面 | 地址 |
 |---|---|
-| 双平台总入口 | `/knowledge/` |
+| 社区根路径（跳转公益平台） | `/`、`/knowledge/` |
 | 公益平台首页 | `/public/` |
 | 棉花种植培训 | `/public/training` |
 | 培训详情 | `/public/training/:id` |
@@ -79,7 +79,7 @@
 旧的 `/knowledge/public/*`、`/knowledge/business/*`、`/knowledge/products`、
 `/knowledge/training`、`/knowledge/news` 和 `/knowledge/academy` 地址继续兼容；
 旧 `/public/academy`、课程详情和论坛地址会永久跳转到公益平台对应页面，
-站内链接统一使用 `/public/*` 与 `/business/*`。
+站内链接统一使用 `/public/*` 与 `/business/*`。不再提供额外的双平台总页面。
 
 ## 项目结构
 

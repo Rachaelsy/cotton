@@ -42,7 +42,7 @@ SEED_DEMO_DATA=true
 - 公益平台：`http://127.0.0.1/public/`
 - 商业平台：`http://127.0.0.1/business/`
 - 小程序后端直连：`http://127.0.0.1:3000`
-- 社区网页直连：`http://127.0.0.1:3100`
+- 社区网页直连：`http://127.0.0.1:3100`（自动进入公益平台）
 
 从 `http://127.0.0.1:3000/admin/login.html` 直接打开管理后台也受支持；其中的公益、
 商业和内容运营入口会自动跳转到 `3100` 的对应网页。停止全部本地容器：
@@ -69,9 +69,9 @@ npm start
 ```
 
 - 核心平台：`http://localhost:3000`
-- 棉知双平台入口：`http://localhost:3100/knowledge/`
 - 公益平台：`http://localhost:3100/public/`
 - 商业平台：`http://localhost:3100/business/`
+- 网站内容运营：`http://localhost:3100/knowledge/admin-login.html`
 - 社区服务健康检查：`http://localhost:3100/api/community-health`
 
 ## 统一测试
@@ -96,10 +96,11 @@ npm test
 公益与商业网站和统一 Nginx，并在同一域名下提供：
 
 - `/`、`/admin/`、业务 API：`cotton-app`
-- `/public/`、`/business/`、`/knowledge/`、公益课程 API 和课程上传文件：`cotton-community`
+- `/public/`、`/business/`、`/knowledge/admin*`、公益课程 API 和课程上传文件：`cotton-community`
 
 正式域名下的公开入口为 `https://你的域名/public/` 和
-`https://你的域名/business/`。`/knowledge/` 保留为双平台总入口和内容运营后台路径。
+`https://你的域名/business/`。`/knowledge/` 不再展示总入口，访问时会进入公益平台；
+`/knowledge/admin-login.html` 保留为网站内容运营入口。
 
 首次部署：
 

@@ -1,7 +1,6 @@
 (() => {
   const data = window.COTTON_SITE_DATA
   const main = document.getElementById('mainContent')
-  const rootBase = '/knowledge'
   const publicBase = '/public'
   const businessBase = '/business'
   const runtime = window.CottonRuntime
@@ -22,7 +21,7 @@
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;')
 
-  const platformBase = platform === 'public' ? publicBase : platform === 'business' ? businessBase : rootBase
+  const platformBase = platform === 'business' ? businessBase : publicBase
   const joinLink = (base, path = '/') => `${base}${path === '/' ? '/' : path}`
   const link = path => joinLink(platformBase, path)
   const publicLink = path => joinLink(publicBase, path)
@@ -191,44 +190,6 @@
         <strong>${escapeHtml(item.source)}</strong>
         <a href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkLabel)} <span aria-hidden="true">→</span></a>
       </aside>`
-  }
-
-  function renderHub() {
-    setMeta('棉知双平台', '公益知识服务与农业商业服务共享账号、内容和服务数据')
-    setActiveNav('home')
-    main.innerHTML = `
-      <section class="platform-hub">
-        <div class="platform-hub-shade"></div>
-        <div class="shell platform-hub-inner">
-          <div class="platform-hub-copy">
-            <span class="hero-kicker">扎根新疆棉区 · 公益与商业协同</span>
-            <h1>棉知双平台</h1>
-            <p>把公开培训、农技交流与农业商业服务清晰分开，同时用同一套账号、内容关联和服务数据连接起来。</p>
-          </div>
-          <div class="platform-gateways">
-            <a class="platform-gateway public-gateway" href="${publicLink('/')}">
-              <span class="gateway-index">01 · PUBLIC SERVICE</span>
-              <strong>公益平台</strong>
-              <p>种植培训、图文课程、政策资讯、专家咨询、病虫害知识与公益活动。</p>
-              <span class="gateway-action">进入公益平台 <b aria-hidden="true">→</b></span>
-            </a>
-            <a class="platform-gateway business-gateway" href="${businessLink('/')}">
-              <span class="gateway-index">02 · BUSINESS</span>
-              <strong>商业平台</strong>
-              <p>农资商品、产业资讯、公司服务与商务合作信息。</p>
-              <span class="gateway-action">进入商业平台 <b aria-hidden="true">→</b></span>
-            </a>
-          </div>
-        </div>
-      </section>
-      <section class="shared-platform-band">
-        <div class="shell shared-platform-grid">
-          <div><span class="eyebrow">CONNECTED DATA</span><h2>两个平台，一套服务关系</h2></div>
-          <div><strong>统一账号</strong><p>公益平台的学习账号与原棉花平台账号保持一致。</p></div>
-          <div><strong>内容关联</strong><p>商品资料可关联公益培训，学习内容也能找到相关生产资料。</p></div>
-          <div><strong>统一运营</strong><p>管理员从同一后台进入两端，并集中管理课程、评论和问答。</p></div>
-        </div>
-      </section>`
   }
 
   function renderPublicHome() {
@@ -1406,12 +1367,16 @@
       action.href = businessLink('/contact')
       action.textContent = '商务联系'
     } else {
-      document.body.dataset.platform = 'hub'
+      document.body.dataset.platform = 'public'
+      brand.href = publicLink('/')
+      brand.setAttribute('aria-label', '棉知公益平台首页')
+      brandName.textContent = '棉知农业服务'
+      brandSub.textContent = 'PUBLIC COTTON SERVICE'
+      serviceLabel.textContent = '公益知识服务 · 农业商业服务'
       nav.innerHTML = `
-        <a href="${rootBase}/" data-nav="home">双平台首页</a>
         <a href="${publicLink('/')}">公益平台</a>
         <a href="${businessLink('/')}">商业平台</a>`
-      action.href = '/platform'
+      action.href = '/platform/admin'
       action.textContent = '业务平台登录'
     }
 
@@ -1442,7 +1407,7 @@
 
   setupHeader()
 
-  if (platform === 'hub' && (routePath === '/' || routePath === '/index.html')) renderHub()
+  if (platform === 'hub' && (routePath === '/' || routePath === '/index.html')) window.location.replace(publicLink('/'))
   else if (platform === 'public' && pageGroup === 'home') renderPublicHome()
   else if (platform === 'public' && pageGroup === 'training' && pathParts.length === 1) renderTraining()
   else if (platform === 'public' && pageGroup === 'training') renderTrainingDetail(trainingById(pathParts[1]))

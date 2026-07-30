@@ -20,9 +20,9 @@ const redirectLegacyQuestion = (req, res) => {
   res.redirect(301, id > 0 ? `/public/forum/${id}` : '/public/forum')
 }
 
+router.get(['/', '/index.html'], redirectWithQuery('/public/'))
+
 for (const route of [
-  '/',
-  '/index.html',
   '/public',
   '/public/',
   '/public/training',

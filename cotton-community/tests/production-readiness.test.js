@@ -141,6 +141,16 @@ async function run() {
   })
   try {
     const baseUrl = `http://127.0.0.1:${server.address().port}`
+    const platformLogin = await fetch(`${baseUrl}/platform/admin`, { redirect: 'manual' })
+    assert.equal(platformLogin.status, 302)
+    const platformLocation = new URL(platformLogin.headers.get('location'))
+    assert.equal(platformLocation.port, '3000')
+    assert.equal(platformLocation.pathname, '/admin/login.html')
+
+    const communityRoot = await fetch(`${baseUrl}/knowledge/`, { redirect: 'manual' })
+    assert.equal(communityRoot.status, 302)
+    assert.equal(communityRoot.headers.get('location'), '/public/')
+
     const html404 = await fetch(`${baseUrl}/public/not-a-real-page`, {
       headers: { Accept: 'text/html' }
     })
