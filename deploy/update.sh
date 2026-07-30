@@ -39,6 +39,7 @@ for cert in apiclient_key.pem pub_key.pem; do
   fi
 done
 
+node scripts/ensure-runtime-secrets.js
 docker compose config --quiet
 docker compose up -d --build --remove-orphans
 docker compose ps
@@ -61,4 +62,15 @@ check_url() {
 
 check_url "cotton-app" "http://127.0.0.1/api/ping"
 check_url "cotton-community" "http://127.0.0.1/api/community-health"
+
+if ! docker compose exec -T app npm run security:audit-defaults; then
+  echo "[deploy] default account audit failed." >&2
+  echo "[deploy] reset the administrator with: docker compose exec app npm run admin:bootstrap -- --phone=YOUR_PHONE --reset" >&2
+  echo "[deploy] disable or delete remaining demo users and experts in the administrator dashboard." >&2
+  if [ "${ALLOW_DEFAULT_ACCOUNT_AUDIT_FAILURE:-0}" != "1" ]; then
+    exit 1
+  fi
+  echo "[deploy] WARNING: audit failure was explicitly allowed for this transitional deployment" >&2
+fi
+
 echo "[deploy] update completed"

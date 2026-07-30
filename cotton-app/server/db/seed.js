@@ -31,6 +31,10 @@ const TEST_ACCOUNTS = [
 ]
 
 async function seed() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('生产环境禁止写入测试账号')
+  }
+
   for (const acc of TEST_ACCOUNTS) {
     // 检查是否已存在
     const [rows] = await db.query('SELECT id FROM users WHERE phone=?', [acc.phone])

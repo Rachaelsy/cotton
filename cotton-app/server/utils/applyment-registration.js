@@ -108,7 +108,18 @@ function buildRegistrationDraft(input, defaults = {}) {
 function localUploadPath(url) {
   let pathname = clean(url)
   if (/^https?:\/\//i.test(pathname)) pathname = new URL(pathname).pathname
-  pathname = decodeURIComponent(pathname.split('?')[0]).replace(/^\/+/, '')
+  pathname = '/' + decodeURIComponent(pathname.split('?')[0]).replace(/^\/+/, '')
+
+  const privatePrefix = '/private/applyments/'
+  if (pathname.startsWith(privatePrefix)) {
+    const filename = pathname.slice(privatePrefix.length)
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filename)) {
+      throw new Error('进件图片路径不合法')
+    }
+    return path.resolve(__dirname, '../private/applyments', filename)
+  }
+
+  pathname = pathname.replace(/^\/+/, '')
   const publicRoot = path.resolve(__dirname, '../public')
   const filePath = path.resolve(publicRoot, pathname)
   const uploadRoot = path.resolve(publicRoot, 'uploads')

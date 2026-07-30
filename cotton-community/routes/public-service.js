@@ -6,7 +6,22 @@ const router = express.Router()
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, status = 400) => res.status(status).json({ code: status, msg, data: null })
 const submissionWindows = new Map()
-const businessCategories = new Set(['产品资料', '供货服务', '渠道合作', '公司合作', '其他商务需求'])
+const businessCategories = new Set(['产品资料', '供货服务', '农机服务', '渠道合作', '公司合作', '其他商务需求'])
+const privacyCategories = new Set(['查阅个人信息', '更正个人信息', '删除账号与数据', '撤回服务申请', '其他个人信息问题'])
+const requestMessages = {
+  business: {
+    duplicate: '相同需求已提交，请勿重复发送',
+    success: '商务需求已提交，工作人员会根据填写的联系方式与您沟通'
+  },
+  activity: {
+    duplicate: '相同参与意向已提交，请勿重复发送',
+    success: '参与意向已提交，活动信息确认后工作人员会与您联系'
+  },
+  privacy: {
+    duplicate: '相同的个人信息申请已提交，请勿重复发送',
+    success: '个人信息申请已提交，管理员核验账号后会更新处理状态'
+  }
+}
 
 function parseJson(value, fallback = []) {
   if (Array.isArray(value)) return value
@@ -31,7 +46,7 @@ function tokenPayload(req) {
 
 function userAuth(req, res, next) {
   req.viewer = tokenPayload(req)
-  if (!req.viewer || !req.viewer.id) return fail(res, '请先登录后再向专家提问', 401)
+  if (!req.viewer || !req.viewer.id) return fail(res, '请先登录后再使用此功能', 401)
   next()
 }
 
@@ -69,14 +84,13 @@ async function insertServiceRequest(req, res, kind, fields) {
     const normalizedPhone = String(fields.contactPhone).replace(/[\s-]/g, '')
     const [[duplicate]] = await db.query(
       `SELECT id FROM community_service_requests
-       WHERE kind=? AND contact_phone=? AND reference_id=? AND created_at>=DATE_SUB(NOW(),INTERVAL 2 MINUTE)
+       WHERE kind=? AND contact_phone=? AND reference_id=? AND category=?
+         AND created_at>=DATE_SUB(NOW(),INTERVAL 2 MINUTE)
        ORDER BY id DESC LIMIT 1`,
-      [kind, normalizedPhone, fields.referenceId]
+      [kind, normalizedPhone, fields.referenceId, fields.category]
     )
     if (duplicate) {
-      return ok(res, { id: Number(duplicate.id) }, kind === 'business'
-        ? '相同需求已提交，请勿重复发送'
-        : '相同参与意向已提交，请勿重复发送')
+      return ok(res, { id: Number(duplicate.id) }, requestMessages[kind].duplicate)
     }
     const [result] = await db.query(
       `INSERT INTO community_service_requests
@@ -94,9 +108,7 @@ async function insertServiceRequest(req, res, kind, fields) {
         fields.sourcePath
       ]
     )
-    return ok(res, { id: Number(result.insertId) }, kind === 'business'
-      ? '商务需求已提交，工作人员会根据填写的联系方式与您沟通'
-      : '参与意向已提交，活动信息确认后工作人员会与您联系')
+    return ok(res, { id: Number(result.insertId) }, requestMessages[kind].success)
   } catch (error) {
     console.error(`[public-service-${kind}-request]`, error)
     return fail(res, '提交失败，请稍后重试', 500)
@@ -140,8 +152,8 @@ router.post('/business-inquiries', async (req, res) => {
   if (!businessCategories.has(category)) return fail(res, '请选择有效的需求类型')
   if (message.length < 10) return fail(res, '请把需求描述得更完整一些')
   return insertServiceRequest(req, res, 'business', {
-    referenceId: cleanText(req.body.productId, 120),
-    referenceName: cleanText(req.body.productName, 160),
+    referenceId: cleanText(req.body.referenceId || req.body.productId, 120),
+    referenceName: cleanText(req.body.referenceName || req.body.productName, 160),
     contactName: cleanText(req.body.name, 64),
     contactPhone: cleanText(req.body.phone, 32),
     region: cleanText(req.body.region, 100),
@@ -165,6 +177,37 @@ router.post('/activity-interests', async (req, res) => {
     message: cleanText(req.body.message, 1200),
     sourcePath: cleanText(req.body.sourcePath, 255)
   })
+})
+
+router.post('/privacy-requests', userAuth, async (req, res) => {
+  const category = cleanText(req.body.type, 64)
+  const message = cleanText(req.body.message, 1200)
+  if (!privacyCategories.has(category)) return fail(res, '请选择有效的申请类型')
+  if (message.length < 5) return fail(res, '请补充需要处理的具体内容')
+  try {
+    const [[user]] = await db.query(
+      `SELECT u.id,u.phone,u.real_name,f.location
+       FROM users u
+       LEFT JOIN farmers f ON f.user_id=u.id
+       WHERE u.id=?
+       LIMIT 1`,
+      [req.viewer.id]
+    )
+    if (!user) return fail(res, '账号不存在或已停用', 404)
+    return insertServiceRequest(req, res, 'privacy', {
+      referenceId: String(user.id),
+      referenceName: user.real_name || `账号 ${user.id}`,
+      contactName: user.real_name || '平台用户',
+      contactPhone: user.phone,
+      region: user.location || '',
+      category,
+      message,
+      sourcePath: cleanText(req.body.sourcePath, 255)
+    })
+  } catch (error) {
+    console.error('[public-service-privacy-request]', error)
+    return fail(res, '申请提交失败，请稍后重试', 500)
+  }
 })
 
 router.get('/experts', async (_req, res) => {

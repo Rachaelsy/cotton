@@ -41,7 +41,7 @@ async function run() {
   assert(migration.includes('CREATE TABLE IF NOT EXISTS wechat_guests'), 'migration should create guest identity storage')
   assert(migration.includes('MODIFY user_id INT UNSIGNED NULL'), 'orders should permit a guest owner instead of a fake user')
   assert(migration.includes('guest_id BIGINT UNSIGNED NULL'), 'orders should store guest ownership')
-  assert(dockerEntrypoint.includes('run_optional_node db/migrate_guest_checkout.js'), 'Docker startup should apply the guest checkout migration')
+  assert(dockerEntrypoint.includes('run_migration db/migrate_guest_checkout.js'), 'Docker startup should apply the guest checkout migration as a required step')
   assert(ordersRoute.includes("router.post('/', principalAuth"), 'anonymous requests without a WeChat identity must not reserve stock')
   assert(ordersRoute.includes('orderNo, userId, guestId'), 'created orders should persist exactly one owner')
   assert(ordersRoute.includes("return fail(res, '请登录后使用优惠券', 403)"), 'guest coupon rejection must not invalidate the guest session')

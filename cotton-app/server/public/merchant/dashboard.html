@@ -881,6 +881,7 @@
   </div>
 </div>
 
+<script src="/admin/assets/runtime.js"></script>
 <script>
 /* ════════════════════════════════════════════
    工具函数
@@ -941,10 +942,11 @@ async function api(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
   if (body) opts.body = JSON.stringify(body)
   try {
-    const r = await fetch('/api/merchant' + path, opts)
-    const text = await r.text()
-    let data
-    try { data = JSON.parse(text) } catch { throw new Error('服务器返回格式错误: ' + text.slice(0, 100)) }
+    const data = await CottonRuntime.requestJson('/api/merchant' + path, opts, {
+      expectCode: false,
+      allowErrorResponse: true,
+      onUnauthorized: logout
+    })
     if (data.code === 401) { logout(); return null }
     return data
   } catch (e) {
@@ -956,10 +958,11 @@ async function api(method, path, body) {
 async function marketingApi(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
   if (body !== undefined) opts.body = JSON.stringify(body)
-  const response = await fetch('/api/marketing' + path, opts)
-  const text = await response.text()
-  let data
-  try { data = JSON.parse(text) } catch { throw new Error('服务器返回格式错误: ' + text.slice(0, 100)) }
+  const data = await CottonRuntime.requestJson('/api/marketing' + path, opts, {
+    expectCode: false,
+    allowErrorResponse: true,
+    onUnauthorized: logout
+  })
   if (data.code === 401) { logout(); return null }
   return data
 }
@@ -968,10 +971,11 @@ async function applymentApi(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` } }
   if (body) opts.body = JSON.stringify(body)
   try {
-    const r = await fetch('/api/wechat-applyment' + path, opts)
-    const text = await r.text()
-    let data
-    try { data = JSON.parse(text) } catch { throw new Error('服务器返回格式错误: ' + text.slice(0, 100)) }
+    const data = await CottonRuntime.requestJson('/api/wechat-applyment' + path, opts, {
+      expectCode: false,
+      allowErrorResponse: true,
+      onUnauthorized: logout
+    })
     if (data.code === 401) { logout(); return null }
     return data
   } catch (e) {
@@ -994,14 +998,16 @@ function uploadApplymentMedia(field) {
     const oldPlaceholder = target ? target.placeholder : ''
     if (target) target.placeholder = '正在上传...'
     try {
-      const r = await fetch('/api/wechat-applyment/media', {
+      const data = await CottonRuntime.requestJson('/api/wechat-applyment/media', {
         method: 'POST',
         headers: { Authorization: `Bearer ${getToken()}` },
         body: fd
+      }, {
+        expectCode: false,
+        allowErrorResponse: true,
+        timeoutMs: 30000,
+        onUnauthorized: logout
       })
-      const text = await r.text()
-      let data
-      try { data = JSON.parse(text) } catch { throw new Error('服务器返回格式错误: ' + text.slice(0, 100)) }
       if (data.code === 401) { logout(); return }
       if (data.code !== 200 || !data.data || !data.data.media_id) throw new Error(data.msg || '上传失败')
       setPayVal(field, data.data.media_id)
@@ -1024,7 +1030,17 @@ function logout() {
 function closeModal(id) { document.getElementById(id).classList.remove('show') }
 function showModal(id)  { document.getElementById(id).classList.add('show') }
 
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+function jsArg(value) {
+  return encodeURIComponent(String(value || '')).replace(/'/g, '%27')
+}
 
 /* ── 全局状态（必须在 init IIFE 之前声明）── */
 var TITLES = { shop:'店铺中心', products:'商品管理', marketing:'营销中心', orders:'订单管理', aftersale:'售后管理', finance:'财务结算', pay:'微信收款', customers:'客户评价', messages:'消息中心', settings:'店铺设置' }
@@ -1149,7 +1165,7 @@ function renderBarChart(id, data) {
     <div class="bar-wrap">
       <div class="bar-val">${d.val >= 1000 ? (d.val/1000).toFixed(1)+'k' : d.val}</div>
       <div class="bar" style="height:${Math.round(d.val/max*90)}px"></div>
-      <div class="bar-label">${d.label}</div>
+      <div class="bar-label">${esc(d.label)}</div>
     </div>`).join('')
 }
 
@@ -1189,7 +1205,7 @@ async function loadProducts() {
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="openEditProduct(${p.id})" style="margin-right:4px">编辑</button>
           <button class="btn btn-warn btn-sm" onclick="toggleProd(${p.id},'${p.status==='on'?'off':'on'}')" style="margin-right:4px">${p.status==='on'?'下架':'上架'}</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteProd(${p.id},'${esc(p.name)}')">删除</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProd(${Number(p.id)},decodeURIComponent('${jsArg(p.name)}'))">删除</button>
         </td>
       </tr>`).join('')
   } catch (e) {
@@ -1215,10 +1231,22 @@ function removeProdImg() { resetProdImg() }
 async function uploadProdImg(e) {
   const file = e.target.files[0]; if (!file) return
   const fd = new FormData(); fd.append('image', file)
-  const r = await fetch('/api/merchant/upload', { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body: fd })
-  const data = await r.json()
-  if (data.code === 200) setProdImg(data.data.url)
-  else alert(data.msg || '上传失败')
+  try {
+    const data = await CottonRuntime.requestJson('/api/merchant/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: fd
+    }, {
+      expectCode: false,
+      allowErrorResponse: true,
+      timeoutMs: 30000,
+      onUnauthorized: logout
+    })
+    if (data.code === 200) setProdImg(data.data.url)
+    else alert(data.msg || '上传失败')
+  } catch (error) {
+    alert(error.message || '上传失败，请稍后重试')
+  }
 }
 
 function openAddProduct() {
@@ -1367,7 +1395,7 @@ function showOrderDetail(id) {
       <div class="fc-label" style="margin-bottom:8px">购买商品</div>
       ${(o.items || []).map(i => `
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F0F0;font-size:13px">
-          <span>${i.icon || ''} ${esc(i.name)} × ${i.qty}</span><span style="font-weight:700">¥${(i.price * i.qty).toFixed(2)}</span>
+          <span>${esc(i.icon || '')} ${esc(i.name)} × ${Number(i.qty || 0)}</span><span style="font-weight:700">¥${(Number(i.price || 0) * Number(i.qty || 0)).toFixed(2)}</span>
         </div>`).join('')}
       <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;color:#888">
         <span>运费</span><span>¥${o.delivery_fee}</span>
@@ -2017,12 +2045,12 @@ async function loadCustomers() {
         : '—'
       return `<tr>
         <td style="font-weight:700">${esc(masked)}</td>
-        <td style="color:#888;font-size:12px">${maskedPhone}</td>
+        <td style="color:#888;font-size:12px">${esc(maskedPhone)}</td>
         <td style="font-size:12px">${esc(c.region || '—')}</td>
         <td style="font-weight:700;color:#C8902E">¥${parseFloat(c.total_spent||0).toFixed(0)}</td>
-        <td>${c.order_count} 单</td>
-        <td style="font-size:12px;color:#888">${c.last_order_date || '—'}</td>
-        <td><button onclick="deleteCustomer(${c.id},'${esc(masked)}')"
+        <td>${Number(c.order_count || 0)} 单</td>
+        <td style="font-size:12px;color:#888">${esc(c.last_order_date || '—')}</td>
+        <td><button onclick="deleteCustomer(${Number(c.id)},decodeURIComponent('${jsArg(masked)}'))"
           style="padding:3px 10px;background:#FEE2E2;color:#DC2626;border:none;border-radius:6px;font-size:12px;cursor:pointer">删除</button></td>
       </tr>`
     }).join('')
@@ -2057,15 +2085,17 @@ async function loadReviews() {
       el.innerHTML = '<p style="color:#aaa;padding:32px;text-align:center">暂无买家评价</p>'; return
     }
     el.innerHTML = reviews.map(r => {
-      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating)
-      const maskedName = r.farmer_name.length > 1
-        ? r.farmer_name[0] + '**' + r.farmer_name.slice(-1)
-        : r.farmer_name + '**'
+      const rating = Math.max(0, Math.min(5, Number(r.rating || 0)))
+      const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating)
+      const farmerName = String(r.farmer_name || '买家')
+      const maskedName = farmerName.length > 1
+        ? farmerName[0] + '**' + farmerName.slice(-1)
+        : farmerName + '**'
       return `
         <div class="review-card">
           <div class="review-head">
             <div style="display:flex;align-items:center">
-              <div class="reviewer-avatar">${esc(r.farmer_name[0] || '买')}</div>
+              <div class="reviewer-avatar">${esc(farmerName[0] || '买')}</div>
               <div>
                 <div class="reviewer-name">${esc(maskedName)}</div>
                 <div style="font-size:12px;color:#888">${esc(r.prod_names || '商品')} · ${esc(r.date)}</div>
@@ -2075,7 +2105,7 @@ async function loadReviews() {
               <div class="stars">${stars}</div>
               <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
                 ${!r.reply ? `<button class="btn btn-outline btn-sm" onclick="openReply(${r.id})">回复</button>` : ''}
-                <button class="btn btn-sm" style="background:#FEE2E2;color:#DC2626;border:none" onclick="deleteReview(${r.id},'${esc(maskedName)}')">删除</button>
+                <button class="btn btn-sm" style="background:#FEE2E2;color:#DC2626;border:none" onclick="deleteReview(${Number(r.id)},decodeURIComponent('${jsArg(maskedName)}'))">删除</button>
               </div>
             </div>
           </div>
@@ -2273,7 +2303,7 @@ async function loadAftersale(tab) {
       <td style="font-size:12px;color:#666">${esc(a.order_no)}</td>
       <td>${esc(a.aftersale_type)}</td>
       <td>${esc(a.reason)}${a.other_reason ? '：'+esc(a.other_reason) : ''}</td>
-      <td><span class="badge ${st.cls}">${st.text}</span></td>
+      <td><span class="badge ${st.cls}">${esc(st.text)}</span></td>
       <td style="font-size:12px;color:#666">${a.created_at ? a.created_at.slice(0,16) : '—'}</td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="viewAftersaleDetail(${a.id})">查看详情</button>
@@ -2315,7 +2345,7 @@ function viewAftersaleDetail(id) {
       <div class="mfield" style="margin:0"><label>订单号</label><div style="font-size:12px;color:#666">${esc(a.order_no)}</div></div>
       <div class="mfield" style="margin:0"><label>售后类型</label><div>${esc(a.aftersale_type)}</div></div>
       <div class="mfield" style="margin:0"><label>状态</label>
-        <span class="badge ${st.cls}">${st.text}</span>
+        <span class="badge ${st.cls}">${esc(st.text)}</span>
         ${a.handle_note ? `<span style="margin-left:8px;font-size:12px;color:#666">${esc(a.handle_note)}</span>` : ''}
       </div>
     </div>
@@ -2326,7 +2356,7 @@ function viewAftersaleDetail(id) {
     ${imgs.length ? `<div class="mfield"><label>买家上传凭证（${imgs.length} 张）</label>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
         ${imgs.map(u=>`<img src="${esc(u)}" style="width:110px;height:110px;object-fit:cover;border-radius:10px;cursor:pointer;border:1px solid #E5E7EB"
-          onclick="window.open('${esc(u)}','_blank')" title="点击查看原图">`).join('')}
+          onclick="window.open(decodeURIComponent('${jsArg(u)}'),'_blank','noopener')" title="点击查看原图">`).join('')}
       </div>
     </div>` : `<div style="color:#BBB;font-size:13px;margin-bottom:12px">买家未上传凭证图片</div>`}
     ${a.status === 'pending' ? `

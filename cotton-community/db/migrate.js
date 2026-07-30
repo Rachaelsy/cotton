@@ -71,7 +71,7 @@ async function run() {
   await db.query(`
     CREATE TABLE IF NOT EXISTS community_service_requests (
       id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      kind ENUM('business','activity') NOT NULL,
+      kind ENUM('business','activity','privacy') NOT NULL,
       reference_id VARCHAR(120) DEFAULT '',
       reference_name VARCHAR(160) DEFAULT '',
       contact_name VARCHAR(64) NOT NULL,
@@ -88,6 +88,10 @@ async function run() {
       INDEX idx_service_request_kind (kind,created_at),
       INDEX idx_service_request_phone (contact_phone,created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益活动意向与商务服务需求'
+  `)
+  await db.query(`
+    ALTER TABLE community_service_requests
+    MODIFY COLUMN kind ENUM('business','activity','privacy') NOT NULL
   `)
 
   await db.query(`

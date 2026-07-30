@@ -81,6 +81,7 @@
     </footer>
   </main>
 
+  <script src="/admin/assets/runtime.js"></script>
   <script>
     document.getElementById('pwd').addEventListener('keydown', e => {
       if (e.key === 'Enter') login()
@@ -100,12 +101,14 @@
       btn.textContent = '正在登录...'
       err.textContent = ''
       try {
-        const res = await fetch('/api/expert-admin/login', {
+        const data = await CottonRuntime.requestJson('/api/expert-admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone, password })
+        }, {
+          expectCode: false,
+          allowErrorResponse: true
         })
-        const data = await res.json()
         if (data.code === 200) {
           localStorage.setItem('expert_token', data.data.token)
           localStorage.setItem('expert_name', data.data.name || '平台专家')
@@ -114,7 +117,7 @@
         }
         err.textContent = data.msg || '登录失败'
       } catch (error) {
-        err.textContent = '网络错误，请检查后端服务'
+        err.textContent = error.message || '网络错误，请检查后端服务'
       } finally {
         btn.disabled = false
         btn.textContent = '进入专家后台'

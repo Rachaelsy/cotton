@@ -11,6 +11,18 @@ const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, status = 400) => res.status(status).json({ code: status, msg, data: null })
 const uploadDir = path.join(__dirname, '../public/uploads/knowledge')
 const localUploadMaxMb = Math.max(1, Math.min(2048, Number.parseInt(process.env.KNOWLEDGE_LOCAL_UPLOAD_MAX_MB, 10) || 250))
+const allowedUploadTypes = new Map([
+  ['image/jpeg', new Set(['.jpg', '.jpeg'])],
+  ['image/png', new Set(['.png'])],
+  ['image/webp', new Set(['.webp'])],
+  ['image/gif', new Set(['.gif'])],
+  ['image/avif', new Set(['.avif'])],
+  ['video/mp4', new Set(['.mp4'])],
+  ['video/webm', new Set(['.webm'])],
+  ['video/quicktime', new Set(['.mov'])],
+  ['video/x-m4v', new Set(['.m4v'])],
+  ['video/ogg', new Set(['.ogv'])]
+])
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
 
 const upload = multer({
@@ -21,10 +33,12 @@ const upload = multer({
       cb(null, `knowledge_${Date.now()}_${Math.floor(Math.random() * 10000)}${ext}`)
     }
   }),
-  limits: { fileSize: localUploadMaxMb * 1024 * 1024 },
+  limits: { fileSize: localUploadMaxMb * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/') && !file.mimetype.startsWith('video/')) {
-      return cb(new Error('仅支持图片或视频文件'))
+    const ext = path.extname(file.originalname || '').toLowerCase()
+    const extensions = allowedUploadTypes.get(String(file.mimetype || '').toLowerCase())
+    if (!extensions || !extensions.has(ext)) {
+      return cb(new Error('仅支持 JPG、PNG、WebP、GIF、AVIF 图片或 MP4、WebM、MOV、M4V、OGV 视频'))
     }
     cb(null, true)
   }
@@ -47,11 +61,26 @@ function userAuth(req, res, next) {
   next()
 }
 
-function adminAuth(req, res, next) {
+async function adminAuth(req, res, next) {
   req.admin = tokenPayload(req)
   if (!req.admin) return fail(res, '管理员登录已过期', 401)
   if (!req.admin.is_admin) return fail(res, '无管理员权限', 403)
-  next()
+  try {
+    const [[account]] = await db.query(
+      'SELECT is_admin,is_active,admin_auth_version FROM users WHERE id=? LIMIT 1',
+      [req.admin.id]
+    )
+    if (!account || !account.is_admin || !account.is_active) {
+      return fail(res, '管理员账号已停用', 401)
+    }
+    if (Number(req.admin.auth_version || 0) !== Number(account.admin_auth_version || 0)) {
+      return fail(res, '登录状态已失效，请重新登录', 401)
+    }
+    next()
+  } catch (error) {
+    console.error('[knowledge-admin-auth]', error)
+    return fail(res, '管理员身份校验失败', 500)
+  }
 }
 
 function parseJson(value, fallback = []) {
@@ -818,7 +847,7 @@ router.delete('/admin/comments/:id', adminAuth, async (req, res) => {
 router.get('/admin/service-requests', adminAuth, async (req, res) => {
   const conditions = []
   const params = []
-  if (['business', 'activity'].includes(req.query.kind)) {
+  if (['business', 'activity', 'privacy'].includes(req.query.kind)) {
     conditions.push('kind=?')
     params.push(req.query.kind)
   }

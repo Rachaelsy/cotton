@@ -3,6 +3,7 @@ const express = require('express')
 const jwt = require('jsonwebtoken')
 
 process.env.JWT_SECRET = 'wechat-applyment-test-secret'
+process.env.IDENTITY_DATA_KEY = 'wechat-applyment-test-key-with-at-least-32-characters'
 delete process.env.WECHAT_PAY_SP_APPID
 delete process.env.WECHAT_PAY_SP_MCH_ID
 delete process.env.WECHAT_PAY_MCH_ID
@@ -154,7 +155,14 @@ async function run() {
     })
     assert.strictEqual(merchantDraft.status, 200)
     assert.strictEqual(merchantRow.wechat_business_code, 'COTTON_MERCHANT_001')
-    assert.strictEqual(JSON.parse(merchantRow.wechat_applyment_payload).raw_applyment.contact_info.contact_name, '张三')
+    const storedMerchantDraft = JSON.parse(merchantRow.wechat_applyment_payload)
+    assert.strictEqual(storedMerchantDraft._storage_encryption, 'v1')
+    assert.match(storedMerchantDraft.raw_applyment.contact_info.contact_name, /^v1:/)
+    assert(!merchantRow.wechat_applyment_payload.includes('13800138000'))
+
+    const revealedMerchantDraft = await request(baseUrl, merchantToken, 'GET', '/api/wechat-applyment/mine')
+    assert.strictEqual(revealedMerchantDraft.status, 200)
+    assert.strictEqual(revealedMerchantDraft.json.data.draft.raw_applyment.contact_info.contact_name, '张三')
 
     const operatorMine = await request(baseUrl, operatorToken, 'GET', '/api/wechat-applyment/mine')
     assert.strictEqual(operatorMine.status, 200)

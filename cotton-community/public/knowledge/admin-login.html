@@ -44,6 +44,7 @@
       <div class="admin-login-links"><a href="/public/">公益平台</a><a href="/business/">商业平台</a><a href="/platform/admin">返回平台后台</a></div>
     </section>
   </main>
+  <script src="/knowledge/site/runtime.js"></script>
   <script>
     const form = document.getElementById('adminLoginForm')
     const message = document.getElementById('message')
@@ -53,16 +54,13 @@
       message.textContent = '正在登录...'
       submit.disabled = true
       try {
-        const response = await fetch('/api/community-auth/admin/login', {
+        const result = await window.CottonRuntime.requestJson('/api/community-auth/admin/login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             phone: document.getElementById('phone').value.trim(),
             password: document.getElementById('password').value
           })
         })
-        const result = await response.json()
-        if (!response.ok || result.code !== 200) throw new Error(result.msg || '登录失败')
         localStorage.setItem('admin_token', result.data.token)
         localStorage.setItem('admin_name', result.data.real_name || '管理员')
         location.href = '/knowledge/admin.html'

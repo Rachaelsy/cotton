@@ -1,3 +1,9 @@
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: docker.m.daocloud.io/library/mysql:8.0
@@ -20,6 +26,7 @@ services:
       start_period: 30s
     networks:
       - cotton_shared
+    logging: *default-logging
 
   app:
     build:
@@ -30,13 +37,14 @@ services:
     env_file:
       - ./cotton-app/server/.env
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${APP_NODE_ENV:-production}
       PORT: 3000
       DB_HOST: db
       DB_PORT: 3306
       DB_USER: root
       DB_PASS: ${DB_PASS}
       DB_NAME: ${DB_NAME:-cotton}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
       COMMUNITY_BASE_URL: ${COMMUNITY_BASE_URL:-}
       COMMUNITY_DIRECT_PORT: ${COMMUNITY_HOST_PORT:-3100}
     ports:
@@ -44,6 +52,7 @@ services:
     volumes:
       - uploads:/app/public/uploads
       - identity_uploads:/app/private/identity
+      - applyment_uploads:/app/private/applyments
       - ${WECHAT_PAY_PRIVATE_KEY_HOST_PATH:-./apiclient_key.pem}:/app/apiclient_key.pem:ro
       - ${WECHAT_PAY_PUBLIC_KEY_HOST_PATH:-./pub_key.pem}:/app/pub_key.pem:ro
     depends_on:
@@ -61,6 +70,7 @@ services:
       start_period: 90s
     networks:
       - cotton_shared
+    logging: *default-logging
 
   community:
     build:
@@ -71,7 +81,7 @@ services:
     env_file:
       - ./cotton-app/server/.env
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${APP_NODE_ENV:-production}
       PORT: 3100
       DB_HOST: db
       DB_PORT: 3306
@@ -99,6 +109,7 @@ services:
       start_period: 60s
     networks:
       - cotton_shared
+    logging: *default-logging
 
   nginx:
     image: docker.m.daocloud.io/library/nginx:alpine
@@ -116,6 +127,7 @@ services:
         condition: service_healthy
     networks:
       - cotton_shared
+    logging: *default-logging
 
 volumes:
   mysql_data:
@@ -124,6 +136,8 @@ volumes:
     name: cotton_uploads
   identity_uploads:
     name: cotton_identity_uploads
+  applyment_uploads:
+    name: cotton_applyment_uploads
   community_uploads:
     name: cotton-community_community_uploads
 

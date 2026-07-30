@@ -5,6 +5,7 @@ const jwt      = require('jsonwebtoken')
 const crypto   = require('crypto')
 const db       = require('../db/database')
 const { authMiddleware } = require('../middleware/auth')
+const { isProductionDefaultCredential } = require('../utils/default-credentials')
 
 const router = express.Router()
 
@@ -227,6 +228,9 @@ router.post('/login', async (req, res) => {
   const { phone, password, role: requestedRole, guestToken } = req.body
 
   if (!phone || !password) return fail(res, '手机号和密码不能为空')
+  if (isProductionDefaultCredential(phone, password)) {
+    return fail(res, '测试账号在正式环境中已停用，请使用正式账号', 403)
+  }
 
   try {
     // ── 查询用户 ──────────────────────────────

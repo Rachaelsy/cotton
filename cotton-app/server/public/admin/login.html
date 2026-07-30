@@ -921,6 +921,7 @@
     </section>
   </main>
 
+  <script src="/admin/assets/runtime.js"></script>
   <script>
     let role = 'merchant'
     const ROLE_CONFIG = {
@@ -1028,12 +1029,14 @@
       hint.style.display = 'none'
 
       try {
-        const res = await fetch(cfg.api, {
+        const data = await CottonRuntime.requestJson(cfg.api, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone, password })
+        }, {
+          expectCode: false,
+          allowErrorResponse: true
         })
-        const data = await res.json()
         if (data.code === 200) {
           cfg.save(data.data)
           hint.textContent = '登录成功，正在进入工作台...'
@@ -1042,8 +1045,8 @@
           return
         }
         err.textContent = data.msg || '手机号或密码错误'
-      } catch {
-        err.textContent = '网络错误，请检查服务器连接'
+      } catch (error) {
+        err.textContent = error.message || '网络错误，请检查服务器连接'
       } finally {
         btn.disabled = false
         btn.textContent = cfg.btnText

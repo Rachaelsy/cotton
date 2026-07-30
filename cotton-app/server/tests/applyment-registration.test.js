@@ -17,9 +17,10 @@ require.cache[wxpayPath] = {
 const service = require('../utils/applyment-registration')
 
 async function run() {
-  const uploadDir = path.join(__dirname, '../public/uploads/applyment-test')
+  const uploadDir = path.join(__dirname, '../private/applyments')
   fs.mkdirSync(uploadDir, { recursive: true })
-  const imagePath = path.join(uploadDir, 'material.jpg')
+  const filename = `material-test-${process.pid}.jpg`
+  const imagePath = path.join(uploadDir, filename)
   fs.writeFileSync(imagePath, Buffer.from([0xff, 0xd8, 0xff, 0xd9]))
   try {
     const draft = service.buildRegistrationDraft({
@@ -28,10 +29,10 @@ async function run() {
       card_period_begin: '2020-01-01', card_period_end: 'long_term',
       merchant_shortname: '测试农机', service_phone: '13800000000',
       account_bank: '中国农业银行', account_name: '测试负责人', account_number: '6228000000000000',
-      license_copy_url: '/uploads/applyment-test/material.jpg',
-      id_card_copy_url: '/uploads/applyment-test/material.jpg',
-      id_card_national_url: '/uploads/applyment-test/material.jpg',
-      mini_program_pic_url: '/uploads/applyment-test/material.jpg'
+      license_copy_url: `/private/applyments/${filename}`,
+      id_card_copy_url: `/private/applyments/${filename}`,
+      id_card_national_url: `/private/applyments/${filename}`,
+      mini_program_pic_url: `/private/applyments/${filename}`
     })
     assert.strictEqual(draft.raw_applyment.business_info.sales_info.mini_program_info.mini_program_appid, 'wx-platform-appid')
     assert.strictEqual(draft.raw_applyment.settlement_info.settlement_id, '719')
@@ -63,7 +64,7 @@ async function run() {
     assert.match(adminRoute, /submitOperatorApplyment\(operator\)/)
     console.log('applyment registration tests passed')
   } finally {
-    fs.rmSync(uploadDir, { recursive: true, force: true })
+    fs.rmSync(imagePath, { force: true })
   }
 }
 

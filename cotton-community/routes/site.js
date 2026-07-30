@@ -32,6 +32,7 @@ for (const route of [
   '/public/forum',
   '/public/forum/:id',
   '/public/login',
+  '/public/privacy',
   '/public/consult',
   '/public/experts',
   '/public/policies',
@@ -44,6 +45,8 @@ for (const route of [
   '/business/',
   '/business/products',
   '/business/products/:id',
+  '/business/machinery',
+  '/business/machinery/:id',
   '/business/news',
   '/business/news/:id',
   '/business/about',
@@ -63,6 +66,8 @@ router.get('/training', redirectWithQuery('/public/training'))
 router.get('/training/:id', (req, res) => res.redirect(302, `/public/training/${encodeURIComponent(req.params.id)}`))
 router.get('/products', redirectWithQuery('/business/products'))
 router.get('/products/:id', (req, res) => res.redirect(302, `/business/products/${encodeURIComponent(req.params.id)}`))
+router.get('/machinery', redirectWithQuery('/business/machinery'))
+router.get('/machinery/:id', (req, res) => res.redirect(302, `/business/machinery/${encodeURIComponent(req.params.id)}`))
 router.get('/news', redirectWithQuery('/business/news'))
 router.get('/news/:id', (req, res) => res.redirect(302, `/business/news/${encodeURIComponent(req.params.id)}`))
 router.get('/about', redirectWithQuery('/business/about'))

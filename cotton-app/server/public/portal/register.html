@@ -359,6 +359,30 @@
       transform: none;
     }
 
+    .privacy-consent {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .privacy-consent input {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--green);
+    }
+
+    .privacy-consent a {
+      color: var(--green-dark);
+      font-weight: 850;
+      text-underline-offset: 3px;
+    }
+
     .msg {
       min-height: 20px;
       margin-top: 13px;
@@ -646,6 +670,10 @@
         </div>
       </div>
 
+      <label class="privacy-consent">
+        <input id="privacyConsent" type="checkbox">
+        <span>我已阅读<a href="/public/privacy" target="_blank" rel="noopener">个人信息使用说明</a>，并同意平台为入驻审核和微信支付进件处理本次提交的营业执照、身份信息、联系方式与结算账户资料。</span>
+      </label>
       <button class="submit-btn" id="submitBtn" onclick="submitApply()">提交入驻申请</button>
       <div class="msg" id="msg"></div>
       <div class="foot">已有账号？<a href="/">返回登录</a></div>
@@ -655,8 +683,10 @@
     </footer>
   </main>
 
+  <script src="/admin/assets/runtime.js"></script>
   <script>
     let role = 'operator'
+    const PRIVACY_CONSENT_VERSION = '2026-07-30'
     const roleText = {
       operator: {
         cls: 'op',
@@ -714,25 +744,33 @@
     async function uploadPublicImage(fieldId, previewId) {
       const picker = document.createElement('input')
       picker.type = 'file'
-      picker.accept = 'image/*'
+      picker.accept = 'image/jpeg,image/png,image/bmp'
       picker.onchange = async () => {
         const file = picker.files && picker.files[0]
         if (!file) return
+        if (file.size > 5 * 1024 * 1024) {
+          alert('图片不能超过 5MB')
+          return
+        }
         const form = new FormData()
         form.append('file', file)
         const target = document.getElementById(fieldId)
         const preview = document.getElementById(previewId)
         if (target) target.placeholder = '上传中...'
         try {
-          const res = await fetch('/api/upload/public', {
+          const data = await CottonRuntime.requestJson('/api/upload/public', {
             method: 'POST',
             body: form
+          }, {
+            timeoutMs: 60000
           })
-          const data = await res.json()
           if (data.code !== 200 || !data.data || !data.data.url) throw new Error(data.msg || '上传失败')
           if (target) target.value = data.data.url
           if (preview) {
-            preview.src = data.data.url
+            if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl)
+            const objectUrl = URL.createObjectURL(file)
+            preview.dataset.objectUrl = objectUrl
+            preview.src = objectUrl
             preview.classList.remove('hidden')
           }
         } catch (err) {
@@ -754,6 +792,11 @@
       if (!phone || !password) {
         msg.className = 'msg err'
         msg.textContent = '请填写手机号和密码'
+        return
+      }
+      if (!document.getElementById('privacyConsent').checked) {
+        msg.className = 'msg err'
+        msg.textContent = '请先阅读并同意个人信息使用说明'
         return
       }
 
@@ -790,7 +833,9 @@
         license_copy_url: v('license_copy_url'),
         id_card_copy_url: v('id_card_copy_url'),
         id_card_national_url: v('id_card_national_url'),
-        mini_program_pic_url: v('mini_program_pic_url')
+        mini_program_pic_url: v('mini_program_pic_url'),
+        privacy_consent: true,
+        privacy_consent_version: PRIVACY_CONSENT_VERSION
       }
       if (role === 'operator') {
         if (!v('org_name') || !v('contact')) {
@@ -845,12 +890,14 @@
       msg.textContent = ''
 
       try {
-        const r = await fetch(api, {
+        const data = await CottonRuntime.requestJson(api, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
+        }, {
+          expectCode: false,
+          allowErrorResponse: true
         })
-        const data = await r.json()
         if (data.code === 200) {
           msg.className = 'msg ok'
           msg.textContent = data.msg || '申请已提交，请等待审核'
@@ -864,7 +911,7 @@
         }
       } catch (e) {
         msg.className = 'msg err'
-        msg.textContent = '网络错误，请重试'
+        msg.textContent = e.message || '网络错误，请重试'
         btn.disabled = false
         btn.textContent = '提交入驻申请'
       }

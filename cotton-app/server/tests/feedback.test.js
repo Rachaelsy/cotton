@@ -180,6 +180,14 @@ const mockDb = {
       return [Number(params[0]) === 42 ? [{ id: 42 }] : [], []]
     }
 
+    if (/SELECT id,role,is_admin,is_active,admin_auth_version FROM users WHERE id=\?/i.test(compact)) {
+      return [[{ id: Number(params[0]), role: 'farmer', is_admin: 1, is_active: 1, admin_auth_version: 0 }], []]
+    }
+
+    if (/SELECT is_admin,is_active,admin_auth_version FROM users WHERE id=\?/i.test(compact)) {
+      return [[{ is_admin: 1, is_active: 1, admin_auth_version: 0 }], []]
+    }
+
     throw new Error(`Unexpected SQL in feedback test: ${compact}`)
   }
 }
@@ -228,6 +236,8 @@ function verifyUiFiles() {
   assert(feedbackWxml.includes('bindtap="chooseImages"'), 'feedback form should support image uploads')
   assert(feedbackWxml.includes('bindtap="onOpenChat"'), 'feedback page should link to live support')
   assert(supportChatJs.includes('wx.connectSocket'), 'support chat should use realtime socket notifications')
+  assert(supportChatJs.includes("JSON.stringify({ type: 'auth', token: auth.getToken() })"), 'farmer socket should authenticate after connecting')
+  assert(!supportChatJs.includes('/api/support/socket?token='), 'farmer socket should not expose JWTs in URLs')
   assert(supportChatJs.includes('setInterval'), 'support chat should retain a polling fallback')
   assert(supportChatJs.includes('openMessageActions'), 'farmer chat should expose long-press message actions')
   assert(supportChatJs.includes('/recall'), 'farmer chat should call the recall endpoint')
@@ -237,6 +247,8 @@ function verifyUiFiles() {
   assert(dashboard.includes('deleteSupportConversation'), 'admin should be able to clear a conversation from the admin view')
   assert(dashboard.includes('sendSupportChatImage'), 'admin chat should support image messages')
   assert(dashboard.includes('setSupportReply'), 'admin chat should support quoted replies')
+  assert(dashboard.includes("JSON.stringify({ type: 'auth', token: TOKEN })"), 'admin socket should authenticate after connecting')
+  assert(!dashboard.includes('/api/support/socket?token='), 'admin socket should not expose JWTs in URLs')
   assert(supportChatJs.includes('quoteMessage'), 'farmer chat should support quoted replies')
   assert(supportChatWxml.includes('class="input-shell"'), 'support chat input should have its own constrained layout cell')
   assert(!supportChatWxml.includes('<button class="image-button"'), 'native buttons should not squeeze the chat input on real devices')
@@ -251,6 +263,25 @@ function verifyUiFiles() {
   assert(fs.existsSync(path.join(root, 'server/db/migrate_feedbacks.js')), 'feedback migration should exist')
 }
 
+async function expectPolicyClose(socket, openHandler) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('support websocket policy close timed out')), 2000)
+    socket.once('open', () => {
+      if (openHandler) openHandler(socket)
+    })
+    socket.once('close', code => {
+      clearTimeout(timeout)
+      try {
+        assert.strictEqual(code, 1008)
+        resolve()
+      } catch (error) {
+        reject(error)
+      }
+    })
+    socket.once('error', reject)
+  })
+}
+
 async function run() {
   verifyUiFiles()
 
@@ -259,7 +290,7 @@ async function run() {
   app.use('/api/feedback', feedbackRouter)
   app.use('/api/admin', adminRouter)
   const httpServer = http.createServer(app)
-  attachSupportRealtime(httpServer)
+  attachSupportRealtime(httpServer, { database: mockDb, authenticationTimeoutMs: 100 })
   const server = await new Promise(resolve => {
     httpServer.listen(0, '127.0.0.1', () => resolve(httpServer))
   })
@@ -267,13 +298,35 @@ async function run() {
   const farmerToken = jwt.sign({ id: 42, role: 'farmer' }, process.env.JWT_SECRET)
   const merchantToken = jwt.sign({ id: 8, role: 'merchant' }, process.env.JWT_SECRET)
   const adminToken = jwt.sign({ id: 1, is_admin: true }, process.env.JWT_SECRET)
-  const socket = new WebSocket(`ws://127.0.0.1:${server.address().port}/api/support/socket?token=${encodeURIComponent(adminToken)}`)
+  const socket = new WebSocket(`ws://127.0.0.1:${server.address().port}/api/support/socket`)
 
   try {
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('support websocket connection timed out')), 2000)
-      socket.once('open', () => { clearTimeout(timeout); resolve() })
+      socket.once('open', () => {
+        socket.send(JSON.stringify({ type: 'auth', token: adminToken }))
+      })
+      socket.on('message', rawMessage => {
+        const message = JSON.parse(rawMessage.toString())
+        if (message.type !== 'ready') return
+        clearTimeout(timeout)
+        resolve()
+      })
       socket.once('error', reject)
+    })
+
+    const urlTokenSocket = new WebSocket(
+      `ws://127.0.0.1:${server.address().port}/api/support/socket?token=${encodeURIComponent(adminToken)}`
+    )
+    await expectPolicyClose(urlTokenSocket)
+
+    const revokedAdminToken = jwt.sign(
+      { id: 1, is_admin: true, auth_version: 1 },
+      process.env.JWT_SECRET
+    )
+    const revokedSocket = new WebSocket(`ws://127.0.0.1:${server.address().port}/api/support/socket`)
+    await expectPolicyClose(revokedSocket, activeSocket => {
+      activeSocket.send(JSON.stringify({ type: 'auth', token: revokedAdminToken }))
     })
 
     const unauthorized = await request(baseUrl, '', 'GET', '/api/feedback')

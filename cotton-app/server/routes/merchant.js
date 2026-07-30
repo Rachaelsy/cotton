@@ -12,6 +12,8 @@ const refunds = require('../utils/refunds')
 const logistics = require('../utils/logistics')
 const commissionRequests = require('../utils/commission-requests')
 const router   = express.Router()
+const { IMAGE_TYPES, makeFileFilter, safeExtension } = require('../utils/upload-policy')
+const { isProductionDefaultCredential } = require('../utils/default-credentials')
 
 // ── 图片上传配置 ─────────────────────────────────────────────
 const uploadDir = path.join(__dirname, '../public/uploads/products')
@@ -20,13 +22,13 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_, __, cb) => cb(null, uploadDir),
-    filename:    (_, file, cb) => cb(null, `prod_${Date.now()}${path.extname(file.originalname)}`)
+    filename:    (_, file, cb) => cb(null, `prod_${Date.now()}${safeExtension(file)}`)
   }),
   limits: { fileSize: 3 * 1024 * 1024 },
-  fileFilter: (_, file, cb) => {
-    /image\/(jpeg|png|gif|webp)/.test(file.mimetype)
-      ? cb(null, true) : cb(new Error('只支持 JPG/PNG/GIF/WebP'))
-  }
+  fileFilter: makeFileFilter({
+    types: IMAGE_TYPES,
+    message: '仅支持 JPG、PNG、WebP、GIF、AVIF 或 BMP 图片'
+  })
 })
 
 // ── 商户鉴权中间件 ────────────────────────────────────────────
@@ -69,6 +71,9 @@ router.post('/commission-change-requests', merchantAuth, async (req, res) => {
 router.post('/login', async (req, res) => {
   const { phone, password } = req.body
   if (!phone || !password) return fail(res, '请输入手机号和密码')
+  if (isProductionDefaultCredential(phone, password)) {
+    return fail(res, '测试账号在正式环境中已停用，请使用正式账号', 403)
+  }
   try {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.password, u.real_name, u.is_active,

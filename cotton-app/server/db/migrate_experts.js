@@ -1,7 +1,6 @@
 // server/db/migrate_experts.js — 独立专家账号表
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
 
-const bcrypt = require('bcryptjs')
 const db = require('./database')
 
 async function addColumn(table, name, ddl) {
@@ -54,32 +53,6 @@ async function run() {
 
   await addColumn('expert_contents', 'expert_id', 'expert_id INT UNSIGNED DEFAULT NULL COMMENT "发布专家ID"')
   await addIndex('expert_contents', 'idx_expert_contents_expert', '(expert_id)')
-
-  const phone = process.env.DEFAULT_EXPERT_PHONE || '10000000001'
-  const password = process.env.DEFAULT_EXPERT_PASSWORD || 'Expert@Cotton2026'
-  const name = process.env.DEFAULT_EXPERT_NAME || '平台专家'
-
-  const [rows] = await db.query('SELECT id FROM experts WHERE phone=?', [phone])
-  if (rows.length) {
-    console.log(`⏭  默认专家账号 ${phone} 已存在，跳过`)
-  } else {
-    const hash = await bcrypt.hash(password, 10)
-    await db.query(
-      `INSERT INTO experts (phone,password,name,title,org,avatar,specialties,bio,is_active)
-       VALUES (?,?,?,?,?,?,?,?,1)`,
-      [
-        phone,
-        hash,
-        name,
-        '棉花种植顾问',
-        'Cotton 棉花平台',
-        '专',
-        JSON.stringify(['种植技术', '病虫害防治', '水肥管理']),
-        '负责棉花种植、病虫害、水肥和农机作业相关答疑。'
-      ]
-    )
-    console.log(`✅ 已创建默认专家账号：${phone}`)
-  }
 
   process.exit(0)
 }

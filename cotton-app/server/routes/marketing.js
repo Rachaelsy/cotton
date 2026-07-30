@@ -36,12 +36,26 @@ function merchantAuth(req, res, next) {
   next()
 }
 
-function adminAuth(req, res, next) {
+async function adminAuth(req, res, next) {
   const payload = readToken(req)
   if (!payload) return fail(res, '请先登录', 401)
   if (!payload.is_admin) return fail(res, '无管理员权限', 403)
-  req.admin = payload
-  next()
+  if (payload.must_change_password) return fail(res, '请先修改管理员默认密码', 403)
+  try {
+    const [[account]] = await db.query(
+      'SELECT is_admin,is_active,admin_auth_version FROM users WHERE id=? LIMIT 1',
+      [payload.id]
+    )
+    if (!account || !account.is_admin || !account.is_active) return fail(res, '管理员账号已停用', 401)
+    if (Number(payload.auth_version || 0) !== Number(account.admin_auth_version || 0)) {
+      return fail(res, '登录状态已失效，请重新登录', 401)
+    }
+    req.admin = payload
+    next()
+  } catch (error) {
+    console.error('[marketing-admin-auth]', error)
+    return fail(res, '管理员身份校验失败', 500)
+  }
 }
 
 function handleError(res, error, fallback = '操作失败') {

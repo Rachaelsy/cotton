@@ -6,6 +6,7 @@ const fs = require('fs')
 const crypto = require('crypto')
 const db = require('../db/database')
 const identityData = require('../utils/identity-data')
+const { IDENTITY_IMAGE_TYPES, makeFileFilter, safeExtension } = require('../utils/upload-policy')
 
 const router = express.Router()
 const privateDir = path.join(__dirname, '../private/identity')
@@ -26,12 +27,15 @@ function farmerAuth(req, res, next) {
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, privateDir),
   filename: (req, file, cb) => cb(null,
-    `farmer_${req.user.id}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}${path.extname(file.originalname).toLowerCase()}`)
+    `farmer_${req.user.id}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}${safeExtension(file, IDENTITY_IMAGE_TYPES)}`)
 })
 const upload = multer({
   storage,
   limits: { fileSize: 8 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => cb(file.mimetype.startsWith('image/') ? null : new Error('只允许上传图片'), file.mimetype.startsWith('image/'))
+  fileFilter: makeFileFilter({
+    types: IDENTITY_IMAGE_TYPES,
+    message: '证件图片仅支持 JPG、PNG 或 WebP'
+  })
 })
 
 function validIdNumber(value) {

@@ -6,6 +6,7 @@ const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
 const { detectAiIntent, buildIntentReply } = require('../utils/ai-intent')
+const { IMAGE_TYPES, makeFileFilter, safeExtension } = require('../utils/upload-policy')
 
 const router = express.Router()
 
@@ -14,19 +15,7 @@ const pestImageDir = path.join(__dirname, '../public/uploads/pest')
 if (!fs.existsSync(aiTempDir)) fs.mkdirSync(aiTempDir, { recursive: true })
 if (!fs.existsSync(pestImageDir)) fs.mkdirSync(pestImageDir, { recursive: true })
 
-const PHOTO_MIME_EXT = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-  'image/gif': '.gif',
-  'image/bmp': '.bmp'
-}
 const rateBuckets = new Map()
-
-function photoFileFilter(_req, file, cb) {
-  if (PHOTO_MIME_EXT[file.mimetype]) return cb(null, true)
-  cb(new Error('仅支持 JPG、PNG、WEBP、GIF、BMP 图片'))
-}
 
 function requireAuth(req, res, next) {
   const auth = req.headers.authorization || ''
@@ -62,7 +51,10 @@ const photoRateLimit = rateLimit({ windowMs: 60 * 1000, max: 6, keyPrefix: 'ai-p
 const guardedPhotoUpload = multer({
   dest: aiTempDir,
   limits: { fileSize: 8 * 1024 * 1024 },
-  fileFilter: photoFileFilter
+  fileFilter: makeFileFilter({
+    types: IMAGE_TYPES,
+    message: '仅支持 JPG、PNG、WebP、GIF、AVIF 或 BMP 图片'
+  })
 })
 
 function uploadPhoto(req, res, next) {
@@ -320,7 +312,7 @@ function normalizeDiagnosis(raw, replyText) {
 }
 
 function extensionFromMime(mimeType, originalName) {
-  return PHOTO_MIME_EXT[mimeType] || path.extname(originalName || '').trim().toLowerCase() || '.jpg'
+  return safeExtension({ mimetype: mimeType, originalname: originalName }, IMAGE_TYPES) || '.jpg'
 }
 
 function persistPestImage(buffer, mimeType, originalName) {

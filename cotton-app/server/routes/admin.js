@@ -11,11 +11,25 @@ const wxpay    = require('../utils/wechat-pay')
 const profitSharing = require('../utils/profit-sharing')
 const commissionRequests = require('../utils/commission-requests')
 const applymentRegistration = require('../utils/applyment-registration')
+const applymentDraftSecurity = require('../utils/applyment-draft-security')
 const identityData = require('../utils/identity-data')
 const { broadcastAnnouncement } = require('../utils/notify')
 const supportMessages = require('../utils/support-messages')
 const supportRealtime = require('../utils/support-realtime')
 const points = require('../utils/points')
+const { BLOCKED_PASSWORDS, validateStrongPassword } = require('../utils/password-policy')
+const {
+  CURRENT_PRIVACY_CONSENT_VERSION,
+  validatePrivacyConsent
+} = require('../utils/privacy-consent')
+const { createIpRateLimiter } = require('../middleware/request-safety')
+const { IMAGE_TYPES, MEDIA_TYPES, makeFileFilter, safeExtension } = require('../utils/upload-policy')
+const publicApplyRateLimit = createIpRateLimiter({
+  namespace: 'merchant-public-apply',
+  windowMs: 60 * 60 * 1000,
+  maxRequests: 5,
+  message: '入驻申请提交过于频繁，请稍后再试'
+})
 
 // ── 图片上传配置 ─────────────────────────────────────────
 const uploadDir = path.join(__dirname, '../public/uploads/products')
@@ -23,15 +37,15 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename:    (_req, file, cb) => cb(null, `prod_${Date.now()}${path.extname(file.originalname)}`)
+  filename:    (_req, file, cb) => cb(null, `prod_${Date.now()}${safeExtension(file)}`)
 })
 const upload = multer({
   storage,
   limits: { fileSize: 3 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) return cb(new Error('只允许上传图片'))
-    cb(null, true)
-  }
+  fileFilter: makeFileFilter({
+    types: IMAGE_TYPES,
+    message: '仅支持 JPG、PNG、WebP、GIF、AVIF 或 BMP 图片'
+  })
 })
 
 const supportUploadDir = path.join(__dirname, '../public/uploads/support')
@@ -39,39 +53,38 @@ if (!fs.existsSync(supportUploadDir)) fs.mkdirSync(supportUploadDir, { recursive
 const supportUpload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, supportUploadDir),
-    filename: (_req, file, cb) => cb(null, `support_${Date.now()}_${Math.floor(Math.random() * 10000)}${path.extname(file.originalname)}`)
+    filename: (_req, file, cb) => cb(null, `support_${Date.now()}_${Math.floor(Math.random() * 10000)}${safeExtension(file)}`)
   }),
   limits: { fileSize: 8 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) return cb(new Error('只允许上传图片'))
-    cb(null, true)
-  }
+  fileFilter: makeFileFilter({
+    types: IMAGE_TYPES,
+    message: '仅支持 JPG、PNG、WebP、GIF、AVIF 或 BMP 图片'
+  })
 })
 
 const expertUploadDir = path.join(__dirname, '../public/uploads/expert')
 if (!fs.existsSync(expertUploadDir)) fs.mkdirSync(expertUploadDir, { recursive: true })
 const expertStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, expertUploadDir),
-  filename: (_req, file, cb) => cb(null, `expert_${Date.now()}_${Math.floor(Math.random() * 10000)}${path.extname(file.originalname)}`)
+  filename: (_req, file, cb) => cb(null, `expert_${Date.now()}_${Math.floor(Math.random() * 10000)}${safeExtension(file, MEDIA_TYPES)}`)
 })
 const expertUpload = multer({
   storage: expertStorage,
   limits: { fileSize: 200 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/') && !file.mimetype.startsWith('video/')) {
-      return cb(new Error('只允许上传图片或视频'))
-    }
-    cb(null, true)
-  }
+  fileFilter: makeFileFilter({
+    types: MEDIA_TYPES,
+    message: '仅支持常见 JPG、PNG、WebP、GIF、AVIF、BMP 图片或 MP4、WebM、MOV、M4V、OGV 视频'
+  })
 })
 
 const JWT_SECRET  = process.env.JWT_SECRET
-const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d'
+const ADMIN_JWT_EXPIRES = process.env.ADMIN_JWT_EXPIRES || '12h'
 
 function parsePayload(raw) {
   if (!raw) return null
-  if (typeof raw === 'object') return raw
-  try { return JSON.parse(raw) } catch { return null }
+  let parsed
+  try { parsed = typeof raw === 'object' ? raw : JSON.parse(raw) } catch { return null }
+  return applymentDraftSecurity.revealDraft(parsed)
 }
 
 function makeBusinessCode(prefix, ownerId) {
@@ -234,17 +247,37 @@ function normalizeExpertQuestion(row = {}) {
 const R_OK   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const R_FAIL = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
 
-function adminAuth(req, res, next) {
+async function adminAuth(req, res, next) {
   const auth = req.headers.authorization || ''
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
   if (!token) return res.status(401).json({ code: 401, msg: '未授权' })
   try {
     const payload = jwt.verify(token, JWT_SECRET)
     if (!payload.is_admin) return res.status(403).json({ code: 403, msg: '无管理员权限' })
+    const [[account]] = await db.query(
+      'SELECT is_admin,is_active,admin_auth_version FROM users WHERE id=? LIMIT 1',
+      [payload.id]
+    )
+    if (!account || !account.is_admin || !account.is_active) {
+      return res.status(401).json({ code: 401, msg: '管理员账号已停用或不存在' })
+    }
+    if (Number(payload.auth_version || 0) !== Number(account.admin_auth_version || 0)) {
+      return res.status(401).json({ code: 401, msg: '登录状态已失效，请重新登录' })
+    }
+    if (payload.must_change_password && req.path !== '/change-password') {
+      return res.status(403).json({
+        code: 'PASSWORD_CHANGE_REQUIRED',
+        msg: '请先修改管理员默认密码'
+      })
+    }
     req.admin = payload
     next()
-  } catch {
-    res.status(401).json({ code: 401, msg: 'Token 无效或已过期' })
+  } catch (error) {
+    if (error && ['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name)) {
+      return res.status(401).json({ code: 401, msg: 'Token 无效或已过期' })
+    }
+    console.error('[admin-auth]', error)
+    return res.status(500).json({ code: 500, msg: '管理员身份校验失败' })
   }
 }
 
@@ -257,16 +290,61 @@ router.post('/login', async (req, res) => {
     const user = rows[0]
     if (!user) return res.status(404).json({ code: 404, msg: '账号不存在' })
     if (!user.is_admin) return res.status(403).json({ code: 403, msg: '非管理员账号' })
+    if (!user.is_active) return res.status(403).json({ code: 403, msg: '管理员账号已停用' })
     const ok = await bcrypt.compare(password, user.password)
     if (!ok) return res.status(401).json({ code: 401, msg: '密码错误' })
+    const mustChangePassword = BLOCKED_PASSWORDS.has(String(password))
     const token = jwt.sign(
-      { id: user.id, phone: user.phone, real_name: user.real_name, is_admin: true },
-      JWT_SECRET, { expiresIn: JWT_EXPIRES }
+      {
+        id: user.id,
+        phone: user.phone,
+        real_name: user.real_name,
+        is_admin: true,
+        auth_version: Number(user.admin_auth_version || 0),
+        must_change_password: mustChangePassword
+      },
+      JWT_SECRET, { expiresIn: ADMIN_JWT_EXPIRES }
     )
-    res.json({ code: 200, msg: '登录成功', data: { token, real_name: user.real_name } })
+    res.json({
+      code: 200,
+      msg: mustChangePassword ? '请先修改管理员默认密码' : '登录成功',
+      data: {
+        token,
+        real_name: user.real_name,
+        must_change_password: mustChangePassword
+      }
+    })
   } catch (e) {
     console.error(e)
     res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+router.post('/change-password', adminAuth, async (req, res) => {
+  const oldPassword = String(req.body.old_password || '')
+  const newPassword = String(req.body.new_password || '')
+  if (!oldPassword || !newPassword) return R_FAIL(res, '请填写当前密码和新密码')
+  const passwordError = validateStrongPassword(newPassword)
+  if (passwordError) return R_FAIL(res, passwordError)
+  if (oldPassword === newPassword) return R_FAIL(res, '新密码不能与当前密码相同')
+
+  try {
+    const [[account]] = await db.query(
+      'SELECT password FROM users WHERE id=? AND is_admin=1 AND is_active=1 LIMIT 1',
+      [req.admin.id]
+    )
+    if (!account) return R_FAIL(res, '管理员账号不存在或已停用', 404)
+    if (!await bcrypt.compare(oldPassword, account.password)) return R_FAIL(res, '当前密码不正确', 401)
+
+    const hash = await bcrypt.hash(newPassword, 12)
+    await db.query(
+      'UPDATE users SET password=?,admin_auth_version=admin_auth_version+1 WHERE id=?',
+      [hash, req.admin.id]
+    )
+    return R_OK(res, null, '密码已修改，请重新登录')
+  } catch (error) {
+    console.error('[admin-change-password]', error)
+    return R_FAIL(res, '密码修改失败，请稍后重试', 500)
   }
 })
 
@@ -1064,7 +1142,7 @@ router.patch('/users/:id/status', adminAuth, async (req, res) => {
 })
 
 // ── POST /api/admin/apply（公开）商户入驻申请 ─────────────
-router.post('/apply', async (req, res) => {
+router.post('/apply', publicApplyRateLimit, async (req, res) => {
   try {
     const {
       phone, password, real_name, company_name, business_license, product_category,
@@ -1074,6 +1152,8 @@ router.post('/apply', async (req, res) => {
       bank_name, account_name, account_number,
       license_copy_url, id_card_copy_url, id_card_national_url, mini_program_pic_url
     } = req.body
+    const consentError = validatePrivacyConsent(req.body)
+    if (consentError) return res.status(400).json({ code: 400, msg: consentError })
     if (!/^1\d{10}$/.test(phone))        return res.status(400).json({ code: 400, msg: '手机号格式不正确' })
     if (!password || password.length < 6) return res.status(400).json({ code: 400, msg: '密码不能少于6位' })
     if (!real_name || !real_name.trim())  return res.status(400).json({ code: 400, msg: '请填写联系人姓名' })
@@ -1092,23 +1172,42 @@ router.post('/apply', async (req, res) => {
     if (!String(id_card_national_url || '').trim()) return res.status(400).json({ code: 400, msg: '请上传身份证国徽面图片' })
     if (!String(mini_program_pic_url || '').trim()) return res.status(400).json({ code: 400, msg: '请上传经营页面截图' })
 
-    const [exist] = await db.query('SELECT id FROM users WHERE phone=?', [phone])
-    if (exist.length > 0) return res.status(400).json({ code: 400, msg: '该手机号已注册' })
+    const conn = await db.getConnection()
+    try {
+      const [exist] = await conn.query('SELECT id FROM users WHERE phone=?', [phone])
+      if (exist.length > 0) return res.status(400).json({ code: 400, msg: '该手机号已注册' })
 
-    const hash = await bcrypt.hash(password, 10)
-    const [result] = await db.query(
-      'INSERT INTO users (phone,password,role,real_name,is_active) VALUES (?,?,?,?,0)',
-      [phone, hash, 'merchant', real_name.trim()]
-    )
-    const userId = result.insertId
-    const applymentDraft = applymentRegistration.buildRegistrationDraft(req.body, {
-      qualificationType: '零售批发/生活娱乐/其他'
-    })
-    await db.query(
-      'INSERT INTO merchants (user_id,company_name,business_license,product_category,apply_status,wechat_applyment_state,wechat_applyment_payload) VALUES (?,?,?,?,?,?,?)',
-      [userId, company_name.trim(), business_license || '', product_category || '', 'pending', 'DRAFT', JSON.stringify(applymentDraft)]
-    )
-    res.json({ code: 200, msg: '申请已提交，请等待管理员审核（1-3个工作日）' })
+      await conn.beginTransaction()
+      const hash = await bcrypt.hash(password, 10)
+      const [result] = await conn.query(
+        `INSERT INTO users
+         (phone,password,role,real_name,is_active,privacy_consent_version,privacy_consent_at)
+         VALUES (?,?,?,?,0,?,NOW())`,
+        [phone, hash, 'merchant', real_name.trim(), CURRENT_PRIVACY_CONSENT_VERSION]
+      )
+      const applymentDraft = applymentRegistration.buildRegistrationDraft(req.body, {
+        qualificationType: '零售批发/生活娱乐/其他'
+      })
+      await conn.query(
+        'INSERT INTO merchants (user_id,company_name,business_license,product_category,apply_status,wechat_applyment_state,wechat_applyment_payload) VALUES (?,?,?,?,?,?,?)',
+        [
+          result.insertId,
+          company_name.trim(),
+          business_license || '',
+          product_category || '',
+          'pending',
+          'DRAFT',
+          JSON.stringify(applymentDraftSecurity.protectDraft(applymentDraft))
+        ]
+      )
+      await conn.commit()
+      return res.json({ code: 200, msg: '申请已提交，请等待管理员审核（1-3个工作日）' })
+    } catch (error) {
+      await conn.rollback()
+      throw error
+    } finally {
+      conn.release()
+    }
   } catch (e) {
     console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
   }

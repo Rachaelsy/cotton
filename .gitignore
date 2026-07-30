@@ -9,4 +9,5 @@ Thumbs.db
 .claude/
 .playwright-cli/
 output/
+backups/
 node_modules/

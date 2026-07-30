@@ -7,6 +7,10 @@ const db = require('./database')
 const OP_PHONE = '13800000003'
 
 async function seed() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('生产环境禁止写入农机演示数据')
+  }
+
   const [exist] = await db.query('SELECT id FROM users WHERE phone=?', [OP_PHONE])
   let userId
   if (exist.length) {

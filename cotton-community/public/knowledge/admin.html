@@ -38,7 +38,7 @@
     <section id="requestsPanel" class="hidden">
       <div class="admin-toolbar"><div><h2>服务需求</h2><p class="question-excerpt">查看商业合作需求和公益活动参与意向，联系用户后及时更新处理状态。</p></div><strong id="requestResultCount">0 条结果</strong></div>
       <div class="admin-filterbar request-filterbar">
-        <select id="requestKind"><option value="">全部来源</option><option value="business">商业需求</option><option value="activity">公益活动</option></select>
+        <select id="requestKind"><option value="">全部来源</option><option value="business">商业需求</option><option value="activity">公益活动</option><option value="privacy">个人信息申请</option></select>
         <select id="requestStatus"><option value="">全部状态</option><option value="pending">待处理</option><option value="contacted">已联系</option><option value="closed">已完成</option></select>
         <button class="btn" id="requestFilterBtn">筛选</button>
         <button class="btn secondary" id="requestResetBtn">重置</button>
@@ -59,8 +59,8 @@
           <div class="field full"><label>摘要</label><input id="cSubtitle" maxlength="255"></div>
           <div class="field"><label>分类标识</label><select id="cCategory"><option value="planting|栽培技术">栽培技术</option><option value="pest|病虫害防治">病虫害防治</option><option value="water|水肥管理">水肥管理</option><option value="machine|农机作业">农机作业</option><option value="harvest|采收加工">采收加工</option><option value="other|其他知识">其他知识</option></select></div>
           <div class="field"><label>标签</label><input id="cTags" placeholder="播种，出苗，滴灌"></div>
-          <div class="field full"><label>封面图片</label><div class="upload-row"><input id="cCover" placeholder="/uploads/knowledge/cover.jpg"><label class="btn secondary">上传图片<input id="coverFile" type="file" accept="image/*" hidden></label></div><span class="upload-status" id="coverStatus"></span></div>
-          <div class="field full"><label>视频地址</label><div class="upload-row"><input id="cVideo" placeholder="推荐填写 COS / OSS / CDN 的 HTTPS 视频地址"><label class="btn secondary">本机上传<input id="videoFile" type="file" accept="video/*" hidden></label></div><span class="upload-status" id="videoStatus">正式课程建议使用对象存储；本机上传会占用云服务器磁盘和带宽。</span></div>
+          <div class="field full"><label>封面图片</label><div class="upload-row"><input id="cCover" placeholder="/uploads/knowledge/cover.jpg"><label class="btn secondary">上传图片<input id="coverFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" hidden></label></div><span class="upload-status" id="coverStatus"></span></div>
+          <div class="field full"><label>视频地址</label><div class="upload-row"><input id="cVideo" placeholder="推荐填写 COS / OSS / CDN 的 HTTPS 视频地址"><label class="btn secondary">本机上传<input id="videoFile" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/ogg" hidden></label></div><span class="upload-status" id="videoStatus">正式课程建议使用对象存储；本机上传会占用云服务器磁盘和带宽。</span></div>
           <div class="field full"><label>图集图片地址</label><textarea id="cImages" placeholder="每行一个图片地址；可以先用封面上传按钮上传后粘贴"></textarea></div>
           <div class="field full"><label>正文 / 视频要点</label><textarea id="cBody" style="min-height:220px" maxlength="100000" required></textarea></div>
           <div class="field full"><label>课后小测（JSON）</label><textarea id="cQuiz" style="min-height:190px" placeholder='[{"question":"题目","options":["选项A","选项B"],"correctIndex":0,"explanation":"答案解析"}]'></textarea><span class="upload-status">每道题包含题目、2 至 6 个选项、从 0 开始的正确选项序号和答案解析。</span></div>
@@ -73,6 +73,7 @@
       </form>
     </div>
   </div>
+  <script src="/knowledge/site/runtime.js"></script>
   <script src="/knowledge/admin.js"></script>
 </body>
 </html>

@@ -36,6 +36,7 @@
         aiHistory: [],
         rewardShown: false
       }
+      const runtime = window.CottonRuntime
 
       function readJson(key) {
         try { return JSON.parse(localStorage.getItem(key) || 'null') } catch { return null }
@@ -73,19 +74,20 @@
       }
 
       async function request(url, options = {}, token = '') {
-        const response = await fetch(url, {
-          ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(options.headers || {})
-          }
+        const result = await runtime.requestJson(url, options, {
+          token,
+          onUnauthorized: token ? () => {
+            if (token === state.token) {
+              clearUserSession()
+              if (location.pathname !== publicLink('/login')) location.replace(loginLink())
+            } else if (token === state.adminToken) {
+              state.adminToken = ''
+              state.isAdmin = false
+              localStorage.removeItem('admin_token')
+              localStorage.removeItem('admin_name')
+            }
+          } : null
         })
-        const result = await response.json().catch(() => ({ code: response.status, msg: '请求失败' }))
-        if (!response.ok || result.code !== 200) {
-          if (response.status === 401 && token === state.token) clearUserSession()
-          throw new Error(result.msg || '请求失败')
-        }
         return result.data
       }
 
@@ -1009,6 +1011,7 @@
                   <label><span>种植面积（亩）</span><input name="land_size" type="number" min="0" step="0.1"></label>
                   <label><span>设置密码</span><input name="password" type="password" minlength="6" maxlength="20" autocomplete="new-password" required></label>
                   <label><span>确认密码</span><input name="password_confirm" type="password" minlength="6" maxlength="20" autocomplete="new-password" required></label>
+                  <label class="consent"><input name="privacy_consent" type="checkbox" required><span>我已阅读并同意<a href="${publicLink('/privacy')}" target="_blank">个人信息使用说明</a></span></label>
                   <button class="button primary full" type="submit">注册并登录</button>
                   <p class="auth-message" id="publicRegisterMessage" role="status"></p>
                 </form>

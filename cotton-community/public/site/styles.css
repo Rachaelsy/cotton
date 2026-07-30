@@ -419,6 +419,53 @@ a {
   line-height: 1.55;
 }
 
+.business-chain-section {
+  border-bottom: 1px solid var(--line);
+  background: #fff !important;
+}
+
+.business-pillar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.business-pillar-grid article {
+  min-height: 285px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  padding: 30px;
+}
+
+.business-pillar-grid article:last-child {
+  border-right: 0;
+}
+
+.business-pillar-grid article > span {
+  color: var(--gold-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.business-pillar-grid h3 {
+  margin: 18px 0 10px;
+  font-size: 25px;
+}
+
+.business-pillar-grid p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.business-pillar-grid a {
+  margin-top: auto;
+  padding-top: 24px;
+  color: var(--green-800);
+  font-weight: 750;
+}
+
 .section-block {
   padding: 86px 0;
 }
@@ -601,6 +648,97 @@ a {
   gap: 8px;
   margin-top: 16px;
   font-size: 14px;
+}
+
+.machinery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.machinery-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.machinery-card:hover {
+  border-color: #b9c9bf;
+  box-shadow: var(--shadow);
+  transform: translateY(-3px);
+}
+
+.machinery-card-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #dfe8e2;
+}
+
+.machinery-card-media img {
+  height: 100%;
+  object-fit: cover;
+  transition: transform 220ms ease;
+}
+
+.machinery-card:hover .machinery-card-media img {
+  transform: scale(1.025);
+}
+
+.machinery-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 5px 9px;
+  color: #fff;
+  background: var(--green-800);
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.machinery-card-body {
+  padding: 22px;
+}
+
+.machinery-card h3 {
+  margin: 7px 0 9px;
+  font-size: 21px;
+  line-height: 1.35;
+}
+
+.machinery-card-body > p {
+  min-height: 69px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.machinery-card-meta {
+  margin: 18px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.machinery-card-meta div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.machinery-card-meta dt {
+  color: var(--ink-soft);
+}
+
+.machinery-card-meta dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 650;
 }
 
 .service-section {
@@ -851,6 +989,11 @@ a {
   background-image: url("/assets/course-cotton-products-v1.webp");
 }
 
+.page-hero.machinery-hero {
+  background-image: url("/assets/business-machinery-v1.jpg");
+  background-position: center 54%;
+}
+
 .page-hero.training-hero {
   background-image: url("/assets/course-lifecycle-v1.webp");
 }
@@ -1036,6 +1179,20 @@ a {
   width: 100%;
 }
 
+.machinery-detail-media {
+  position: relative;
+  aspect-ratio: 16 / 11;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #dfe8e2;
+}
+
+.machinery-detail-media img {
+  height: 100%;
+  object-fit: cover;
+}
+
 .product-detail-copy h1 {
   margin: 10px 0 14px;
   font-size: 42px;
@@ -1078,6 +1235,54 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.machinery-flow-section {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #fff !important;
+}
+
+.machinery-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.machinery-flow li {
+  min-height: 170px;
+  border-right: 1px solid var(--line);
+  padding: 24px;
+}
+
+.machinery-flow li:last-child {
+  border-right: 0;
+}
+
+.machinery-flow span,
+.machinery-flow strong {
+  display: block;
+}
+
+.machinery-flow span {
+  color: var(--gold-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.machinery-flow strong {
+  margin-top: 15px;
+  font-size: 18px;
+}
+
+.machinery-flow p {
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
 }
 
 .detail-content-section {
@@ -1429,7 +1634,7 @@ a {
 
 .scope-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   border-top: 1px solid var(--line);
   border-left: 1px solid var(--line);
 }
@@ -1768,8 +1973,8 @@ body[data-platform="business"] .main-nav .platform-switch-link {
 }
 
 .business-home-hero {
-  background-image: url("/assets/product-catalog-v1.png");
-  background-position: center;
+  background-image: url("/assets/business-machinery-v1.jpg");
+  background-position: center 58%;
 }
 
 .public-home-hero {
@@ -2669,7 +2874,8 @@ body[data-platform="business"] .main-nav .platform-switch-link {
     display: none;
   }
 
-  .product-grid {
+  .product-grid,
+  .machinery-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -2814,9 +3020,36 @@ body[data-platform="business"] .main-nav .platform-switch-link {
   }
 
   .product-grid,
+  .machinery-grid,
   .article-grid,
   .news-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .business-pillar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .business-pillar-grid article {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .business-pillar-grid article:last-child {
+    border-bottom: 0;
+  }
+
+  .machinery-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .machinery-flow li:nth-child(2) {
+    border-right: 0;
+  }
+
+  .machinery-flow li:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
   }
 
   .split-intro,
@@ -2962,10 +3195,30 @@ body[data-platform="business"] .main-nav .platform-switch-link {
 
   .service-ribbon-grid,
   .product-grid,
+  .machinery-grid,
   .article-grid,
   .news-grid,
   .scope-grid {
     grid-template-columns: 1fr;
+  }
+
+  .machinery-card-body > p {
+    min-height: 0;
+  }
+
+  .machinery-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .machinery-flow li,
+  .machinery-flow li:nth-child(2) {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .machinery-flow li:last-child {
+    border-bottom: 0;
   }
 
   .section-heading {
@@ -3378,6 +3631,95 @@ body[data-platform="business"] .main-nav .platform-switch-link {
 
 .page-hero.login-hero {
   background-image: url("/assets/knowledge-hero-v2.webp");
+}
+
+.page-hero.privacy-hero {
+  background-image: url("/assets/cotton-field-sky.png");
+  background-position: center 62%;
+}
+
+.privacy-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
+  align-items: start;
+  gap: 64px;
+}
+
+.privacy-content section {
+  padding: 0 0 30px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--line);
+}
+
+.privacy-content section:last-child {
+  margin-bottom: 0;
+}
+
+.privacy-content h2,
+.privacy-request-panel h2 {
+  margin: 8px 0 12px;
+  font-size: 27px;
+}
+
+.privacy-content p,
+.privacy-request-panel p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.9;
+}
+
+.privacy-request-panel {
+  position: sticky;
+  top: 108px;
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--gold);
+  background: #fff;
+}
+
+.privacy-request-panel form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.privacy-request-panel label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.privacy-request-panel select,
+.privacy-request-panel textarea {
+  width: 100%;
+  border: 1px solid #bfcac3;
+  border-radius: 5px;
+  padding: 11px 12px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+  font-weight: 500;
+}
+
+.privacy-request-panel textarea {
+  resize: vertical;
+}
+
+.privacy-request-panel [role="status"] {
+  min-height: 22px;
+  margin: 0;
+  color: var(--green-700);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.consent a,
+.footer-bottom a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .learning-catalog {
@@ -4862,5 +5204,73 @@ body[data-platform="business"] .main-nav .platform-switch-link {
   .account-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+}
+
+.network-status {
+  position: fixed;
+  z-index: 1200;
+  top: 0;
+  left: 50%;
+  width: min(100%, 560px);
+  padding: 10px 18px;
+  transform: translate(-50%, -110%);
+  background: #8b2f26;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  transition: transform 180ms ease;
+}
+
+.network-status.visible {
+  transform: translate(-50%, 0);
+}
+
+.site-toast-region {
+  position: fixed;
+  z-index: 1250;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.site-toast {
+  padding: 13px 16px;
+  border: 1px solid #ccd8d0;
+  border-left: 4px solid var(--green);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(19, 46, 34, .18);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.site-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.site-toast.error {
+  border-left-color: #a13d34;
+}
+
+.site-toast.success {
+  border-left-color: #278159;
+}
+
+@media (max-width: 900px) {
+  .privacy-layout {
+    grid-template-columns: 1fr;
+    gap: 38px;
+  }
+
+  .privacy-request-panel {
+    position: static;
   }
 }

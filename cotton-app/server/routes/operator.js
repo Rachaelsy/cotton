@@ -8,7 +8,20 @@ const commissionRequests = require('../utils/commission-requests')
 const applymentRegistration = require('../utils/applyment-registration')
 const refunds = require('../utils/refunds')
 const machineLifecycle = require('../utils/machine-order-lifecycle')
+const { isProductionDefaultCredential } = require('../utils/default-credentials')
+const applymentDraftSecurity = require('../utils/applyment-draft-security')
+const {
+  CURRENT_PRIVACY_CONSENT_VERSION,
+  validatePrivacyConsent
+} = require('../utils/privacy-consent')
+const { createIpRateLimiter } = require('../middleware/request-safety')
 const router  = express.Router()
+const publicApplyRateLimit = createIpRateLimiter({
+  namespace: 'operator-public-apply',
+  windowMs: 60 * 60 * 1000,
+  maxRequests: 5,
+  message: '入驻申请提交过于频繁，请稍后再试'
+})
 
 const ok   = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: null })
@@ -117,7 +130,7 @@ function geoError(lat, lng) {
 // ─────────────────────────────────────────────────────────────
 // POST /api/operator/apply — 机手入驻申请（公开）
 // ─────────────────────────────────────────────────────────────
-router.post('/apply', async (req, res) => {
+router.post('/apply', publicApplyRateLimit, async (req, res) => {
   const {
     phone, password, org_name, contact = '', id_card = '',
     service_area = '', latitude = null, longitude = null, location_name = '',
@@ -127,6 +140,8 @@ router.post('/apply', async (req, res) => {
     license_copy_url = '', id_card_copy_url = '', id_card_national_url = '', mini_program_pic_url = ''
   } = req.body
   if (!phone || !/^1\d{10}$/.test(phone)) return fail(res, '请输入正确的手机号')
+  const consentError = validatePrivacyConsent(req.body)
+  if (consentError) return fail(res, consentError)
   if (!password || password.length < 6) return fail(res, '密码至少 6 位')
   if (!org_name || !org_name.trim()) return fail(res, '请填写合作社/机队名称')
   if (!String(business_license).trim()) return fail(res, '请填写营业执照号')
@@ -145,8 +160,10 @@ router.post('/apply', async (req, res) => {
     await conn.beginTransaction()
     const hash = await bcrypt.hash(password, 10)
     const [u] = await conn.query(
-      'INSERT INTO users (phone,password,role,real_name) VALUES (?,?,?,?)',
-      [phone, hash, 'operator', contact || org_name.trim()]
+      `INSERT INTO users
+       (phone,password,role,real_name,privacy_consent_version,privacy_consent_at)
+       VALUES (?,?,?,?,?,NOW())`,
+      [phone, hash, 'operator', contact || org_name.trim(), CURRENT_PRIVACY_CONSENT_VERSION]
     )
     const applymentDraft = applymentRegistration.buildRegistrationDraft(req.body, {
       companyName: org_name,
@@ -160,7 +177,8 @@ router.post('/apply', async (req, res) => {
         apply_status,wechat_applyment_state,wechat_applyment_payload)
        VALUES (?,?,?,?,?,?,?,?,?,'pending','DRAFT',?)`,
       [u.insertId, org_name.trim(), contact, phone, id_card, service_area,
-       latitude || null, longitude || null, location_name, JSON.stringify(applymentDraft)]
+       latitude || null, longitude || null, location_name,
+       JSON.stringify(applymentDraftSecurity.protectDraft(applymentDraft))]
     )
     await conn.commit()
     return ok(res, null, '入驻申请已提交，请等待平台审核')
@@ -179,6 +197,9 @@ router.post('/apply', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { phone, password } = req.body
   if (!phone || !password) return fail(res, '请输入手机号和密码')
+  if (isProductionDefaultCredential(phone, password)) {
+    return fail(res, '测试账号在正式环境中已停用，请使用正式账号', 403)
+  }
   try {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.password, u.real_name, u.is_active,

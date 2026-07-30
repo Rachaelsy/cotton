@@ -3,6 +3,8 @@ server/node_modules/
 server/.env
 server/public/uploads/*
 !server/public/uploads/.gitkeep
+server/private/applyments/*
+!server/private/applyments/.gitkeep
 
 # ── Docker 环境变量（含密码，不提交）─────────────
 .env

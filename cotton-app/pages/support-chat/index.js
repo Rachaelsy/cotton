@@ -258,12 +258,20 @@ Page({
   connectSocket() {
     if (this._socket) return
     const socketBase = auth.BASE_URL.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:')
-    const task = wx.connectSocket({ url: `${socketBase}/api/support/socket?token=${encodeURIComponent(auth.getToken())}` })
+    const task = wx.connectSocket({ url: `${socketBase}/api/support/socket` })
     this._socket = task
-    task.onOpen(() => { if (this._active) this.setData({ connected: true }) })
+    task.onOpen(() => {
+      task.send({
+        data: JSON.stringify({ type: 'auth', token: auth.getToken() })
+      })
+    })
     task.onMessage(event => {
       try {
         const payload = JSON.parse(event.data)
+        if (payload.type === 'ready') {
+          if (this._active) this.setData({ connected: true })
+          return
+        }
         if (payload.type === 'support_message') this.loadMessages(false, false)
         if (['support_message_changed', 'support_read'].includes(payload.type)) this.loadMessages(true, false)
         if (payload.type === 'support_message_deleted' && payload.viewerType === 'farmer') {
@@ -271,8 +279,18 @@ Page({
         }
       } catch {}
     })
-    task.onClose(() => {
+    task.onClose(event => {
       this._socket = null
+      if (event && event.code === 1008) {
+        this._active = false
+        this.setData({ connected: false })
+        clearInterval(this._pollTimer)
+        clearTimeout(this._reconnectTimer)
+        auth.clearToken()
+        wx.showToast({ title: this.data.copy.loginRequired, icon: 'none' })
+        setTimeout(() => wx.redirectTo({ url: '/pages/login/index' }), 600)
+        return
+      }
       if (this._active) {
         this.setData({ connected: false })
         clearTimeout(this._reconnectTimer)

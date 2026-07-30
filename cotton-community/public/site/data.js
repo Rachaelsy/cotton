@@ -236,6 +236,198 @@ window.COTTON_SITE_DATA = {
     }
   ],
 
+  machineryCategories: [
+    { id: 'all', name: '全部服务' },
+    { id: 'land', name: '耕整地' },
+    { id: 'planting', name: '播种铺膜' },
+    { id: 'protection', name: '植保作业' },
+    { id: 'harvest', name: '采收作业' },
+    { id: 'transport', name: '田间转运' }
+  ],
+
+  machinery: [
+    {
+      id: 'precision-land-preparation',
+      name: '棉田耕整地作业服务',
+      category: 'land',
+      categoryName: '耕整地',
+      image: '/assets/business-machinery-v1.jpg',
+      imagePosition: '32% center',
+      badge: '播前准备',
+      stage: '播种前',
+      billing: '按亩或按班次核定',
+      summary: '围绕残茬处理、土地平整、耕深和墒情条件匹配拖拉机及配套农具，为后续精量播种建立一致作业基础。',
+      highlights: ['地块核验', '农具匹配', '作业留痕'],
+      service: '根据地块面积、土壤条件、前茬和计划播期确认机具组合、作业窗口与计费口径。',
+      specs: [
+        ['服务阶段', '秋翻、春耕及播前整地'],
+        ['需求信息', '地块位置、面积、土壤与前茬情况'],
+        ['履约方式', '区域农机手接单后确认作业窗口'],
+        ['质量关注', '耕深、平整度、漏耕与重复作业']
+      ],
+      sections: [
+        {
+          title: '服务内容',
+          body: '平台展示可组织的耕整地能力，具体拖拉机功率、农具类型和作业遍数由农机手结合地块条件确认，不以页面内容替代现场勘查。'
+        },
+        {
+          title: '履约边界',
+          body: '雨雪、土壤过湿、道路通行和跨区域调运都会影响作业时间。接单前需确认地块入口、预计工期和异常天气下的改期方式。'
+        }
+      ]
+    },
+    {
+      id: 'precision-seeding-mulching',
+      name: '精量播种与铺膜作业',
+      category: 'planting',
+      categoryName: '播种铺膜',
+      image: '/assets/business-machinery-v1.jpg',
+      imagePosition: '21% center',
+      badge: '关键农时',
+      stage: '播种期',
+      billing: '按亩核定',
+      summary: '围绕品种、种植模式、行距、株距和滴灌带配置匹配播种铺膜机组，减少漏播、重播和膜面质量问题。',
+      highlights: ['参数复核', '精量播种', '铺膜滴灌协同'],
+      service: '接单前核对种子、地膜、滴灌带、地块条件和目标株数，作业中记录关键参数与异常地段。',
+      specs: [
+        ['服务阶段', '适播期内集中作业'],
+        ['需求信息', '地块面积、种植模式、材料规格与计划播期'],
+        ['配套材料', '种子、地膜和滴灌带由双方确认'],
+        ['质量关注', '播深、株距、覆土、压膜与滴灌带位置']
+      ],
+      sections: [
+        {
+          title: '作业准备',
+          body: '播种前应完成机具调试和小段试播，核对下种量、播深、覆土、膜边压实与滴灌带位置，再进入连续作业。'
+        },
+        {
+          title: '过程协同',
+          body: '平台把农资选型与农机作业信息关联起来，方便在同一需求中核对材料规格、到货时间和农机作业窗口。'
+        }
+      ]
+    },
+    {
+      id: 'drone-plant-protection',
+      name: '植保无人机飞防服务',
+      category: 'protection',
+      categoryName: '植保作业',
+      image: '/assets/business-drone-service-v1.jpg',
+      imagePosition: '42% center',
+      badge: '适期作业',
+      stage: '苗期至花铃期',
+      billing: '按亩与作业方案核定',
+      summary: '根据防治对象、登记标签、天气和田间障碍物确认飞防窗口，记录作业面积、时间和药液信息。',
+      highlights: ['标签核验', '航线规划', '作业记录'],
+      service: '支持作业需求登记、区域农机手匹配、地块边界确认和作业结果反馈。',
+      specs: [
+        ['服务阶段', '按监测结果和防治窗口安排'],
+        ['需求信息', '地块边界、作物阶段、防治对象与药液方案'],
+        ['作业限制', '大风、高温、降雨及敏感区域需调整或停止'],
+        ['质量关注', '漏喷、重喷、飘移风险与作业记录完整性']
+      ],
+      sections: [
+        {
+          title: '先判断再作业',
+          body: '飞防需求应基于田间监测和防治指标，农药品种、剂量和安全间隔期必须遵循正式标签与属地技术要求。'
+        },
+        {
+          title: '可追溯记录',
+          body: '服务过程可记录地块、日期、作业面积和使用方案，为后续田间观察、售后沟通和生产复盘提供依据。'
+        }
+      ]
+    },
+    {
+      id: 'field-management-machinery',
+      name: '中耕与田间管理机具服务',
+      category: 'protection',
+      categoryName: '植保作业',
+      image: '/assets/business-drone-service-v1.jpg',
+      imagePosition: '72% center',
+      badge: '田间管理',
+      stage: '苗期至蕾期',
+      billing: '按亩或作业项目核定',
+      summary: '根据行距、苗情、土壤条件和管理目标匹配中耕、封土等田间机具，降低压苗和伤根风险。',
+      highlights: ['行距匹配', '苗情确认', '作业验收'],
+      service: '由农户提供种植模式和地块信息，农机手确认机具通过性、作业深度和适宜窗口。',
+      specs: [
+        ['服务阶段', '苗期至蕾期适宜窗口'],
+        ['需求信息', '种植行距、苗情、墒情与地块障碍'],
+        ['履约方式', '作业前确认参数，完成后双方验收'],
+        ['质量关注', '伤苗、压苗、漏作与作业深度']
+      ],
+      sections: [
+        {
+          title: '机具适配',
+          body: '同一类田间作业会因行距、地块平整度和棉株长势产生不同要求，接单前需要确认机具宽度和作业部件配置。'
+        },
+        {
+          title: '异常处理',
+          body: '遇到大面积缺苗、土壤板结、田间积水或机具无法安全通过时，应暂停作业并重新确认处理方案。'
+        }
+      ]
+    },
+    {
+      id: 'cotton-picker-service',
+      name: '机采棉采收服务',
+      category: 'harvest',
+      categoryName: '采收作业',
+      image: '/assets/business-machinery-v1.jpg',
+      imagePosition: '78% center',
+      badge: '采收季',
+      stage: '吐絮至采收期',
+      billing: '按亩及地块条件核定',
+      summary: '围绕脱叶催熟效果、吐絮率、含水率、地块通行和交售安排匹配采棉机及采收窗口。',
+      highlights: ['采前评估', '机具调度', '质量反馈'],
+      service: '结合地块位置、面积、采收条件和预计交售时间组织区域机具，并记录订单与作业状态。',
+      specs: [
+        ['服务阶段', '达到机采条件后的集中采收'],
+        ['需求信息', '地块位置、面积、品种、脱叶与吐絮情况'],
+        ['履约方式', '按区域农时和机具路线协同排期'],
+        ['质量关注', '采净率、含杂、落地棉与地块损失']
+      ],
+      sections: [
+        {
+          title: '采前评估',
+          body: '正式排期前需要确认脱叶、吐絮、棉株含水和地面通行条件。未达到机采要求时，应根据天气和田间情况调整日期。'
+        },
+        {
+          title: '订单履约',
+          body: '农机租赁业务支持预约、定金或全款支付、接单、作业进度、尾款、评价和售后等环节，实际支付能力以农机手微信特约商户状态为准。'
+        }
+      ]
+    },
+    {
+      id: 'field-transport-support',
+      name: '棉包田间转运与配套服务',
+      category: 'transport',
+      categoryName: '田间转运',
+      image: '/assets/business-machinery-v1.jpg',
+      imagePosition: '55% center',
+      badge: '采后衔接',
+      stage: '采收后',
+      billing: '按距离、工作量与车辆核定',
+      summary: '衔接采棉机、田间堆放点和交售安排，提前核对道路、装卸空间、运输距离与安全要求。',
+      highlights: ['路线核验', '采运协同', '交接记录'],
+      service: '根据地块道路、棉包数量、运输距离和交售计划确认车辆、人员与作业顺序。',
+      specs: [
+        ['服务阶段', '采收同步或采后集中转运'],
+        ['需求信息', '地块入口、棉包数量、目的地与道路条件'],
+        ['履约方式', '按车辆、距离和作业量确认服务'],
+        ['质量关注', '装卸安全、防火、污染与交接记录']
+      ],
+      sections: [
+        {
+          title: '采运协同',
+          body: '转运安排应与采棉机路线和交售节奏衔接，避免田间长时间堆放影响后续作业或增加安全风险。'
+        },
+        {
+          title: '安全要求',
+          body: '车辆装载、田间通行、防火和交接应符合属地管理要求；不具备安全通行条件时不安排冒险作业。'
+        }
+      ]
+    }
+  ],
+
   trainingCategories: [
     { id: 'all', name: '全部阶段' },
     { id: 'planting', name: '播种' },

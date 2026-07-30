@@ -1,46 +1,59 @@
-// server/db/migrate_admin.js — 添加 is_admin 字段 + 创建管理员账号
+// server/db/migrate_admin.js — 管理员权限与会话版本字段
 // 用法：node db/migrate_admin.js
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
 
 const bcrypt = require('bcryptjs')
-const db     = require('./database')
+const db = require('./database')
+const { BLOCKED_PASSWORDS } = require('../utils/password-policy')
 
 async function run() {
-  // 1. 添加 is_admin 字段（幂等：IGNORE 错误）
-  try {
-    await db.query('ALTER TABLE users ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0 COMMENT "是否管理员"')
-    console.log('✅ 已添加 is_admin 字段')
-  } catch (e) {
-    if (e.code === 'ER_DUP_FIELDNAME') {
-      console.log('⏭  is_admin 字段已存在，跳过')
-    } else {
-      throw e
+  const columns = [
+    {
+      name: 'is_admin',
+      ddl: 'is_admin TINYINT(1) NOT NULL DEFAULT 0 COMMENT "是否管理员"'
+    },
+    {
+      name: 'admin_auth_version',
+      ddl: 'admin_auth_version INT UNSIGNED NOT NULL DEFAULT 0 COMMENT "管理员登录会话版本"'
+    }
+  ]
+
+  for (const column of columns) {
+    const [rows] = await db.query(
+      `SELECT COLUMN_NAME
+         FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME=?`,
+      [column.name]
+    )
+    if (rows.length) {
+      console.log(`⏭  users.${column.name} 已存在，跳过`)
+      continue
+    }
+    await db.query(`ALTER TABLE users ADD COLUMN ${column.ddl}`)
+    console.log(`✅ 已添加 users.${column.name}`)
+  }
+
+  const [admins] = await db.query(
+    'SELECT id,phone,password FROM users WHERE is_admin=1 AND is_active=1'
+  )
+  for (const admin of admins) {
+    let usesBlockedPassword = false
+    for (const blockedPassword of BLOCKED_PASSWORDS) {
+      if (await bcrypt.compare(blockedPassword, admin.password)) {
+        usesBlockedPassword = true
+        break
+      }
+    }
+    if (usesBlockedPassword) {
+      await db.query(
+        'UPDATE users SET admin_auth_version=admin_auth_version+1 WHERE id=?',
+        [admin.id]
+      )
+      console.warn(`⚠️  管理员 ${admin.phone} 仍使用默认或常见测试密码，旧登录状态已失效`)
     }
   }
 
-  // 2. 创建管理员账号
-  const adminPhone    = '10000000000'
-  const adminPassword = 'Admin@Cotton2026'
-  const adminName     = '系统管理员'
-
-  const [rows] = await db.query('SELECT id FROM users WHERE phone=?', [adminPhone])
-  if (rows.length > 0) {
-    // 确保 is_admin = 1
-    await db.query('UPDATE users SET is_admin=1 WHERE phone=?', [adminPhone])
-    console.log(`⏭  管理员账号 ${adminPhone} 已存在，已确保 is_admin=1`)
-  } else {
-    const hash = await bcrypt.hash(adminPassword, 10)
-    await db.query(
-      'INSERT INTO users (phone,password,role,real_name,is_admin) VALUES (?,?,?,?,1)',
-      [adminPhone, hash, 'farmer', adminName]
-    )
-    console.log(`✅ 已创建管理员账号：${adminPhone} / ${adminPassword}`)
-  }
-
-  console.log('\n管理员账号：')
-  console.log(`  手机号：${adminPhone}`)
-  console.log(`  密  码：${adminPassword}`)
-  console.log(`  后台地址：http://localhost:3000/admin/`)
+  console.log('✅ 管理员字段迁移完成；账号请使用 npm run admin:bootstrap 显式创建')
   process.exit(0)
 }
 

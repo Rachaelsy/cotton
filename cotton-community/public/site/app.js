@@ -4,6 +4,7 @@
   const rootBase = '/knowledge'
   const publicBase = '/public'
   const businessBase = '/business'
+  const runtime = window.CottonRuntime
 
   const routePath = window.location.pathname
     .replace(/^\/knowledge/, '')
@@ -27,20 +28,17 @@
   const publicLink = path => joinLink(publicBase, path)
   const businessLink = path => joinLink(businessBase, path)
   const productById = id => data.products.find(item => item.id === id)
+  const machineryById = id => data.machinery.find(item => item.id === id)
   const trainingById = id => data.training.find(item => item.id === id)
   const newsById = id => data.news.find(item => item.id === id)
   const pestById = id => data.pests.find(item => item.id === id)
   const activityById = id => data.activities.find(item => item.id === id)
 
   async function publicServiceRequest(path, payload) {
-    const response = await fetch(`/api/public-service${path}`, {
+    return runtime.requestJson(`/api/public-service${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    const result = await response.json().catch(() => ({ code: response.status, msg: '请求失败，请稍后重试' }))
-    if (!response.ok || result.code !== 200) throw new Error(result.msg || '请求失败，请稍后重试')
-    return result
   }
 
   function setMeta(title, description) {
@@ -75,6 +73,27 @@
           <p>${escapeHtml(item.summary)}</p>
           <div class="tag-row">${item.highlights.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
           <a class="text-link" href="${businessLink(`/products/${item.id}`)}">查看产品详情 <span aria-hidden="true">→</span></a>
+        </div>
+      </article>`
+  }
+
+  function machineryCard(item) {
+    return `
+      <article class="machinery-card">
+        <a class="machinery-card-media" href="${businessLink(`/machinery/${item.id}`)}" aria-label="查看${escapeHtml(item.name)}">
+          <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}作业场景" loading="lazy" style="object-position: ${escapeHtml(item.imagePosition || 'center')}">
+          <span class="machinery-badge">${escapeHtml(item.badge)}</span>
+        </a>
+        <div class="machinery-card-body">
+          <span class="item-category">${escapeHtml(item.categoryName)}</span>
+          <h3><a href="${businessLink(`/machinery/${item.id}`)}">${escapeHtml(item.name)}</a></h3>
+          <p>${escapeHtml(item.summary)}</p>
+          <div class="tag-row">${item.highlights.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
+          <dl class="machinery-card-meta">
+            <div><dt>服务阶段</dt><dd>${escapeHtml(item.stage)}</dd></div>
+            <div><dt>计价依据</dt><dd>${escapeHtml(item.billing)}</dd></div>
+          </dl>
+          <a class="text-link" href="${businessLink(`/machinery/${item.id}`)}">查看服务详情 <span aria-hidden="true">→</span></a>
         </div>
       </article>`
   }
@@ -288,7 +307,7 @@
   }
 
   function renderBusinessHome() {
-    setMeta('商业平台', '面向新疆棉区的农资产品、产业资讯与农业商业服务')
+    setMeta('商业平台', '面向新疆棉区的农资供应、农机作业、数字履约与农业商业服务')
     setActiveNav('home')
     const businessNews = data.news.filter(item => item.category !== 'policy')
 
@@ -299,26 +318,37 @@
           <div class="hero-copy">
             <span class="hero-kicker">AGRICULTURAL BUSINESS · 新疆棉区</span>
             <h1>棉知商业平台</h1>
-            <p>集中展示公司经营的种子、肥料、植保、农膜和滴灌材料，以及产业资讯与商务服务能力。</p>
+            <p>以棉花生产为主线，连接农资供应、农机作业、数字履约和公益农技服务，让生产需求从信息查询走向可执行的田间服务。</p>
             <div class="hero-actions">
               <a class="button primary" href="${link('/products')}">浏览农资产品</a>
-              <a class="button light" href="${link('/contact')}">联系商务团队</a>
+              <a class="button light" href="${link('/machinery')}">查看农机服务</a>
             </div>
           </div>
           <div class="hero-facts" aria-label="服务内容">
-            <div><strong>5</strong><span>类农资产品</span></div>
-            <div><strong>透明</strong><span>规格与适用场景</span></div>
-            <div><strong>可核验</strong><span>产业与质量资讯来源</span></div>
+            <div><strong>农资供应</strong><span>覆盖 5 类生产资料</span></div>
+            <div><strong>农机服务</strong><span>覆盖关键农时作业</span></div>
+            <div><strong>数字履约</strong><span>连接订单、支付与服务记录</span></div>
           </div>
         </div>
       </section>
 
       <section class="service-ribbon">
         <div class="shell service-ribbon-grid">
-          <div><strong>农资展示</strong><span>种子、肥料、植保、农膜和滴灌材料</span></div>
-          <div><strong>产品资料</strong><span>规格、适用场景、服务方式和使用边界</span></div>
-          <div><strong>棉区资讯</strong><span>行业、质量与加工信息保留原始来源</span></div>
-          <div><strong>商务服务</strong><span>产品合作、渠道联系与公司服务需求</span></div>
+          <div><strong>农资供应</strong><span>种子、肥料、植保、农膜和滴灌材料</span></div>
+          <div><strong>农机服务</strong><span>整地、播种、植保、田管、采收与转运</span></div>
+          <div><strong>技术内容</strong><span>用公益培训和田间知识降低决策成本</span></div>
+          <div><strong>商务协同</strong><span>连接农户、商户、农机手与平台运营</span></div>
+        </div>
+      </section>
+
+      <section class="section-block business-chain-section">
+        <div class="shell">
+          ${sectionHeading('CORE BUSINESS', '一条围绕棉田生产的服务链', '从投入品到田间作业，再到订单与服务记录，展示平台正在建设的核心业务。')}
+          <div class="business-pillar-grid">
+            <article><span>01 · INPUTS</span><h3>农资供应</h3><p>围绕棉花生产周期展示适配的种子、肥料、植保、农膜和滴灌材料，并提供规格、使用边界与商务咨询入口。</p><a href="${link('/products')}">查看农资业务 <b aria-hidden="true">→</b></a></article>
+            <article><span>02 · OPERATIONS</span><h3>农机服务</h3><p>覆盖耕整地、播种铺膜、植保飞防、田间管理、机采棉和棉包转运，按地块、农时和作业条件组织服务。</p><a href="${link('/machinery')}">查看农机业务 <b aria-hidden="true">→</b></a></article>
+            <article><span>03 · DIGITAL DELIVERY</span><h3>数字履约</h3><p>小程序端承接商品订单、农机预约、微信支付、物流与进度、客服沟通和评价记录，形成可追踪的服务过程。</p><a href="${link('/contact')}">洽谈业务合作 <b aria-hidden="true">→</b></a></article>
+          </div>
         </div>
       </section>
 
@@ -329,19 +359,26 @@
         </div>
       </section>
 
+      <section class="section-block machinery-home-section">
+        <div class="shell">
+          ${sectionHeading('MACHINERY SERVICES', '覆盖关键农时的农机作业', '按作业阶段展示服务能力，实际机型、档期、服务半径和价格以需求匹配结果为准。', `<a class="section-action" href="${link('/machinery')}">查看全部农机服务</a>`)}
+          <div class="machinery-grid">${data.machinery.slice(0, 3).map(machineryCard).join('')}</div>
+        </div>
+      </section>
+
       <section class="section-block service-section">
         <div class="shell split-intro">
-          <div class="service-image"><img src="/assets/cotton-seedling-leaf-inspection-v1.jpg" alt="技术人员观察棉花叶片"></div>
+          <div class="service-image"><img src="/assets/business-drone-service-v1.jpg" alt="棉田植保无人机作业"></div>
           <div class="service-copy">
             <span class="eyebrow">FIELD SERVICE</span>
-            <h2>从卖产品，走向解决田间问题</h2>
-            <p>产品展示只是服务起点。我们希望把品种选择、投入品核验、滴灌运行、田间观察和生产记录连接起来，让农户在需要判断时能找到清晰的信息和可以联系的人。</p>
+            <h2>从单项交易，走向田间服务协同</h2>
+            <p>农资和农机并不是彼此孤立的商品。平台把投入品选择、作业需求、农时安排、履约记录和售后沟通连接起来，让农户、商户和农机手围绕同一块地协作。</p>
             <div class="service-points">
-              <div><strong>选品前</strong><span>核对地块、品种、生育期与设备条件</span></div>
-              <div><strong>使用中</strong><span>提供标签核验、记录模板和注意事项</span></div>
-              <div><strong>作业后</strong><span>根据固定样点和管理记录复盘效果</span></div>
+              <div><strong>需求前</strong><span>核对地块、农时、投入品与设备条件</span></div>
+              <div><strong>履约中</strong><span>记录订单、支付、物流或农机作业进度</span></div>
+              <div><strong>服务后</strong><span>通过客服、评价和生产记录持续复盘</span></div>
             </div>
-            <a class="button outline" href="${link('/contact')}">查看联系说明</a>
+            <a class="button outline" href="${link('/contact')}">联系商务团队</a>
           </div>
         </div>
       </section>
@@ -362,7 +399,7 @@
 
       <section class="contact-band">
         <div class="shell contact-band-inner">
-          <div><span class="eyebrow">BUSINESS CONTACT</span><h2>了解产品规格与合作服务</h2><p>产品价格、供货条件与商务合作方式由服务人员进一步确认。</p></div>
+          <div><span class="eyebrow">BUSINESS CONTACT</span><h2>了解农资供应与农机合作</h2><p>产品价格、供货条件、农机档期和服务范围由服务人员根据实际需求进一步确认。</p></div>
           <a class="button primary" href="${link('/contact')}">联系商务团队</a>
         </div>
       </section>`
@@ -494,6 +531,146 @@
       </section>`
   }
 
+  function renderMachinery() {
+    setMeta('农机作业服务', '展示棉田耕整地、播种铺膜、植保、田间管理、采收和转运等农机服务能力')
+    setActiveNav('machinery')
+
+    main.innerHTML = `
+      ${pageHero('AGRICULTURAL MACHINERY', '农机作业服务', '围绕新疆棉花关键农时展示可组织的作业能力。实际机型、档期、服务半径和计价方式由农机手结合地块需求确认。', 'machinery-hero')}
+      <section class="section-block">
+        <div class="shell">
+          <div class="catalog-toolbar">
+            <div class="filter-tabs" id="machineryFilters">
+              ${data.machineryCategories.map((item, index) => `<button type="button" class="${index === 0 ? 'active' : ''}" data-category="${item.id}">${escapeHtml(item.name)}</button>`).join('')}
+            </div>
+            <label class="catalog-search"><span>搜索服务</span><input id="machinerySearch" type="search" placeholder="输入作业名称、阶段或用途"></label>
+          </div>
+          <div class="catalog-count" id="machineryCount">共 ${data.machinery.length} 项农机服务</div>
+          <div class="machinery-grid" id="machineryGrid">${data.machinery.map(machineryCard).join('')}</div>
+          <div class="empty-state hidden" id="machineryEmpty"><h2>没有找到匹配服务</h2><p>请更换分类或搜索关键词。</p></div>
+        </div>
+      </section>
+      <section class="notice-band machinery-notice">
+        <div class="shell"><strong>作业预约提示</strong><p>本页展示平台可连接的农机服务类型，不代表实时在岗设备。提交需求后还需核对地块位置、面积、农时、道路、天气和作业参数；具体价格、档期与服务半径以农机手确认结果为准。</p></div>
+      </section>`
+
+    let category = 'all'
+    let query = ''
+    const grid = document.getElementById('machineryGrid')
+    const empty = document.getElementById('machineryEmpty')
+    const count = document.getElementById('machineryCount')
+
+    const update = () => {
+      const filtered = data.machinery.filter(item => {
+        const matchesCategory = category === 'all' || item.category === category
+        const haystack = `${item.name}${item.categoryName}${item.summary}${item.stage}${item.highlights.join('')}`.toLowerCase()
+        return matchesCategory && haystack.includes(query.toLowerCase())
+      })
+      grid.innerHTML = filtered.map(machineryCard).join('')
+      grid.classList.toggle('hidden', filtered.length === 0)
+      empty.classList.toggle('hidden', filtered.length !== 0)
+      count.textContent = `共 ${filtered.length} 项农机服务`
+    }
+
+    document.getElementById('machineryFilters').addEventListener('click', event => {
+      const button = event.target.closest('[data-category]')
+      if (!button) return
+      category = button.dataset.category
+      document.querySelectorAll('#machineryFilters button').forEach(item => item.classList.toggle('active', item === button))
+      update()
+    })
+    document.getElementById('machinerySearch').addEventListener('input', event => {
+      query = event.target.value.trim()
+      update()
+    })
+  }
+
+  function renderMachineryDetail(item) {
+    if (!item) return renderNotFound()
+    setMeta(item.name, item.summary)
+    setActiveNav('machinery')
+
+    const related = data.machinery
+      .filter(machine => machine.id !== item.id && machine.category === item.category)
+      .concat(data.machinery.filter(machine => machine.id !== item.id && machine.category !== item.category))
+      .slice(0, 3)
+    const trainingCategoryByMachinery = {
+      land: 'planting',
+      planting: 'planting',
+      protection: 'pest',
+      harvest: 'harvest',
+      transport: 'harvest'
+    }
+    const learningCategory = trainingCategoryByMachinery[item.category]
+    const relatedTraining = data.training
+      .filter(article => article.category === learningCategory)
+      .concat(data.training.filter(article => article.category !== learningCategory))
+      .slice(0, 3)
+
+    main.innerHTML = `
+      <section class="detail-breadcrumb">
+        <div class="shell"><nav class="breadcrumbs" aria-label="面包屑"><a href="${link('/')}">首页</a><span>/</span><a href="${link('/machinery')}">农机服务</a><span>/</span><span>${escapeHtml(item.name)}</span></nav></div>
+      </section>
+      <section class="machinery-detail section-block compact-top">
+        <div class="shell product-detail-grid">
+          <div class="machinery-detail-media">
+            <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}作业场景" style="object-position: ${escapeHtml(item.imagePosition || 'center')}">
+            <span class="machinery-badge">${escapeHtml(item.badge)}</span>
+          </div>
+          <div class="product-detail-copy">
+            <span class="item-category">${escapeHtml(item.categoryName)}</span>
+            <h1>${escapeHtml(item.name)}</h1>
+            <p class="detail-lead">${escapeHtml(item.summary)}</p>
+            <div class="tag-row large">${item.highlights.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
+            <div class="consult-box">
+              <span>服务方式</span>
+              <strong>${escapeHtml(item.stage)} · ${escapeHtml(item.billing)}</strong>
+              <p>${escapeHtml(item.service)}</p>
+            </div>
+            <div class="detail-actions">
+              <a class="button primary" href="${link(`/contact?machine=${item.id}`)}">咨询此项服务</a>
+              <a class="button outline" href="${link('/machinery')}">返回服务列表</a>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="section-block machinery-flow-section">
+        <div class="shell">
+          ${sectionHeading('SERVICE DELIVERY', '从需求到作业记录')}
+          <ol class="machinery-flow">
+            <li><span>01</span><strong>提交需求</strong><p>填写地块、面积、日期和作业类型。</p></li>
+            <li><span>02</span><strong>匹配确认</strong><p>农机手核对机型、档期、价格与服务半径。</p></li>
+            <li><span>03</span><strong>订单履约</strong><p>确认订单和支付安排，持续更新作业状态。</p></li>
+            <li><span>04</span><strong>完成反馈</strong><p>保留作业记录、评价和售后沟通入口。</p></li>
+          </ol>
+        </div>
+      </section>
+      <section class="section-block detail-content-section">
+        <div class="shell detail-content-grid">
+          <article class="rich-article">
+            ${item.sections.map(section => `<section><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.body)}</p></section>`).join('')}
+            <aside class="safety-note"><strong>重要提示</strong><p>本页用于展示平台可连接的作业服务，不对应某台实时在岗设备。农机手资质、实际机型、作业范围、价格和时间须在接单前确认；涉及微信支付时，收款农机手还需具备有效的特约商户受理关系。</p></aside>
+          </article>
+          <aside class="spec-panel">
+            <h2>服务信息</h2>
+            <dl>${item.specs.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>
+          </aside>
+        </div>
+      </section>
+      <section class="section-block connected-content-section">
+        <div class="shell">
+          ${sectionHeading('PUBLIC LEARNING', '相关公益培训', '在预约作业前了解对应农时、田间条件和质量检查要点。', `<a class="section-action" href="${publicLink('/training')}">进入公益培训</a>`)}
+          <div class="article-grid">${relatedTraining.map(trainingCard).join('')}</div>
+        </div>
+      </section>
+      <section class="section-block related-section">
+        <div class="shell">
+          ${sectionHeading('RELATED SERVICES', '相关农机服务')}
+          <div class="machinery-grid related-grid">${related.map(machineryCard).join('')}</div>
+        </div>
+      </section>`
+  }
+
   function renderTraining() {
     setMeta('棉花培训', '覆盖播种、苗期、水肥、病虫害、花铃期和采收管理的图文培训')
     setActiveNav('training')
@@ -524,16 +701,17 @@
 
   async function publicServiceApi(path, options = {}) {
     const token = localStorage.getItem('knowledge_token') || ''
-    const response = await fetch(`/api/public-service${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {})
+    const result = await runtime.requestJson(`/api/public-service${path}`, options, {
+      token,
+      onUnauthorized: () => {
+        localStorage.removeItem('knowledge_token')
+        localStorage.removeItem('knowledge_user')
+        if (platform === 'public' && pageGroup !== 'login') {
+          const next = `${location.pathname}${location.search}`
+          location.replace(publicLink(`/login?next=${encodeURIComponent(next)}`))
+        }
       }
     })
-    const result = await response.json().catch(() => ({ msg: '服务响应异常' }))
-    if (!response.ok || result.code !== 200) throw new Error(result.msg || '请求失败')
     return result.data
   }
 
@@ -868,7 +1046,7 @@
               <label><span>所在地区</span><input name="region" maxlength="80" placeholder="例如：新疆阿克苏"></label>
               <label><span>希望了解的问题</span><textarea name="message" maxlength="1200" placeholder="可填写地块阶段、关注问题或希望参加的形式"></textarea></label>
               <input class="form-trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-              <label class="consent"><input type="checkbox" name="consent" required><span>同意平台为联系和组织本次公益服务使用以上信息。</span></label>
+              <label class="consent"><input type="checkbox" name="consent" required><span>同意平台按<a href="${publicLink('/privacy')}" target="_blank">个人信息使用说明</a>联系和组织本次公益服务。</span></label>
               <button class="button primary full" type="submit">提交参与意向</button>
               <p id="activityFormMessage" aria-live="polite"></p>
             </form>
@@ -991,11 +1169,11 @@
     setMeta('关于我们', '了解棉知商业平台的定位、服务原则和建设方向')
     setActiveNav('about')
     main.innerHTML = `
-      ${pageHero('ABOUT US', '关于我们', '以新疆棉田真实需求为起点，提供清晰的农资展示、产业信息与商务服务入口。', 'about-hero')}
+      ${pageHero('ABOUT US', '关于我们', '以新疆棉田真实需求为起点，连接农资供应、农机作业、产业信息与数字履约服务。', 'about-hero')}
       <section class="section-block">
         <div class="shell about-intro">
-          <div><span class="eyebrow">OUR PURPOSE</span><h2>让产品信息更透明，让农业服务更连续</h2></div>
-          <div><p>棉知商业平台面向新疆棉花产业集中展示公司经营的农资品类、产业资讯和服务能力。培训、技术交流和公开问答由独立的公益平台承载，两端通过内容关联和统一账号保持协同。</p><p>产品是否适用、实际规格与价格，需要结合地块、作物阶段和当地要求，由服务人员进一步确认。</p></div>
+          <div><span class="eyebrow">OUR PURPOSE</span><h2>让供需信息更透明，让田间服务更连续</h2></div>
+          <div><p>棉知商业平台面向新疆棉花产业集中展示农资品类、农机作业、产业资讯和数字服务能力。培训、技术交流和公开问答由独立的公益平台承载，两端通过内容关联和统一数据保持协同。</p><p>产品是否适用、农机是否可调度、实际规格与价格，都需要结合地块、作物阶段、农时和当地要求，由服务人员进一步确认。</p></div>
         </div>
       </section>
       <section class="section-block about-photo-section">
@@ -1017,9 +1195,11 @@
           ${sectionHeading('BUSINESS SCOPE', '商业平台服务范围', '以下内容形成独立商业展示，并可与公益培训建立关联。')}
           <div class="scope-grid">
             <div><strong>农资产品</strong><p>种子、肥料、植保、农膜、滴灌材料的列表和详情。</p></div>
+            <div><strong>农机服务</strong><p>从耕整地、播种到植保、采收和转运的关键农时服务。</p></div>
+            <div><strong>数字履约</strong><p>连接订单、支付、物流或作业进度、客服与评价记录。</p></div>
             <div><strong>新闻资讯</strong><p>棉花行业、质量监管和加工动态的分类内容，并保留官方来源。</p></div>
             <div><strong>商务联系</strong><p>产品信息、渠道合作和公司服务的联系入口。</p></div>
-            <div><strong>公益关联</strong><p>商品详情关联培训内容，帮助用户理解适用场景和使用边界。</p></div>
+            <div><strong>公益关联</strong><p>商品与农机服务关联培训内容，帮助用户理解适用场景和作业边界。</p></div>
           </div>
         </div>
       </section>
@@ -1027,40 +1207,48 @@
   }
 
   function renderContact() {
-    setMeta('商务联系', '联系棉知商业团队，提交产品、渠道或合作需求')
+    setMeta('商务联系', '联系棉知商业团队，提交农资、农机、渠道或合作需求')
     setActiveNav('contact')
 
-    const productId = new URLSearchParams(window.location.search).get('product') || ''
+    const params = new URLSearchParams(window.location.search)
+    const productId = params.get('product') || ''
+    const machineryId = params.get('machine') || ''
     const selectedProduct = productById(productId)
+    const selectedMachinery = machineryById(machineryId)
+    const selectedReference = selectedProduct
+      ? `product:${selectedProduct.id}`
+      : selectedMachinery
+        ? `machine:${selectedMachinery.id}`
+        : ''
 
     main.innerHTML = `
-      ${pageHero('BUSINESS CONTACT', '商务联系', '可在此提交产品信息、供货服务、渠道合作或公司业务需求，工作人员会根据所填信息安排联系。', 'contact-hero')}
+      ${pageHero('BUSINESS CONTACT', '商务联系', '可在此提交农资供应、农机作业、渠道合作或公司业务需求，工作人员会根据所填信息安排联系。', 'contact-hero')}
       <section class="section-block">
         <div class="shell contact-layout">
           <div class="contact-info">
             <span class="eyebrow">BUSINESS DESK</span>
             <h2>商务团队</h2>
-            <p>平台暂未公开线下电话和详细办公地址。您可以在此提交产品资料、供货或合作需求，管理员会在网站后台查看并安排联系。</p>
+            <p>平台暂未公开线下电话和详细办公地址。您可以在此提交农资、农机或合作需求，管理员会在网站后台查看并安排联系。</p>
             <dl>
               <div><dt>联系渠道</dt><dd>${data.company.phone ? escapeHtml(data.company.phone) : '本页商务需求表单'}</dd></div>
               <div><dt>服务时间</dt><dd>${escapeHtml(data.company.hours)}</dd></div>
               <div><dt>覆盖范围</dt><dd>${escapeHtml(data.company.address)}</dd></div>
               <div><dt>服务区域</dt><dd>${data.company.serviceAreas.map(escapeHtml).join(' · ')}</dd></div>
             </dl>
-            <div class="response-note"><strong>提交前建议准备</strong><p>所在地区、关注的产品类别、预计需求量、合作方式和希望进一步了解的资料。</p></div>
+            <div class="response-note"><strong>提交前建议准备</strong><p>所在地区、地块面积、关注的产品或作业类型、预计时间、合作方式和希望进一步了解的资料。</p></div>
           </div>
           <form class="contact-form" id="contactForm">
             <div class="form-heading"><span class="eyebrow">REQUEST NOTE</span><h2>提交服务需求</h2><p>带 * 的项目为必填项，提交后可由平台管理员查看和处理。</p></div>
             <div class="form-grid">
               <label><span>姓名或称呼 *</span><input name="name" maxlength="30" autocomplete="name" required></label>
               <label><span>联系电话 *</span><input name="phone" inputmode="tel" maxlength="20" autocomplete="tel" required></label>
-              <label><span>需求类型 *</span><select name="type" required><option value="">请选择</option><option>产品资料</option><option>供货服务</option><option>渠道合作</option><option>公司合作</option><option>其他商务需求</option></select></label>
+              <label><span>需求类型 *</span><select name="type" required><option value="">请选择</option><option>产品资料</option><option>供货服务</option><option>农机服务</option><option>渠道合作</option><option>公司合作</option><option>其他商务需求</option></select></label>
               <label><span>所在地区</span><input name="region" maxlength="80" placeholder="例如：新疆阿克苏"></label>
-              <label class="full"><span>咨询产品</span><select name="product"><option value="">不指定产品</option>${data.products.map(item => `<option value="${item.id}" ${selectedProduct?.id === item.id ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</select></label>
-              <label class="full"><span>需求描述 *</span><textarea name="message" maxlength="1200" required placeholder="请写明关注的产品、数量范围、所在地区或合作需求。">${selectedProduct ? `我想了解“${escapeHtml(selectedProduct.name)}”的规格、供货条件和服务方式。` : ''}</textarea></label>
+              <label class="full"><span>咨询业务</span><select name="reference"><option value="">不指定业务</option><optgroup label="农资供应">${data.products.map(item => `<option value="product:${item.id}" ${selectedReference === `product:${item.id}` ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</optgroup><optgroup label="农机服务">${data.machinery.map(item => `<option value="machine:${item.id}" ${selectedReference === `machine:${item.id}` ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</optgroup></select></label>
+              <label class="full"><span>需求描述 *</span><textarea name="message" maxlength="1200" required placeholder="请写明关注的产品或作业、数量或面积、所在地区、预计时间及合作需求。">${selectedProduct ? `我想了解“${escapeHtml(selectedProduct.name)}”的规格、供货条件和服务方式。` : selectedMachinery ? `我想了解“${escapeHtml(selectedMachinery.name)}”的服务范围、作业档期和计价方式。` : ''}</textarea></label>
               <input class="form-trap" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
             </div>
-            <label class="consent"><input type="checkbox" name="consent" required><span>同意平台为处理本次需求使用以上信息并通过所填号码与我联系。</span></label>
+            <label class="consent"><input type="checkbox" name="consent" required><span>同意平台按<a href="${publicLink('/privacy')}" target="_blank">个人信息使用说明</a>处理本次需求并通过所填号码与我联系。</span></label>
             <div class="form-submit"><button class="button primary" type="submit">提交商务需求</button><span id="formMessage" role="status"></span></div>
           </form>
         </div>
@@ -1072,15 +1260,17 @@
       const entries = Object.fromEntries(new FormData(form).entries())
       const button = form.querySelector('button[type="submit"]')
       const message = document.getElementById('formMessage')
-      const product = productById(entries.product)
+      const [referenceType = '', referenceId = ''] = String(entries.reference || '').split(':')
+      const reference = referenceType === 'machine' ? machineryById(referenceId) : productById(referenceId)
       button.disabled = true
       button.textContent = '正在提交...'
       message.textContent = ''
       try {
         const result = await publicServiceRequest('/business-inquiries', {
           ...entries,
-          productId: product?.id || '',
-          productName: product?.name || '',
+          referenceType,
+          referenceId: reference?.id || '',
+          referenceName: reference?.name || '',
           sourcePath: location.pathname
         })
         message.textContent = result.msg
@@ -1090,6 +1280,66 @@
       } finally {
         button.disabled = false
         button.textContent = '提交商务需求'
+      }
+    })
+  }
+
+  function renderPrivacy() {
+    setMeta('个人信息使用说明', '了解平台收集和使用个人信息的范围，并提交查阅、更正或删除申请')
+    setActiveNav('')
+    const token = localStorage.getItem('knowledge_token') || ''
+    main.innerHTML = `
+      ${pageHero('PRIVACY & ACCOUNT DATA', '个人信息使用说明', '说明公益与商业网站在账号、学习、咨询和服务需求中如何使用信息，并提供可追踪的处理申请入口。', 'privacy-hero')}
+      <section class="section-block">
+        <div class="shell privacy-layout">
+          <article class="privacy-content">
+            <section><span class="eyebrow">SCOPE</span><h2>我们处理哪些信息</h2><p>注册和登录时使用手机号、密码哈希、姓名或称呼及可选地区信息；学习时记录课程进度、收藏、评论、问答和积分流水；提交专家咨询、公益活动意向或商务需求时记录用户主动填写的内容和联系方式。</p></section>
+            <section><span class="eyebrow">PURPOSE</span><h2>信息用于什么目的</h2><p>信息仅用于账号识别、保存学习记录、回复咨询、处理服务需求、完成订单与支付、保障账号安全和履行必要的运营审计。不会因为浏览公开培训、政策或商品资料而要求登录。</p></section>
+            <section><span class="eyebrow">THIRD-PARTY SERVICES</span><h2>必要的外部服务</h2><p>微信登录与支付、天气数据、对象存储和 AI 问答可能由对应服务商处理完成。平台只发送完成该功能所需的数据；提交 AI 问题时请勿填写身份证号、银行卡号等无关敏感信息。</p></section>
+            <section><span class="eyebrow">STORAGE</span><h2>保存与安全</h2><p>账号、订单、学习和服务记录保存在平台共享 MySQL；实名认证图片和课程素材保存在受控文件卷或对象存储。敏感配置不进入代码仓库，服务设置访问控制、上传类型限制、登录失败限制、日志滚动和定期备份。</p></section>
+            <section><span class="eyebrow">YOUR RIGHTS</span><h2>查阅、更正与删除</h2><p>登录后可以提交个人信息处理申请。删除账号申请不会立即抹除仍处于交易、退款、争议处理或依法需要留存的记录；管理员核验身份后会删除、匿名化或限制使用不再需要的信息，并在处理备注中记录结果。</p></section>
+          </article>
+          <aside class="privacy-request-panel">
+            ${token ? `
+              <span class="eyebrow">DATA REQUEST</span>
+              <h2>提交处理申请</h2>
+              <p>申请会进入网站运营台，管理员需要先核验当前登录账号。</p>
+              <form id="privacyRequestForm">
+                <label><span>申请类型</span><select name="type" required><option value="">请选择</option><option>查阅个人信息</option><option>更正个人信息</option><option>删除账号与数据</option><option>撤回服务申请</option><option>其他个人信息问题</option></select></label>
+                <label><span>具体说明</span><textarea name="message" minlength="5" maxlength="1200" rows="6" required placeholder="请说明希望查阅、更正或删除的内容。"></textarea></label>
+                <button class="button primary full" type="submit">提交申请</button>
+                <p id="privacyRequestMessage" role="status" aria-live="polite"></p>
+              </form>` : `
+              <span class="eyebrow">ACCOUNT REQUIRED</span>
+              <h2>登录后提交申请</h2>
+              <p>为避免他人冒用手机号发起数据操作，个人信息申请必须从本人账号提交。</p>
+              <a class="button primary full" href="${publicLink('/login?next=%2Fpublic%2Fprivacy')}">登录公益账号</a>`}
+          </aside>
+        </div>
+      </section>`
+
+    if (!token) return
+    document.getElementById('privacyRequestForm').addEventListener('submit', async event => {
+      event.preventDefault()
+      const form = event.currentTarget
+      const button = form.querySelector('button[type="submit"]')
+      const message = document.getElementById('privacyRequestMessage')
+      const values = Object.fromEntries(new FormData(form).entries())
+      button.disabled = true
+      button.textContent = '正在提交...'
+      message.textContent = ''
+      try {
+        const result = await publicServiceApi('/privacy-requests', {
+          method: 'POST',
+          body: JSON.stringify({ ...values, sourcePath: location.pathname })
+        })
+        message.textContent = result ? '申请已提交，可由网站运营管理员跟进处理。' : '申请已提交。'
+        form.reset()
+      } catch (error) {
+        message.textContent = error.message
+      } finally {
+        button.disabled = false
+        button.textContent = '提交申请'
       }
     })
   }
@@ -1145,10 +1395,11 @@
       brand.setAttribute('aria-label', '棉知商业平台首页')
       brandName.textContent = '棉知商业平台'
       brandSub.textContent = 'XINJIANG AGRI BUSINESS'
-      serviceLabel.textContent = '农资产品 · 行业资讯 · 商务服务'
+      serviceLabel.textContent = '农资供应 · 农机服务 · 商务协同'
       nav.innerHTML = `
         <a href="${businessLink('/')}" data-nav="home">商业首页</a>
         <a href="${businessLink('/products')}" data-nav="products">农资产品</a>
+        <a href="${businessLink('/machinery')}" data-nav="machinery">农机服务</a>
         <a href="${businessLink('/news')}" data-nav="news">新闻资讯</a>
         <a href="${businessLink('/about')}" data-nav="about">关于我们</a>
         <a class="platform-switch-link" href="${publicLink('/')}">公益平台</a>`
@@ -1200,6 +1451,7 @@
   else if (platform === 'public' && pageGroup === 'forum' && pathParts.length === 1) learningViews?.renderForum()
   else if (platform === 'public' && pageGroup === 'forum') learningViews?.renderForumDetail(pathParts[1])
   else if (platform === 'public' && pageGroup === 'login') learningViews?.renderLogin()
+  else if (platform === 'public' && pageGroup === 'privacy') renderPrivacy()
   else if (platform === 'public' && (pageGroup === 'consult' || pageGroup === 'experts')) renderExperts()
   else if (platform === 'public' && pageGroup === 'policies' && pathParts.length === 1) renderPolicies()
   else if (platform === 'public' && pageGroup === 'policies') renderNewsDetail(newsById(pathParts[1]), 'public')
@@ -1210,6 +1462,8 @@
   else if (platform === 'business' && pageGroup === 'home') renderBusinessHome()
   else if (platform === 'business' && pageGroup === 'products' && pathParts.length === 1) renderProducts()
   else if (platform === 'business' && pageGroup === 'products') renderProductDetail(productById(pathParts[1]))
+  else if (platform === 'business' && pageGroup === 'machinery' && pathParts.length === 1) renderMachinery()
+  else if (platform === 'business' && pageGroup === 'machinery') renderMachineryDetail(machineryById(pathParts[1]))
   else if (platform === 'business' && pageGroup === 'news' && pathParts.length === 1) renderNews()
   else if (platform === 'business' && pageGroup === 'news') renderNewsDetail(newsById(pathParts[1]))
   else if (platform === 'business' && pageGroup === 'about') renderAbout()

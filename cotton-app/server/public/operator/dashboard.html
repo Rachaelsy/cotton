@@ -391,21 +391,35 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="/admin/assets/runtime.js"></script>
   <script>
     const TOKEN = localStorage.getItem('op_token')
     if (!TOKEN) location.replace('/operator/login.html')
-    const INFO = JSON.parse(localStorage.getItem('op_info') || '{}')
+    let INFO = {}
+    try {
+      INFO = JSON.parse(localStorage.getItem('op_info') || '{}')
+    } catch {
+      localStorage.removeItem('op_info')
+    }
     document.getElementById('opName').textContent = INFO.org_name || '农机手'
     document.getElementById('opPhone').textContent = INFO.phone || ''
 
     const CAT_LABEL = { pending: '待接单', accepted: '已接单', departed: '已出发', arrived: '已到场', working: '作业中', completed: '已完成', cancelled: '已取消' }
     const NEXT = { accepted: { s: 'departed', t: '确认出发' }, departed: { s: 'arrived', t: '已到场' }, arrived: { s: 'working', t: '开始作业' }, working: { s: 'completed', t: '完成作业' } }
 
+    function clearOperatorSession() {
+      localStorage.removeItem('op_token')
+      localStorage.removeItem('op_info')
+      localStorage.removeItem('operatorLiveLocation')
+    }
+
     async function api(path, opts = {}) {
       opts.headers = Object.assign({ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN }, opts.headers || {})
-      const r = await fetch('/api' + path, opts)
-      if (r.status === 401) { localStorage.clear(); location.replace('/operator/login.html'); throw new Error('登录失效') }
-      return r.json()
+      return CottonRuntime.requestJson('/api' + path, opts, {
+        expectCode: false,
+        allowErrorResponse: true,
+        onUnauthorized: logout
+      })
     }
     async function uploadApplymentMedia(field) {
       const picker = document.createElement('input')
@@ -421,13 +435,17 @@
         const oldPlaceholder = target ? target.placeholder : ''
         if (target) target.placeholder = '正在上传...'
         try {
-          const r = await fetch('/api/wechat-applyment/media', {
+          const data = await CottonRuntime.requestJson('/api/wechat-applyment/media', {
             method: 'POST',
             headers: { Authorization: 'Bearer ' + TOKEN },
             body: fd
+          }, {
+            expectCode: false,
+            allowErrorResponse: true,
+            timeoutMs: 30000,
+            onUnauthorized: logout
           })
-          const data = await r.json()
-          if (data.code === 401) { localStorage.clear(); location.replace('/operator/login.html'); return }
+          if (data.code === 401) return
           if (data.code !== 200 || !data.data || !data.data.media_id) throw new Error(data.msg || '上传失败')
           setPayVal(field, data.data.media_id)
           toast('上传成功，media_id 已自动填写')
@@ -443,7 +461,10 @@
     function esc(value) {
       return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]))
     }
-    function logout() { localStorage.clear(); location.replace('/operator/login.html') }
+    function logout() {
+      clearOperatorSession()
+      location.replace('/operator/login.html')
+    }
     function getGeo(latId, lngId) {
       if (!navigator.geolocation) { toast('浏览器不支持定位'); return }
       toast('定位中…')
@@ -517,7 +538,7 @@
     }
     function statusBadge(s) {
       const cls = s === 'pending' ? 'b-pending' : s === 'accepted' ? 'b-accepted' : s === 'completed' ? 'b-done' : s === 'cancelled' ? 'b-cancel' : 'b-progress'
-      return `<span class="badge ${cls}">${CAT_LABEL[s] || s}</span>`
+      return `<span class="badge ${cls}">${esc(CAT_LABEL[s] || '未知状态')}</span>`
     }
 
     // 微信支付进件
@@ -700,7 +721,7 @@
         const labels = { PENDING:'待分账', PROCESSING:'分账中', FINISHED:'已分账', FAILED:'分账失败' }
         const rows = d.settlements || []
         document.getElementById('opFinanceTable').innerHTML = rows.length ? rows.map(x => `<tr>
-          <td>${x.order_no || '-'}</td><td>${x.machine_name || '-'}</td><td>¥${Number(x.paid_amount || 0).toFixed(2)}</td>
+          <td>${esc(x.order_no || '-')}</td><td>${esc(x.machine_name || '-')}</td><td>¥${Number(x.paid_amount || 0).toFixed(2)}</td>
           <td>¥${Number(x.commission_amount || 0).toFixed(2)}</td><td>¥${Number(x.net_amount || 0).toFixed(2)}</td>
           <td>${labels[String(x.profit_sharing_state || '').toUpperCase()] || '待订单完成'}</td></tr>`).join('') : '<tr class="empty-row"><td colspan="6">暂无结算记录</td></tr>'
       }
@@ -759,18 +780,23 @@
     }
 
     // 机具管理
+    let operatorMachines = []
     async function loadMachines() {
       const r = await api('/operator/machines')
       const tb = document.getElementById('machineList')
       if (r.code === 200 && r.data.length) {
+        operatorMachines = r.data
         tb.innerHTML = r.data.map(m => {
           const st = m.status === 'on' ? '<span class="badge b-on">上架</span>' : m.status === 'busy' ? '<span class="badge b-busy">紧俏</span>' : '<span class="badge b-off">下架</span>'
-          const geo = (m.latitude && m.longitude) ? `${m.location_name || ''} 📍<br><span style="color:#00838F;font-size:12px">可配送 ${m.service_radius}km 内</span>` : '<span style="color:#DC2626">未定位</span>'
-          const toggle = m.status === 'off' ? `<button class="btn btn-warn btn-sm" onclick="setStatus(${m.id},'on')">上架</button>` : `<button class="btn btn-outline btn-sm" onclick="setStatus(${m.id},'off')">下架</button>`
-          return `<tr><td><span class="m-icon">${m.icon}</span> ${m.name}</td><td>${m.category}</td><td>¥${m.price}/${m.unit}</td><td>${geo}</td><td>⭐${Number(m.rating_avg).toFixed(1)} / ${m.order_count}单</td><td>${st}</td>
-            <td><button class="btn btn-outline btn-sm" onclick='editMachine(${JSON.stringify(m)})'>编辑</button> ${toggle} <button class="btn btn-danger btn-sm" onclick="delMachine(${m.id})">删除</button></td></tr>`
+          const geo = (m.latitude && m.longitude) ? `${esc(m.location_name || '')} 📍<br><span style="color:#00838F;font-size:12px">可配送 ${Number(m.service_radius || 0)}km 内</span>` : '<span style="color:#DC2626">未定位</span>'
+          const toggle = m.status === 'off' ? `<button class="btn btn-warn btn-sm" onclick="setStatus(${Number(m.id)},'on')">上架</button>` : `<button class="btn btn-outline btn-sm" onclick="setStatus(${Number(m.id)},'off')">下架</button>`
+          return `<tr><td><span class="m-icon">${esc(m.icon)}</span> ${esc(m.name)}</td><td>${esc(m.category)}</td><td>¥${Number(m.price || 0).toFixed(2)}/${esc(m.unit)}</td><td>${geo}</td><td>⭐${Number(m.rating_avg || 0).toFixed(1)} / ${Number(m.order_count || 0)}单</td><td>${st}</td>
+            <td><button class="btn btn-outline btn-sm" onclick="editMachineById(${Number(m.id)})">编辑</button> ${toggle} <button class="btn btn-danger btn-sm" onclick="delMachine(${Number(m.id)})">删除</button></td></tr>`
         }).join('')
-      } else tb.innerHTML = '<tr class="empty-row"><td colspan="7">还没有机具，点击右上角发布</td></tr>'
+      } else {
+        operatorMachines = []
+        tb.innerHTML = '<tr class="empty-row"><td colspan="7">还没有机具，点击右上角发布</td></tr>'
+      }
     }
     function openMachineModal() {
       document.getElementById('mModalTitle').textContent = '发布机具'
@@ -796,6 +822,11 @@
       document.getElementById('m-params').value = (m.params || []).map(p => p.val + ':' + p.lbl).join(',')
       document.getElementById('m-description').value = m.description || ''
       document.getElementById('machineMask').classList.add('show')
+    }
+    function editMachineById(id) {
+      const machine = operatorMachines.find(item => Number(item.id) === Number(id))
+      if (!machine) return toast('机具信息已更新，请刷新后重试')
+      editMachine(machine)
     }
     function closeMachineModal() { document.getElementById('machineMask').classList.remove('show') }
     async function saveMachine() {

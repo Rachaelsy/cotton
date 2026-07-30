@@ -68,9 +68,9 @@ npm install
 copy .env.example .env
 # 修改 .env 中的 DB_HOST / DB_USER / DB_PASS / JWT_SECRET / WX_APPID / WX_SECRET / QWEATHER_*
 
-# 建表（首次）
-node db/migrate_products.js           # 创建 products 表并插入测试商品
-node db/migrate_admin.js              # 添加 is_admin 字段 + 创建管理员账号
+# 建表（首次；Docker 启动会自动执行，手动启动时按需运行）
+node db/migrate_products.js           # 创建 products 表，不写入演示商品
+node db/migrate_admin.js              # 添加管理员权限与会话版本字段，不创建默认账号
 node db/migrate_merchant_approval.js  # 添加 apply_status/reject_reason 字段
 node db/migrate_product_image.js      # 添加 image_url 字段
 node db/migrate_orders.js             # 创建 orders 和 order_items 表
@@ -101,9 +101,17 @@ node db/migrate_farmer_improvements.js # 农机分阶段支付/定位、气象�
 node db/migrate_machine_reliability.js # 农机预约超时/日期区间、分阶段退款字段与索引
 node db/migrate_feedbacks.js          # 意见反馈、在线客服消息、引用/撤回/单方删除状态
 node db/migrate_marketing.js          # 商户优惠券、自动促销、秒杀库存和订单优惠快照
-npm run seed:marketing-demo           # 写入/续期 6 组已审核营销测试活动
-node db/seed.js                       # 插入测试用户账号
-node db/seed_machines.js              # 农机演示数据（机主 13800000003 + 4 台机具）
+node db/migrate_private_applyment_files.js # 历史入驻证件从公开上传目录迁移到私有卷
+node db/migrate_encrypt_applyment_drafts.js # 历史微信进件草稿敏感字段静态加密
+
+# 仅本地开发按需执行，生产环境禁止运行
+node db/seed.js                       # 插入本地测试用户
+npm run seed:demo-products            # 插入本地演示商品
+node db/seed_machines.js              # 插入本地农机演示数据
+npm run seed:marketing-demo           # 插入营销演示活动
+
+# 首次创建正式管理员；未传密码时会生成并只显示一次强密码
+npm run admin:bootstrap -- --phone=你的11位手机号 --name=管理员姓名
 
 # 启动服务
 node index.js
@@ -236,7 +244,7 @@ node -e "require('dotenv').config(); const { fetchQweatherWeather } = require('.
 - `403 Security Restriction`：和风凭据设置了 API/IP/域名等安全限制，当前机器或云服务器出口 IP 没有被允许。
 - `401 Unauthorized`：凭据 ID、项目 ID、私钥和上传的公钥不是同一组，或服务器时间偏差较大。
 
-微信支付服务商相关字段（如 `WECHAT_PAY_SP_MCH_ID`、`WECHAT_PAY_API_V3_KEY`、`WECHAT_PAY_PUBLIC_KEY_ID`、API 私钥路径等）等公司通过微信支付服务商审核后再填写。Docker Compose 会通过 `env_file: ./server/.env` 注入微信支付配置，所以这些字段要填在 `server/.env`。新服务商优先使用微信支付公钥模式：在服务商平台 `账户中心 -> 账户设置 -> API安全 -> 管理公钥` 下载公钥，填写 `WECHAT_PAY_PUBLIC_KEY_ID` 和 `WECHAT_PAY_PUBLIC_KEY_PATH`。旧平台证书字段仅作兼容保留。暂时不填时，普通后端功能可以运行；发起真实微信支付时会返回未配置提示，不会走模拟支付。
+微信支付服务商相关字段（如 `WECHAT_PAY_SP_MCH_ID`、`WECHAT_PAY_API_V3_KEY`、`WECHAT_PAY_PUBLIC_KEY_ID`、API 私钥路径等）等公司通过微信支付服务商审核后再填写。根目录 Docker Compose 会通过 `env_file: ./cotton-app/server/.env` 注入微信支付配置，所以这些字段要填在 `cotton-app/server/.env`。新服务商优先使用微信支付公钥模式：在服务商平台 `账户中心 -> 账户设置 -> API安全 -> 管理公钥` 下载公钥，填写 `WECHAT_PAY_PUBLIC_KEY_ID` 和 `WECHAT_PAY_PUBLIC_KEY_PATH`。旧平台证书字段仅作兼容保留。暂时不填时，普通后端功能可以运行；发起真实微信支付时会返回未配置提示，不会走模拟支付。
 
 服务商模式下，商户和农机手收款都必须使用微信为当前服务商进件后返回的 `sub_mchid`。普通商户号、其他服务商名下的子商户号，或者仅在本项目数据库中手动填写的号码，都不能建立受理关系。可在微信支付服务商平台的 `合作伙伴功能 -> 商户基础服务 -> 开发参数配置` 中核对该子商户是否确实属于当前服务商。
 
@@ -323,13 +331,13 @@ npm run cleanup:test-payments -- --execute
 
 农户实名认证是可选服务，不影响登录和普通农户功能。农户可从“我的”页面主动提交姓名、身份证号及身份证正反面，由管理员后台“实名审核”人工核验。身份证号码使用 AES-256-GCM 加密，证件图片保存在 Docker 私有卷 `identity_uploads`，不会通过 `/uploads` 公开访问。
 
-启用实名认证功能时，生产环境必须在 `server/.env` 配置 `IDENTITY_DATA_KEY`。可用 `openssl rand -base64 48` 生成，启用后不要更换，否则历史身份证号无法解密；密钥和 `identity_uploads` 卷都应纳入受控备份。
+生产环境必须在 `server/.env` 配置 `IDENTITY_DATA_KEY`。该密钥同时保护农户实名认证信息，以及商户/农机手入驻草稿中的姓名、手机号、身份证号和结算账号。可用 `openssl rand -base64 48` 生成，启用后不要更换，否则历史敏感数据无法解密；密钥和两个私有卷 `identity_uploads`、`applyment_uploads` 都应纳入受控备份。
 
 ### 意见反馈与在线客服
 
 农户可从“我的”进入意见反馈，提交文字、联系方式和最多 4 张问题图片，也可直接进入平台在线客服。首页通知红点和“我的”未读角标只使用数据库中的真实未读数量，没有消息时不显示红点。
 
-在线客服支持文字、图片、复制、2 分钟内撤回、双方单独删除、已读状态和引用回复。管理员可在后台查看农户会话、发送文字或图片，并从管理员端清空整个会话；该操作只隐藏管理员端历史，不会删除农户端记录，农户再次发送消息后会创建新的管理员会话。实时刷新使用 WebSocket，并保留 5 秒 HTTP 轮询作为断线兜底。
+在线客服支持文字、图片、复制、2 分钟内撤回、双方单独删除、已读状态和引用回复。管理员可在后台查看农户会话、发送文字或图片，并从管理员端清空整个会话；该操作只隐藏管理员端历史，不会删除农户端记录，农户再次发送消息后会创建新的管理员会话。实时刷新使用 WebSocket，并保留 5 秒 HTTP 轮询作为断线兜底。JWT 不放在 WebSocket URL 中，连接后须在 5 秒内发送认证首帧；服务端会重新校验账号启用状态和管理员会话版本。
 
 农机手网页后台可在有进行中作业时开启实时位置共享；农户跟踪页每 15 秒读取一次最近位置。生产环境浏览器定位要求 HTTPS 和用户授权，位置超过 10 分钟未更新时只显示“位置暂未更新”，不会拿基地坐标冒充实时位置。
 
@@ -406,7 +414,11 @@ netsh advfirewall firewall add rule name="Cotton 3000" dir=in action=allow proto
 
 ---
 
-## 测试账号
+## 本地测试账号
+
+以下账号仅供主动执行种子脚本后的本地开发数据库使用。Docker 生产模式不会自动创建
+这些账号，也会拒绝它们使用公开测试口令登录。需要演示数据时，只能让独立本地数据库
+以 `APP_NODE_ENV=development`、`SEED_DEMO_DATA=true` 启动；正式服务器不得使用该配置。
 
 | 角色 | 手机号 | 密码 | 备注 |
 |------|--------|------|------|
@@ -414,9 +426,10 @@ netsh advfirewall firewall add rule name="Cotton 3000" dir=in action=allow proto
 | 商户 | `13800000002` | `test123` | 疏附县农资有限公司（网页后台） |
 | 商户 | `13900000001` | `merchant123` | 疏附县鑫农农资有限公司（网页后台，本地密码为 merchant123）|
 | 机主 | `13800000003` | `test123` | 艾力农机合作社（网页后台，已审批）|
-| 管理员 | `10000000000` | `Admin@Cotton2026` | 系统管理员（网页后台登录） |
+| 管理员 | 不再内置 | 不再内置 | 使用 `npm run admin:bootstrap` 显式创建 |
 
 > **小程序仅供农户使用**；商户、机主的登录和管理功能在网页后台。
+> 上线前运行 `npm run security:audit-defaults`，确保所有默认测试口令均已清理。
 
 ## 三类角色入口
 
@@ -430,7 +443,7 @@ netsh advfirewall firewall add rule name="Cotton 3000" dir=in action=allow proto
 
 访问根路径（例如 `https://cyaia.cn/` 或本地 `http://localhost:3000/`）会进入统一身份选择登录页，页面提供管理员、商户、农机手、专家四个身份入口。网页后台登录目前只保留手机号 + 密码登录，不再提供手机号验证码登录。
 
-新农机手 / 商户在统一入驻页 `/portal/register.html` 一次性提交平台资料和微信支付进件材料 → 管理员在后台「机主审批」/「商户审批」审核 → 通过后系统自动把本地证照上传微信换取 `media_id`，加密身份证、银行卡等敏感字段并提交微信支付进件。微信审核完成并返回 `sub_mchid` 后才具备真实收款条件；自动提交失败时后台会保存明确原因，可重新提交。
+新农机手 / 商户在统一入驻页 `/portal/register.html` 一次性提交平台资料和微信支付进件材料 → 明确同意个人信息处理说明 → 管理员在后台「机主审批」/「商户审批」审核 → 通过后系统自动把本地证照上传微信换取 `media_id`，加密身份证、银行卡等敏感字段并提交微信支付进件。证件原图保存在不对外提供静态访问的 Docker 私有卷 `applyment_uploads`，进件草稿敏感字段在 MySQL 中使用 AES-256-GCM 加密。微信审核完成并返回 `sub_mchid` 后才具备真实收款条件；自动提交失败时后台会保存明确原因，可重新提交。
 
 申请人不需要理解或填写小程序 AppID、微信结算规则 ID。小程序 AppID 读取 `WX_APPID`；微信支付进件结算规则按主体类型自动选择：个体工商户默认 `719`、企业默认 `716`、其他组织默认 `727`。商户经营种子、化肥、农药等农资，农机手出租自有农机，当前统一归入微信支付通用经营类目「零售批发/生活娱乐/其他」；正式上线前仍应按实际营业执照经营范围、农药/种子等资质要求和微信支付审核意见核对。
 
@@ -578,7 +591,7 @@ cotton/
     │   ├── machine-orders.js # /api/machine-orders/*（农机预约下单/跟踪/评价/删除）
     │   ├── ai.js             # /api/ai/*（AI 问答代理 + 图片分析，支持 Groq/Siliconflow/DeepSeek）
     │   ├── merchant.js       # /api/merchant/*（商户登录、商品、订单、售后、评价回复）
-    │   ├── upload.js         # /api/upload（multer 文件上传，存至 public/uploads/）
+    │   ├── upload.js         # 普通图片存 public/uploads；入驻证件存 private/applyments
     │   └── admin.js          # /api/admin/*（管理后台 API，需 is_admin）
     ├── middleware/
     │   └── auth.js           # JWT 鉴权中间件 + roleGuard()
@@ -598,13 +611,16 @@ cotton/
     │       ├── login.html           # 选身份登录（机主/商户）
     │       └── register.html        # 选身份注册入驻（机主/商户）
     ├── public/uploads/       # 图片上传目录（wx.uploadFile → POST /api/upload）
+    ├── private/
+    │   ├── identity/         # 农户实名认证证件私有卷挂载点
+    │   └── applyments/       # 商户/农机手入驻材料私有卷挂载点
     ├── utils/support-messages.js # 客服消息、引用快照、撤回、已读和单方隐藏
     ├── utils/support-realtime.js # 客服 WebSocket 连接与事件推送
     └── db/
         ├── database.js       # mysql2 连接池
         ├── schema.sql        # 建表：users / farmers / merchants / login_logs
-        ├── migrate_products.js           # 建 products 表 + 种子数据
-        ├── migrate_admin.js              # 添加 is_admin 字段 + 创建管理员账号
+        ├── migrate_products.js           # 建 products 表
+        ├── migrate_admin.js              # 管理员权限与会话版本字段
         ├── migrate_merchant_approval.js  # 添加 apply_status/reject_reason 字段
         ├── migrate_orders.js             # 建 orders + order_items 表
         ├── migrate_product_detail.js     # 添加 products.detail 字段
@@ -617,7 +633,12 @@ cotton/
         ├── migrate_order_delete.js       # 订单按角色软删除字段
         ├── migrate_delivery_range.js     # 可配送范围字段（机具/商户）
         ├── migrate_feedbacks.js          # 反馈工单与在线客服消息表
-        ├── seed.js                       # 测试用户账号（幂等）
+        ├── migrate_private_applyment_files.js # 历史入驻材料转入私有卷
+        ├── migrate_encrypt_applyment_drafts.js # 历史进件草稿敏感字段加密
+        ├── bootstrap_admin.js            # 显式创建/重置正式管理员
+        ├── audit_default_accounts.js     # 默认测试口令上线审计
+        ├── seed.js                       # 本地测试用户账号（幂等）
+        ├── seed_products.js              # 本地演示商品
         └── seed_machines.js              # 农机演示数据（机主 + 机具）
 ```
 

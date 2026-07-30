@@ -6,13 +6,26 @@ const cors    = require('cors')
 const path    = require('path')
 const http    = require('http')
 const { attachSupportRealtime } = require('./utils/support-realtime')
+const {
+  assertRuntimeConfig,
+  createApiErrorHandler,
+  createCorsOptionsDelegate,
+  securityHeaders,
+  createLoginRateLimiter
+} = require('./middleware/request-safety')
+const db = require('./db/database')
+const { createActiveSessionGuard } = require('./middleware/active-session')
+
+assertRuntimeConfig()
 
 const app = express()
 app.set('trust proxy', true)
 
 // ── 中间件 ──────────────────────────────────
-app.use(cors())
+app.use(securityHeaders)
+app.use(cors(createCorsOptionsDelegate()))
 app.use(express.json({
+  limit: '2mb',
   verify: (req, _res, buf) => {
     if (req.originalUrl && (
       req.originalUrl.startsWith('/api/pay/wechat/notify') ||
@@ -23,10 +36,23 @@ app.use(express.json({
   }
 }))
 app.use(express.urlencoded({ extended: true }))
+app.get('/favicon.ico', (_req, res) => {
+  res.redirect(302, '/admin/assets/cotton-field-sky.png')
+})
+app.post([
+  '/api/auth/login',
+  '/api/admin/login',
+  '/api/merchant/login',
+  '/api/operator/login',
+  '/api/expert-admin/login'
+], createLoginRateLimiter())
+app.use('/api', createActiveSessionGuard())
 
 // 请求日志
 app.use((req, _res, next) => {
-  console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.path}`)
+  if (req.path !== '/api/ping') {
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.path}`)
+  }
   next()
 })
 
@@ -98,16 +124,24 @@ app.use('/api/merchant', require('./routes/merchant'))
 app.use('/api/upload',  require('./routes/upload'))
 
 // 健康检查
-app.get('/api/ping', (_req, res) => res.json({ code: 200, msg: 'pong' }))
+app.get('/api/ping', async (_req, res) => {
+  try {
+    const [[row]] = await db.query('SELECT 1 AS connected')
+    return res.json({
+      code: 200,
+      msg: 'pong',
+      data: { service: 'cotton-app', database: row.connected === 1 }
+    })
+  } catch (error) {
+    return res.status(503).json({ code: 503, msg: '数据库连接失败', data: null })
+  }
+})
 
 // 404
 app.use((_req, res) => res.status(404).json({ code: 404, msg: '接口不存在' }))
 
 // 全局错误捕获
-app.use((err, _req, res, _next) => {
-  console.error('[uncaught]', err)
-  res.status(500).json({ code: 500, msg: '服务器内部错误' })
-})
+app.use(createApiErrorHandler())
 
 // ── 启动 ────────────────────────────────────
 const PORT = process.env.PORT || 3000
@@ -117,3 +151,20 @@ server.listen(PORT, () => {
   console.log(`🚀 棉花智能体后端启动成功 → http://localhost:${PORT}`)
   require('./scheduler').startScheduler()
 })
+
+let shuttingDown = false
+async function shutdown(signal) {
+  if (shuttingDown) return
+  shuttingDown = true
+  console.log(`[shutdown] received ${signal}`)
+  const forceExit = setTimeout(() => process.exit(1), 10000)
+  forceExit.unref()
+  server.close(async () => {
+    try { await db.end() } catch (error) { console.error('[shutdown-db]', error.message) }
+    clearTimeout(forceExit)
+    process.exit(0)
+  })
+}
+
+process.once('SIGTERM', () => shutdown('SIGTERM'))
+process.once('SIGINT', () => shutdown('SIGINT'))

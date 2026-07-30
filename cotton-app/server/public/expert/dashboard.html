@@ -287,6 +287,7 @@
     </div>
   </div>
 
+  <script src="/admin/assets/runtime.js"></script>
   <script>
     const API = '/api/expert-admin'
     const token = localStorage.getItem('expert_token')
@@ -306,18 +307,17 @@
         options.headers['Content-Type'] = 'application/json'
         options.body = JSON.stringify(body)
       }
-      const res = await fetch(`${API}${path}`, options)
-      const data = await res.json().catch(() => ({ code: res.status, msg: '响应解析失败' }))
-      if (res.status === 401) {
-        logout()
-        throw new Error('登录已过期')
-      }
-      if (data.code !== 200) throw new Error(data.msg || '请求失败')
+      const data = await CottonRuntime.requestJson(`${API}${path}`, options, {
+        onUnauthorized: logout
+      })
       return data.data
     }
 
     function esc(value) {
       return String(value ?? '').replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]))
+    }
+    function jsArg(value) {
+      return encodeURIComponent(String(value ?? '')).replace(/'/g, '%27')
     }
 
     function parseMaybeJson(value, fallback) {
@@ -390,7 +390,7 @@
       tbody.innerHTML = questions.map(item => {
         const images = parseMaybeJson(item.images, [])
         const imageHtml = images.length
-          ? `<div class="q-images">${images.map(url => `<img src="${esc(url)}" onclick="window.open('${esc(url)}','_blank')">`).join('')}</div>`
+          ? `<div class="q-images">${images.map(url => `<img src="${esc(url)}" onclick="window.open(decodeURIComponent('${jsArg(url)}'),'_blank','noopener')">`).join('')}</div>`
           : ''
         const reply = item.reply ? `<div class="reply-box"><b>已回复：</b>${esc(item.reply)}</div>` : ''
         return `
@@ -479,7 +479,7 @@
       document.getElementById('replyId').value = item.id
       const images = parseMaybeJson(item.images, [])
       const imageHtml = images.length
-        ? `<div class="q-images">${images.map(url => `<img src="${esc(url)}" onclick="window.open('${esc(url)}','_blank')">`).join('')}</div>`
+        ? `<div class="q-images">${images.map(url => `<img src="${esc(url)}" onclick="window.open(decodeURIComponent('${jsArg(url)}'),'_blank','noopener')">`).join('')}</div>`
         : ''
       document.getElementById('replyQuestion').innerHTML = `
         <p><b>${esc(item.category)}</b> · ${esc(item.plotName || '未选择地块')}</p>
@@ -603,8 +603,14 @@
       const previewId = targetId === 'cCover' ? 'coverPreview' : 'videoPreview'
       document.getElementById(previewId).textContent = '正在上传...'
       try {
-        const res = await fetch(`${API}/upload`, { method: 'POST', headers: authHeaders(), body: form })
-        const data = await res.json()
+        const data = await CottonRuntime.requestJson(`${API}/upload`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: form
+        }, {
+          timeoutMs: 600000,
+          onUnauthorized: logout
+        })
         if (data.code !== 200) throw new Error(data.msg || '上传失败')
         document.getElementById(targetId).value = data.data.url
         document.getElementById(previewId).textContent = data.data.url

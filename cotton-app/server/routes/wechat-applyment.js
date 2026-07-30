@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken')
 const multer = require('multer')
 const db = require('../db/database')
 const wxpay = require('../utils/wechat-pay')
+const applymentDraftSecurity = require('../utils/applyment-draft-security')
+const { APPLYMENT_IMAGE_TYPES, makeFileFilter } = require('../utils/upload-policy')
 
 const router = express.Router()
 const ok = (res, data, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -11,11 +13,10 @@ const fail = (res, msg, code = 400) => res.status(code).json({ code, msg, data: 
 const imageUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    const allowed = new Set(['image/jpeg', 'image/png', 'image/bmp'])
-    if (allowed.has(file.mimetype)) return cb(null, true)
-    cb(new Error('仅支持 JPG、PNG、BMP 图片，且单张不超过 5MB'))
-  }
+  fileFilter: makeFileFilter({
+    types: APPLYMENT_IMAGE_TYPES,
+    message: '仅支持 JPG、PNG 或 BMP 图片，且单张不超过 5MB'
+  })
 })
 
 const ACTOR_META = {
@@ -80,8 +81,9 @@ function applymentAuth(req, res, next) {
 
 function parsePayload(raw) {
   if (!raw) return null
-  if (typeof raw === 'object') return raw
-  try { return JSON.parse(raw) } catch { return null }
+  let parsed
+  try { parsed = typeof raw === 'object' ? raw : JSON.parse(raw) } catch { return null }
+  return applymentDraftSecurity.revealDraft(parsed)
 }
 
 function stripEmpty(value) {
@@ -308,11 +310,12 @@ router.post('/draft', applymentAuth, async (req, res) => {
     if (!owner) return fail(res, `${ACTOR_META[actor.role].label}不存在`, 404)
     const businessCode = req.body.business_code || owner.wechat_business_code || makeBusinessCode(actor, owner.id)
     const payload = { ...req.body, business_code: businessCode }
+    const protectedPayload = applymentDraftSecurity.protectDraft(payload)
     await db.query(
       `UPDATE ${ACTOR_META[actor.role].table} SET wechat_applyment_payload=?, wechat_business_code=?,
        wechat_applyment_state='DRAFT', wechat_applyment_msg='', wechat_applyment_updated_at=NOW()
        WHERE id=?`,
-      [JSON.stringify(payload), businessCode, owner.id]
+      [JSON.stringify(protectedPayload), businessCode, owner.id]
     )
     return ok(res, { business_code: businessCode }, '入驻资料草稿已保存')
   } catch (error) {

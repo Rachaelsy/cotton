@@ -10,6 +10,8 @@ const db = require('../db/database')
 const router = express.Router()
 const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d'
+const { MEDIA_TYPES, makeFileFilter, safeExtension } = require('../utils/upload-policy')
+const { isProductionDefaultCredential } = require('../utils/default-credentials')
 
 const uploadDir = path.join(__dirname, '../public/uploads/expert')
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
@@ -18,17 +20,15 @@ const expertUpload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname || '')
+      const ext = safeExtension(file, MEDIA_TYPES)
       cb(null, `expert_${Date.now()}_${Math.floor(Math.random() * 10000)}${ext}`)
     }
   }),
   limits: { fileSize: 200 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/') && !file.mimetype.startsWith('video/')) {
-      return cb(new Error('Only image and video files are allowed'))
-    }
-    cb(null, true)
-  }
+  fileFilter: makeFileFilter({
+    types: MEDIA_TYPES,
+    message: '仅支持常见图片或 MP4、WebM、MOV、M4V、OGV 视频'
+  })
 })
 
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -146,6 +146,9 @@ router.post('/login', async (req, res) => {
   try {
     const { phone, password } = req.body
     if (!phone || !password) return fail(res, '请输入账号和密码')
+    if (isProductionDefaultCredential(phone, password)) {
+      return fail(res, '默认专家账号在正式环境中已停用，请联系管理员重置', 403)
+    }
 
     const [rows] = await db.query('SELECT * FROM experts WHERE phone=?', [phone])
     const expert = rows[0]

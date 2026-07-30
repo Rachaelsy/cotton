@@ -3,15 +3,33 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const path = require('path')
+const {
+  assertRuntimeConfig,
+  createApiErrorHandler,
+  createCorsOptionsDelegate,
+  securityHeaders,
+  createLoginRateLimiter
+} = require('./middleware/request-safety')
+const { createActiveSessionGuard } = require('./middleware/active-session')
+
+assertRuntimeConfig()
 
 const app = express()
 app.set('trust proxy', true)
-app.use(cors())
+app.use(securityHeaders)
+app.use(cors(createCorsOptionsDelegate()))
 app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true }))
+app.post([
+  '/api/community-auth/login',
+  '/api/community-auth/admin/login'
+], createLoginRateLimiter())
+app.use('/api', createActiveSessionGuard())
 
 app.use((req, _res, next) => {
-  console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.path}`)
+  if (req.path !== '/api/community-health') {
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.path}`)
+  }
   next()
 })
 
@@ -47,15 +65,33 @@ app.get('/api/community-health', async (_req, res) => {
   }
 })
 
-app.use((_req, res) => res.status(404).json({ code: 404, msg: '接口不存在', data: null }))
-app.use((error, _req, res, _next) => {
-  console.error('[uncaught]', error)
-  res.status(500).json({ code: 500, msg: '服务器内部错误', data: null })
+app.use((req, res) => {
+  const acceptsHtml = req.method === 'GET' && String(req.headers.accept || '').includes('text/html')
+  if (acceptsHtml && !req.path.startsWith('/api/')) {
+    return res.status(404).sendFile(path.join(__dirname, 'public/site/index.html'))
+  }
+  return res.status(404).json({ code: 404, msg: '接口不存在', data: null })
 })
+app.use(createApiErrorHandler())
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3100
-  app.listen(port, () => console.log(`棉知农业服务网站已启动：http://localhost:${port}/public/`))
+  const server = app.listen(port, () => console.log(`棉知农业服务网站已启动：http://localhost:${port}/public/`))
+  let shuttingDown = false
+  const shutdown = signal => {
+    if (shuttingDown) return
+    shuttingDown = true
+    console.log(`[shutdown] received ${signal}`)
+    const forceExit = setTimeout(() => process.exit(1), 10000)
+    forceExit.unref()
+    server.close(async () => {
+      try { await require('./db/database').end() } catch (error) { console.error('[shutdown-db]', error.message) }
+      clearTimeout(forceExit)
+      process.exit(0)
+    })
+  }
+  process.once('SIGTERM', () => shutdown('SIGTERM'))
+  process.once('SIGINT', () => shutdown('SIGINT'))
 }
 
 module.exports = app

@@ -11,6 +11,11 @@ function readServerFile(...parts) {
 function run() {
   const login = readServerFile('public', 'admin', 'login.html')
   const merchantLogin = readServerFile('public', 'merchant', 'login.html')
+  const adminDashboard = readServerFile('public', 'admin', 'dashboard.html')
+  const operatorDashboard = readServerFile('public', 'operator', 'dashboard.html')
+  const merchantDashboard = readServerFile('public', 'merchant', 'dashboard.html')
+  const expertDashboard = readServerFile('public', 'expert', 'dashboard.html')
+  const runtime = readServerFile('public', 'admin', 'assets', 'runtime.js')
 
   assert.ok(login.includes('Cotton'), 'unified login should keep Cotton branding')
   assert.ok(login.includes('data-role="admin"'), 'admin role card should exist')
@@ -45,6 +50,24 @@ function run() {
   assert.ok(login.includes('/operator/dashboard.html'))
 
   assert.ok(merchantLogin.includes('/admin/login.html?role=merchant'))
+  assert.ok(login.includes('/admin/assets/runtime.js'), 'unified login should use the shared request runtime')
+  for (const [name, page] of [
+    ['admin', adminDashboard],
+    ['merchant', merchantDashboard],
+    ['operator', operatorDashboard],
+    ['expert', expertDashboard]
+  ]) {
+    assert.ok(page.includes('/admin/assets/runtime.js'), `${name} dashboard should use the shared request runtime`)
+  }
+  assert.ok(runtime.includes('AbortController'), 'request runtime should enforce timeouts')
+  assert.ok(runtime.includes("window.addEventListener('offline'"), 'request runtime should report offline state')
+  assert.ok(!adminDashboard.includes('localStorage.clear()'), 'admin logout should preserve other role sessions')
+  assert.ok(!operatorDashboard.includes('localStorage.clear()'), 'operator logout should preserve other role sessions')
+  assert.ok(adminDashboard.includes('function jsArg('), 'admin dashboard should encode values used by inline actions')
+  assert.ok(merchantDashboard.includes('function jsArg('), 'merchant dashboard should encode values used by inline actions')
+  assert.ok(expertDashboard.includes('function jsArg('), 'expert dashboard should encode media action values')
+  assert.ok(!operatorDashboard.includes('editMachine(${JSON.stringify(m)})'), 'machine rows should not inject serialized records into inline handlers')
+  assert.ok(operatorDashboard.includes('editMachineById('), 'machine editor should resolve records from trusted in-memory state')
 
   console.log('admin login UI tests passed')
 }

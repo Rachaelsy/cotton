@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const db = require('../db/database')
+const { isProductionDefaultCredential } = require('../utils/default-credentials')
 
 const router = express.Router()
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -18,9 +19,15 @@ function signUser(user, role = user.role) {
 
 function signAdmin(user) {
   return jwt.sign(
-    { id: Number(user.id), phone: user.phone, real_name: user.real_name || '', is_admin: true },
+    {
+      id: Number(user.id),
+      phone: user.phone,
+      real_name: user.real_name || '',
+      is_admin: true,
+      auth_version: Number(user.admin_auth_version || 0)
+    },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES || '7d' }
+    { expiresIn: process.env.ADMIN_JWT_EXPIRES || '12h' }
   )
 }
 
@@ -28,6 +35,9 @@ router.post('/login', async (req, res) => {
   const phone = String(req.body.phone || '').trim()
   const password = String(req.body.password || '')
   if (!phone || !password) return fail(res, '手机号和密码不能为空')
+  if (isProductionDefaultCredential(phone, password)) {
+    return fail(res, '测试账号在正式环境中已停用，请使用正式账号', 403)
+  }
 
   try {
     const [[user]] = await db.query('SELECT * FROM users WHERE phone=? LIMIT 1', [phone])
@@ -147,6 +157,9 @@ router.post('/admin/login', async (req, res) => {
   const phone = String(req.body.phone || '').trim()
   const password = String(req.body.password || '')
   if (!phone || !password) return fail(res, '请填写账号和密码')
+  if (isProductionDefaultCredential(phone, password)) {
+    return fail(res, '请先登录核心管理后台修改默认密码', 403)
+  }
 
   try {
     const [[user]] = await db.query('SELECT * FROM users WHERE phone=? LIMIT 1', [phone])

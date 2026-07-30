@@ -210,7 +210,7 @@
 | PATCH | `/api/admin/support-chats/:userId/messages/:messageId/recall` | 在 2 分钟内撤回当前管理员自己发送的消息 |
 | DELETE | `/api/admin/support-chats/:userId/messages/:messageId` | 仅从管理员客服界面删除消息，农户端仍保留 |
 
-引用回复以 `reply_to` 返回原消息的发送方、文字或图片摘要。撤回会清除原消息内容并为双方保留“已撤回”占位；删除为单方隐藏，不会删除对方的记录，删除管理员会话也只清空管理员端。聊天记录同时返回 `read_at` 供发送方显示已读状态。在线客服使用 `WS /api/support/socket?token=<JWT>` 推送消息、撤回、删除与已读刷新事件；客户端同时保留 HTTP 轮询作为断线兜底。生产环境应使用 `wss://`，Nginx 需要透传 `Upgrade` 和 `Connection` 请求头。
+引用回复以 `reply_to` 返回原消息的发送方、文字或图片摘要。撤回会清除原消息内容并为双方保留“已撤回”占位；删除为单方隐藏，不会删除对方的记录，删除管理员会话也只清空管理员端。聊天记录同时返回 `read_at` 供发送方显示已读状态。在线客服连接 `WS /api/support/socket` 后，须在 5 秒内发送首帧 `{"type":"auth","token":"<JWT>"}`，收到 `{"type":"ready"}` 后才算认证成功；JWT 不再放入 URL，避免被代理访问日志记录。客户端同时保留 HTTP 轮询作为断线兜底。生产环境应使用 `wss://`，Nginx 需要透传 `Upgrade` 和 `Connection` 请求头。
 
 ---
 
