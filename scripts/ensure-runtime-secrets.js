@@ -4,9 +4,13 @@ const path = require('path')
 
 const placeholderPattern = /TODO|change[_-]?in[_-]?production|replace|your[_-]?secret|example/i
 
-function isSecureJwtSecret(value) {
+function isSecureSecret(value) {
   const secret = String(value || '').trim()
   return secret.length >= 32 && !placeholderPattern.test(secret)
+}
+
+function isSecureJwtSecret(value) {
+  return isSecureSecret(value)
 }
 
 function readEnvValue(source, key) {
@@ -42,38 +46,101 @@ function setEnvValue(source, key, value) {
   return `${output.join(newline)}${hadTrailingNewline || !text ? newline : ''}`
 }
 
-function ensureJwtSecret(envPath, generate = () => crypto.randomBytes(48).toString('base64url')) {
+function loadEnvFile(envPath) {
   const resolved = path.resolve(envPath)
-  if (!fs.existsSync(resolved)) throw new Error(`环境文件不存在：${resolved}`)
-  const source = fs.readFileSync(resolved, 'utf8')
-  const current = readEnvValue(source, 'JWT_SECRET')
-  if (isSecureJwtSecret(current)) {
-    const normalized = setEnvValue(source, 'JWT_SECRET', current)
-    if (normalized !== source) fs.writeFileSync(resolved, normalized, 'utf8')
+  if (!fs.existsSync(resolved)) throw new Error(`Environment file does not exist: ${resolved}`)
+  return { resolved, source: fs.readFileSync(resolved, 'utf8') }
+}
+
+function writeEnvFile(resolved, source) {
+  fs.writeFileSync(resolved, source, 'utf8')
+  try { fs.chmodSync(resolved, 0o600) } catch {}
+}
+
+function generateSecureSecret(generate) {
+  const value = String(generate())
+  if (!isSecureSecret(value)) throw new Error('Generated runtime secret does not meet security requirements')
+  return value
+}
+
+function ensureSecret(source, key, generate) {
+  const current = readEnvValue(source, key)
+  const changed = !isSecureSecret(current)
+  const value = changed ? generateSecureSecret(generate) : current
+  const nextSource = setEnvValue(source, key, value)
+  return { source: nextSource, changed, normalized: nextSource !== source }
+}
+
+function ensureJwtSecret(envPath, generate = () => crypto.randomBytes(48).toString('base64url')) {
+  const { resolved, source } = loadEnvFile(envPath)
+  const result = ensureSecret(source, 'JWT_SECRET', generate)
+  if (result.normalized) writeEnvFile(resolved, result.source)
+  else {
     try { fs.chmodSync(resolved, 0o600) } catch {}
-    return { changed: false, normalized: normalized !== source, path: resolved }
+  }
+  return { changed: result.changed, normalized: result.normalized, path: resolved }
+}
+
+function ensureIdentityDataKey(envPath, generate = () => crypto.randomBytes(48).toString('base64url')) {
+  const { resolved, source } = loadEnvFile(envPath)
+  const result = ensureSecret(source, 'IDENTITY_DATA_KEY', generate)
+  if (result.normalized) writeEnvFile(resolved, result.source)
+  else {
+    try { fs.chmodSync(resolved, 0o600) } catch {}
+  }
+  return { changed: result.changed, normalized: result.normalized, path: resolved }
+}
+
+function ensureRuntimeSecrets(envPath, generators = {}) {
+  const { resolved, source } = loadEnvFile(envPath)
+  const jwt = ensureSecret(
+    source,
+    'JWT_SECRET',
+    generators.jwt || (() => crypto.randomBytes(48).toString('base64url'))
+  )
+  const identityData = ensureSecret(
+    jwt.source,
+    'IDENTITY_DATA_KEY',
+    generators.identityData || (() => crypto.randomBytes(48).toString('base64url'))
+  )
+
+  const normalized = identityData.source !== source
+  if (normalized) writeEnvFile(resolved, identityData.source)
+  else {
+    try { fs.chmodSync(resolved, 0o600) } catch {}
   }
 
-  const next = String(generate())
-  if (!isSecureJwtSecret(next)) throw new Error('生成的 JWT_SECRET 不符合安全要求')
-  fs.writeFileSync(resolved, setEnvValue(source, 'JWT_SECRET', next), 'utf8')
-  try { fs.chmodSync(resolved, 0o600) } catch {}
-  return { changed: true, normalized: true, path: resolved }
+  return {
+    changed: jwt.changed || identityData.changed,
+    normalized,
+    jwt: { changed: jwt.changed },
+    identityData: { changed: identityData.changed },
+    path: resolved
+  }
 }
 
 if (require.main === module) {
   const envPath = process.argv[2] || path.join(__dirname, '../cotton-app/server/.env')
   try {
-    const result = ensureJwtSecret(envPath)
-    console.log(result.changed
-      ? '[secrets] 已生成新的 JWT_SECRET；现有登录状态会失效，请重新登录'
-      : result.normalized
-        ? '[secrets] JWT_SECRET 已通过安全检查，并已规范环境文件换行'
-        : '[secrets] JWT_SECRET 已通过安全检查')
+    const result = ensureRuntimeSecrets(envPath)
+    console.log(result.jwt.changed
+      ? '[secrets] Generated a new JWT_SECRET; existing login sessions will expire'
+      : '[secrets] JWT_SECRET passed the security check')
+    console.log(result.identityData.changed
+      ? '[secrets] Generated IDENTITY_DATA_KEY; back it up securely and never rotate it after data is encrypted'
+      : '[secrets] IDENTITY_DATA_KEY passed the security check and was left unchanged')
   } catch (error) {
     console.error(`[secrets] ${error.message}`)
     process.exit(1)
   }
 }
 
-module.exports = { ensureJwtSecret, isSecureJwtSecret, readEnvValue, setEnvValue }
+module.exports = {
+  ensureIdentityDataKey,
+  ensureJwtSecret,
+  ensureRuntimeSecrets,
+  isSecureJwtSecret,
+  isSecureSecret,
+  readEnvValue,
+  setEnvValue
+}

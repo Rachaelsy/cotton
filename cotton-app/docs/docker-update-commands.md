@@ -56,6 +56,39 @@ DB_NAME=cotton
 两个 Node 服务在统一部署时都会读取 `cotton-app/server/.env`，因此天然共享
 `JWT_SECRET`、微信登录配置和 AI 配置，避免账号令牌不一致。
 
+更新脚本会在启动容器前运行 `npm run secrets:ensure` 对应的密钥初始化逻辑，
+自动补齐旧服务器缺少的 `JWT_SECRET` 和 `IDENTITY_DATA_KEY`，但不会覆盖有效旧值。
+`IDENTITY_DATA_KEY` 启用后必须纳入受控备份，不能随意更换，否则历史实名资料和
+商户/农机手入驻草稿将无法解密。
+
+## app 容器不健康
+
+先查看真正的启动错误，不要只依据 Compose 的 `unhealthy` 汇总：
+
+```bash
+cd /root/cotton
+docker compose logs --tail=200 app
+```
+
+若日志提示缺少或拒绝 `IDENTITY_DATA_KEY` / `JWT_SECRET`，执行：
+
+```bash
+git pull --ff-only origin main
+node scripts/ensure-runtime-secrets.js
+docker compose up -d --build --remove-orphans
+docker compose ps
+curl --fail http://127.0.0.1/api/ping
+```
+
+检查两个变量是否存在时只显示键名，禁止把密钥明文粘贴到聊天或工单：
+
+```bash
+grep -E '^(JWT_SECRET|IDENTITY_DATA_KEY)=' cotton-app/server/.env | sed 's/=.*/=<configured>/'
+```
+
+如果 `app` 仍不健康，重新执行 `docker compose logs --tail=200 app`。入口脚本会在
+任一数据库迁移失败时停止服务，日志中的第一条 `Error` 才是下一步需要处理的原因。
+
 ## 微信支付证书
 
 默认宿主机位置保持不变：

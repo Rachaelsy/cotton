@@ -119,10 +119,12 @@ docker compose exec app npm run admin:bootstrap -- --phone=你的11位手机号 
 npm run security:audit-defaults
 ```
 
-`npm run secrets:ensure` 会检查 `cotton-app/server/.env` 中的 `JWT_SECRET`。
-仅当密钥缺失、过短或仍是示例占位值时才生成新的随机密钥，不会在终端输出密钥明文。
-密钥变更会使已有登录状态失效，但不会影响账号、订单或学习记录。生产服务启动时也会
-拒绝使用不安全的占位密钥，避免带着可预测令牌配置上线。
+`npm run secrets:ensure` 会检查 `cotton-app/server/.env` 中的 `JWT_SECRET` 和
+`IDENTITY_DATA_KEY`。仅当密钥缺失、过短或仍是示例占位值时才生成新的随机密钥，
+不会在终端输出密钥明文，也不会覆盖已经有效的旧密钥。`JWT_SECRET` 变更会使已有登录
+状态失效，但不会影响账号、订单或学习记录；`IDENTITY_DATA_KEY` 用于加密实名资料和
+入驻草稿，一旦已经写入加密数据就不能更换，必须和数据库备份一起安全保存。生产服务
+启动时会拒绝缺失或不安全的占位密钥。
 
 生产启动不再自动写入测试农户、商户、农机手、专家或商品。`SEED_DEMO_DATA` 只允许在
 非生产环境显式开启；生产环境开启会直接停止启动。数据库迁移任一步失败时服务也会停止，
