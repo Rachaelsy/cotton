@@ -58,6 +58,8 @@ DB_NAME=cotton
 
 更新脚本会在启动容器前运行 `npm run secrets:ensure` 对应的密钥初始化逻辑，
 自动补齐旧服务器缺少的 `JWT_SECRET` 和 `IDENTITY_DATA_KEY`，但不会覆盖有效旧值。
+云服务器没有安装宿主机 Node.js 时，脚本会自动使用禁止联网的一次性 Node 容器执行，
+无需为此在服务器额外安装 Node.js。
 `IDENTITY_DATA_KEY` 启用后必须纳入受控备份，不能随意更换，否则历史实名资料和
 商户/农机手入驻草稿将无法解密。
 
@@ -74,8 +76,7 @@ docker compose logs --tail=200 app
 
 ```bash
 git pull --ff-only origin main
-node scripts/ensure-runtime-secrets.js
-docker compose up -d --build --remove-orphans
+sh deploy/update.sh
 docker compose ps
 curl --fail http://127.0.0.1/api/ping
 ```

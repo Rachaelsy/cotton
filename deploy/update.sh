@@ -39,9 +39,19 @@ for cert in apiclient_key.pem pub_key.pem; do
   fi
 done
 
-node scripts/ensure-runtime-secrets.js
+if command -v node >/dev/null 2>&1; then
+  node scripts/ensure-runtime-secrets.js
+else
+  echo "[deploy] host Node.js not found; initializing secrets with an isolated Node container"
+  docker run --rm --network none \
+    -v "$ROOT_DIR/scripts:/workspace/scripts:ro" \
+    -v "$ROOT_DIR/cotton-app/server/.env:/workspace/cotton-app/server/.env" \
+    -w /workspace \
+    docker.m.daocloud.io/library/node:20-alpine \
+    node scripts/ensure-runtime-secrets.js
+fi
 docker compose config --quiet
-docker compose up -d --build --remove-orphans
+docker compose up -d --build --force-recreate --remove-orphans
 docker compose ps
 
 check_url() {
