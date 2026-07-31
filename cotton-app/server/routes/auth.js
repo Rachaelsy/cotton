@@ -407,7 +407,10 @@ router.post('/wx-login', async (req, res) => {
     const tokenUrl = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`
     const tokenResp = await fetch(tokenUrl)
     const tokenData = await tokenResp.json()
-    if (tokenData.errcode) return fail(res, '获取 access_token 失败')
+    if (tokenData.errcode) {
+      console.error('[wx-login] access_token:', tokenData.errcode, tokenData.errmsg)
+      return fail(res, `获取微信访问凭证失败（${tokenData.errcode}）`, 502)
+    }
 
     // ── 3. phoneCode 换手机号 ──────────────────
     const phoneResp = await fetch(
@@ -415,7 +418,10 @@ router.post('/wx-login', async (req, res) => {
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: phoneCode }) }
     )
     const phoneData = await phoneResp.json()
-    if (phoneData.errcode) return fail(res, '获取手机号失败，请重试')
+    if (phoneData.errcode) {
+      console.error('[wx-login] phone:', phoneData.errcode, phoneData.errmsg)
+      return fail(res, `获取手机号失败（${phoneData.errcode}），请重试`, 502)
+    }
     const phone = phoneData.phone_info.phoneNumber
 
     // ── 4. 查找已有账号（openid 或 手机号）───────
@@ -470,7 +476,7 @@ router.post('/wx-login', async (req, res) => {
 
   } catch (err) {
     console.error('[wx-login]', err)
-    return fail(res, '微信登录失败，请稍后重试', 500)
+    return fail(res, err.message || '微信登录失败，请稍后重试', err.statusCode || 500)
   }
 })
 

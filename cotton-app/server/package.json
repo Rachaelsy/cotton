@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "migrate:runtime": "node db/migrate_openid.js && node db/migrate_machines.js && node db/migrate_profit_sharing.js && node db/migrate_commission_requests.js && node db/migrate_farmer_improvements.js && node db/migrate_machine_reliability.js && node db/migrate_points.js",
     "migrate:marketing": "node db/migrate_marketing.js",
     "migrate:payment-trace": "node db/migrate_supply_payment_trace.js",
     "migrate:machine-reliability": "node db/migrate_machine_reliability.js",

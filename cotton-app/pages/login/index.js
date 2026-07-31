@@ -36,8 +36,6 @@ Page({
     const info = wx.getSystemInfoSync()
     this.applyLanguage()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
-    // 预取 wx.login code，有效期 5 分钟
-    wx.login({ success: r => { this._wxLoginCode = r.code }, fail: () => {} })
   },
 
   onShow() {
@@ -83,11 +81,12 @@ Page({
       return
     }
     const phoneCode = e.detail.code
-    let loginCode = this._wxLoginCode
-    if (!loginCode) {
-      const r = await new Promise(resolve => wx.login({ success: resolve, fail: () => resolve({}) }))
-      loginCode = r.code
-    }
+    // 登录 code 有效期短且只能使用一次。用户确认手机号授权后再获取，
+    // 避免复用页面加载时预取但已经过期/被消费的 code。
+    const loginResult = await new Promise(resolve => {
+      wx.login({ success: resolve, fail: error => resolve({ error }) })
+    })
+    const loginCode = loginResult.code
     if (!loginCode) {
       this._toast(this.textCopy.wxFail)
       return

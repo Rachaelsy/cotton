@@ -10,7 +10,7 @@ const ENV = 'real'
 
 const PROD_URL   = 'https://cyaia.cn'        // ← 上线后改为真实备案域名
 const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP
-const LOCAL_IP   = '192.168.0.12'             // 本地开发局域网 IP（ipconfig 查询）
+const LOCAL_IP   = '192.168.0.39'             // 本地开发局域网 IP（ipconfig 查询）
 
 const BASE_URL =
   ENV === 'prod'   ? PROD_URL :

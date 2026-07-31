@@ -35,14 +35,16 @@
       <text class="section-title">积分明细</text>
       <view wx:if="{{loading}}" class="empty">正在加载...</view>
       <view wx:elif="{{!transactions.length}}" class="empty">完成第一门课程后，积分记录会显示在这里</view>
-      <view wx:else class="ledger-row" wx:for="{{transactions}}" wx:key="id">
-        <view class="ledger-copy">
-          <text class="ledger-title">{{item.label}}</text>
-          <text class="ledger-desc">{{item.description}}</text>
-          <text class="ledger-time">{{item.time}}</text>
+      <block wx:else>
+        <view class="ledger-row" wx:for="{{transactions}}" wx:key="id">
+          <view class="ledger-copy">
+            <text class="ledger-title">{{item.label}}</text>
+            <text class="ledger-desc">{{item.description}}</text>
+            <text class="ledger-time">{{item.time}}</text>
+          </view>
+          <text class="ledger-points {{item.points > 0 ? 'plus' : 'minus'}}">{{item.sign}}{{item.points}}</text>
         </view>
-        <text class="ledger-points {{item.points > 0 ? 'plus' : 'minus'}}">{{item.sign}}{{item.points}}</text>
-      </view>
+      </block>
     </view>
     <view class="bottom-safe"></view>
   </scroll-view>

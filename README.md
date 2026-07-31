@@ -59,6 +59,7 @@ docker compose down
 # 终端 1：核心平台
 cd cotton-app\server
 npm install
+npm run migrate:runtime
 npm start
 
 # 终端 2：公益与商业网站
