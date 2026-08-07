@@ -1,0 +1,26 @@
+<view class="detail-page">
+  <view class="detail-hero">
+    <view class="detail-nav"><button bindtap="back">‹</button><text>政策详情</text><button class="collect-btn" bindtap="toggleCollect">{{collected?'已收藏':'收藏'}}</button></view>
+    <view class="detail-tags"><text>{{policy.level}}</text><text>{{policy.category}}</text><text class="status">{{policy.status}}</text></view>
+    <text class="detail-title">{{policy.title}}</text>
+    <view class="detail-publisher"><text>{{policy.issuer}}</text><text>{{policy.publishDate}}</text></view>
+  </view>
+
+  <view class="official-warning"><text>政策核验提示</text><view>当前页面为 UI 演示内容。正式申报前，请核对政府部门发布的政策原文、文号和办理通知。</view></view>
+
+  <view class="key-card">
+    <view><small>适用地区</small><text>{{policy.region}}</text></view>
+    <view><small>办理时间</small><text>{{policy.deadline}}</text></view>
+    <view class="wide"><small>政策文号</small><text>{{policy.documentNo}}</text></view>
+  </view>
+
+  <view class="detail-section"><view class="section-title"><i></i><text>政策摘要</text></view><text class="summary">{{policy.summary}}</text><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view>
+
+  <view class="detail-section"><view class="section-title"><i></i><text>适用对象</text></view><view class="check-row" wx:for="{{policy.applicable}}" wx:key="*this"><text>✓</text><view>{{item}}</view></view></view>
+
+  <view class="detail-section"><view class="section-title"><i></i><text>办理流程</text></view><view class="step-row" wx:for="{{policy.steps}}" wx:key="*this"><text>{{index+1}}</text><view><small>第 {{index+1}} 步</small><text>{{item}}</text></view></view></view>
+
+  <view class="detail-section"><view class="section-title"><i></i><text>材料清单</text></view><view class="material-row" wx:for="{{policy.materials}}" wx:key="*this"><text>□</text><view>{{item}}</view></view></view>
+
+  <view class="source-card"><text>信息来源</text><view>{{policy.issuer}}</view><small>演示数据 · 正式版本将提供政府原文链接</small><button bindtap="copySource">复制来源说明</button></view>
+</view>

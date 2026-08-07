@@ -25,5 +25,9 @@ Page({
   },
 
   openNews() { wx.navigateTo({ url: '/pages/news/index' }) },
+  openPolicy(e) {
+    const id = e.currentTarget.dataset.id
+    wx.navigateTo({ url: id ? `/pages/policy/detail?id=${id}` : '/pages/policy/index' })
+  },
   openAi() { wx.navigateTo({ url: '/pages/ai/index' }) }
 })

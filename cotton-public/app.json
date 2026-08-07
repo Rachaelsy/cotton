@@ -2,6 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/news/index",
+    "pages/policy/index",
+    "pages/policy/detail",
     "pages/academy/index",
     "pages/academy/course",
     "pages/academy/exam",

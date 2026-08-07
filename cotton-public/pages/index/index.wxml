@@ -21,6 +21,25 @@
 
   <view class="ai-card" bindtap="openAi"><view class="ai-icon">AI</view><view><strong>智能农技顾问</strong><text>病虫诊断、种植管理，有问题随时问</text></view><text class="arrow">›</text></view>
 
+  <view class="policy-home">
+    <view class="policy-home-head" bindtap="openPolicy">
+      <view class="policy-seal">政</view>
+      <view class="policy-home-title"><text>政策中心</text><small>权威发布 · 申报提醒 · 通俗解读</small></view>
+      <text class="policy-more">全部 ›</text>
+    </view>
+    <view class="policy-feature" bindtap="openPolicy" data-id="target-price-guide">
+      <view class="policy-badges"><text>最新</text><text>目标价格</text></view>
+      <strong>棉花目标价格补贴申报指南</strong>
+      <small>了解申报对象、面积核验和材料准备</small>
+      <view class="policy-feature-foot"><text>国家级 · 示例内容</text><text>查看详情 ›</text></view>
+    </view>
+    <view class="policy-shortcuts">
+      <view bindtap="openPolicy"><strong>国家</strong><small>政策动态</small></view>
+      <view bindtap="openPolicy"><strong>自治区</strong><small>实施指南</small></view>
+      <view bindtap="openPolicy"><strong>地区县级</strong><small>申报通知</small></view>
+    </view>
+  </view>
+
   <view class="section news-section">
     <view class="section-head"><text>棉花资讯</text><button bindtap="openNews">查看全部 ›</button></view>
     <view class="news" wx:for="{{news}}" wx:key="id">
