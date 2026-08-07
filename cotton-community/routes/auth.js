@@ -39,7 +39,7 @@ function signCommunityAdmin(account) {
       real_name: account.display_name || '公益平台管理员',
       role: 'community_admin',
       is_community_admin: true,
-      permission: account.permission_key || 'policy_editor',
+      permission: account.permission_key || 'public_admin',
       auth_version: Number(account.auth_version || 0)
     },
     process.env.JWT_SECRET,
@@ -186,7 +186,7 @@ router.post('/admin/login', async (req, res) => {
       return ok(res, {
         token: signCommunityAdmin(communityAdmin),
         real_name: communityAdmin.display_name || '公益平台管理员',
-        permission: communityAdmin.permission_key || 'policy_editor',
+        permission: communityAdmin.permission_key || 'public_admin',
         redirect: '/knowledge/policy-admin.html'
       }, '登录成功')
     }

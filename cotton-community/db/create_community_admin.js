@@ -20,14 +20,14 @@ async function run() {
   await db.query(
     `INSERT INTO community_admins
       (phone,password,display_name,permission_key,is_active,auth_version)
-     VALUES (?,?,?,'policy_editor',1,0)
+     VALUES (?,?,?,'public_admin',1,0)
      ON DUPLICATE KEY UPDATE
-       password=VALUES(password),display_name=VALUES(display_name),permission_key='policy_editor',
+       password=VALUES(password),display_name=VALUES(display_name),permission_key='public_admin',
        is_active=1,auth_version=auth_version+1`,
     [phone, hash, displayName]
   )
 
-  console.log('公益平台政策管理员已创建或重置。')
+  console.log('公益小程序管理员已创建或重置。')
   console.log(`登录手机号：${phone}`)
   console.log(`一次性初始密码：${password}`)
   console.log('请立即保存密码；该密码不会写入文件或数据库明文。')

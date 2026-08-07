@@ -10,9 +10,9 @@
 
 ### 公益平台
 
-#### 政策中心管理员与 Markdown 发布
+#### 公益小程序管理员与 Markdown 政策发布
 
-公益平台提供独立的政策编辑权限，不需要把账号提升为核心平台管理员。首次部署或更新后，容器启动会自动创建 `community_admins` 和 `policy_articles` 表。
+公益平台提供独立、可扩展的小程序管理员账号，不需要把账号提升为核心平台管理员。当前后台先开放“政策中心”，后续可以继续增加资讯、课程等管理模块。首次部署或更新后，容器启动会自动创建 `community_admins` 和 `policy_articles` 表。
 
 在服务器创建或重置政策管理员（密码由脚本随机生成，只显示一次）：
 
@@ -21,7 +21,7 @@ cd /root/cotton
 docker compose exec community node db/create_community_admin.js 你的11位手机号 公益政策管理员
 ```
 
-登录地址为 `/knowledge/admin-login.html`。独立政策管理员登录后自动进入 `/knowledge/policy-admin.html`，只能管理政策文章；可以编辑 Markdown、实时预览、保存草稿和正式发布。公开接口 `GET /api/policies` 和 `GET /api/policies/:id` 只返回已发布文章。政策原文链接仅接受 HTTPS，发布前应核验发布单位、文号和原文。
+管理员从统一入口 `/admin/login.html?role=admin` 登录，后端根据账号类型自动进入公益小程序管理后台 `/knowledge/policy-admin.html`。公益管理员不能进入核心订单、商户等后台；当前可编辑 Markdown 政策、实时预览、保存草稿和正式发布。公开接口 `GET /api/policies` 和 `GET /api/policies/:id` 只返回已发布文章。
 
 - 棉花种植培训：播种、苗期、水肥、病虫害、花铃期和采收六类图文文章。
 - 图文课程：图文资料、图片、课后小测试、评论和 AI 助学。

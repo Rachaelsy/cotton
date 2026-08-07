@@ -286,6 +286,40 @@ router.post('/login', async (req, res) => {
   try {
     const { phone, password } = req.body
     if (!phone || !password) return res.status(400).json({ code: 400, msg: '请填写账号和密码' })
+    let publicAdmin = null
+    try {
+      [[publicAdmin]] = await db.query('SELECT * FROM community_admins WHERE phone=? LIMIT 1', [phone])
+    } catch (error) {
+      if (error.code !== 'ER_NO_SUCH_TABLE') throw error
+    }
+    if (publicAdmin) {
+      if (!publicAdmin.is_active) return res.status(403).json({ code: 403, msg: '公益管理员账号已停用' })
+      const matched = await bcrypt.compare(password, publicAdmin.password)
+      if (!matched) return res.status(401).json({ code: 401, msg: '密码错误' })
+      const token = jwt.sign(
+        {
+          id: Number(publicAdmin.id),
+          phone: publicAdmin.phone,
+          real_name: publicAdmin.display_name || '公益平台管理员',
+          role: 'community_admin',
+          is_community_admin: true,
+          permission: publicAdmin.permission_key || 'public_admin',
+          auth_version: Number(publicAdmin.auth_version || 0)
+        },
+        JWT_SECRET, { expiresIn: ADMIN_JWT_EXPIRES }
+      )
+      await db.query('UPDATE community_admins SET last_login_at=NOW() WHERE id=?', [publicAdmin.id])
+      return res.json({
+        code: 200,
+        msg: '登录成功',
+        data: {
+          token,
+          real_name: publicAdmin.display_name || '公益平台管理员',
+          admin_type: 'public',
+          dashboard: '/knowledge/policy-admin.html'
+        }
+      })
+    }
     const [rows] = await db.query('SELECT * FROM users WHERE phone=?', [phone])
     const user = rows[0]
     if (!user) return res.status(404).json({ code: 404, msg: '账号不存在' })
@@ -311,7 +345,9 @@ router.post('/login', async (req, res) => {
       data: {
         token,
         real_name: user.real_name,
-        must_change_password: mustChangePassword
+        must_change_password: mustChangePassword,
+        admin_type: 'platform',
+        dashboard: '/admin/dashboard.html'
       }
     })
   } catch (e) {

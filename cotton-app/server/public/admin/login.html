@@ -1041,7 +1041,7 @@
           cfg.save(data.data)
           hint.textContent = '登录成功，正在进入工作台...'
           hint.style.display = 'block'
-          window.location.href = cfg.dashboard
+          window.location.href = data.data.dashboard || cfg.dashboard
           return
         }
         err.textContent = data.msg || '手机号或密码错误'

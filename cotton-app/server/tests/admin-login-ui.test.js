@@ -16,6 +16,7 @@ function run() {
   const merchantDashboard = readServerFile('public', 'merchant', 'dashboard.html')
   const expertDashboard = readServerFile('public', 'expert', 'dashboard.html')
   const runtime = readServerFile('public', 'admin', 'assets', 'runtime.js')
+  const adminRoute = readServerFile('routes', 'admin.js')
 
   assert.ok(login.includes('Cotton'), 'unified login should keep Cotton branding')
   assert.ok(login.includes('data-role="admin"'), 'admin role card should exist')
@@ -46,6 +47,9 @@ function run() {
   assert.ok(login.includes('/api/merchant/login'))
   assert.ok(login.includes('/api/operator/login'))
   assert.ok(login.includes('/admin/dashboard.html'))
+  assert.ok(login.includes('data.data.dashboard || cfg.dashboard'), 'unified login should honor the backend-selected dashboard')
+  assert.ok(adminRoute.includes('SELECT * FROM community_admins'), 'admin login should recognize public mini-program administrators')
+  assert.ok(adminRoute.includes("dashboard: '/knowledge/policy-admin.html'"), 'public administrators should enter the public mini-program dashboard')
   assert.ok(login.includes('/merchant/dashboard.html'))
   assert.ok(login.includes('/operator/dashboard.html'))
 

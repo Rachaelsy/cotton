@@ -17,7 +17,7 @@
 
 底部导航为“首页 / AI助手 / 我的”。棉知学堂不占用底部导航，继续从首页常用工具进入。首页天气使用定位接口读取真实数据；用户拒绝定位或网络不可用时只展示降级提示。
 
-政策中心正式内容由 `cotton-community` 的 `/knowledge/policy-admin.html` 管理。政策管理员可以使用 Markdown 编辑、实时预览、保存草稿和发布；小程序通过 `/api/policies` 读取已发布文章。创建管理员账号和部署步骤见 `cotton-community/README.md`，账号密码不会写入 Git。
+公益小程序拥有独立、可扩展的管理后台，当前首个模块为政策中心。管理员从统一入口 `/admin/login.html?role=admin` 登录，系统按账号类型自动进入公益小程序后台；可以使用 Markdown 编辑、实时预览、保存草稿和发布。小程序通过 `/api/policies` 读取已发布文章。创建账号和部署步骤见 `cotton-community/README.md`。
 
 农资商城、农机租赁、棉花交易、贷款、保险、商户后台和支付能力不属于公益平台首批范围。
 

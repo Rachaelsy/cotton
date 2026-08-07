@@ -5,6 +5,7 @@
 ### 调整
 
 - **管理员后台功能精简**：删除“专家账号”“公益平台”“商业平台”和“内容运营”四个导航入口，清理专家账号管理面板、弹窗及脚本，并移除 `GET/POST /api/admin/experts`、`PUT /api/admin/experts/:id`、`PATCH /api/admin/experts/:id/status` 和 `/community/admin` 跳转路由；独立公益、商业网站及专家业务功能保持不变。
+- **统一管理员登录分流**：`/admin/login.html?role=admin` 同时识别核心平台管理员和公益小程序管理员；登录成功后由后端返回对应工作台地址，公益账号不会获得核心管理权限。
 
 ## [2.1.0] — 2026-06-02
 

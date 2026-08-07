@@ -16,7 +16,7 @@ async function policyAdminAuth(req, res, next) {
   const payload = tokenPayload(req)
   if (!payload) return fail(res, '管理员登录已过期', 401)
   try {
-    if (payload.is_community_admin && payload.permission === 'policy_editor') {
+    if (payload.is_community_admin && ['public_admin', 'policy_editor'].includes(payload.permission)) {
       const [[account]] = await db.query(
         'SELECT id,is_active,auth_version FROM community_admins WHERE id=? LIMIT 1',
         [payload.id]

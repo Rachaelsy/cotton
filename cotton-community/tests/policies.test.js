@@ -16,7 +16,7 @@ assert(migrate.includes('CREATE TABLE IF NOT EXISTS policy_articles'), 'migratio
 assert(auth.includes('signCommunityAdmin') && auth.includes("permission: account.permission_key"), 'community admin login should issue a scoped token')
 assert(route.includes("router.get('/admin/list'") && route.includes("router.post('/admin'") && route.includes("router.put('/admin/:id'"), 'policy management CRUD should exist')
 assert(route.includes("status='published'") && route.includes("router.get('/:id'"), 'public policy API should expose published articles only')
-assert(route.includes("payload.permission === 'policy_editor'"), 'policy API should enforce policy editor scope')
+assert(route.includes("'public_admin', 'policy_editor'"), 'policy API should accept the extensible public-admin scope')
 assert(server.includes("app.use('/api/policies'"), 'policy API should be mounted')
 assert(adminHtml.includes('Markdown 正文') && adminHtml.includes('实时预览'), 'policy editor should expose Markdown editing and preview')
 assert(adminJs.includes('markdownHtml') && adminJs.includes("data-save"), 'policy editor should render previews and publish')

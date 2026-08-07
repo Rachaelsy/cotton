@@ -33,7 +33,7 @@ async function run() {
       phone VARCHAR(20) NOT NULL UNIQUE,
       password VARCHAR(100) NOT NULL,
       display_name VARCHAR(64) NOT NULL DEFAULT '公益平台管理员',
-      permission_key VARCHAR(64) NOT NULL DEFAULT 'policy_editor',
+      permission_key VARCHAR(64) NOT NULL DEFAULT 'public_admin',
       is_active TINYINT(1) NOT NULL DEFAULT 1,
       auth_version INT UNSIGNED NOT NULL DEFAULT 0,
       last_login_at DATETIME DEFAULT NULL,
@@ -42,6 +42,7 @@ async function run() {
       INDEX idx_community_admin_active (is_active)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台独立管理员'
   `)
+  await db.query("UPDATE community_admins SET permission_key='public_admin' WHERE permission_key='policy_editor'")
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS policy_articles (

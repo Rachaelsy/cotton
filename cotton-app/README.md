@@ -441,6 +441,7 @@ netsh advfirewall firewall add rule name="Cotton 3000" dir=in action=allow proto
 | 商户 | `/` 或 `/admin/login.html?role=merchant` | `/portal/register.html?role=merchant` | `/merchant/dashboard.html` |
 | 农机手 | `/` 或 `/admin/login.html?role=operator` | `/portal/register.html?role=operator` | `/operator/dashboard.html` |
 | 管理员 | `/` 或 `/admin/login.html?role=admin` | — | `/admin/dashboard.html` |
+| 公益小程序管理员 | `/` 或 `/admin/login.html?role=admin` | 服务器安全创建脚本 | `/knowledge/policy-admin.html` |
 | 专家 | `/` 或 `/admin/login.html?role=expert` | 使用已有专家账号 | `/expert/dashboard.html` |
 
 访问根路径（例如 `https://cyaia.cn/` 或本地 `http://localhost:3000/`）会进入统一身份选择登录页，页面提供管理员、商户、农机手、专家四个身份入口。网页后台登录目前只保留手机号 + 密码登录，不再提供手机号验证码登录。
