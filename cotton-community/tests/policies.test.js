@@ -22,10 +22,12 @@ assert(route.includes("'public_admin', 'policy_editor'"), 'policy API should acc
 assert(server.includes("app.use('/api/policies'"), 'policy API should be mounted')
 assert(adminHtml.includes('Markdown 正文') && adminHtml.includes('实时预览'), 'policy editor should expose Markdown editing and preview')
 assert(adminHtml.includes('class="sidebar"') && adminHtml.includes('class="topbar"'), 'public admin should share the core admin layout structure')
-assert(adminHtml.includes('<span>政策中心</span>') && !adminHtml.includes('商户审批'), 'public admin sidebar should expose policy center only')
+assert(adminHtml.includes('<span>政策中心</span>') && adminHtml.includes('<span>农户管理</span>') && !adminHtml.includes('商户审批'), 'public admin sidebar should expose policy and farmer management without merchant access')
 assert(adminJs.includes('markdownHtml') && adminJs.includes("data-save"), 'policy editor should render previews and publish')
 assert(adminHtml.includes('id="passwordForm"') && adminHtml.includes('data-view="security"'), 'public admin should expose account security in the shared sidebar layout')
 assert(adminJs.includes("location.replace('/admin/login.html?role=admin')") && !adminJs.includes('/knowledge/admin-login.html'), 'logout should return to the unified admin login')
 assert(server.includes("app.get('/knowledge/admin-login.html'") && server.includes("res.redirect(302, '/admin/login.html?role=admin')"), 'the obsolete login URL should redirect to unified login')
+assert(adminHtml.includes('id="farmerPanel"') && adminHtml.includes('id="farmerModal"'), 'public admin should provide the shared farmer management interface')
+assert(adminJs.includes("farmerApi('/farmers'") && adminJs.includes("/farmers/${id}/status"), 'public admin should load and manage farmers through scoped core APIs')
 
 console.log('policy publishing tests passed')

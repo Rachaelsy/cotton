@@ -1,4 +1,5 @@
 .env
+.env.development
 *.pem
 *.log
 logs/

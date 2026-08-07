@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
+const db = require('../db/database')
 const { detectAiIntent, buildIntentReply } = require('../utils/ai-intent')
 const { IMAGE_TYPES, makeFileFilter, safeExtension } = require('../utils/upload-policy')
 
@@ -47,6 +48,20 @@ function rateLimit({ windowMs, max, keyPrefix }) {
 
 const chatRateLimit = rateLimit({ windowMs: 60 * 1000, max: 30, keyPrefix: 'ai-chat' })
 const photoRateLimit = rateLimit({ windowMs: 60 * 1000, max: 6, keyPrefix: 'ai-photo' })
+
+async function savePestRecognition(userId, record) {
+  try {
+    const [result] = await db.query(
+      `INSERT INTO pest_recognition_records (user_id,image_url,reply,diagnosis_json)
+       VALUES (?,?,?,?)`,
+      [Number(userId), record.image_url || '', record.reply || '', record.diagnosis ? JSON.stringify(record.diagnosis) : null]
+    )
+    return Number(result.insertId)
+  } catch (error) {
+    console.error('[pest-history-save]', error.message)
+    return 0
+  }
+}
 
 const guardedPhotoUpload = multer({
   dest: aiTempDir,
@@ -368,6 +383,42 @@ router.post('/chat', chatRateLimit, async (req, res) => {
   }
 })
 
+router.get('/photo/history', requireAuth, async (req, res) => {
+  try {
+    const userId = Number(req.user.id)
+    const [[rows], [countRows]] = await Promise.all([
+      db.query(
+        `SELECT id,image_url,reply,diagnosis_json,created_at
+         FROM pest_recognition_records
+        WHERE user_id=?
+        ORDER BY created_at DESC,id DESC
+        LIMIT 12`,
+        [userId]
+      ),
+      db.query('SELECT COUNT(*) AS total FROM pest_recognition_records WHERE user_id=?', [userId])
+    ])
+    const history = rows.map(row => ({
+      id: `pest-${row.id}`,
+      image: row.image_url || '',
+      reply: row.reply || '',
+      diagnosis: typeof row.diagnosis_json === 'string'
+        ? JSON.parse(row.diagnosis_json || 'null')
+        : row.diagnosis_json,
+      createdAt: row.created_at
+    }))
+    return res.json({
+      code: 200,
+      data: {
+        records: history,
+        total: Number(countRows[0] && countRows[0].total || 0)
+      }
+    })
+  } catch (error) {
+    console.error('[pest-history-list]', error.message)
+    return res.status(500).json({ code: 500, msg: '识别历史加载失败', data: null })
+  }
+})
+
 router.post('/photo', requireAuth, photoRateLimit, uploadPhoto, async (req, res) => {
   if (!req.file) return res.json({ code: 400, msg: '未收到图片', data: null })
 
@@ -382,10 +433,13 @@ router.post('/photo', requireAuth, photoRateLimit, uploadPhoto, async (req, res)
 
     const cfg = getVisionConfig()
     if (!cfg) {
+      const reply = '未配置硅基流动视觉模型，暂时无法进行病虫害识别。'
+      const recordId = await savePestRecognition(req.user.id, { reply, image_url: imageUrl, diagnosis: null })
       return res.json({
         code: 200,
         data: {
-          reply: '未配置硅基流动视觉模型，暂时无法进行病虫害识别。',
+          id: recordId,
+          reply,
           image_url: imageUrl,
           diagnosis: null
         }
@@ -414,10 +468,12 @@ router.post('/photo', requireAuth, photoRateLimit, uploadPhoto, async (req, res)
     const rawReply = String(result.choices[0].message.content || '').trim()
     const diagnosis = normalizeDiagnosis(extractJsonObject(rawReply), rawReply)
     const reply = buildDiagnosisReply(diagnosis)
+    const recordId = await savePestRecognition(req.user.id, { reply, image_url: imageUrl, diagnosis })
 
     return res.json({
       code: 200,
       data: {
+        id: recordId,
         reply,
         image_url: imageUrl,
         diagnosis,

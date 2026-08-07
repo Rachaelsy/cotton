@@ -53,6 +53,19 @@ async function run() {
   assert.equal(result.nextCalled, false)
   assert.equal(result.res.statusCode, 401)
 
+  let communityAdminQuery = ''
+  result = await runGuard(
+    { id: 3, role: 'community_admin', is_community_admin: true, permission: 'public_admin', auth_version: 4 },
+    {
+      query: async sql => {
+        communityAdminQuery = sql
+        return [[{ id: 3, is_active: 1, auth_version: 4 }]]
+      }
+    }
+  )
+  assert(result.nextCalled)
+  assert.match(communityAdminQuery, /FROM community_admins/)
+
   let expertQuery = ''
   result = await runGuard(
     { id: 9, role: 'expert', is_expert: true },
@@ -101,7 +114,7 @@ async function run() {
     path.join(__dirname, '../../..', 'cotton-community/server.js'),
     'utf8'
   )
-  assert(communityGuard.includes("const fields = isAdmin ? 'id,is_active,is_admin,admin_auth_version' : 'id,is_active'"))
+  assert(communityGuard.includes("? 'community_admins'"))
   assert(communityGuard.includes('is_admin,admin_auth_version'))
   assert(communityServer.includes("app.use('/api', createActiveSessionGuard())"))
 

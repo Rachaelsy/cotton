@@ -1,10 +1,9 @@
 const app = getApp()
 const i18n = require('../../utils/i18n')
 const layout = require('../../utils/layout')
+const auth = require('../../utils/auth')
 const { getPestCopy } = require('../../utils/pest-copy')
 const { decorateHistoryRecord } = require('../../utils/pest-recognition')
-
-const HISTORY_KEY = 'pest_recognition_history'
 
 Page({
   data: {
@@ -102,22 +101,26 @@ Page({
     return 'tag-physio'
   },
 
-  _loadHistory() {
-    const stored = wx.getStorageSync(HISTORY_KEY)
-    const history = Array.isArray(stored) ? stored : []
-
-    const recentHistory = history
-      .slice(0, 6)
-      .map(item => decorateHistoryRecord(item, this.textCopy || this.data.copy))
-
+  async _loadHistory() {
     const copy = this.textCopy || this.data.copy
-
-    this.setData({
-      recentHistory,
-      historyCountText: copy.historyCount
-        ? copy.historyCount(recentHistory.length)
-        : `${recentHistory.length}`
-    })
+    if (!auth.getToken()) {
+      this.setData({ recentHistory: [], historyCountText: copy.historyCount ? copy.historyCount(0) : '0' })
+      return
+    }
+    try {
+      const payload = await auth.request('GET', '/api/ai/photo/history')
+      const data = payload && payload.code === 200 ? payload.data : null
+      const history = data && Array.isArray(data.records) ? data.records : []
+      const total = data && Number.isFinite(Number(data.total)) ? Number(data.total) : history.length
+      const recentHistory = history.slice(0, 6).map(item => decorateHistoryRecord(item, copy))
+      this.setData({
+        recentHistory,
+        historyCountText: copy.historyCount ? copy.historyCount(total) : `${total}`
+      })
+    } catch (error) {
+      console.error('[pest-history-load]', error)
+      this.setData({ recentHistory: [], historyCountText: copy.historyCount ? copy.historyCount(0) : '0' })
+    }
   },
 
   onFilterTap(e) {

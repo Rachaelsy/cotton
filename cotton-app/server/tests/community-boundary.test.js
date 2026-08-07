@@ -10,6 +10,7 @@ const login = read('public/admin/login.html')
 const dashboard = read('public/admin/dashboard.html')
 const packageJson = JSON.parse(read('package.json'))
 const entrypoint = read('docker-entrypoint.sh')
+const adminRoute = read('routes/admin.js')
 
 assert(index.includes("app.get('/community'"), 'cotton-app should expose a public community redirect')
 assert(index.includes("app.get('/community/public'"), 'cotton-app should expose the public-service platform redirect')
@@ -30,5 +31,8 @@ assert(!packageJson.scripts.test.includes('knowledge-hall.test.js'), 'knowledge 
 assert(!entrypoint.includes('migrate_knowledge_hall.js'), 'cotton-app startup must not mutate community tables')
 assert(!fs.existsSync(path.join(serverDir, 'routes', 'knowledge.js')), 'community route must be removed from cotton-app')
 assert(!fs.existsSync(path.join(serverDir, 'public', 'knowledge')), 'community static site must be removed from cotton-app')
+assert(adminRoute.includes('async function farmerAdminAuth') && adminRoute.includes("req.adminScope = 'public_farmer_management'"), 'public administrators should receive only the scoped farmer-management authorization')
+assert(adminRoute.includes("router.patch('/farmers/:id/status', farmerAdminAuth"), 'public administrators should use a farmer-specific status endpoint')
+assert(adminRoute.includes("router.patch('/users/:id/status', adminAuth"), 'generic user status changes must remain restricted to platform administrators')
 
 console.log('community project boundary tests passed')

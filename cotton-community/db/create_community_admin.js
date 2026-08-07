@@ -15,7 +15,13 @@ async function run() {
     throw new Error('用法：node db/create_community_admin.js <11位手机号> [管理员名称]')
   }
 
-  const password = randomPassword()
+  const suppliedPassword = String(process.env.COMMUNITY_ADMIN_PASSWORD || '')
+  const password = suppliedPassword || randomPassword()
+  if (password.length < 10 || password.length > 72 ||
+      !/[a-z]/.test(password) || !/[A-Z]/.test(password) ||
+      !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    throw new Error('管理员密码必须为10-72位，并同时包含大写字母、小写字母、数字和特殊符号')
+  }
   const hash = await bcrypt.hash(password, 12)
   await db.query(
     `INSERT INTO community_admins
@@ -29,8 +35,12 @@ async function run() {
 
   console.log('公益小程序管理员已创建或重置。')
   console.log(`登录手机号：${phone}`)
-  console.log(`一次性初始密码：${password}`)
-  console.log('请立即保存密码；该密码不会写入文件或数据库明文。')
+  if (!suppliedPassword) {
+    console.log(`一次性初始密码：${password}`)
+    console.log('请立即保存密码；该密码不会写入文件或数据库明文。')
+  } else {
+    console.log('已使用 COMMUNITY_ADMIN_PASSWORD 设置密码，未在日志中回显。')
+  }
 }
 
 run()

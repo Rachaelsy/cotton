@@ -195,3 +195,11 @@ npm test
 - 退出登录统一清理本地管理令牌并返回 `/admin/login.html?role=admin`。
 - 原独立页面 `/knowledge/admin-login.html` 已删除；为兼容旧收藏地址，服务端会将该地址重定向到统一登录页。
 - 密码修改由已在生产环境使用的 `/api/policies/admin/change-password` 后台通道处理，减少独立代理路径造成的连接问题；原认证接口继续保留兼容。
+- 创建公益管理员时可临时设置 `COMMUNITY_ADMIN_PASSWORD` 环境变量；脚本会校验强度并只保存 bcrypt 哈希，不在日志中回显指定密码。未设置时仍生成一次性随机密码。
+- 公益管理员左侧同时提供“农户管理”，可查看、新增、编辑、启用和禁用共享数据库中的农户；核心后端采用独立的农户权限中间件，不向该账号开放商户、订单等其他平台接口。
+
+### 本地热开发
+
+从仓库根目录运行 `scripts/dev-local.ps1`。开发 Compose 会把 `cotton-community` 源码挂载到
+容器并以 Node `--watch` 启动，保存后自动重启；本地配置读取根目录中被 Git 忽略的
+`.env.development`。浏览器统一访问 `http://127.0.0.1/knowledge/`，无需操作云服务器。

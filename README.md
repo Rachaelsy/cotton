@@ -12,6 +12,39 @@
 
 ## 本地开发
 
+### 开发模式（推荐）
+
+仓库提供独立的 `docker-compose.dev.yml`。它使用本机 MySQL 数据卷，把两个后端源码目录
+挂载进容器，并通过 Node `--watch` 在保存 JavaScript 后自动重启服务，不会连接或重启云服务器。
+
+首次使用先启动 Docker Desktop，然后执行：
+
+```powershell
+cd F:\cotton
+powershell -ExecutionPolicy Bypass -File .\scripts\dev-local.ps1
+```
+
+本地专用配置位于 `.env.development`，已被 Git 忽略；可提交的字段说明位于
+`.env.development.example`。统一从 `http://127.0.0.1/` 访问，避免分别访问 3000/3100
+导致登录令牌和跨服务跳转不一致。
+开发模式使用单独命名的 `cotton_dev_*` 数据卷，不会复用本机普通 Compose 的数据库和上传文件。
+本地 MySQL 默认映射到 `127.0.0.1:3307`，避免与电脑已有的 3306 MySQL 服务冲突；容器内部连接仍为 `db:3306`。
+
+开发时查看日志：
+
+```powershell
+docker compose --env-file .env.development -f docker-compose.yml -f docker-compose.dev.yml logs -f community
+```
+
+停止本地环境（保留本地数据库）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev-stop.ps1
+```
+
+不要添加 `-v`，否则会删除本地数据库卷。正式部署继续只使用原来的 `docker-compose.yml`，
+不要在服务器命令中加入 `docker-compose.dev.yml`。
+
 先确保 `cotton-app/server/.env` 与 `cotton-community/.env` 使用同一套数据库连接和
 `JWT_SECRET`。
 

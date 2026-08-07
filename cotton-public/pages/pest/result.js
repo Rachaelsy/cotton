@@ -5,8 +5,6 @@ const layout = require('../../utils/layout')
 const { getPestCopy } = require('../../utils/pest-copy')
 const { buildDiagnosisView, decorateHistoryRecord, normalizeImageUrl } = require('../../utils/pest-recognition')
 
-const HISTORY_KEY = 'pest_recognition_history'
-
 Page({
   data: {
     statusBarHeight: 20,
@@ -143,7 +141,7 @@ Page({
           }
           const diagnosis = payload.data.diagnosis || null
           const record = {
-            id: `pest-${Date.now()}`,
+            id: payload.data.id ? `pest-${payload.data.id}` : `pest-${Date.now()}`,
             image: payload.data.image_url || filePath,
             localImage: filePath,
             reply: payload.data.reply,
@@ -154,7 +152,6 @@ Page({
           }
           const decorated = decorateHistoryRecord(record, this.indexCopy)
           app.globalData.pestRecognitionResult = decorated
-          this._saveHistory(record)
           this._applyRecognition(decorated)
         } catch (error) {
           this._showError(error.message || this.indexCopy.parseFail)
@@ -164,13 +161,6 @@ Page({
         this._showError((error && error.errMsg) || this.indexCopy.uploadFail)
       }
     })
-  },
-
-  _saveHistory(entry) {
-    const stored = wx.getStorageSync(HISTORY_KEY)
-    const history = Array.isArray(stored) ? stored : []
-    const next = [entry, ...history.filter(item => item.id !== entry.id)].slice(0, 12)
-    wx.setStorageSync(HISTORY_KEY, next)
   },
 
   _applyRecognition(recognition) {

@@ -1,0 +1,40 @@
+services:
+  app:
+    environment:
+      NODE_ENV: development
+      NODE_ARGS: --watch
+      JWT_SECRET: ${DEV_JWT_SECRET}
+      PUBLIC_BASE_URL: http://127.0.0.1
+      COMMUNITY_BASE_URL: ""
+      COMMUNITY_DIRECT_PORT: 3100
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+    volumes:
+      - ./cotton-app/server:/app
+      - app_dev_node_modules:/app/node_modules
+
+  community:
+    environment:
+      NODE_ENV: development
+      NODE_ARGS: --watch
+      JWT_SECRET: ${DEV_JWT_SECRET}
+      PLATFORM_BASE_URL: ""
+      PLATFORM_DIRECT_PORT: 3000
+    volumes:
+      - ./cotton-community:/app
+      - community_dev_node_modules:/app/node_modules
+
+volumes:
+  mysql_data:
+    name: cotton_dev_mysql_data
+  uploads:
+    name: cotton_dev_uploads
+  identity_uploads:
+    name: cotton_dev_identity_uploads
+  applyment_uploads:
+    name: cotton_dev_applyment_uploads
+  community_uploads:
+    name: cotton_dev_community_uploads
+  app_dev_node_modules:
+    name: cotton_dev_app_node_modules
+  community_dev_node_modules:
+    name: cotton_dev_community_node_modules

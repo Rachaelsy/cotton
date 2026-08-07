@@ -17,6 +17,26 @@ function formatArea(area) {
   return value.toFixed(value % 1 === 0 ? 0 : 1)
 }
 
+const KASHGAR_CENTER = { latitude: 39.47, longitude: 75.99 }
+
+function getCurrentLocation() {
+  return new Promise(resolve => {
+    wx.getLocation({
+      type: 'gcj02',
+      success: result => resolve({
+        center: { latitude: Number(result.latitude), longitude: Number(result.longitude) },
+        fallback: false
+      }),
+      fail: () => resolve({ center: KASHGAR_CENTER, fallback: true })
+    })
+  })
+}
+
+function numberFromText(value) {
+  const matched = String(value == null ? '' : value).match(/-?\d+(?:\.\d+)?/)
+  return matched ? Number(matched[0]) : null
+}
+
 Page({
   data: {
     statusBarHeight: 20,
@@ -32,6 +52,9 @@ Page({
     fieldCount: 0,
     selectedFieldIndex: 0,
     selectedFieldLabel: i18n.t('weatherPage', 'allFields'),
+    selectedSourceLabel: i18n.t('weatherPage', 'currentLocation'),
+    showLocationPicker: false,
+    pickerTop: 112,
     sourceInfo: { type: 'real', label: '', desc: '' },
     locationLabel: i18n.localizeText('喀什地区'),
     regionLabel: i18n.localizeText('喀什地区'),
@@ -62,7 +85,11 @@ Page({
     showAlertDetail: false,
     alertDetail: null,
     summary: '',
-    tipText: ''
+    tipText: '',
+    forecastSummary: '',
+    forecastDays: [],
+    weatherHighlights: [],
+    updatedAt: ''
   },
 
   onLoad(options = {}) {
@@ -70,7 +97,13 @@ Page({
     this.queryPlotId = Number(options.plotId) || null
     this.queryPlotName = decodeText(options.plotName || '')
     this.applyLanguage()
-    this.setData({ statusBarHeight: info.statusBarHeight || 20, capsuleSafeRight: layout.getCapsuleSafeRight() })
+    const screenWidth = Number(info.windowWidth || info.screenWidth || 375)
+    const pickerTop = (info.statusBarHeight || 20) + Math.round(180 * screenWidth / 750)
+    this.setData({
+      statusBarHeight: info.statusBarHeight || 20,
+      capsuleSafeRight: layout.getCapsuleSafeRight(),
+      pickerTop
+    })
     this.loadWeatherPage()
   },
 
@@ -99,12 +132,22 @@ Page({
   },
 
   async loadWeatherPage() {
-    this.setData({ loading: true, loadError: '', weatherDataError: '', apiNotice: '' })
+    this.setData({ loading: true, loadError: '', weatherDataError: '', apiNotice: '', showLocationPicker: false })
     try {
-      const plots = await this.loadPlots()
-      const selectedIndex = this.resolveSelectedIndex(plots)
-      this.plotList = plots
-      await this.applySelectedPlot(selectedIndex, plots)
+      const [location, plots] = await Promise.all([getCurrentLocation(), this.loadPlots()])
+      this.locationFallback = location.fallback
+      const locationItem = {
+        id: 0,
+        name: location.fallback ? this.textCopy.kashgarReference : this.textCopy.currentLocation,
+        area: 0,
+        coordinates: [],
+        _kind: 'location',
+        center: location.center
+      }
+      const sources = [locationItem, ...plots]
+      const selectedIndex = this.resolveSelectedIndex(sources)
+      this.plotList = sources
+      await this.applySelectedPlot(selectedIndex, sources)
     } catch (error) {
       this.setData({
         loadError: error.message || this.textCopy.loadError,
@@ -114,18 +157,15 @@ Page({
   },
 
   async loadPlots() {
-    if (!auth.isLoggedIn()) {
-      throw new Error(this.textCopy.noLoginNotice)
-    }
+    if (!auth.isLoggedIn()) return []
 
     try {
       const res = await auth.request('GET', '/api/plots')
-      if (res.code === 200 && Array.isArray(res.data) && res.data.length) {
-        return res.data
-      }
-      throw new Error((res && res.msg) || this.textCopy.noPlotNotice)
+      if (res.code === 200 && Array.isArray(res.data)) return res.data
+      return []
     } catch (error) {
-      throw new Error(error.message || this.textCopy.loadError)
+      console.warn('[weather-plots]', error.message || error)
+      return []
     }
   },
 
@@ -144,6 +184,7 @@ Page({
   },
 
   formatFieldLabel(plot) {
+    if (plot && plot._kind === 'location') return plot.name
     const name = plot && plot.name ? plot.name : this.textCopy.unnamedField
     const area = Number(plot && plot.area ? plot.area : 0)
     return area > 0 ? `${name} · ${formatArea(area)}${this.data.common.mu}` : name
@@ -226,6 +267,7 @@ Page({
     }
     const weatherModel = result.model || result
 
+    const forecastDays = this.decorateForecast(weatherModel.forecast || [])
     this.setData({
       loading: false,
       loadError: '',
@@ -240,12 +282,17 @@ Page({
       fieldCount: plots.length,
       selectedFieldIndex: safeIndex,
       selectedFieldLabel: weatherModel.selectedFieldLabel,
+      selectedSourceLabel: this.formatFieldLabel(plot),
       sourceInfo: weatherModel.sourceInfo,
       locationLabel: weatherModel.locationLabel,
       regionLabel: weatherModel.regionLabel,
       weather: weatherModel.weather,
       hourly: weatherModel.hourly || [],
-      forecast: weatherModel.forecast,
+      forecast: weatherModel.forecast || [],
+      forecastDays,
+      forecastSummary: this.buildForecastSummary(weatherModel, forecastDays),
+      weatherHighlights: this.buildWeatherHighlights(weatherModel, forecastDays),
+      updatedAt: this.formatUpdatedAt(),
       advices: weatherModel.advices,
       alert: weatherModel.alert,
       warningAvailable: weatherModel.warningAvailable !== false,
@@ -255,15 +302,41 @@ Page({
         : '',
       showAlertDetail: false,
       alertDetail: null,
+      showLocationPicker: false,
       summary: weatherModel.summary,
       tipText: weatherModel.tipText
     })
   },
 
   async loadWeatherModel(plot, selectedIndex, fieldCount) {
-    if (!auth.isLoggedIn()) {
-      throw new Error(this.textCopy.noLoginNotice)
+    if (plot && plot._kind === 'location') {
+      const center = plot.center || KASHGAR_CENTER
+      let res
+      try {
+        res = await auth.request(
+          'GET',
+          `/api/weather/location?lat=${encodeURIComponent(center.latitude)}&lng=${encodeURIComponent(center.longitude)}`
+        )
+      } catch (error) {
+        throw new Error(this.textCopy.realApiFail(error.message))
+      }
+      if (res.code === 200 && res.data && res.data.weather) {
+        const locationName = res.data.location && res.data.location.name
+          ? res.data.location.name
+          : plot.name
+        const locationPlot = { ...plot, name: locationName }
+        const model = buildWeatherFromApi(locationPlot, res.data.weather, { fieldCount, selectedIndex })
+        model.selectedFieldLabel = locationName
+        model.locationLabel = `${locationName} · ${this.textCopy.locationForecast}`
+        return {
+          model,
+          apiNotice: this.locationFallback ? this.textCopy.locationFallbackNotice : ''
+        }
+      }
+      throw new Error(this.textCopy.realApiError(res.msg || res.code))
     }
+
+    if (!auth.isLoggedIn()) throw new Error(this.textCopy.noLoginNotice)
 
     if (!(plot && Number(plot.id) > 0)) {
       throw new Error(this.textCopy.noPlotNotice)
@@ -290,17 +363,110 @@ Page({
     throw new Error(this.textCopy.realApiError(res.msg || res.code))
   },
 
-  onSelField(e) {
+  decorateForecast(forecast) {
+    const items = Array.isArray(forecast) ? forecast.slice(0, 7) : []
+    const values = items.reduce((all, item) => {
+      const low = Number(item.low)
+      const high = Number(item.high)
+      if (Number.isFinite(low)) all.push(low)
+      if (Number.isFinite(high)) all.push(high)
+      return all
+    }, [])
+    const min = values.length ? Math.min(...values) : 0
+    const max = values.length ? Math.max(...values) : min + 1
+    const range = Math.max(max - min, 1)
+    return items.map((item, index) => {
+      const low = Number(item.low)
+      const high = Number(item.high)
+      const left = Number.isFinite(low) ? 8 + ((low - min) / range) * 40 : 8
+      const width = Number.isFinite(low) && Number.isFinite(high)
+        ? Math.max(22, ((high - low) / range) * 48)
+        : 30
+      return {
+        ...item,
+        isToday: index === 0,
+        barStyle: `left:${Math.round(left)}%;width:${Math.min(78, Math.round(width))}%`
+      }
+    })
+  },
+
+  buildForecastSummary(model, days) {
+    if (!days.length) return this.textCopy.weatherDataEmptyDesc
+    const highs = days.map(item => Number(item.high)).filter(Number.isFinite)
+    const lows = days.map(item => Number(item.low)).filter(Number.isFinite)
+    const max = highs.length ? Math.max(...highs) : '--'
+    const min = lows.length ? Math.min(...lows) : '--'
+    const alertText = model.alert ? model.alert.title : this.textCopy.noSevereWeather
+    return this.textCopy.forecastSummary(days.length, min, max, alertText)
+  },
+
+  buildWeatherHighlights(model, days) {
+    const weather = model.weather || {}
+    const hourly = Array.isArray(model.hourly) ? model.hourly : []
+    const rainValues = hourly
+      .map(item => numberFromText(item.rainText))
+      .filter(Number.isFinite)
+    const rainMax = rainValues.length ? Math.max(...rainValues) : Number(weather.rain || 0)
+    const windLevel = numberFromText(weather.windLevel) || numberFromText(weather.wind) || 0
+    const forecastHighs = days.map(item => Number(item.high)).filter(Number.isFinite)
+    const high = forecastHighs.length ? Math.max(...forecastHighs) : Number(weather.high)
+
+    return [
+      {
+        icon: '🌧',
+        label: this.textCopy.rainRisk,
+        value: rainMax > 0 ? this.textCopy.rainExpected : this.textCopy.lowRisk,
+        tone: rainMax > 0 ? 'amber' : 'green'
+      },
+      {
+        icon: '💨',
+        label: this.textCopy.windRisk,
+        value: windLevel >= 4 ? this.textCopy.notForSpraying : this.textCopy.sprayWindow,
+        tone: windLevel >= 4 ? 'amber' : 'green'
+      },
+      {
+        icon: '🌡',
+        label: this.textCopy.heatRisk,
+        value: high >= 35 ? this.textCopy.avoidNoon : this.textCopy.temperatureStable,
+        tone: high >= 35 ? 'red' : 'blue'
+      }
+    ]
+  },
+
+  formatUpdatedAt() {
+    const now = new Date()
+    const pad = value => String(value).padStart(2, '0')
+    return `${pad(now.getHours())}:${pad(now.getMinutes())}`
+  },
+
+  onToggleLocationPicker() {
+    this.setData({ showLocationPicker: !this.data.showLocationPicker })
+  },
+
+  onCloseLocationPicker() {
+    this.setData({ showLocationPicker: false })
+  },
+
+  onChooseWeatherSource(e) {
     const index = Number(e.currentTarget.dataset.index)
     if (!Number.isInteger(index)) return
-    this.setData({ loading: true, loadError: '', weatherDataError: '', apiNotice: '' })
+    if (index === this.data.selectedFieldIndex) {
+      this.setData({ showLocationPicker: false })
+      return
+    }
+    this.setData({ loading: true, loadError: '', weatherDataError: '', apiNotice: '', showLocationPicker: false })
     this.applySelectedPlot(index).catch(error => {
       this.setData({
         loading: false,
         loadError: error.message || this.textCopy.loadError,
-        apiNotice: ''
+        apiNotice: '',
+        showLocationPicker: false
       })
     })
+  },
+
+  onSelField(e) {
+    this.onChooseWeatherSource(e)
   },
 
   onRetry() {

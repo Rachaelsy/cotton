@@ -281,6 +281,37 @@ async function adminAuth(req, res, next) {
   }
 }
 
+// 公益管理员只获得农户管理能力；其余核心后台接口仍使用 adminAuth。
+async function farmerAdminAuth(req, res, next) {
+  const auth = req.headers.authorization || ''
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
+  if (!token) return res.status(401).json({ code: 401, msg: '未授权' })
+  try {
+    const payload = jwt.verify(token, JWT_SECRET)
+    if (payload.is_admin) return adminAuth(req, res, next)
+    if (!payload.is_community_admin || payload.role !== 'community_admin' || payload.permission !== 'public_admin') {
+      return res.status(403).json({ code: 403, msg: '无农户管理权限' })
+    }
+    const [[account]] = await db.query(
+      'SELECT is_active,auth_version,permission_key FROM community_admins WHERE id=? LIMIT 1',
+      [payload.id]
+    )
+    if (!account || !account.is_active || account.permission_key !== 'public_admin' ||
+        Number(payload.auth_version || 0) !== Number(account.auth_version || 0)) {
+      return res.status(401).json({ code: 401, msg: '公益管理员登录状态已失效，请重新登录' })
+    }
+    req.admin = payload
+    req.adminScope = 'public_farmer_management'
+    return next()
+  } catch (error) {
+    if (error && ['JsonWebTokenError', 'TokenExpiredError', 'NotBeforeError'].includes(error.name)) {
+      return res.status(401).json({ code: 401, msg: 'Token 无效或已过期' })
+    }
+    console.error('[farmer-admin-auth]', error)
+    return res.status(500).json({ code: 500, msg: '农户管理权限校验失败' })
+  }
+}
+
 // ── POST /api/admin/login ────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
@@ -632,7 +663,7 @@ router.get('/stats', adminAuth, async (req, res) => {
 })
 
 // ── POST /api/admin/farmers（手动新增农户）──────────────
-router.post('/farmers', adminAuth, async (req, res) => {
+router.post('/farmers', farmerAdminAuth, async (req, res) => {
   try {
     const { phone, password, real_name, location, land_size, is_verified } = req.body
     if (!/^1\d{10}$/.test(phone))        return res.status(400).json({ code: 400, msg: '手机号格式不正确' })
@@ -656,7 +687,7 @@ router.post('/farmers', adminAuth, async (req, res) => {
 })
 
 // ── GET /api/admin/farmers ───────────────────────────────
-router.get('/farmers', adminAuth, async (req, res) => {
+router.get('/farmers', farmerAdminAuth, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT u.id, u.phone, u.real_name, u.is_verified, u.is_active, u.created_at,
@@ -671,7 +702,7 @@ router.get('/farmers', adminAuth, async (req, res) => {
 })
 
 // ── PUT /api/admin/farmers/:id ───────────────────────────
-router.put('/farmers/:id', adminAuth, async (req, res) => {
+router.put('/farmers/:id', farmerAdminAuth, async (req, res) => {
   try {
     const { real_name, location, land_size, is_verified } = req.body
     const userId = req.params.id
@@ -1085,6 +1116,20 @@ router.patch('/users/:id/status', adminAuth, async (req, res) => {
     res.json({ code: 200, msg: is_active ? '已启用账号' : '已禁用账号' })
   } catch (e) {
     console.error(e); res.status(500).json({ code: 500, msg: '服务器错误' })
+  }
+})
+
+// 公益管理员专用的农户状态接口，先验证目标确实是农户，避免越权停用其他角色。
+router.patch('/farmers/:id/status', farmerAdminAuth, async (req, res) => {
+  try {
+    const [[farmer]] = await db.query('SELECT user_id FROM farmers WHERE user_id=? LIMIT 1', [req.params.id])
+    if (!farmer) return res.status(404).json({ code: 404, msg: '农户不存在' })
+    const isActive = req.body.is_active ? 1 : 0
+    await db.query('UPDATE users SET is_active=? WHERE id=?', [isActive, req.params.id])
+    return res.json({ code: 200, msg: isActive ? '已启用农户账号' : '已禁用农户账号' })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ code: 500, msg: '服务器错误' })
   }
 })
 

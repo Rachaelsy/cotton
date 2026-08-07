@@ -6,7 +6,7 @@
 // ENV = 'server' → 连接云服务器（走 Nginx 80 端口）
 // ENV = 'real'   → 真机调试，使用电脑局域网 IP + 端口 3000
 // ENV = 'sim'    → 模拟器调试，使用 localhost
-const ENV = 'server'
+const ENV = 'sim'
 
 const PROD_URL   = 'https://cyaia.cn'        // ← 上线后改为真实备案域名
 const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP
@@ -16,14 +16,14 @@ const CLIENT_KEY = 'cotton-public'
 const BASE_URL =
   ENV === 'prod'   ? PROD_URL :
   ENV === 'server' ? `http://${SERVER_IP}` :
-  ENV === 'real'   ? `http://${LOCAL_IP}:3000` :
-                     'http://127.0.0.1:3000'
+  ENV === 'real'   ? `http://${LOCAL_IP}` :
+                     `http://${LOCAL_IP}`
 
 const COMMUNITY_URL =
   ENV === 'prod'   ? `${PROD_URL}/public` :
   ENV === 'server' ? `http://${SERVER_IP}/public` :
-  ENV === 'real'   ? `http://${LOCAL_IP}:3100/public` :
-                     'http://127.0.0.1:3100/public'
+  ENV === 'real'   ? `http://${LOCAL_IP}/public` :
+                     `http://${LOCAL_IP}/public`
 
 const TOKEN_KEY = 'cotton_token'
 const USER_KEY  = 'cotton_user'
@@ -106,8 +106,15 @@ function requestWithToken(method, path, data, token, tokenType = 'user') {
         }
       },
       fail(err) {
+        console.error('[api-request-failed]', {
+          method,
+          url: BASE_URL + path,
+          message: err && err.errMsg || 'unknown error'
+        })
         wx.showToast({ title: '网络异常，请检查网络', icon: 'none' })
-        reject(err)
+        const error = new Error(err && err.errMsg || '网络请求失败')
+        error.cause = err
+        reject(error)
       }
     })
   })

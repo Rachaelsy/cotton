@@ -110,7 +110,10 @@ Page({
       } else {
         this._toast(res.msg || this.textCopy.loginFail)
       }
-    } catch { this._toast(this.textCopy.loginNetworkFail) }
+    } catch (error) {
+      console.error('[wx-phone-login]', error)
+      this._toast(error && error.message ? error.message : this.textCopy.loginNetworkFail)
+    }
     this.setData({ wxLoading: false })
   },
 

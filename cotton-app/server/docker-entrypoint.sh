@@ -77,6 +77,7 @@ run_migration db/migrate_machine_reliability.js
 run_migration db/migrate_feedbacks.js
 run_migration db/migrate_marketing.js
 run_migration db/migrate_points.js
+run_migration db/migrate_pest_recognitions.js
 run_migration db/migrate_private_applyment_files.js
 run_migration db/migrate_encrypt_applyment_drafts.js
 
@@ -95,4 +96,4 @@ fi
 echo "✅ 数据库初始化完成"
 
 echo "🚀 启动服务..."
-exec node index.js
+exec node ${NODE_ARGS:-} index.js

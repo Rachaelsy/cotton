@@ -5,4 +5,4 @@ echo "[community] applying knowledge migrations"
 node db/migrate.js
 
 echo "[community] starting service"
-exec node server.js
+exec node ${NODE_ARGS:-} server.js

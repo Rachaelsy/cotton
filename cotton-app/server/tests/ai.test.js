@@ -6,6 +6,7 @@ const fs = require('fs')
 const path = require('path')
 const jwt = require('jsonwebtoken')
 const { detectAiIntent } = require('../utils/ai-intent')
+const db = require('../db/database')
 
 const serverDir = path.join(__dirname, '..')
 const routeSource = fs.readFileSync(path.join(serverDir, 'routes', 'ai.js'), 'utf8')
@@ -16,6 +17,23 @@ process.env.GROQ_API_KEY = ''
 process.env.SILICONFLOW_API_KEY = ''
 process.env.DEEPSEEK_API_KEY = ''
 process.env.JWT_SECRET = 'ai-route-test-secret'
+
+const databaseCalls = []
+db.query = async (sql, params) => {
+  databaseCalls.push({ sql, params })
+  if (sql.includes('INSERT INTO pest_recognition_records')) return [{ insertId: 81 }]
+  if (sql.includes('COUNT(*)')) return [[{ total: 1 }]]
+  if (sql.includes('FROM pest_recognition_records')) {
+    return [[{
+      id: 81,
+      image_url: '/uploads/pest/test.jpg',
+      reply: 'test reply',
+      diagnosis_json: JSON.stringify({ diagnosis_name: 'test pest' }),
+      created_at: new Date('2026-08-07T09:00:00Z')
+    }]]
+  }
+  throw new Error(`Unexpected database query: ${sql}`)
+}
 
 const aiRouter = require('../routes/ai')
 
@@ -35,6 +53,13 @@ async function requestPhoto(baseUrl, token = '') {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form
+  })
+  return { status: response.status, json: await response.json() }
+}
+
+async function requestPhotoHistory(baseUrl, token = '') {
+  const response = await fetch(baseUrl + '/api/ai/photo/history', {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
   })
   return { status: response.status, json: await response.json() }
 }
@@ -145,6 +170,7 @@ async function run() {
 
     assert.strictEqual(photo.status, 200)
     assert.strictEqual(photo.json.code, 200)
+    assert.strictEqual(photo.json.data.id, 81)
     assert.strictEqual(photo.json.data.provider, 'siliconflow')
     assert.strictEqual(photo.json.data.diagnosis.diagnosis_name, '棉蚜')
     assert.strictEqual(photo.json.data.diagnosis.category_code, 'pest')
@@ -153,9 +179,17 @@ async function run() {
     assert.match(photo.json.data.reply, /棉蚜/)
     assert.strictEqual(captures[1].hostname, 'api.siliconflow.com')
 
+    const history = await requestPhotoHistory(baseUrl, token)
+    assert.strictEqual(history.status, 200)
+    assert.strictEqual(history.json.data.total, 1)
+    assert.strictEqual(history.json.data.records[0].id, 'pest-81')
+    const historyQueries = databaseCalls.filter(call => call.sql.includes('pest_recognition_records'))
+    assert.ok(historyQueries.every(call => !call.params || call.params[0] === 42 || call.sql.includes('INSERT INTO')))
+
     console.log('ai route tests passed')
   } finally {
     await new Promise(resolve => server.close(resolve))
+    await db.end()
   }
 }
 
