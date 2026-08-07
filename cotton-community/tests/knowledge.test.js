@@ -14,7 +14,6 @@ const siteApp = read('public/site/app.js')
 const learningJs = read('public/site/learning.js')
 const adminHtml = read('public/knowledge/admin.html')
 const adminJs = read('public/knowledge/admin.js')
-const adminLogin = read('public/knowledge/admin-login.html')
 const styles = read('public/knowledge/styles.css')
 
 for (const table of [
@@ -45,8 +44,8 @@ assert(learningJs.includes('/api/community-ai/chat'), 'course detail should reta
 assert(route.includes('parent_nickname') && learningJs.includes('parent_id'), 'comments should support replies')
 assert(learningJs.includes('/contents/${id}/progress') && learningJs.includes('/contents/${id}/favorite'), 'learning progress and favorites should survive the integration')
 assert(learningJs.includes('/forum/${id}/answers') && learningJs.includes('/forum/answers/${button.dataset.voteAnswer}/vote'), 'forum answers and voting should survive the integration')
-assert(adminLogin.includes('/api/community-auth/admin/login'), 'community should have an independent admin login')
-assert(adminJs.includes('/knowledge/admin-login.html'), 'expired admin sessions should return to community login')
+assert(adminJs.includes('/admin/login.html?role=admin'), 'expired admin sessions should return to unified login')
+assert(!exists('public/knowledge/admin-login.html'), 'obsolete standalone community admin login should be removed')
 assert(adminHtml.includes('/platform/admin'), 'community admin should link back to cotton-app')
 assert(adminJs.includes('/public/courses/'), 'admin comment links should open the integrated public course page')
 assert(adminHtml.includes('data-view="requests"') && adminJs.includes("api(`/service-requests"), 'community admin should manage business and activity requests')

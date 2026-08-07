@@ -53,7 +53,6 @@ async function run() {
   const learning = read('public/site/learning.js')
   const admin = read('public/knowledge/admin.js')
   const adminPage = read('public/knowledge/admin.html')
-  const adminLogin = read('public/knowledge/admin-login.html')
   const knowledgeRoute = read('routes/knowledge.js')
   const serverSource = read('server.js')
   const compose = read('../docker-compose.yml')
@@ -61,7 +60,6 @@ async function run() {
   assert(shell.indexOf('/knowledge/site/runtime.js') < shell.indexOf('/knowledge/site/learning.js'))
   assert(shell.indexOf('/knowledge/site/runtime.js') < shell.indexOf('/knowledge/site/app.js'))
   assert(adminPage.includes('/knowledge/site/runtime.js'))
-  assert(adminLogin.includes('CottonRuntime.requestJson'))
   assert(runtime.includes('AbortController') && runtime.includes('请求超时'))
   assert(runtime.includes("addEventListener('offline'") && runtime.includes("addEventListener('online'"))
   assert(siteApp.includes('runtime.requestJson') && learning.includes('runtime.requestJson'))
@@ -69,7 +67,8 @@ async function run() {
   assert(siteApp.includes("publicServiceApi('/privacy-requests'"))
   assert(learning.includes("publicLink('/privacy')"))
   assert(learning.includes("localStorage.removeItem('knowledge_token')"))
-  assert(admin.includes("location.replace('/knowledge/admin-login.html')"))
+  assert(admin.includes("location.replace('/admin/login.html?role=admin')"))
+  assert(!fs.existsSync(path.join(root, 'public/knowledge/admin-login.html')))
   assert(knowledgeRoute.includes('allowedUploadTypes'))
   assert(!knowledgeRoute.includes("file.mimetype.startsWith('image/')"))
   assert(!knowledgeRoute.includes("'image/svg+xml'"))
@@ -150,6 +149,10 @@ async function run() {
     const communityRoot = await fetch(`${baseUrl}/knowledge/`, { redirect: 'manual' })
     assert.equal(communityRoot.status, 302)
     assert.equal(communityRoot.headers.get('location'), '/public/')
+
+    const legacyAdminLogin = await fetch(`${baseUrl}/knowledge/admin-login.html`, { redirect: 'manual' })
+    assert.equal(legacyAdminLogin.status, 302)
+    assert.equal(legacyAdminLogin.headers.get('location'), '/admin/login.html?role=admin')
 
     const html404 = await fetch(`${baseUrl}/public/not-a-real-page`, {
       headers: { Accept: 'text/html' }

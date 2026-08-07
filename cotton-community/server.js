@@ -33,6 +33,8 @@ app.use((req, _res, next) => {
   next()
 })
 
+app.get('/knowledge/admin-login.html', (_req, res) => res.redirect(302, '/admin/login.html?role=admin'))
+
 const noCache = (_req, res, next) => {
   res.set('Cache-Control', 'no-store')
   next()

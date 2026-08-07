@@ -1,5 +1,5 @@
 const token = localStorage.getItem('admin_token') || ''
-if (!token) location.href = '/knowledge/admin-login.html'
+if (!token) location.href = '/admin/login.html?role=admin'
 const state = { contents:[], comments:[], questions:[], answers:[], requests:[] }
 const $ = id => document.getElementById(id)
 const esc = value => String(value == null ? '' : value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char])
@@ -10,7 +10,7 @@ const parseList = value => { if(Array.isArray(value))return value; try{return JS
 async function api(path, options={}) {
   const result=await runtime.requestJson(`/api/knowledge/admin${path}`,options,{
     token,
-    onUnauthorized:()=>{localStorage.removeItem('admin_token');localStorage.removeItem('admin_name');location.replace('/knowledge/admin-login.html')}
+    onUnauthorized:()=>{localStorage.removeItem('admin_token');localStorage.removeItem('admin_name');location.replace('/admin/login.html?role=admin')}
   })
   return result.data
 }
@@ -98,7 +98,7 @@ function categoryValue(item){return `${item.categoryKey}|${item.categoryName}`}
 function fillForm(item={}){$('contentId').value=item.id||'';$('cType').value=item.type||'video';$('cDifficulty').value=item.difficulty||'intro';$('cTitle').value=item.title||'';$('cSubtitle').value=item.subtitle||'';const option=[...$('cCategory').options].find(x=>x.value===categoryValue(item));$('cCategory').value=option?option.value:'other|其他知识';$('cTags').value=(item.tags||[]).join('，');$('cCover').value=item.coverUrl||'';$('cVideo').value=item.videoUrl||'';$('cImages').value=(item.images||[]).join('\n');$('cBody').value=item.content||'';$('cQuiz').value=item.quiz&&item.quiz.length?JSON.stringify(item.quiz,null,2):'';$('cDuration').value=item.durationSeconds||300;$('cSort').value=item.sortOrder||0;$('cSource').value=item.sourceName||'棉花智能体知识中心';$('cPublished').checked=item.status==='published';$('cFeatured').checked=!!item.isFeatured}
 function openEdit(id){const item=state.contents.find(x=>x.id===id);if(!item)return;fillForm(item);$('contentModalTitle').textContent='编辑内容';openModal()}
 $('addContentBtn').addEventListener('click',()=>{fillForm();$('contentModalTitle').textContent='新增内容';openModal()});$('closeContentModal').addEventListener('click',closeModal);$('cancelContent').addEventListener('click',closeModal)
-async function uploadFile(input,statusId,targetId){const file=input.files[0];if(!file)return;$(statusId).textContent=`正在上传 ${file.name}...`;const form=new FormData();form.append('file',file);try{const result=await runtime.requestJson('/api/knowledge/admin/upload',{method:'POST',body:form},{token,timeoutMs:10*60*1000,onUnauthorized:()=>{localStorage.removeItem('admin_token');location.replace('/knowledge/admin-login.html')}});$(targetId).value=result.data.url;$(statusId).textContent='上传完成'}catch(e){$(statusId).textContent=e.message}finally{input.value=''}}
+async function uploadFile(input,statusId,targetId){const file=input.files[0];if(!file)return;$(statusId).textContent=`正在上传 ${file.name}...`;const form=new FormData();form.append('file',file);try{const result=await runtime.requestJson('/api/knowledge/admin/upload',{method:'POST',body:form},{token,timeoutMs:10*60*1000,onUnauthorized:()=>{localStorage.removeItem('admin_token');location.replace('/admin/login.html?role=admin')}});$(targetId).value=result.data.url;$(statusId).textContent='上传完成'}catch(e){$(statusId).textContent=e.message}finally{input.value=''}}
 $('coverFile').addEventListener('change',e=>uploadFile(e.target,'coverStatus','cCover'));$('videoFile').addEventListener('change',e=>uploadFile(e.target,'videoStatus','cVideo'))
 $('contentForm').addEventListener('submit',async event=>{
   event.preventDefault()

@@ -14,7 +14,7 @@
 <body>
   <aside class="sidebar">
     <div class="sidebar-logo"><div class="logo-mark">🌾</div><strong>喀什优棉公益后台</strong><small>Public Mini Program Admin</small></div>
-    <nav class="nav"><div class="nav-item active"><span class="nav-icon">📜</span><span>政策中心</span></div></nav>
+    <nav class="nav"><div class="nav-item active" data-view="policies"><span class="nav-icon">📜</span><span>政策中心</span></div><div class="nav-item" data-view="security"><span class="nav-icon">🔒</span><span>账号安全</span></div></nav>
     <div class="sidebar-user"><small>当前登录</small><strong id="adminName">公益小程序管理员</strong><button class="logout-btn" id="logoutBtn">退出登录</button></div>
   </aside>
   <main class="main">
@@ -42,6 +42,17 @@
           </form>
           <aside class="preview-card"><div class="preview-head"><h2>Markdown 实时预览</h2><div class="preview-meta" id="previewMeta">填写内容后自动预览</div></div><article class="markdown-preview" id="preview"></article></aside>
         </div>
+      </section>
+      <section id="securityPanel" class="panel-card hidden">
+        <div class="toolbar"><div><h2>账号安全</h2><p>定期更换高强度密码，修改成功后需要重新登录。</p></div></div>
+        <form id="passwordForm" style="max-width:620px;padding:26px 22px 32px">
+          <div class="policy-fields" style="grid-template-columns:1fr">
+            <div><label>当前密码</label><input id="oldPassword" type="password" autocomplete="current-password" required></div>
+            <div><label>新密码</label><input id="newPassword" type="password" autocomplete="new-password" required><div style="margin-top:7px;color:#8a928e;font-size:12px">至少10位，并同时包含大写字母、小写字母、数字和特殊符号。</div></div>
+            <div><label>确认新密码</label><input id="confirmPassword" type="password" autocomplete="new-password" required></div>
+          </div>
+          <p class="form-message" id="passwordMessage"></p><div class="editor-actions"><button class="btn" type="submit">修改登录密码</button></div>
+        </form>
       </section>
     </div>
   </main>

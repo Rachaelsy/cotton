@@ -47,6 +47,15 @@ function signCommunityAdmin(account) {
   )
 }
 
+function validateCommunityAdminPassword(value) {
+  const password = String(value || '')
+  if (password.length < 10 || password.length > 72) return '新密码需为10-72位'
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    return '新密码必须同时包含大写字母、小写字母、数字和特殊符号'
+  }
+  return ''
+}
+
 router.post('/login', async (req, res) => {
   const phone = String(req.body.phone || '').trim()
   const password = String(req.body.password || '')
@@ -205,6 +214,33 @@ router.post('/admin/login', async (req, res) => {
   } catch (error) {
     console.error('[community-admin-login]', error)
     return fail(res, '服务器错误，请稍后重试', 500)
+  }
+})
+
+router.post('/admin/change-password', async (req, res) => {
+  const authorization = String(req.headers.authorization || '')
+  if (!authorization.startsWith('Bearer ')) return fail(res, '请先登录', 401)
+  let payload
+  try { payload = jwt.verify(authorization.slice(7), process.env.JWT_SECRET) } catch { return fail(res, '登录已过期，请重新登录', 401) }
+  if (!payload.is_community_admin || payload.role !== 'community_admin') return fail(res, '无公益管理员权限', 403)
+
+  const oldPassword = String(req.body.old_password || '')
+  const newPassword = String(req.body.new_password || '')
+  if (!oldPassword || !newPassword) return fail(res, '请填写当前密码和新密码')
+  if (oldPassword === newPassword) return fail(res, '新密码不能与当前密码相同')
+  const passwordError = validateCommunityAdminPassword(newPassword)
+  if (passwordError) return fail(res, passwordError)
+
+  try {
+    const [[account]] = await db.query('SELECT password,is_active FROM community_admins WHERE id=? LIMIT 1', [payload.id])
+    if (!account || !account.is_active) return fail(res, '公益管理员账号不存在或已停用', 404)
+    if (!await bcrypt.compare(oldPassword, account.password)) return fail(res, '当前密码不正确', 401)
+    const hash = await bcrypt.hash(newPassword, 12)
+    await db.query('UPDATE community_admins SET password=?,auth_version=auth_version+1 WHERE id=?', [hash, payload.id])
+    return ok(res, null, '密码修改成功，请重新登录')
+  } catch (error) {
+    console.error('[community-admin-change-password]', error)
+    return fail(res, '密码修改失败，请稍后重试', 500)
   }
 })
 
