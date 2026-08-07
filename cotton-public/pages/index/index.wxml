@@ -1,50 +1,57 @@
 <view class="page">
   <view class="hero">
-    <view class="eyebrow">喀什优棉公益平台</view>
-    <view class="welcome">你好，{{userName}}</view>
-    <view class="hero-title">学种棉 · 会管理 · 享服务</view>
-    <view class="hero-sub">可信农技知识与田间生产工具，服务每一位棉农</view>
-    <view class="today-card"><view><text>今日农事建议</text><strong>检查棉铃虫与田间墒情</strong></view><button bindtap="openModule" data-key="records">去记录</button></view>
+    <view class="hero-head">
+      <view class="brand-copy">
+        <text class="eyebrow">喀什优棉公益平台</text>
+        <text class="welcome">你好，{{userName}}</text>
+      </view>
+      <view class="hero-mark">棉</view>
+    </view>
+
+    <view class="weather-card" bindtap="openModule" data-key="weather">
+      <view class="weather-copy">
+        <view class="weather-location">
+          <text>定位</text>
+          <text>{{weatherPreview.locationLabel}}</text>
+        </view>
+        <view class="weather-main">
+          <text class="weather-temp">{{weatherPreview.weather.temp}}{{weatherPreview.weather.temp === '--' ? '' : '°'}}</text>
+          <view class="weather-detail">
+            <strong>{{weatherPreview.weather.desc}}</strong>
+            <small>{{weatherPreview.weather.low}}{{weatherPreview.weather.low === '--' ? '' : '°'}} ~ {{weatherPreview.weather.high}}{{weatherPreview.weather.high === '--' ? '' : '°'}} · {{weatherPreview.weather.wind}}</small>
+          </view>
+        </view>
+      </view>
+      <text class="weather-icon">{{weatherPreview.weather.icon}}</text>
+      <text class="weather-arrow">›</text>
+    </view>
+    <view class="farm-tip"><text>今日农事</text><strong>{{weatherPreview.tipText}}</strong></view>
   </view>
 
   <view class="section quick-section">
-    <view class="section-head"><text>生产服务</text><small>常用工具</small></view>
+    <view class="section-head"><view><text>常用工具</text><small>田间管理与学习服务</small></view></view>
     <view class="quick-grid">
       <view class="quick" bindtap="openModule" data-key="fields"><i class="green">田</i><text>地块管理</text></view>
       <view class="quick" bindtap="openModule" data-key="pest"><i class="brown">识</i><text>病虫害识别</text></view>
       <view class="quick" bindtap="openModule" data-key="weather"><i class="blue">气</i><text>地块气象</text></view>
+      <view class="quick" bindtap="openModule" data-key="policy"><i class="policy">政</i><text>政策中心</text></view>
       <view class="quick" bindtap="openModule" data-key="expert"><i class="gold">讲</i><text>专家讲堂</text></view>
       <view class="quick" bindtap="openModule" data-key="records"><i class="mint">记</i><text>农事记录</text></view>
       <view class="quick" bindtap="openModule" data-key="academy"><i class="orange">学</i><text>棉知学堂</text></view>
     </view>
   </view>
 
-  <view class="ai-card" bindtap="openAi"><view class="ai-icon">AI</view><view><strong>智能农技顾问</strong><text>病虫诊断、种植管理，有问题随时问</text></view><text class="arrow">›</text></view>
-
-  <view class="policy-home">
-    <view class="policy-home-head" bindtap="openPolicy">
-      <view class="policy-seal">政</view>
-      <view class="policy-home-title"><text>政策中心</text><small>权威发布 · 申报提醒 · 通俗解读</small></view>
-      <text class="policy-more">全部 ›</text>
-    </view>
-    <view class="policy-feature" bindtap="openPolicy" data-id="target-price-guide">
-      <view class="policy-badges"><text>最新</text><text>目标价格</text></view>
-      <strong>棉花目标价格补贴申报指南</strong>
-      <small>了解申报对象、面积核验和材料准备</small>
-      <view class="policy-feature-foot"><text>国家级 · 示例内容</text><text>查看详情 ›</text></view>
-    </view>
-    <view class="policy-shortcuts">
-      <view bindtap="openPolicy"><strong>国家</strong><small>政策动态</small></view>
-      <view bindtap="openPolicy"><strong>自治区</strong><small>实施指南</small></view>
-      <view bindtap="openPolicy"><strong>地区县级</strong><small>申报通知</small></view>
-    </view>
+  <view class="ai-card" bindtap="openAi">
+    <view class="ai-icon">AI</view>
+    <view class="ai-copy"><small>智能农技助手</small><strong>有种植问题，随时来问</strong><text>病虫诊断 · 水肥建议 · 田间管理</text></view>
+    <text class="arrow">›</text>
   </view>
 
   <view class="section news-section">
-    <view class="section-head"><text>棉花资讯</text><button bindtap="openNews">查看全部 ›</button></view>
+    <view class="section-head"><view><text>棉花资讯</text><small>掌握棉业动态与实用农技</small></view><button bindtap="openNews">查看全部 ›</button></view>
     <view class="news" wx:for="{{news}}" wx:key="id">
       <view><label>{{item.tag}}</label><strong>{{item.title}}</strong><small>{{item.source}} · 今天</small></view><image src="{{item.image}}" mode="aspectFill"/>
     </view>
   </view>
-  <view class="notice"><text>重要提醒</text><small>未来三天持续高温，请及时关注地块墒情变化。</small></view>
+  <view class="notice"><view class="notice-icon">!</view><view><text>重要提醒</text><small>未来三天持续高温，请及时关注地块墒情变化。</small></view></view>
 </view>

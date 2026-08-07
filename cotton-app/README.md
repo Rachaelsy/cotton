@@ -19,7 +19,7 @@
 
 ### 独立公益与商业网站
 
-公益平台、商业平台和公益课程已经迁移到独立项目 `cotton-community`。本项目不再包含课程页面、论坛 API、知识表迁移或课程素材，仅在平台登录首页和管理员侧栏保留跳转入口。
+公益平台、商业平台和公益课程已经迁移到独立项目 `cotton-community`。本项目不再包含课程页面、论坛 API、知识表迁移或课程素材；管理员后台不再提供专家账号管理、公益平台、商业平台和内容运营入口，核心服务也不再暴露专家账号管理 API 与内容运营跳转路由。
 
 - 独立本地开发时将 `COMMUNITY_BASE_URL` 配置为 `http://localhost:3100`；根目录统一部署时留空，使用同域 `/knowledge/`。
 - 两个项目独立启动和部署，但共用同一个 MySQL；平台负责 `users/farmers` 等基础账号表，社区只负责 `knowledge_*` 表。
@@ -441,7 +441,7 @@ netsh advfirewall firewall add rule name="Cotton 3000" dir=in action=allow proto
 | 商户 | `/` 或 `/admin/login.html?role=merchant` | `/portal/register.html?role=merchant` | `/merchant/dashboard.html` |
 | 农机手 | `/` 或 `/admin/login.html?role=operator` | `/portal/register.html?role=operator` | `/operator/dashboard.html` |
 | 管理员 | `/` 或 `/admin/login.html?role=admin` | — | `/admin/dashboard.html` |
-| 专家 | `/` 或 `/admin/login.html?role=expert` | 管理员后台创建专家账号 | `/expert/dashboard.html` |
+| 专家 | `/` 或 `/admin/login.html?role=expert` | 使用已有专家账号 | `/expert/dashboard.html` |
 
 访问根路径（例如 `https://cyaia.cn/` 或本地 `http://localhost:3000/`）会进入统一身份选择登录页，页面提供管理员、商户、农机手、专家四个身份入口。网页后台登录目前只保留手机号 + 密码登录，不再提供手机号验证码登录。
 
@@ -473,7 +473,6 @@ http://localhost:3000/
 | 订单管理 | 全量订单列表，按状态筛选，在线修改订单状态 |
 | 售后管理 | 全平台售后申请列表，按状态筛选，查看申请详情（描述+凭证图片） |
 | 财务管理 | 商户财务汇总（销售额/佣金/已解冻/冻结）；提现统一在微信支付商户平台处理 |
-| 专家账号 | 管理专家账号，专家与管理员分离，专家可独立登录专家后台 |
 | 专家讲堂 | 管理课程、图文内容、付费/免费标记，并查看农户专家提问 |
 | 在线客服 | 农户会话、真实未读、文字/图片、引用、撤回、单条删除和管理员端会话清空 |
 | 客服反馈 | 查看农户问题和图片，回复并维护待回复/已回复/已完成状态 |

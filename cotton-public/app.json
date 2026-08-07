@@ -36,7 +36,7 @@
     "borderStyle": "white",
     "list": [
       { "pagePath": "pages/index/index", "text": "首页" },
-      { "pagePath": "pages/academy/index", "text": "棉知学堂" },
+      { "pagePath": "pages/ai/index", "text": "AI助手" },
       { "pagePath": "pages/my/index", "text": "我的" }
     ]
   },

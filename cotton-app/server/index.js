@@ -97,7 +97,6 @@ const redirectCommunity = pathname => (req, res) => res.redirect(communityUrl(re
 app.get('/community', redirectCommunity('/knowledge/'))
 app.get('/community/public', redirectCommunity('/public/'))
 app.get('/community/business', redirectCommunity('/business/'))
-app.get('/community/admin', redirectCommunity('/knowledge/admin.html'))
 
 // ── 路由 ────────────────────────────────────
 app.use('/api/auth',     require('./routes/auth'))

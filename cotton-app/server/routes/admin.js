@@ -359,15 +359,6 @@ router.post('/support-upload', adminAuth, supportUpload.single('image'), (req, r
   res.json({ code: 200, data: { url: `/uploads/support/${req.file.filename}` } })
 })
 
-// ── 专家账号管理：管理员只管理账号，不直接处理专家业务 ─────────
-function parseExpertSpecialties(value) {
-  if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean)
-  return String(value || '')
-    .split(/[,，、\n]/)
-    .map(v => v.trim())
-    .filter(Boolean)
-}
-
 // Farmer identity verification review.
 router.get('/farmer-verifications', adminAuth, async (req, res) => {
   try {
@@ -447,86 +438,6 @@ router.patch('/commission-change-requests/:id', adminAuth, async (req, res) => {
     )
     return R_OK(res, data, req.body.decision === 'approved' ? '佣金比例已审核生效' : '佣金调整申请已拒绝')
   } catch (error) { return R_FAIL(res, error.message || '审核失败', 400) }
-})
-
-router.get('/experts', adminAuth, async (_req, res) => {
-  try {
-    const [rows] = await db.query(
-      `SELECT id,phone,name,title,org,avatar,specialties,bio,is_active,created_at,updated_at
-       FROM experts ORDER BY id DESC`
-    )
-    return R_OK(res, rows)
-  } catch (e) {
-    console.error('[admin-experts-list]', e)
-    return R_FAIL(res, '专家账号加载失败', 500)
-  }
-})
-
-router.post('/experts', adminAuth, async (req, res) => {
-  try {
-    const phone = String(req.body.phone || '').trim()
-    const password = String(req.body.password || '').trim()
-    const name = String(req.body.name || '').trim()
-    const title = String(req.body.title || '').trim()
-    const org = String(req.body.org || 'Cotton 棉花平台').trim()
-    const avatar = String(req.body.avatar || '专').trim()
-    const specialties = JSON.stringify(parseExpertSpecialties(req.body.specialties))
-    const bio = String(req.body.bio || '').trim()
-    if (!/^1\d{10}$/.test(phone)) return R_FAIL(res, '请填写正确的专家手机号')
-    if (!password || password.length < 6) return R_FAIL(res, '专家密码不能少于6位')
-    if (!name) return R_FAIL(res, '请填写专家姓名')
-    const [exist] = await db.query('SELECT id FROM experts WHERE phone=?', [phone])
-    if (exist.length) return R_FAIL(res, '该专家手机号已存在')
-    const hash = await bcrypt.hash(password, 10)
-    await db.query(
-      `INSERT INTO experts (phone,password,name,title,org,avatar,specialties,bio,is_active)
-       VALUES (?,?,?,?,?,?,?,?,1)`,
-      [phone, hash, name, title, org, avatar, specialties, bio]
-    )
-    return R_OK(res, null, '专家账号已创建')
-  } catch (e) {
-    console.error('[admin-experts-create]', e)
-    return R_FAIL(res, '专家账号创建失败', 500)
-  }
-})
-
-router.put('/experts/:id', adminAuth, async (req, res) => {
-  try {
-    const name = String(req.body.name || '').trim()
-    const title = String(req.body.title || '').trim()
-    const org = String(req.body.org || 'Cotton 棉花平台').trim()
-    const avatar = String(req.body.avatar || '专').trim()
-    const specialties = JSON.stringify(parseExpertSpecialties(req.body.specialties))
-    const bio = String(req.body.bio || '').trim()
-    const password = String(req.body.password || '').trim()
-    if (!name) return R_FAIL(res, '请填写专家姓名')
-    const fields = ['name=?', 'title=?', 'org=?', 'avatar=?', 'specialties=?', 'bio=?']
-    const params = [name, title, org, avatar, specialties, bio]
-    if (password) {
-      if (password.length < 6) return R_FAIL(res, '专家密码不能少于6位')
-      fields.push('password=?')
-      params.push(await bcrypt.hash(password, 10))
-    }
-    params.push(req.params.id)
-    const [result] = await db.query(`UPDATE experts SET ${fields.join(',')} WHERE id=?`, params)
-    if (!result.affectedRows) return R_FAIL(res, '专家账号不存在', 404)
-    return R_OK(res, null, '专家账号已保存')
-  } catch (e) {
-    console.error('[admin-experts-update]', e)
-    return R_FAIL(res, '专家账号保存失败', 500)
-  }
-})
-
-router.patch('/experts/:id/status', adminAuth, async (req, res) => {
-  try {
-    const isActive = req.body.is_active ? 1 : 0
-    const [result] = await db.query('UPDATE experts SET is_active=? WHERE id=?', [isActive, req.params.id])
-    if (!result.affectedRows) return R_FAIL(res, '专家账号不存在', 404)
-    return R_OK(res, null, isActive ? '专家账号已启用' : '专家账号已停用')
-  } catch (e) {
-    console.error('[admin-experts-status]', e)
-    return R_FAIL(res, '专家账号状态更新失败', 500)
-  }
 })
 
 function expertMoved(req, res) {
