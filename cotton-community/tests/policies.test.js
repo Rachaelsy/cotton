@@ -16,6 +16,7 @@ assert(migrate.includes('CREATE TABLE IF NOT EXISTS policy_articles'), 'migratio
 assert(auth.includes('signCommunityAdmin') && auth.includes("permission: account.permission_key"), 'community admin login should issue a scoped token')
 assert(auth.includes("router.post('/admin/change-password'") && auth.includes('auth_version=auth_version+1'), 'community admins should be able to securely change and invalidate their password session')
 assert(route.includes("router.get('/admin/list'") && route.includes("router.post('/admin'") && route.includes("router.put('/admin/:id'"), 'policy management CRUD should exist')
+assert(route.includes("router.post('/admin/change-password'") && route.includes('auth_version=auth_version+1'), 'the proven policy-admin API channel should support password changes')
 assert(route.includes("status='published'") && route.includes("router.get('/:id'"), 'public policy API should expose published articles only')
 assert(route.includes("'public_admin', 'policy_editor'"), 'policy API should accept the extensible public-admin scope')
 assert(server.includes("app.use('/api/policies'"), 'policy API should be mounted')

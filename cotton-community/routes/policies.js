@@ -1,5 +1,6 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 const db = require('../db/database')
 
 const router = express.Router()
@@ -49,6 +50,15 @@ async function policyAdminAuth(req, res, next) {
 function safeUrl(value) {
   const url = String(value || '').trim().slice(0, 500)
   return !url || /^https:\/\//i.test(url) ? url : ''
+}
+
+function validateAdminPassword(value) {
+  const password = String(value || '')
+  if (password.length < 10 || password.length > 72) return '新密码需为10-72位'
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    return '新密码必须同时包含大写字母、小写字母、数字和特殊符号'
+  }
+  return ''
 }
 
 function articleBody(body = {}) {
@@ -108,6 +118,36 @@ router.get('/admin/list', policyAdminAuth, async (_req, res) => {
     const [rows] = await db.query('SELECT * FROM policy_articles ORDER BY updated_at DESC,id DESC LIMIT 200')
     return ok(res, rows.map(row => normalize(row, true)))
   } catch (error) { console.error('[policy-admin-list]', error); return fail(res, '政策管理列表加载失败', 500) }
+})
+
+router.post('/admin/change-password', policyAdminAuth, async (req, res) => {
+  if (req.policyAdmin.type !== 'community') return fail(res, '该入口仅供公益管理员修改密码', 403)
+  const oldPassword = String(req.body.old_password || '')
+  const newPassword = String(req.body.new_password || '')
+  if (!oldPassword || !newPassword) return fail(res, '请填写当前密码和新密码')
+  if (oldPassword === newPassword) return fail(res, '新密码不能与当前密码相同')
+  const passwordError = validateAdminPassword(newPassword)
+  if (passwordError) return fail(res, passwordError)
+
+  try {
+    const [[account]] = await db.query(
+      'SELECT password,is_active FROM community_admins WHERE id=? LIMIT 1',
+      [req.policyAdmin.id]
+    )
+    if (!account || !account.is_active) return fail(res, '公益管理员账号不存在或已停用', 404)
+    if (!account.password || !await bcrypt.compare(oldPassword, account.password)) {
+      return fail(res, '当前密码不正确', 401)
+    }
+    const hash = await bcrypt.hash(newPassword, 12)
+    await db.query(
+      'UPDATE community_admins SET password=?,auth_version=auth_version+1 WHERE id=?',
+      [hash, req.policyAdmin.id]
+    )
+    return ok(res, null, '密码修改成功，请重新登录')
+  } catch (error) {
+    console.error('[policy-admin-change-password]', error)
+    return fail(res, '密码修改失败，请稍后重试', 500)
+  }
 })
 
 router.post('/admin', policyAdminAuth, async (req, res) => {

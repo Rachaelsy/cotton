@@ -194,3 +194,4 @@ npm test
 - 密码修改后，旧令牌立即失效，管理员必须使用新密码重新登录。
 - 退出登录统一清理本地管理令牌并返回 `/admin/login.html?role=admin`。
 - 原独立页面 `/knowledge/admin-login.html` 已删除；为兼容旧收藏地址，服务端会将该地址重定向到统一登录页。
+- 密码修改由已在生产环境使用的 `/api/policies/admin/change-password` 后台通道处理，减少独立代理路径造成的连接问题；原认证接口继续保留兼容。
