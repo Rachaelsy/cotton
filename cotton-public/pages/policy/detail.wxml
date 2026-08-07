@@ -6,7 +6,7 @@
     <view class="detail-publisher"><text>{{policy.issuer}}</text><text>{{policy.publishDate}}</text></view>
   </view>
 
-  <view class="official-warning"><text>政策核验提示</text><view>当前页面为 UI 演示内容。正式申报前，请核对政府部门发布的政策原文、文号和办理通知。</view></view>
+  <view class="official-warning"><text>政策核验提示</text><view>{{demoMode?'当前为演示内容。':'本页由公益平台管理员发布。'}}正式申报前，请核对政府部门发布的政策原文、文号和办理通知。</view></view>
 
   <view class="key-card">
     <view><small>适用地区</small><text>{{policy.region}}</text></view>
@@ -14,13 +14,13 @@
     <view class="wide"><small>政策文号</small><text>{{policy.documentNo}}</text></view>
   </view>
 
-  <view class="detail-section"><view class="section-title"><i></i><text>政策摘要</text></view><text class="summary">{{policy.summary}}</text><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view>
+  <view class="detail-section"><view class="section-title"><i></i><text>政策摘要</text></view><text class="summary">{{policy.summary}}</text><rich-text wx:if="{{bodyNodes.length}}" class="markdown-body" nodes="{{bodyNodes}}"></rich-text><view wx:else><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view></view>
 
-  <view class="detail-section"><view class="section-title"><i></i><text>适用对象</text></view><view class="check-row" wx:for="{{policy.applicable}}" wx:key="*this"><text>✓</text><view>{{item}}</view></view></view>
+  <view class="detail-section" wx:if="{{policy.applicable && policy.applicable.length}}"><view class="section-title"><i></i><text>适用对象</text></view><view class="check-row" wx:for="{{policy.applicable}}" wx:key="*this"><text>✓</text><view>{{item}}</view></view></view>
 
-  <view class="detail-section"><view class="section-title"><i></i><text>办理流程</text></view><view class="step-row" wx:for="{{policy.steps}}" wx:key="*this"><text>{{index+1}}</text><view><small>第 {{index+1}} 步</small><text>{{item}}</text></view></view></view>
+  <view class="detail-section" wx:if="{{policy.steps && policy.steps.length}}"><view class="section-title"><i></i><text>办理流程</text></view><view class="step-row" wx:for="{{policy.steps}}" wx:key="*this"><text>{{index+1}}</text><view><small>第 {{index+1}} 步</small><text>{{item}}</text></view></view></view>
 
-  <view class="detail-section"><view class="section-title"><i></i><text>材料清单</text></view><view class="material-row" wx:for="{{policy.materials}}" wx:key="*this"><text>□</text><view>{{item}}</view></view></view>
+  <view class="detail-section" wx:if="{{policy.materials && policy.materials.length}}"><view class="section-title"><i></i><text>材料清单</text></view><view class="material-row" wx:for="{{policy.materials}}" wx:key="*this"><text>□</text><view>{{item}}</view></view></view>
 
-  <view class="source-card"><text>信息来源</text><view>{{policy.issuer}}</view><small>演示数据 · 正式版本将提供政府原文链接</small><button bindtap="copySource">复制来源说明</button></view>
+  <view class="source-card"><text>信息来源</text><view>{{policy.issuer||'待补充发布单位'}}</view><small>{{policy.originalUrl?'已提供政府原文链接':'未提供原文链接，请向发布单位核验'}}</small><button bindtap="copySource">{{policy.originalUrl?'复制原文链接':'复制来源说明'}}</button></view>
 </view>

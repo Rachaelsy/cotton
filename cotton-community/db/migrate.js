@@ -28,6 +28,48 @@ async function run() {
   }
 
   await db.query(`
+    CREATE TABLE IF NOT EXISTS community_admins (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      phone VARCHAR(20) NOT NULL UNIQUE,
+      password VARCHAR(100) NOT NULL,
+      display_name VARCHAR(64) NOT NULL DEFAULT '公益平台管理员',
+      permission_key VARCHAR(64) NOT NULL DEFAULT 'policy_editor',
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      auth_version INT UNSIGNED NOT NULL DEFAULT 0,
+      last_login_at DATETIME DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_community_admin_active (is_active)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台独立管理员'
+  `)
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS policy_articles (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(180) NOT NULL,
+      summary VARCHAR(500) NOT NULL DEFAULT '',
+      body_markdown MEDIUMTEXT NOT NULL,
+      policy_level VARCHAR(32) NOT NULL DEFAULT '地区',
+      category VARCHAR(64) NOT NULL DEFAULT '政策动态',
+      issuer VARCHAR(160) NOT NULL DEFAULT '',
+      region VARCHAR(160) NOT NULL DEFAULT '喀什地区',
+      document_no VARCHAR(120) NOT NULL DEFAULT '',
+      deadline VARCHAR(120) NOT NULL DEFAULT '',
+      original_url VARCHAR(500) NOT NULL DEFAULT '',
+      status ENUM('draft','published') NOT NULL DEFAULT 'draft',
+      is_featured TINYINT(1) NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      published_at DATETIME DEFAULT NULL,
+      created_by INT UNSIGNED DEFAULT NULL,
+      updated_by INT UNSIGNED DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_policy_public (status,is_featured,sort_order,published_at),
+      INDEX idx_policy_filter (policy_level,category,status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台政策文章'
+  `)
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS experts (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       phone VARCHAR(20) NOT NULL UNIQUE,

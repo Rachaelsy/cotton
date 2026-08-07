@@ -5,12 +5,12 @@
     <view class="policy-search"><text>⌕</text><input value="{{keyword}}" bindinput="onSearch" placeholder="搜索政策、补贴、保险、品种……"/><text wx:if="{{keyword}}" bindtap="clearSearch">×</text></view>
   </view>
 
-  <view class="demo-tip"><text>说明</text><view>当前为产品演示数据，正式政策以政府部门发布的原文为准。</view></view>
+  <view class="demo-tip" wx:if="{{demoMode}}"><text>说明</text><view>云端政策暂时无法加载，当前展示演示数据；正式政策以政府部门原文为准。</view></view>
 
   <scroll-view class="level-tabs" scroll-x enhanced show-scrollbar="{{false}}"><view class="level-tabs-inner"><button wx:for="{{levels}}" wx:key="*this" class="{{activeLevel===item?'on':''}}" data-value="{{item}}" bindtap="onLevel">{{item}}</button></view></scroll-view>
   <scroll-view class="category-tabs" scroll-x enhanced show-scrollbar="{{false}}"><view class="category-tabs-inner"><button wx:for="{{categories}}" wx:key="*this" class="{{activeCategory===item?'on':''}}" data-value="{{item}}" bindtap="onCategory">{{item}}</button></view></scroll-view>
 
-  <view class="policy-result-head"><text>政策动态</text><small>共 {{visible.length}} 条</small></view>
+  <view class="policy-result-head"><text>政策动态</text><small>{{loading?'加载中...':'共 '+visible.length+' 条'}}</small></view>
   <view class="empty-policy" wx:if="{{!visible.length}}"><text>暂未找到相关政策</text><small>试试其他地区、分类或关键词</small></view>
   <view class="policy-list" wx:else>
     <view class="policy-card" wx:for="{{visible}}" wx:key="id" bindtap="openDetail" data-id="{{item.id}}">

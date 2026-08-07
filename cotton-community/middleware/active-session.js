@@ -22,9 +22,14 @@ function createActiveSessionGuard(options = {}) {
     if (!accountId) return next()
 
     try {
+      const isCommunityAdmin = Boolean(payload.is_community_admin)
       const isAdmin = Boolean(payload.is_admin)
-      const table = payload.role === 'expert' && payload.is_expert ? 'experts' : 'users'
-      const fields = isAdmin ? 'id,is_active,is_admin,admin_auth_version' : 'id,is_active'
+      const table = isCommunityAdmin
+        ? 'community_admins'
+        : (payload.role === 'expert' && payload.is_expert ? 'experts' : 'users')
+      const fields = isCommunityAdmin
+        ? 'id,is_active,auth_version'
+        : (isAdmin ? 'id,is_active,is_admin,admin_auth_version' : 'id,is_active')
       const [rows] = await database.query(`SELECT ${fields} FROM ${table} WHERE id=? LIMIT 1`, [accountId])
       const account = rows[0]
       if (!account || !Number(account.is_active)) {
@@ -33,6 +38,9 @@ function createActiveSessionGuard(options = {}) {
           msg: '账号已停用或不存在，请联系平台管理员',
           data: null
         })
+      }
+      if (isCommunityAdmin && Number(payload.auth_version || 0) !== Number(account.auth_version || 0)) {
+        return res.status(401).json({ code: 401, msg: '公益管理员登录状态已失效，请重新登录', data: null })
       }
       if (isAdmin && (
         !Number(account.is_admin) ||

@@ -75,6 +75,7 @@ app.use('/api/community-auth', require('./routes/auth'))
 app.use('/api/knowledge', require('./routes/knowledge'))
 app.use('/api/community-ai', require('./routes/ai'))
 app.use('/api/public-service', require('./routes/public-service'))
+app.use('/api/policies', require('./routes/policies'))
 
 app.get('/api/community-health', async (_req, res) => {
   try {

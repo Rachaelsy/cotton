@@ -31,6 +31,22 @@ function signAdmin(user) {
   )
 }
 
+function signCommunityAdmin(account) {
+  return jwt.sign(
+    {
+      id: Number(account.id),
+      phone: account.phone,
+      real_name: account.display_name || '公益平台管理员',
+      role: 'community_admin',
+      is_community_admin: true,
+      permission: account.permission_key || 'policy_editor',
+      auth_version: Number(account.auth_version || 0)
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.ADMIN_JWT_EXPIRES || '12h' }
+  )
+}
+
 router.post('/login', async (req, res) => {
   const phone = String(req.body.phone || '').trim()
   const password = String(req.body.password || '')
@@ -162,12 +178,30 @@ router.post('/admin/login', async (req, res) => {
   }
 
   try {
+    const [[communityAdmin]] = await db.query('SELECT * FROM community_admins WHERE phone=? LIMIT 1', [phone])
+    if (communityAdmin) {
+      if (!communityAdmin.is_active) return fail(res, '账号已被禁用', 403)
+      if (!communityAdmin.password || !await bcrypt.compare(password, communityAdmin.password)) return fail(res, '密码错误', 401)
+      await db.query('UPDATE community_admins SET last_login_at=NOW() WHERE id=?', [communityAdmin.id])
+      return ok(res, {
+        token: signCommunityAdmin(communityAdmin),
+        real_name: communityAdmin.display_name || '公益平台管理员',
+        permission: communityAdmin.permission_key || 'policy_editor',
+        redirect: '/knowledge/policy-admin.html'
+      }, '登录成功')
+    }
+
     const [[user]] = await db.query('SELECT * FROM users WHERE phone=? LIMIT 1', [phone])
     if (!user) return fail(res, '账号不存在', 404)
     if (!user.is_admin) return fail(res, '非管理员账号', 403)
     if (!user.is_active) return fail(res, '账号已被禁用', 403)
     if (!user.password || !await bcrypt.compare(password, user.password)) return fail(res, '密码错误', 401)
-    return ok(res, { token: signAdmin(user), real_name: user.real_name || '管理员' }, '登录成功')
+    return ok(res, {
+      token: signAdmin(user),
+      real_name: user.real_name || '管理员',
+      permission: 'platform_admin',
+      redirect: '/knowledge/admin.html'
+    }, '登录成功')
   } catch (error) {
     console.error('[community-admin-login]', error)
     return fail(res, '服务器错误，请稍后重试', 500)

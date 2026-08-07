@@ -63,7 +63,7 @@
         })
         localStorage.setItem('admin_token', result.data.token)
         localStorage.setItem('admin_name', result.data.real_name || '管理员')
-        location.href = '/knowledge/admin.html'
+        location.href = result.data.redirect || '/knowledge/admin.html'
       } catch (error) {
         message.textContent = error.message
       } finally {
