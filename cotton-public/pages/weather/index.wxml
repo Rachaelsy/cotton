@@ -1,0 +1,221 @@
+<view class="page">
+  <view class="wx-hd" style="padding-top: {{statusBarHeight}}px">
+    <view class="wx-hd-top" style="padding-right: {{capsuleSafeRight}}px">
+      <view class="wx-hd-title-wrap">
+        <text class="wx-title">{{copy.title}}</text>
+        <text class="wx-subtitle">{{locationLabel}}</text>
+      </view>
+      <view class="wx-hd-action" bindtap="onBack"><text>{{common.back}}</text></view>
+    </view>
+
+    <scroll-view class="field-chips" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="field-chip-row">
+        <view
+          class="fchip {{item.selected ? 'on' : ''}}"
+          wx:for="{{fields}}"
+          wx:key="id"
+          bindtap="onSelField"
+          data-index="{{index}}"
+        >
+          <text class="fchip-text">{{item.label}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="wx-scroll" scroll-y enhanced show-scrollbar="false">
+    <view wx:if="{{loading}}" class="wx-state">
+      <text class="wx-state-title">{{copy.loadingTitle}}</text>
+      <text class="wx-state-desc">{{copy.loadingDesc}}</text>
+    </view>
+
+    <view wx:elif="{{loadError && !fields.length}}" class="wx-state">
+      <text class="wx-state-title">{{copy.loadFailTitle}}</text>
+      <text class="wx-state-desc">{{loadError}}</text>
+      <view class="wx-state-btn" bindtap="onRetry"><text>{{common.retry}}</text></view>
+    </view>
+
+    <view wx:else>
+      <view class="wx-main-card">
+        <view wx:if="{{weatherDataError}}" class="wx-weather-error">
+          <view class="wx-weather-error-text">
+            <text class="wx-weather-error-title">{{copy.weatherDataFailTitle}}</text>
+            <text class="wx-weather-error-desc">{{weatherDataError}}</text>
+          </view>
+          <view class="wx-weather-error-btn" bindtap="onRetry"><text>{{common.retry}}</text></view>
+        </view>
+
+        <view wx:if="{{apiNotice}}" class="wx-api-notice">
+          <text>{{apiNotice}}</text>
+        </view>
+
+        <view class="wx-main-top">
+          <view class="wx-main-info">
+            <view class="wx-chip-row">
+              <view class="wx-main-chip">{{selectedFieldLabel}}</view>
+              <view class="wx-source-chip {{sourceInfo.type === 'real' ? 'real' : (sourceInfo.type === 'unavailable' ? 'unavailable' : 'mock')}}" bindtap="onSourceTap">
+                <text class="source-dot"></text>
+                <text>{{sourceInfo.label}}</text>
+              </view>
+            </view>
+            <text class="wx-big-temp">{{weather.temp}}{{weather.temp === '--' ? '' : '°'}}</text>
+            <text class="wx-desc">{{weather.desc}}</text>
+            <text class="wx-hl">{{weather.low}}{{weather.low === '--' ? '' : '°'}} ~ {{weather.high}}{{weather.high === '--' ? '' : '°'}} · {{weather.wind}}</text>
+          </view>
+          <text class="wx-icon-big">{{weather.icon}}</text>
+        </view>
+
+        <view class="wx-detail-grid">
+          <view class="wx-di">
+            <text class="wdi-icon">💨</text>
+            <text class="wdi-val">{{weather.windLevel}}{{copy.levelUnit}}</text>
+            <text class="wdi-lbl">{{copy.wind}}</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">💧</text>
+            <text class="wdi-val">{{weather.humidity}}%</text>
+            <text class="wdi-lbl">{{copy.humidity}}</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">🌡</text>
+            <text class="wdi-val">{{weather.groundTemp}}{{weather.groundTemp === '--' ? '' : '°C'}}</text>
+            <text class="wdi-lbl">{{weather.groundTempLabel || copy.groundTemp}}</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">☀️</text>
+            <text class="wdi-val">{{weather.uv}}</text>
+            <text class="wdi-lbl">{{copy.uv}}</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">🌂</text>
+            <text class="wdi-val">{{weather.rain}}mm</text>
+            <text class="wdi-lbl">{{copy.rain}}</text>
+          </view>
+          <view class="wx-di">
+            <text class="wdi-icon">👁</text>
+            <text class="wdi-val">{{weather.visibilityText}}</text>
+            <text class="wdi-lbl">{{copy.visibility}}</text>
+          </view>
+        </view>
+
+        <view class="wx-tip">
+          <text class="wx-tip-text">{{tipText}}</text>
+        </view>
+      </view>
+
+      <view class="wx-alert-banner {{alert ? '' : (warningAvailable ? 'safe' : 'warning-unavailable')}}" bindtap="onAlertTap">
+        <text class="wa-icon">{{alert ? alert.icon : (weatherDataError || !warningAvailable ? '⚠️' : '✅')}}</text>
+        <view class="wa-txt">
+          <text class="wa-title">{{alert ? alert.title + (alert.level ? ' · ' + alert.level : '') : (weatherDataError ? copy.weatherDataFailTitle : (!warningAvailable ? copy.warningUnavailable : copy.todayTip))}}</text>
+          <text class="wa-sub">{{alert ? alert.sub : (!warningAvailable ? copy.warningUnavailableDesc : summary)}}</text>
+        </view>
+        <text class="wa-arr">›</text>
+      </view>
+
+      <view wx:if="{{weatherStatistics}}" class="wx-card climate-card">
+        <view class="wx-card-head">
+          <view class="wx-card-bar"></view>
+          <text class="wx-card-title">{{copy.climateStats}}</text>
+        </view>
+        <view class="climate-grid">
+          <view class="climate-item"><text class="climate-value">{{weatherStatistics.growingDegreeDays}}</text><text class="climate-label">{{copy.gdd}}</text></view>
+          <view class="climate-item"><text class="climate-value">{{weatherStatistics.rainfallMm}}mm</text><text class="climate-label">{{copy.rain30}}</text></view>
+          <view class="climate-item"><text class="climate-value">{{weatherStatistics.coverageDays}} / 30</text><text class="climate-label">{{copy.coverage}}</text></view>
+        </view>
+        <text class="climate-note">{{statsTruthText}}</text>
+      </view>
+
+      <view class="wx-card wx-hourly-card">
+        <view class="wx-card-head">
+          <view class="wx-card-bar"></view>
+          <text class="wx-card-title">{{copy.hourly}}</text>
+        </view>
+        <view wx:if="{{!hourly.length}}" class="wx-empty-data">
+          <text>{{copy.weatherDataEmpty}}</text>
+        </view>
+        <scroll-view wx:else class="hourly-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="hourly-row">
+            <view class="hourly-item {{item.now ? 'hourly-now' : ''}}" wx:for="{{hourly}}" wx:key="time">
+              <text class="hour-time">{{item.time}}</text>
+              <text class="hour-icon">{{item.icon}}</text>
+              <text class="hour-temp">{{item.temp}}°</text>
+              <text class="hour-meta">{{item.wind}}</text>
+              <text class="hour-rain">{{item.rainText}}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="wx-card">
+        <view class="wx-card-head">
+          <view class="wx-card-bar"></view>
+          <text class="wx-card-title">{{copy.forecast7}}</text>
+        </view>
+        <view wx:if="{{!forecast.length}}" class="wx-empty-data">
+          <text>{{copy.weatherDataEmpty}}</text>
+        </view>
+        <scroll-view wx:else class="forecast-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="forecast-row">
+            <view class="forecast-item" wx:for="{{forecast}}" wx:key="day">
+              <text class="fc-day">{{item.day}}</text>
+              <text class="fc-icon">{{item.icon}}</text>
+              <text class="fc-hl">{{item.high}}° / {{item.low}}°</text>
+              <text class="fc-wind">{{item.wind}}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="wx-advice-card">
+        <view class="wx-card-head">
+          <view class="wx-card-bar"></view>
+          <text class="wx-card-title">{{copy.aiAdvice}}</text>
+        </view>
+        <view wx:if="{{!advices.length}}" class="wx-empty-data">
+          <text>{{copy.weatherDataEmpty}}</text>
+        </view>
+        <block wx:else>
+          <view class="adv-item" wx:for="{{advices}}" wx:key="title">
+            <view class="adv-icon" style="background: {{item.bg}}">
+              <text class="adv-icon-emoji">{{item.icon}}</text>
+            </view>
+            <view class="adv-body">
+              <text class="adv-title">{{item.title}}</text>
+              <text class="adv-sub">{{item.sub}}</text>
+            </view>
+          </view>
+        </block>
+      </view>
+
+      <view style="height: 40rpx"></view>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{showAlertDetail}}" class="modal-mask" bindtap="onCloseAlert"></view>
+  <view wx:if="{{showAlertDetail}}" class="alert-sheet" catchtap="noop">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view class="sheet-title-wrap">
+        <text class="sheet-icon">{{alertDetail.icon}}</text>
+        <view class="sheet-title-main">
+          <text class="sheet-title">{{alertDetail.title}}</text>
+          <text class="sheet-sub">{{alertDetail.level}} · {{alertDetail.agency}}</text>
+        </view>
+      </view>
+      <view class="sheet-close" bindtap="onCloseAlert"><icon type="cancel" size="23" color="#81766C"></icon></view>
+    </view>
+
+    <view class="alert-info-grid">
+      <view class="alert-info-item"><text class="aii-label">{{copy.impactTime}}</text><text class="aii-value">{{alertDetail.impactTime}}</text></view>
+      <view class="alert-info-item"><text class="aii-label">{{copy.impactArea}}</text><text class="aii-value">{{alertDetail.impactArea}}</text></view>
+    </view>
+    <view class="alert-summary"><text>{{alertDetail.sub}}</text></view>
+    <view class="alert-action-list">
+      <text class="alert-action-title">{{copy.emergencyAdvice}}</text>
+      <view class="alert-action" wx:for="{{alertDetail.actions}}" wx:key="*this">
+        <text class="alert-action-dot"></text>
+        <text class="alert-action-text">{{item}}</text>
+      </view>
+    </view>
+  </view>
+</view>

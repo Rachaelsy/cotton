@@ -1,0 +1,127 @@
+﻿<view class="page">
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px;">
+      <view class="back-btn cm-back-btn" bindtap="onBack">
+        <text class="back-icon cm-back-text">‹</text>
+      </view>
+
+      <text class="nav-title">{{copy.title}}</text>
+
+      <view class="nav-right"></view>
+    </view>
+  </view>
+
+  <scroll-view class="scroll-body" scroll-y scroll-top="{{scrollTop}}">
+    <view class="recognize-card" bindtap="onTakePhoto">
+      <view class="recognize-main">
+        <view class="recognize-copy">
+          <text class="recognize-title">{{copy.recognize}}</text>
+          <text class="recognize-sub">{{copy.recognizeSub}}</text>
+        </view>
+
+        <view class="recognize-actions">
+          <view class="action-pill action-pill-primary">
+            <text class="action-pill-text">{{copy.cameraAction}}</text>
+          </view>
+
+          <view class="action-pill" catchtap="onChooseAlbum">
+            <text class="action-pill-text">{{copy.album}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="toolbar-row">
+      <view class="toolbar-card toolbar-card-full" bindtap="onHistory">
+        <view class="toolbar-copy">
+          <text class="toolbar-badge">{{copy.historyBadge}}</text>
+          <text class="toolbar-title">{{copy.history}}</text>
+          <text class="toolbar-sub">
+            {{recentHistory.length ? historyCountText : copy.noHistoryShort}}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{recentHistory.length}}" class="section-header">
+      <view class="section-copy">
+        <text class="section-title">{{copy.recentTitle}}</text>
+        <text class="section-sub section-sub-block">{{copy.recentSub}}</text>
+      </view>
+    </view>
+
+    <scroll-view
+      wx:if="{{recentHistory.length}}"
+      class="history-scroll"
+      scroll-x
+      enhanced
+      show-scrollbar="{{false}}"
+    >
+      <view class="history-row">
+        <view
+          wx:for="{{recentHistory}}"
+          wx:key="id"
+          class="history-card"
+          bindtap="onHistoryTap"
+          data-id="{{item.id}}"
+        >
+          <image class="history-image" src="{{item.image}}" mode="aspectFill"></image>
+
+          <view class="history-body">
+            <text class="history-name">{{item.title}}</text>
+            <text class="history-summary">{{item.summary}}</text>
+
+            <view class="history-tags">
+              <text class="history-tag">{{item.displayCategory}}</text>
+              <text class="history-tag history-tag-warn">{{item.displaySeverity}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="section-header">
+      <text class="section-title">{{copy.library}}</text>
+      <text class="section-sub">{{commonCountText}}</text>
+    </view>
+
+    <scroll-view class="filter-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="filter-row">
+        <view
+          wx:for="{{filters}}"
+          wx:key="*this"
+          class="filter-tag {{filter === item ? 'filter-tag-active' : ''}}"
+          bindtap="onFilterTap"
+          data-val="{{item}}"
+        >
+          <text class="filter-tag-text">{{item}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="grid">
+      <view
+        wx:for="{{filteredPests}}"
+        wx:key="id"
+        class="grid-item"
+        bindtap="onPestTap"
+        data-id="{{item.id}}"
+      >
+        <view class="grid-head">
+          <view class="grid-icon-wrap {{item.bg}}">
+            <text class="grid-icon">{{item.icon}}</text>
+          </view>
+
+          <view class="grid-type-tag {{item.tagClass}}">
+            <text class="grid-type-text">{{item.type}}</text>
+          </view>
+        </view>
+
+        <text class="grid-name">{{item.n}}</text>
+        <text class="grid-cta">{{copy.viewGuide}}</text>
+      </view>
+    </view>
+
+    <view class="bottom-gap"></view>
+  </scroll-view>
+</view>

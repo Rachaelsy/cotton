@@ -1,0 +1,14 @@
+<view class="page">
+  <view class="hero">
+    <view class="brand">喀什优棉公益平台</view>
+    <view class="profile">
+      <view class="avatar">{{initial}}</view>
+      <view wx:if="{{loggedIn}}"><strong>{{user.real_name || user.phone || '棉农用户'}}</strong><small>{{user.location || '新疆棉农'}} · 公益学习用户</small></view>
+      <view wx:else><strong>登录后使用完整服务</strong><small>同步地块、农事记录和学习进度</small></view>
+    </view>
+    <button wx:if="{{!loggedIn}}" bindtap="login">登录 / 注册</button>
+  </view>
+  <view class="stats"><view><strong>320</strong><small>学习积分</small></view><view><strong>4</strong><small>已学课程</small></view><view><strong>0</strong><small>学习证书</small></view></view>
+  <view class="menu"><view bindtap="open" data-key="fields"><i>田</i><text>我的地块</text><b>›</b></view><view bindtap="open" data-key="records"><i>记</i><text>农事记录</text><b>›</b></view><view bindtap="open" data-key="calendar"><i>历</i><text>农事日历</text><b>›</b></view><view bindtap="about"><i>公</i><text>关于公益平台</text><b>›</b></view></view>
+  <button class="logout" wx:if="{{loggedIn}}" bindtap="logout">退出登录</button>
+</view>

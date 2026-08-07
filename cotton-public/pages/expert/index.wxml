@@ -1,0 +1,163 @@
+<view class="page">
+  <view class="exp-hero" style="padding-top: {{statusBarHeight}}px">
+    <view class="exp-topbar" style="padding-right: {{capsuleSafeRight}}px">
+      <view class="exp-back" bindtap="onBack"><text>‹</text></view>
+      <view class="exp-title-wrap">
+        <text class="exp-title">{{copy.title}}</text>
+        <text class="exp-sub">{{copy.subtitle}}</text>
+      </view>
+      <view class="exp-ask" bindtap="onAskExpert"><text>{{copy.ask}}</text></view>
+    </view>
+    <text class="exp-slogan">{{copy.slogan}}</text>
+    <view class="exp-stats">
+      <text>{{experts.length}} {{copy.statsExperts}}</text>
+      <text>{{allCourses.length}} {{copy.statsCourses}}</text>
+      <text>{{copy.statsQa}}</text>
+    </view>
+  </view>
+
+  <scroll-view class="exp-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{loading}}" class="notice-card">专家内容加载中...</view>
+    <view wx:elif="{{loadError}}" class="notice-card weak">{{loadError}}</view>
+
+    <view class="section">
+      <view class="section-head"><text class="section-title">互动学习</text><text class="section-more" bindtap="onAskExpert">向专家提问</text></view>
+      <view class="interact-grid">
+        <view class="interact-card main" bindtap="onAskExpert">
+          <text class="interact-icon">问</text>
+          <view class="interact-text">
+            <text class="interact-title">问平台专家</text>
+            <text class="interact-desc">种植、病虫害、水肥问题都可以提交</text>
+          </view>
+        </view>
+        <view class="interact-card" bindtap="onAskExpertAi">
+          <text class="interact-icon">AI</text>
+          <view class="interact-text">
+            <text class="interact-title">AI 陪练</text>
+            <text class="interact-desc">边学边问，快速复习课程要点</text>
+          </view>
+        </view>
+      </view>
+      <view class="quick-wrap">
+        <text class="quick-title">常见问题</text>
+        <view class="quick-list">
+          <view class="quick-chip" wx:for="{{quickQuestions}}" wx:key="*this" bindtap="onQuickQuestion" data-question="{{item}}">
+            <text>{{item}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-head"><text class="section-title">{{copy.onlineExperts}}</text><text class="section-more" bindtap="onAskExpert">{{copy.askNow}}</text></view>
+      <scroll-view class="expert-row" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="expert-card" wx:for="{{experts}}" wx:key="id" bindtap="onExpertTap" data-id="{{item.id}}">
+          <text class="expert-avatar">{{item.avatar}}</text>
+          <view class="expert-info">
+            <text class="expert-name">{{item.name}}</text>
+            <text class="expert-org">{{item.org}}</text>
+            <view class="expert-tags"><text wx:for="{{item.tags}}" wx:key="*this" class="expert-tag">{{item}}</text></view>
+          </view>
+          <text class="expert-online {{item.online ? 'on' : ''}}">{{item.online ? copy.online : copy.offline}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="section" wx:if="{{myQuestions.length}}">
+      <view class="section-head"><text class="section-title">我的提问</text><text class="section-more" bindtap="loadMyQuestions">刷新</text></view>
+      <view class="question-card" wx:for="{{myQuestions}}" wx:key="id">
+        <view class="question-row">
+          <text class="question-category">{{item.category}}</text>
+          <text class="question-status status-{{item.status}}">{{item.statusLabel}}</text>
+        </view>
+        <text class="question-text">{{item.question}}</text>
+        <view class="question-record-images" wx:if="{{item.images && item.images.length}}">
+          <image wx:for="{{item.images}}" wx:key="url" src="{{item.src}}" mode="aspectFill" bindtap="previewRecordImage" data-url="{{item.src}}"></image>
+        </view>
+        <view class="answer-box" wx:if="{{item.reply}}">
+          <text class="answer-label">专家回复</text>
+          <text class="answer-text">{{item.reply}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-head"><text class="section-title">{{copy.featured}}</text></view>
+      <view class="feature-card" wx:for="{{featured}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
+        <image wx:if="{{item.coverUrl}}" class="feature-cover" src="{{item.coverUrl}}" mode="aspectFill"></image>
+        <view wx:else class="feature-icon"><text>{{item.icon}}</text></view>
+        <view class="feature-main">
+          <text class="feature-title">{{item.title}}</text>
+          <text class="feature-meta">{{item.typeLabel}} · {{item.teacher}} · {{item.duration}} · {{item.students}}{{copy.learned}}</text>
+        </view>
+        <text class="feature-play {{item.isPaid ? 'paid' : ''}}">{{item.tag}}</text>
+      </view>
+    </view>
+
+    <view class="category-wrap">
+      <scroll-view class="category-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="category-chip {{activeCategoryKey === item.key ? 'on' : ''}}" wx:for="{{categories}}" wx:key="key" data-key="{{item.key}}" bindtap="onCategoryTap">
+          <text>{{item.label}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="section course-section">
+      <view class="section-head"><text class="section-title">{{copy.courseList}}</text></view>
+      <view class="course-card" wx:for="{{filteredCourses}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
+        <image wx:if="{{item.coverUrl}}" class="course-cover" src="{{item.coverUrl}}" mode="aspectFill"></image>
+        <view wx:else class="course-icon"><text>{{item.icon}}</text></view>
+        <view class="course-main">
+          <view class="course-title-row"><text class="course-title">{{item.title}}</text><text class="course-tag">{{item.tag}}</text></view>
+          <text class="course-meta">{{item.teacher}} {{item.titleName}} · {{item.org}}</text>
+          <text class="course-desc">{{item.intro}}</text>
+          <view class="course-foot"><text>{{item.category}}</text><text>{{item.duration}}</text><text>{{item.students}}{{copy.learning}}</text></view>
+        </view>
+      </view>
+    </view>
+    <view class="bottom-gap"></view>
+  </scroll-view>
+
+  <view class="question-modal-mask" wx:if="{{showQuestionModal}}" catchtap="closeQuestionModal" style="padding-top: {{statusBarHeight + 72}}px;">
+    <view class="question-modal" catchtap="noop">
+      <view class="question-modal-head">
+        <text class="question-modal-title">向专家提问</text>
+        <text class="question-modal-close" bindtap="closeQuestionModal">×</text>
+      </view>
+      <view class="question-modal-body">
+        <view class="question-category-list">
+          <view class="question-category-chip {{questionForm.category === item ? 'on' : ''}}" wx:for="{{questionCategories}}" wx:key="*this" data-category="{{item}}" bindtap="onQuestionCategoryTap">
+            <text>{{item}}</text>
+          </view>
+        </view>
+        <picker mode="selector" range="{{plotOptions}}" value="{{plotIndex}}" bindchange="onQuestionPlotChange">
+          <view class="question-picker">
+            <text>{{plotOptions[plotIndex] || '选择地块'}}</text>
+            <text class="question-picker-arrow">›</text>
+          </view>
+        </picker>
+        <input class="question-input" value="{{questionForm.cropStage}}" data-field="cropStage" bindinput="onQuestionInput" placeholder="棉花生育期，如：蕾期、花铃期（选填）" />
+        <textarea class="question-textarea" value="{{questionForm.question}}" data-field="question" bindinput="onQuestionInput" maxlength="1000" placeholder="请描述你遇到的问题，例如叶片症状、天气、用药或浇水情况"></textarea>
+        <view class="question-image-block">
+          <view class="question-image-head">
+            <text>现场图片</text>
+            <text class="question-image-tip">最多3张，选填</text>
+          </view>
+          <view class="question-image-list">
+            <view class="question-image-item" wx:for="{{questionImages}}" wx:key="url">
+              <image src="{{item.src}}" mode="aspectFill" bindtap="previewQuestionImage" data-url="{{item.src}}"></image>
+              <text class="question-image-remove" bindtap="removeQuestionImage" data-index="{{index}}">×</text>
+            </view>
+            <view class="question-image-add" wx:if="{{questionImages.length < 3}}" bindtap="chooseQuestionImages">
+              <text>{{uploadingQuestionImages ? '上传中' : '+ 图片'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="question-modal-actions">
+        <button class="question-btn plain" bindtap="closeQuestionModal">取消</button>
+        <button class="question-btn primary" loading="{{questionSubmitting}}" bindtap="submitQuestion">提交给管理员</button>
+      </view>
+    </view>
+  </view>
+</view>

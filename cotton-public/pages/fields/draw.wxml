@@ -1,0 +1,206 @@
+<!-- pages/fields/draw.wxml — 地块边界绘制与信息补充 -->
+<view class="page">
+  <view class="nav" style="padding-top: {{statusBarHeight}}px; padding-right: calc(24rpx + {{capsuleSafeRight}}px)">
+    <view class="nav-side" bindtap="onBack"><text>{{common.back}}</text></view>
+    <view class="nav-center">
+      <text class="nav-title">{{showForm ? copy.titleForm : copy.titleDraw}}</text>
+      <text class="nav-sub">{{showForm ? copy.subForm : copy.subDraw}}</text>
+    </view>
+    <view class="nav-side nav-help" bindtap="onHelp"><text>{{copy.help}}</text></view>
+  </view>
+
+  <view wx:if="{{!showForm}}" class="draw-container">
+    <map
+      id="mymap"
+      class="map"
+      latitude="{{mapLat}}"
+      longitude="{{mapLng}}"
+      scale="16"
+      markers="{{markers}}"
+      polylines="{{polylines}}"
+      polygons="{{polygons}}"
+      enable-satellite="{{isSatellite}}"
+      show-location
+      enable-zoom
+      enable-scroll
+      enable-rotate="{{false}}"
+      bindtap="onMapTap"
+      bindmarkertap="onMarkerTap"
+      bindcallouttap="onCalloutTap"
+    ></map>
+
+    <view class="toolbar">
+      <view class="tool-btn tool-primary" bindtap="onLocate"><text class="tool-title">{{copy.locate}}</text><text class="tool-sub">{{copy.currentLocation}}</text></view>
+      <view class="tool-btn" bindtap="onChooseLocation"><text class="tool-title">{{copy.search}}</text><text class="tool-sub">{{copy.searchSub}}</text></view>
+      <view class="tool-btn {{showCoordPanel ? 'tool-active' : ''}}" bindtap="onToggleCoordPanel"><text class="tool-title">{{copy.coord}}</text><text class="tool-sub">{{copy.coordSub}}</text></view>
+      <view class="tool-btn" bindtap="onToggleSatellite"><text class="tool-title">{{isSatellite ? copy.standard : copy.satellite}}</text><text class="tool-sub">{{copy.layer}}</text></view>
+      <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onUndo"><text class="tool-title">{{copy.undo}}</text><text class="tool-sub">{{copy.prevStep}}</text></view>
+      <view class="tool-btn {{points.length === 0 ? 'tool-disabled' : ''}}" bindtap="onClear"><text class="tool-title">{{copy.clear}}</text><text class="tool-sub">{{copy.allPoints}}</text></view>
+    </view>
+
+    <view wx:if="{{!showCoordPanel}}" class="walk-track-card {{trackingBoundary ? 'walk-track-active' : ''}}">
+      <view class="walk-track-head">
+        <view class="walk-track-title-wrap">
+          <text class="walk-track-title">{{copy.walkBoundary}}</text>
+          <text class="walk-track-sub">{{trackingBoundary ? copy.walkBoundaryActiveSub : copy.walkBoundarySub}}</text>
+        </view>
+        <view wx:if="{{!trackingBoundary}}" class="walk-track-action" bindtap="onStartBoundaryTrack">
+          <text>{{copy.startWalkTrack}}</text>
+        </view>
+        <view wx:else class="walk-track-action walk-track-stop" bindtap="onStopBoundaryTrack">
+          <text>{{copy.stopWalkTrack}}</text>
+        </view>
+      </view>
+      <view class="walk-track-metrics">
+        <view class="walk-track-metric">
+          <text class="walk-track-value">{{trackPointCount}}</text>
+          <text class="walk-track-label">{{copy.trackPoint}}</text>
+        </view>
+        <view class="walk-track-metric">
+          <text class="walk-track-value">{{trackDistance}}m</text>
+          <text class="walk-track-label">{{copy.trackDistanceLabel}}</text>
+        </view>
+        <view class="walk-track-metric">
+          <text class="walk-track-value">{{trackAccuracyText}}</text>
+          <text class="walk-track-label">{{copy.trackAccuracy}}</text>
+        </view>
+      </view>
+      <text wx:if="{{trackingBoundary || trackStatusText}}" class="walk-track-status">{{trackStatusText || copy.trackKeepScreenOn}}</text>
+    </view>
+
+    <view wx:if="{{showCoordPanel}}" class="coord-panel">
+      <view class="coord-head">
+        <view>
+          <text class="coord-title">{{copy.coordTitle}}</text>
+          <text class="coord-hint">{{copy.coordHint}}</text>
+        </view>
+        <text class="coord-close" bindtap="onToggleCoordPanel">{{copy.hideCoord}}</text>
+      </view>
+      <view class="coord-input-row">
+        <view class="coord-input-wrap">
+          <text class="coord-label">{{copy.lat}}</text>
+          <input class="coord-input" type="digit" value="{{manualLat}}" placeholder="39.470000" bindinput="onManualLatInput" />
+        </view>
+        <view class="coord-input-wrap">
+          <text class="coord-label">{{copy.lng}}</text>
+          <input class="coord-input" type="digit" value="{{manualLng}}" placeholder="75.990000" bindinput="onManualLngInput" />
+        </view>
+      </view>
+      <text wx:if="{{pickedLocationName}}" class="coord-picked">{{copy.pickedLocation}}：{{pickedLocationName}}</text>
+      <view class="coord-actions">
+        <view class="coord-btn secondary" bindtap="onMoveToManualCoord"><text>{{copy.moveToCoord}}</text></view>
+        <view class="coord-btn primary" bindtap="onAddManualPoint"><text>{{copy.addCoordPoint}}</text></view>
+      </view>
+    </view>
+
+    <view wx:if="{{points.length === 0}}" class="draw-empty-tip">
+      <text class="draw-empty-title">{{copy.emptyTitle}}</text>
+      <text class="draw-empty-sub">{{copy.emptySub}}</text>
+    </view>
+
+    <view wx:if="{{points.length >= 3}}" class="area-float">
+      <text class="area-label">{{copy.areaNow}}</text>
+      <view class="area-row"><text class="area-val">{{area}}</text><text class="area-unit">{{common.mu}}</text></view>
+    </view>
+
+    <view wx:if="{{points.length > 0}}" class="draw-hint {{closed ? 'draw-hint-done' : ''}}">
+      <icon type="{{closed ? 'success_no_circle' : 'info'}}" size="15" color="{{closed ? '#A9E1BD' : '#FFD275'}}"></icon>
+      <text>{{tipText}}</text>
+    </view>
+
+    <view class="bottom-bar">
+      <view class="stats-row">
+        <view class="stat"><text class="stat-val">{{points.length}}</text><text class="stat-lbl">{{copy.vertex}}</text></view>
+        <view class="stat-div"></view>
+        <view class="stat"><text class="stat-val">{{area}}</text><text class="stat-lbl">{{copy.areaMu}}</text></view>
+        <view class="stat-div"></view>
+        <view class="stat"><text class="stat-val">{{perimeter}}</text><text class="stat-lbl">{{copy.perimeter}}</text></view>
+      </view>
+      <view class="btn-row">
+        <view class="cancel-btn" bindtap="onBack"><text>{{common.cancel}}</text></view>
+        <view class="finish-btn {{points.length < 3 ? 'finish-disabled' : ''}}" bindtap="onFinishDraw"><text>{{copy.finish}}</text></view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showForm}}" class="form-container">
+    <scroll-view class="form-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="draw-summary">
+        <view class="summary-icon"><icon type="success" size="28" color="#2D8B57"></icon></view>
+        <view class="summary-body">
+          <text class="summary-title">{{copy.summaryTitle}}</text>
+          <text class="summary-desc">{{summaryText}}</text>
+        </view>
+      </view>
+
+      <view class="reference-images-card">
+        <view class="reference-head">
+          <view class="reference-title-wrap">
+            <text class="reference-title">{{copy.referenceImages}}</text>
+            <text class="reference-sub">{{copy.referenceImagesSub}}</text>
+          </view>
+          <view class="reference-add {{uploadingImages ? 'reference-add-disabled' : ''}}" bindtap="onChoosePlotImages">
+            <text>{{uploadingImages ? copy.uploadingImage : copy.addReferenceImage}}</text>
+          </view>
+        </view>
+        <view wx:if="{{referenceImageItems.length}}" class="reference-grid">
+          <view
+            class="reference-item"
+            wx:for="{{referenceImageItems}}"
+            wx:key="url"
+            data-url="{{item.displayUrl}}"
+            bindtap="onPreviewPlotImage"
+          >
+            <image class="reference-img" src="{{item.displayUrl}}" mode="aspectFill"></image>
+            <view class="reference-remove" data-index="{{index}}" catchtap="onRemovePlotImage"><text>×</text></view>
+          </view>
+        </view>
+        <view wx:else class="reference-empty" bindtap="onChoosePlotImages">
+          <text class="reference-empty-main">{{copy.referenceImageEmpty}}</text>
+          <text class="reference-empty-sub">{{copy.referenceImageTip}}</text>
+        </view>
+      </view>
+
+      <view class="form-card">
+        <view class="field-row">
+          <text class="field-label">{{copy.name}} <text class="req">*</text></text>
+          <input class="field-input" placeholder="{{copy.namePh}}" value="{{form.name}}" bindinput="onNameInput" maxlength="20"/>
+        </view>
+        <view class="field-row">
+          <text class="field-label">{{copy.variety}} <text class="req">*</text></text>
+          <input class="field-input" placeholder="{{copy.varietyPh}}" value="{{form.variety}}" bindinput="onVarietyInput" maxlength="30"/>
+        </view>
+        <view class="field-row">
+          <text class="field-label">{{copy.sowDate}}</text>
+          <picker mode="date" value="{{form.sowDate}}" bindchange="onSowDateChange">
+            <view class="field-picker"><text class="{{form.sowDate ? 'picker-val' : 'picker-placeholder'}}">{{form.sowDate || copy.chooseDate}}</text><text class="picker-more">{{common.select}}</text></view>
+          </picker>
+        </view>
+        <view class="field-row">
+          <text class="field-label">{{copy.irrigation}}</text>
+          <picker mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange">
+            <view class="field-picker"><text class="picker-val">{{irrigationOptions[irrigationIndex]}}</text><text class="picker-more">{{common.change}}</text></view>
+          </picker>
+        </view>
+        <view class="field-row">
+          <text class="field-label">{{copy.soil}}</text>
+          <picker mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange">
+            <view class="field-picker"><text class="picker-val">{{soilOptions[soilIndex]}}</text><text class="picker-more">{{common.change}}</text></view>
+          </picker>
+        </view>
+        <view class="field-row">
+          <text class="field-label">{{copy.planting}}</text>
+          <picker mode="selector" range="{{plantingOptions}}" value="{{plantingIndex}}" bindchange="onPlantingChange">
+            <view class="field-picker"><text class="picker-val">{{plantingOptions[plantingIndex]}}</text><text class="picker-more">{{common.change}}</text></view>
+          </picker>
+        </view>
+        <view class="field-row field-row-note">
+          <text class="field-label">{{copy.note}}</text>
+          <textarea class="field-textarea" value="{{form.note}}" bindinput="onNoteInput" placeholder="{{copy.notePh}}" maxlength="200"></textarea>
+        </view>
+      </view>
+      <view class="form-bottom-space"></view>
+    </scroll-view>
+    <view class="form-save-btn {{saving ? 'save-disabled' : ''}}" bindtap="onSave"><text>{{saving ? copy.saving : copy.save}}</text></view>
+  </view>
+</view>

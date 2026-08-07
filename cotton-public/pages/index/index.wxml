@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="hero">
+    <view class="eyebrow">喀什优棉公益平台</view>
+    <view class="welcome">你好，{{userName}}</view>
+    <view class="hero-title">学种棉 · 会管理 · 享服务</view>
+    <view class="hero-sub">可信农技知识与田间生产工具，服务每一位棉农</view>
+    <view class="today-card"><view><text>今日农事建议</text><strong>检查棉铃虫与田间墒情</strong></view><button bindtap="openModule" data-key="records">去记录</button></view>
+  </view>
+
+  <view class="section quick-section">
+    <view class="section-head"><text>生产服务</text><small>常用工具</small></view>
+    <view class="quick-grid">
+      <view class="quick" bindtap="openModule" data-key="fields"><i class="green">田</i><text>地块管理</text></view>
+      <view class="quick" bindtap="openModule" data-key="pest"><i class="brown">识</i><text>病虫害识别</text></view>
+      <view class="quick" bindtap="openModule" data-key="weather"><i class="blue">气</i><text>地块气象</text></view>
+      <view class="quick" bindtap="openModule" data-key="expert"><i class="gold">讲</i><text>专家讲堂</text></view>
+      <view class="quick" bindtap="openModule" data-key="records"><i class="mint">记</i><text>农事记录</text></view>
+      <view class="quick" bindtap="openModule" data-key="academy"><i class="orange">学</i><text>棉知学堂</text></view>
+    </view>
+  </view>
+
+  <view class="ai-card" bindtap="openAi"><view class="ai-icon">AI</view><view><strong>智能农技顾问</strong><text>病虫诊断、种植管理，有问题随时问</text></view><text class="arrow">›</text></view>
+
+  <view class="section news-section">
+    <view class="section-head"><text>棉花资讯</text><button bindtap="openNews">查看全部 ›</button></view>
+    <view class="news" wx:for="{{news}}" wx:key="id">
+      <view><label>{{item.tag}}</label><strong>{{item.title}}</strong><small>{{item.source}} · 今天</small></view><image src="{{item.image}}" mode="aspectFill"/>
+    </view>
+  </view>
+  <view class="notice"><text>重要提醒</text><small>未来三天持续高温，请及时关注地块墒情变化。</small></view>
+</view>

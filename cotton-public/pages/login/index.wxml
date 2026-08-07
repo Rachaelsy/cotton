@@ -1,0 +1,194 @@
+<!-- pages/login/index.wxml — 登录/注册页 -->
+<view class="page">
+
+  <!-- 顶部装饰区 -->
+  <view class="hero" style="padding-top: {{statusBarHeight}}px">
+
+    <!-- 返回（非 select 步骤显示） -->
+    <view wx:if="{{step !== 'select'}}" class="back-btn" bindtap="goBack">
+      <text class="back-icon">‹</text>
+    </view>
+
+    <!-- Logo + 品牌 -->
+    <view class="logo-wrap">
+      <view class="logo-circle">
+        <text class="logo-emoji">🌾</text>
+      </view>
+      <text class="brand-name">{{copy.brand}}</text>
+      <text class="brand-sub">{{copy.brandSub}}</text>
+    </view>
+  </view>
+
+  <!-- 白色内容卡 -->
+  <scroll-view class="card-scroll" scroll-y>
+
+    <!-- ═══ STEP 1：身份选择 ═══ -->
+    <view wx:if="{{step === 'select'}}" class="step-wrap">
+      <text class="step-title">{{copy.farmerLogin}}</text>
+      <text class="step-sub">{{copy.farmerPlatform}}</text>
+
+      <view class="role-card" bindtap="onSelectRole" data-role="farmer">
+        <view class="role-icon-wrap farmer-bg">
+          <text class="role-icon">👨‍🌾</text>
+        </view>
+        <view class="role-info">
+          <text class="role-name">{{copy.farmer}}</text>
+          <text class="role-desc">{{copy.farmerDesc}}</text>
+        </view>
+        <text class="role-arr">›</text>
+      </view>
+
+    </view>
+
+    <!-- ═══ STEP 2：登录 ═══ -->
+    <view wx:if="{{step === 'login'}}" class="step-wrap">
+      <view class="role-tag">
+        <text class="role-tag-text">{{roleLabel}}</text>
+      </view>
+      <text class="step-title">{{copy.welcomeBack}}</text>
+
+      <!-- 微信一键登录 -->
+      <button
+        class="wx-login-btn"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onWxPhoneLogin"
+        loading="{{wxLoading}}"
+      >
+        <text class="wx-btn-icon">🟢</text>
+        <text class="wx-btn-text">{{copy.wxLogin}}</text>
+      </button>
+
+      <view class="divider-or">
+        <view class="divider-line"></view>
+        <text class="divider-text">{{copy.phoneDivider}}</text>
+        <view class="divider-line"></view>
+      </view>
+
+      <text class="step-sub">{{copy.phonePwd}}</text>
+
+      <!-- 手机号 -->
+      <view class="field-wrap">
+        <text class="field-label">{{copy.phone}}</text>
+        <view class="input-box">
+          <text class="input-prefix">+86</text>
+          <input class="field-input" type="number" maxlength="11"
+                 placeholder="{{copy.phonePh}}"
+                 value="{{loginPhone}}"
+                 data-field="loginPhone" bindinput="onInput" />
+        </view>
+      </view>
+
+      <!-- 密码 -->
+      <view class="field-wrap">
+        <text class="field-label">{{copy.password}}</text>
+        <view class="input-box">
+          <input class="field-input" password="{{!loginPwdVisible}}"
+                 placeholder="{{copy.passwordPh}}"
+                 value="{{loginPwd}}"
+                 data-field="loginPwd" bindinput="onInput" />
+          <text class="eye-btn" bindtap="toggleLoginPwd">{{loginPwdVisible ? '🙈' : '👁'}}</text>
+        </view>
+      </view>
+
+      <!-- 登录按钮 -->
+      <view class="submit-btn {{loginLoading ? 'loading' : ''}}" bindtap="onLogin">
+        <text class="submit-text">{{loginLoading ? copy.logging : copy.loginNow}}</text>
+      </view>
+
+      <!-- 切换注册 -->
+      <view class="switch-row">
+        <text class="switch-text">{{copy.noAccount}}</text>
+        <text class="switch-link" bindtap="goRegister">{{copy.registerNow}}</text>
+      </view>
+    </view>
+
+    <!-- ═══ STEP 3：注册 ═══ -->
+    <view wx:if="{{step === 'register'}}" class="step-wrap">
+      <view class="role-tag">
+        <text class="role-tag-text">{{roleLabel}}</text>
+      </view>
+      <text class="step-title">{{copy.createAccount}}</text>
+      <text class="step-sub">{{copy.registerSub}}</text>
+
+      <!-- ── 公共字段 ── -->
+      <view class="section-title">{{copy.basicInfo}}</view>
+
+      <view class="field-wrap">
+        <text class="field-label">{{copy.phone}} <text class="required">*</text></text>
+        <view class="input-box">
+          <text class="input-prefix">+86</text>
+          <input class="field-input" type="number" maxlength="11"
+                 placeholder="{{copy.phoneAccountPh}}"
+                 value="{{regPhone}}"
+                 data-field="regPhone" bindinput="onInput" />
+        </view>
+      </view>
+
+      <view class="field-wrap">
+        <text class="field-label">{{copy.realName}} <text class="required">*</text></text>
+        <view class="input-box">
+          <input class="field-input"
+                 placeholder="{{copy.realNamePh}}"
+                 value="{{regRealName}}"
+                 data-field="regRealName" bindinput="onInput" />
+        </view>
+      </view>
+
+      <view class="field-wrap">
+        <text class="field-label">{{copy.setPwd}} <text class="required">*</text></text>
+        <view class="input-box">
+          <input class="field-input" password="{{!regPwdVisible}}"
+                 placeholder="{{copy.pwdPh}}"
+                 value="{{regPwd}}"
+                 data-field="regPwd" bindinput="onInput" />
+          <text class="eye-btn" bindtap="toggleRegPwd">{{regPwdVisible ? '🙈' : '👁'}}</text>
+        </view>
+      </view>
+
+      <view class="field-wrap">
+        <text class="field-label">{{copy.confirmPwd}} <text class="required">*</text></text>
+        <view class="input-box">
+          <input class="field-input" password="{{!regPwdVisible}}"
+                 placeholder="{{copy.confirmPwdPh}}"
+                 value="{{regPwdConfirm}}"
+                 data-field="regPwdConfirm" bindinput="onInput" />
+        </view>
+      </view>
+
+      <!-- ── 农户专属字段 ── -->
+      <block wx:if="{{role === 'farmer'}}">
+        <view class="section-title">{{copy.farmerInfo}}</view>
+        <view class="field-wrap">
+          <text class="field-label">{{copy.location}} <text class="required">*</text></text>
+          <view class="input-box">
+            <input class="field-input" placeholder="{{copy.locationPh}}"
+                   value="{{regLocation}}"
+                   data-field="regLocation" bindinput="onInput" />
+          </view>
+        </view>
+        <view class="field-wrap">
+          <text class="field-label">{{copy.landSize}}</text>
+          <view class="input-box">
+            <input class="field-input" type="digit" placeholder="{{copy.landSizePh}}"
+                   value="{{regLandSize}}"
+                   data-field="regLandSize" bindinput="onInput" />
+          </view>
+        </view>
+      </block>
+
+
+      <!-- 注册按钮 -->
+      <view class="submit-btn {{regLoading ? 'loading' : ''}}" bindtap="onRegister">
+        <text class="submit-text">{{regLoading ? copy.registering : copy.registerDone}}</text>
+      </view>
+
+      <view class="switch-row">
+        <text class="switch-text">{{copy.hasAccount}}</text>
+        <text class="switch-link" bindtap="goLogin">{{copy.loginNow}}</text>
+      </view>
+
+      <view style="height: 40rpx"></view>
+    </view>
+
+  </scroll-view>
+</view>

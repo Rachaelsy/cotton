@@ -6,6 +6,7 @@ const crypto   = require('crypto')
 const db       = require('../db/database')
 const { authMiddleware } = require('../middleware/auth')
 const { isProductionDefaultCredential } = require('../utils/default-credentials')
+const { resolveMiniappClient } = require('../utils/miniapp-clients')
 
 const router = express.Router()
 
@@ -37,9 +38,8 @@ function signGuestToken(guestId) {
   )
 }
 
-async function exchangeWechatCode(loginCode) {
-  const appid = process.env.WX_APPID
-  const secret = process.env.WX_SECRET
+async function exchangeWechatCode(loginCode, miniapp) {
+  const { appid, secret } = miniapp
   if (!appid || !secret) {
     const error = new Error('微信身份服务未配置')
     error.statusCode = 503
@@ -128,6 +128,40 @@ function sessionUserResponse(user, role = user.role) {
   }
 }
 
+async function findDedicatedMiniappUser(miniapp, openid, unionid) {
+  const [byOpenid] = await db.query(
+    `SELECT u.* FROM mini_program_identities i
+     JOIN users u ON u.id=i.user_id
+     WHERE i.client_key=? AND i.openid=? LIMIT 1`,
+    [miniapp.clientKey, openid]
+  )
+  if (byOpenid.length) return byOpenid[0]
+  if (!unionid) return null
+  const [byUnionid] = await db.query('SELECT * FROM users WHERE unionid=? LIMIT 1', [unionid])
+  return byUnionid[0] || null
+}
+
+async function saveMiniappIdentity(miniapp, userId, openid, unionid) {
+  if (!miniapp.usesDedicatedIdentity) {
+    await db.query(
+      'UPDATE users SET openid=?,unionid=COALESCE(?,unionid) WHERE id=?',
+      [openid, unionid || null, userId]
+    )
+    return
+  }
+  await db.query(
+    `INSERT INTO mini_program_identities (user_id,client_key,appid,openid,unionid)
+     VALUES (?,?,?,?,?)
+     ON DUPLICATE KEY UPDATE
+       user_id=VALUES(user_id),appid=VALUES(appid),openid=VALUES(openid),
+       unionid=COALESCE(VALUES(unionid),unionid),updated_at=NOW()`,
+    [userId, miniapp.clientKey, miniapp.appid, openid, unionid || null]
+  )
+  if (unionid) {
+    await db.query('UPDATE users SET unionid=COALESCE(unionid,?) WHERE id=?', [unionid, userId])
+  }
+}
+
 // ─────────────────────────────────────────────
 // POST /api/auth/register  注册接口
 // ─────────────────────────────────────────────
@@ -208,7 +242,13 @@ router.post('/register', async (req, res) => {
     // ── 签发 Token ────────────────────────────
     const token = signToken({ id: userId, phone, role })
     await claimGuestOrders(guestToken, userId)
-    return ok(res, { token, role, phone, real_name: real_name.trim(), is_verified: false }, '注册成功')
+    return ok(res, {
+      token, id: userId, role, phone, real_name: real_name.trim(),
+      is_verified: false, avatar_url: null,
+      ...(role === 'farmer' ? {
+        location: location || '', land_size: parseFloat(land_size) || 0, crop_type: crop_type || '棉花'
+      } : {})
+    }, '注册成功')
 
   } catch (err) {
     console.error('[register]', err)
@@ -279,6 +319,8 @@ router.post('/login', async (req, res) => {
     await claimGuestOrders(guestToken, user.id)
     return ok(res, {
       token,
+      id:          user.id,
+      phone:       user.phone,
       role:       sessionUser.role,
       real_name:  user.real_name,
       is_verified: !!user.is_verified,
@@ -358,7 +400,8 @@ router.post('/wechat-guest', async (req, res) => {
   const loginCode = String(req.body.loginCode || '').trim()
   if (!loginCode) return fail(res, '缺少微信临时登录凭证')
   try {
-    const { openid, unionid } = await exchangeWechatCode(loginCode)
+    const miniapp = resolveMiniappClient(req)
+    const { openid, unionid } = await exchangeWechatCode(loginCode, miniapp)
     await db.query(
       `INSERT INTO wechat_guests (openid,unionid,last_seen_at)
        VALUES (?,?,NOW())
@@ -394,13 +437,13 @@ router.post('/wx-login', async (req, res) => {
   const { loginCode, phoneCode, guestToken } = req.body
   if (!loginCode || !phoneCode) return fail(res, '缺少 loginCode 或 phoneCode')
 
-  const appid  = process.env.WX_APPID
-  const secret = process.env.WX_SECRET
+  const miniapp = resolveMiniappClient(req)
+  const { appid, secret } = miniapp
   if (!appid || !secret) return fail(res, '微信登录未配置，请使用手机号登录', 503)
 
   try {
     // ── 1. code 换 openid + session_key ────────
-    const session = await exchangeWechatCode(loginCode)
+    const session = await exchangeWechatCode(loginCode, miniapp)
     const { openid, unionid } = session
 
     // ── 2. 获取 access_token ───────────────────
@@ -426,10 +469,13 @@ router.post('/wx-login', async (req, res) => {
 
     // ── 4. 查找已有账号（openid 或 手机号）───────
     let user
-    const [byOpenid] = await db.query('SELECT * FROM users WHERE openid=?', [openid])
-    if (byOpenid.length > 0) {
-      user = byOpenid[0]
-    } else if (unionid) {
+    if (miniapp.usesDedicatedIdentity) {
+      user = await findDedicatedMiniappUser(miniapp, openid, unionid)
+    } else {
+      const [byOpenid] = await db.query('SELECT * FROM users WHERE openid=?', [openid])
+      if (byOpenid.length > 0) user = byOpenid[0]
+    }
+    if (!user && unionid) {
       const [byUnionid] = await db.query('SELECT * FROM users WHERE unionid=?', [unionid])
       if (byUnionid.length > 0) user = byUnionid[0]
     }
@@ -439,23 +485,23 @@ router.post('/wx-login', async (req, res) => {
         user = byPhone[0]
       }
     }
-    if (user) {
-      await db.query(
-        'UPDATE users SET openid=?,unionid=COALESCE(?,unionid) WHERE id=?',
-        [openid, unionid || null, user.id]
-      )
-    }
-
     // ── 5. 不存在则自动注册为农户 ───────────────
     if (!user) {
-      const [result] = await db.query(
-        'INSERT INTO users (phone,openid,unionid,role,is_active) VALUES (?,?,?,?,1)',
-        [phone, openid, unionid || null, 'farmer']
-      )
+      const [result] = miniapp.usesDedicatedIdentity
+        ? await db.query(
+          'INSERT INTO users (phone,unionid,role,is_active) VALUES (?,?,?,1)',
+          [phone, unionid || null, 'farmer']
+        )
+        : await db.query(
+          'INSERT INTO users (phone,openid,unionid,role,is_active) VALUES (?,?,?,?,1)',
+          [phone, openid, unionid || null, 'farmer']
+        )
       await createFarmerProfile(result.insertId)
       const [newRow] = await db.query('SELECT * FROM users WHERE id=?', [result.insertId])
       user = newRow[0]
     }
+
+    await saveMiniappIdentity(miniapp, user.id, openid, unionid)
 
     if (!user.is_active) return fail(res, '账号已被禁用，请联系客服', 403)
 
@@ -470,8 +516,9 @@ router.post('/wx-login', async (req, res) => {
     const token = signToken(sessionUser)
     await claimGuestOrders(guestToken, user.id, openid)
     return ok(res, {
-      token, role: 'farmer', real_name: user.real_name || '', phone: user.phone,
-      is_verified: !!user.is_verified, ...profile
+      token, id: user.id, role: 'farmer', real_name: user.real_name || '', phone: user.phone,
+      is_verified: !!user.is_verified, avatar_url: user.avatar_url || null,
+      client_key: miniapp.clientKey, ...profile
     }, '登录成功')
 
   } catch (err) {

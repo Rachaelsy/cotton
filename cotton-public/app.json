@@ -1,0 +1,64 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/news/index",
+    "pages/academy/index",
+    "pages/academy/course",
+    "pages/academy/exam",
+    "pages/my/index",
+    "pages/login/index",
+    "pages/ai/index",
+    "pages/fields/index",
+    "pages/fields/draw",
+    "pages/fields/detail",
+    "pages/pest/index",
+    "pages/pest/result",
+    "pages/pest/detail",
+    "pages/weather/index",
+    "pages/water/index",
+    "pages/fert/index",
+    "pages/expert/index",
+    "pages/expert/detail",
+    "pages/records/index",
+    "pages/records/calendar"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationStyle": "custom",
+    "backgroundColor": "#f4f7f3"
+  },
+  "tabBar": {
+    "color": "#87918b",
+    "selectedColor": "#167553",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/academy/index", "text": "棉知学堂" },
+      { "pagePath": "pages/my/index", "text": "我的" }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": { "desc": "用于地块定位、边界绘制和地块气象服务" },
+    "scope.record": { "desc": "用于 AI 农技问答的语音提问" }
+  },
+  "requiredPrivateInfos": ["getLocation", "chooseLocation", "startLocationUpdate"],
+  "plugins": {
+    "WechatSI": { "version": "0.3.7", "provider": "wx069ba97219f66d99" }
+  },
+  "style": "v2",
+  "renderer": "skyline",
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "defaultContentBox": true,
+      "tagNameStyleIsolation": "legacy",
+      "disableABTest": true,
+      "sdkVersionBegin": "3.0.0",
+      "sdkVersionEnd": "15.255.255"
+    }
+  },
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

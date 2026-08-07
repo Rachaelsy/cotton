@@ -174,6 +174,8 @@ IDENTITY_DATA_KEY=请使用密码管理器生成的随机密钥
 
 `WX_APPID` 和 `WX_SECRET` 用于后端调用微信登录接口，将 `wx.login()` 得到的临时 `code` 换成用户 `openid`。没有这两个配置，微信登录和后续 JSAPI 支付都不能完整工作。
 
+共享后端同时支持独立的公益小程序。公益前端会发送 `X-Miniapp-Client: cotton-public`；服务端配置 `PUBLIC_WX_APPID`、`PUBLIC_WX_SECRET` 后使用独立微信凭据，并通过 `mini_program_identities` 保存各小程序 OpenID，避免覆盖原 `users.openid`。未配置公益凭据时回退主小程序配置。部署或本地更新后需执行 `node db/migrate_miniapp_identities.js`，该迁移也已加入 Docker 启动流程和 `npm run migrate:runtime`。
+
 地块气象默认使用和风天气 QWeather 格点天气接口。和风控制台里的 `API Host` 必须填到 `QWEATHER_API_HOST`；生产环境使用 `QWEATHER_JWT_*`，不要同时配置 `QWEATHER_API_KEY`。注意：`ed25519-public.pem` 是上传到和风控制台的公钥，服务器签名要用 `ed25519-private.pem`，不要把私钥提交到 GitHub。
 
 ### 和风天气 QWeather JWT 配置

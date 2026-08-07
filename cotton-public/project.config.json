@@ -1,0 +1,40 @@
+{
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "enhance": true,
+    "minifyWXML": true,
+    "minifyWXSS": true,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "disableSWC": true,
+    "uglifyFileName": false,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "projectname": "cotton-public",
+  "appid": "wx9bad50f33586fa59",
+  "libVersion": "3.16.1",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "demo" },
+      { "type": "suffix", "value": ".docx" },
+      { "type": "suffix", "value": ".md" }
+    ],
+    "include": []
+  },
+  "editorSetting": {}
+}

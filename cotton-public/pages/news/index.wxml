@@ -1,0 +1,6 @@
+<view class="page">
+  <view class="head"><view class="nav"><button bindtap="back">‹</button><view><strong>棉花资讯</strong><small>COTTON NEWS</small></view><text>公益 · 权威</text></view></view>
+  <view class="feature" bindtap="openArticle" data-id="featured"><image src="/images/course-water-v2.webp" mode="aspectFill"/><view><label>今日头条</label><strong>新疆棉花进入花铃期，专家提醒做好水肥协同管理</strong></view></view>
+  <scroll-view class="tabs" scroll-x><button wx:for="{{tabs}}" wx:key="*this" class="{{active===item?'on':''}}" data-name="{{item}}" bindtap="chooseTab">{{item}}</button></scroll-view>
+  <view class="list"><view class="article" wx:for="{{visible}}" wx:key="id" bindtap="openArticle" data-id="{{item.id}}"><view><label>{{item.tag}}</label><strong>{{item.title}}</strong><small>{{item.source}} · 今天</small></view><image src="{{item.image}}" mode="aspectFill"/></view></view>
+</view>

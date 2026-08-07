@@ -1,0 +1,43 @@
+# 修改记录
+
+本文件从 2026-08-07 起记录 `cotton-public` 及其依赖的共享后端修改。以后每次代码修改都应同步更新本文件和 `README.md`。
+
+## 2026-08-07 — 注册登录与共享身份后端
+
+### 新增
+
+- 公益小程序请求统一携带 `X-Miniapp-Client: cotton-public`。
+- 共享后端新增多小程序配置解析，支持 `PUBLIC_WX_APPID`、`PUBLIC_WX_SECRET`。
+- 新增 `mini_program_identities` 数据表迁移，用于保存不同小程序的 OpenID，避免覆盖原小程序身份。
+- 身份映射表外键与现有 `users.id INT UNSIGNED` 保持一致，兼容当前共享数据库。
+- 新增多小程序配置专项测试。
+
+### 修改
+
+- 手机号注册、密码登录继续复用 `cotton-app/server` 和同一 MySQL 用户、农户数据。
+- 登录响应补齐用户 ID 和手机号，注册响应补齐农户资料。
+- 公益小程序启动时向后端校验 JWT，不再只相信本地缓存。
+- 修复 `app.js` 读取错误缓存键导致登录状态无法恢复的问题。
+- 真机开发地址由旧的 `192.168.0.39` 更新为当前电脑的 `192.168.0.22`。
+- 首页和个人中心统一从认证缓存读取真实姓名、手机号及登录状态。
+
+### 部署
+
+- Docker 启动迁移加入 `migrate_miniapp_identities.js`。
+- 本地运行可使用 `npm run migrate:runtime` 执行身份表迁移。
+
+### 验证结果
+
+- 当前共享 MySQL 已成功执行 `migrate_miniapp_identities.js`。
+- `npm.cmd run test:public-auth` 已通过多小程序配置和农户多角色注册登录测试。
+- 后端认证路由、迁移脚本、公益前端启动与认证工具均通过 JavaScript 语法检查。
+- 后端及小程序 JSON 配置通过解析检查。
+- 本地共享后端已启动，`127.0.0.1:3000` 与真机地址 `192.168.0.22:3000` 的 `/api/ping` 均返回数据库连接正常。
+- 携带 `X-Miniapp-Client: cotton-public` 的注册请求已命中后端参数校验，确认公益客户端标识链路生效。
+
+## 2026-08-07 — 真机布局与包体修复
+
+- 排除 Demo、Word 和 Markdown 文档，真机包体降至约 1.31 MB。
+- 补齐运行图片并修复缺失引用。
+- 移除 AI 页面遗留的旧 `tab-bar` 组件。
+- 将新页面关键 CSS Grid 布局改为 Skyline 真机兼容的 Flex 布局。

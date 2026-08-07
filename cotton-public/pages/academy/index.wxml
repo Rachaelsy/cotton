@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="hero"><small>棉花种植成长路径</small><h1>棉知学堂</h1><p>图文学方法，视频看实操，从入门到数字棉田</p><view class="score"><view><small>我的学习积分</small><strong>{{points}}</strong></view><view><small>总学习进度</small><strong>4 / 18 课</strong></view></view></view>
+  <view class="path">
+    <view class="level"><view class="node">1</view><view class="panel"><view class="title"><strong>初级 · 种棉入门</strong><text>4/6 课</text></view><p>建立从播种到苗期管理的基础认知</p><block wx:for="{{courses}}" wx:key="id"><view wx:if="{{item.level===1}}" class="lesson" bindtap="openCourse" data-id="{{item.id}}"><label class="{{item.type==='视频'?'video':''}}">{{item.type}}</label><strong>{{item.title}}</strong><small>{{item.done?'✓ 已学':item.duration}}</small></view></block><button bindtap="openExam">阶段考试 · 通过后解锁中级</button></view></view>
+    <view class="level {{level2Unlocked?'':'locked'}}"><view class="node">{{level2Unlocked?'2':'锁'}}</view><view class="panel"><view class="title"><strong>中级 · 丰产管理</strong><text>{{level2Unlocked?'已解锁 · 0/6课':'待解锁 · 6课'}}</text></view><p>掌握水肥、株型和病虫害综合管理</p><block wx:for="{{courses}}" wx:key="id"><view wx:if="{{item.level===2}}" class="lesson" bindtap="openCourse" data-id="{{item.id}}" data-locked="{{item.locked}}"><label class="{{item.type==='视频'?'video':''}}">{{item.type}}</label><strong>{{item.title}}</strong><small>{{item.locked?'🔒':item.duration}}</small></view></block></view></view>
+    <view class="level locked"><view class="node">锁</view><view class="panel"><view class="title"><strong>高级 · 数字棉田</strong><text>待解锁 · 6课</text></view><p>产量诊断、品质提升与全周期数据决策</p></view></view>
+  </view>
+</view>
