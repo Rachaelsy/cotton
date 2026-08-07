@@ -19,6 +19,8 @@ assert(route.includes("status='published'") && route.includes("router.get('/:id'
 assert(route.includes("'public_admin', 'policy_editor'"), 'policy API should accept the extensible public-admin scope')
 assert(server.includes("app.use('/api/policies'"), 'policy API should be mounted')
 assert(adminHtml.includes('Markdown 正文') && adminHtml.includes('实时预览'), 'policy editor should expose Markdown editing and preview')
+assert(adminHtml.includes('class="sidebar"') && adminHtml.includes('class="topbar"'), 'public admin should share the core admin layout structure')
+assert(adminHtml.includes('<span>政策中心</span>') && !adminHtml.includes('商户审批'), 'public admin sidebar should expose policy center only')
 assert(adminJs.includes('markdownHtml') && adminJs.includes("data-save"), 'policy editor should render previews and publish')
 
 console.log('policy publishing tests passed')

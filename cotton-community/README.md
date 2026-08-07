@@ -23,6 +23,8 @@ docker compose exec community node db/create_community_admin.js 你的11位手�
 
 管理员从统一入口 `/admin/login.html?role=admin` 登录，后端根据账号类型自动进入公益小程序管理后台 `/knowledge/policy-admin.html`。公益管理员不能进入核心订单、商户等后台；当前可编辑 Markdown 政策、实时预览、保存草稿和正式发布。公开接口 `GET /api/policies` 和 `GET /api/policies/:id` 只返回已发布文章。
 
+公益小程序后台沿用核心管理员后台的视觉布局，但左侧导航按公益产品权限独立生成，目前只显示“政策中心”。后续新增模块时可以继续扩展该侧栏，不会暴露核心平台菜单。
+
 - 棉花种植培训：播种、苗期、水肥、病虫害、花铃期和采收六类图文文章。
 - 图文课程：图文资料、图片、课后小测试、评论和 AI 助学。
 - 政策资讯：独立展示政策阅读、来源核验和适用范围提示。
