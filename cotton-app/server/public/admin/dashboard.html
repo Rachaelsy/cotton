@@ -4,6 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>棉花智能体 · 管理后台</title>
+  <script>
+    // 公益小程序管理员不属于核心平台后台。即使旧登录页或浏览器缓存
+    // 误跳到本页，也要在渲染菜单前立即分流到公益小程序管理后台。
+    try {
+      const token = localStorage.getItem('admin_token') || ''
+      const encoded = token.split('.')[1] || ''
+      const payloadText = encoded
+        ? atob(encoded.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(encoded.length / 4) * 4, '='))
+        : ''
+      if (payloadText.includes('"is_community_admin":true')) {
+        document.documentElement.style.display = 'none'
+        window.location.replace('/knowledge/policy-admin.html')
+      }
+    } catch (_) {}
+  </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {

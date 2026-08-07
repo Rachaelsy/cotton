@@ -66,6 +66,8 @@ function run() {
   assert.ok(runtime.includes('AbortController'), 'request runtime should enforce timeouts')
   assert.ok(runtime.includes("window.addEventListener('offline'"), 'request runtime should report offline state')
   assert.ok(!adminDashboard.includes('localStorage.clear()'), 'admin logout should preserve other role sessions')
+  assert.ok(adminDashboard.includes('"is_community_admin":true'), 'core dashboard should redirect public administrators before rendering core menus')
+  assert.ok(adminDashboard.includes("window.location.replace('/knowledge/policy-admin.html')"), 'public administrators should be redirected to their scoped dashboard')
   assert.ok(!operatorDashboard.includes('localStorage.clear()'), 'operator logout should preserve other role sessions')
   assert.ok(adminDashboard.includes('function jsArg('), 'admin dashboard should encode values used by inline actions')
   assert.ok(merchantDashboard.includes('function jsArg('), 'merchant dashboard should encode values used by inline actions')
