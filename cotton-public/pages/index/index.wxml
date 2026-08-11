@@ -38,6 +38,7 @@
       <view class="quick" bindtap="openModule" data-key="expert"><i class="gold">讲</i><text>专家讲堂</text></view>
       <view class="quick" bindtap="openModule" data-key="records"><i class="mint">记</i><text>农事记录</text></view>
       <view class="quick" bindtap="openModule" data-key="academy"><i class="orange">学</i><text>棉知学堂</text></view>
+      <view class="quick" bindtap="openModule" data-key="finance"><i class="finance">金</i><text>棉花金融</text></view>
     </view>
   </view>
 

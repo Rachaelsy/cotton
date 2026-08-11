@@ -1,5 +1,11 @@
 services:
+  db:
+    image: ${DEV_MYSQL_IMAGE:-mysql:8.0}
+
   app:
+    build:
+      args:
+        NODE_IMAGE: ${DEV_NODE_IMAGE:-node:20-alpine}
     environment:
       NODE_ENV: development
       NODE_ARGS: --watch
@@ -13,6 +19,9 @@ services:
       - app_dev_node_modules:/app/node_modules
 
   community:
+    build:
+      args:
+        NODE_IMAGE: ${DEV_NODE_IMAGE:-node:20-alpine}
     environment:
       NODE_ENV: development
       NODE_ARGS: --watch
@@ -22,6 +31,9 @@ services:
     volumes:
       - ./cotton-community:/app
       - community_dev_node_modules:/app/node_modules
+
+  nginx:
+    image: ${DEV_NGINX_IMAGE:-nginx:alpine}
 
 volumes:
   mysql_data:

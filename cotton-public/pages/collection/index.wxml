@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="nav" style="padding-top:{{statusBarHeight}}px">
+    <view class="back" bindtap="back">‹</view><text>收藏与评价</text><view class="space"></view>
+  </view>
+  <view class="tabs">
+    <view class="{{tab==='favorites'?'active':''}}" data-tab="favorites" bindtap="switchTab">我的收藏</view>
+    <view class="{{tab==='feedback'?'active':''}}" data-tab="feedback" bindtap="switchTab">意见与评价</view>
+  </view>
+  <scroll-view class="content" scroll-y>
+    <view wx:if="{{tab === 'favorites'}}">
+      <view class="intro"><text>已收藏政策</text><text>收藏保存在当前设备，可进入政策详情继续阅读。</text></view>
+      <view wx:if="{{!policies.length}}" class="empty"><view>☆</view><text>暂无收藏内容</text><text>在政策详情页点击“收藏”后会显示在这里</text><button bindtap="back">去看看</button></view>
+      <view wx:if="{{policies.length}}">
+        <view class="policy" wx:for="{{policies}}" wx:key="id">
+          <view class="policy-main" data-id="{{item.id}}" bindtap="openPolicy"><text class="policy-tag">{{item.category || item.level || '政策资讯'}}</text><text class="policy-title">{{item.title}}</text><text class="policy-summary">{{item.summary}}</text><text class="policy-meta">{{item.issuer}} · {{item.publish_date || item.publishDate}}</text></view>
+          <text class="remove" data-id="{{item.id}}" bindtap="removeFavorite">取消收藏</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{tab === 'feedback'}}">
+      <view class="feedback-card"><text class="card-title">给平台提建议</text><text class="card-sub">功能体验、内容建议或使用问题都可以告诉我们。</text><textarea value="{{content}}" bindinput="onInput" maxlength="300" placeholder="请描述你的建议（至少5个字）"/><view class="form-foot"><text>{{content.length}} / 300</text><button wx:if="{{loggedIn}}" loading="{{submitting}}" bindtap="submit">提交评价</button><button wx:if="{{!loggedIn}}" bindtap="login">登录后提交</button></view></view>
+      <view class="record-title">历史反馈</view>
+      <view wx:if="{{!loggedIn}}" class="empty small"><text>登录后可查看反馈与管理员回复</text></view>
+      <view wx:if="{{loggedIn && loading}}" class="empty small"><text>正在加载…</text></view>
+      <view wx:if="{{loggedIn && !loading && !feedbacks.length}}" class="empty small"><text>还没有提交过反馈</text></view>
+      <view wx:if="{{loggedIn && !loading && feedbacks.length}}">
+        <view class="feedback-record" wx:for="{{feedbacks}}" wx:key="id"><view class="record-head"><text>{{item.statusText}}</text><text>{{item.createdText}}</text></view><text class="record-content">{{item.content}}</text><view wx:if="{{item.admin_reply}}" class="reply"><text>平台回复</text><text>{{item.admin_reply}}</text></view></view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

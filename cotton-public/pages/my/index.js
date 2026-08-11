@@ -1,16 +1,99 @@
 const auth = require('../../utils/auth')
+
+const COURSE_IDS = ['growth', 'seed', 'seedling', 'scout', 'water', 'pest']
+
+function learningSummary() {
+  const completed = COURSE_IDS.filter(id => !!wx.getStorageSync(`course_done_${id}`)).length
+  const rewards = { growth: 10, seed: 15, seedling: 15, scout: 15, water: 20, pest: 20 }
+  const points = COURSE_IDS.reduce((sum, id) => sum + (wx.getStorageSync(`course_done_${id}`) ? rewards[id] : 0), 0)
+  return { completed, points }
+}
+
+function collectedCount() {
+  const keys = wx.getStorageInfoSync().keys || []
+  return keys.filter(key => key.indexOf('policy_collected_') === 0 && wx.getStorageSync(key)).length
+}
+
 Page({
-  data: { loggedIn: false, user: null, initial: '棉' },
+  data: {
+    statusBarHeight: 20,
+    loggedIn: false,
+    user: null,
+    initial: '棉',
+    displayName: '棉农朋友',
+    verificationText: '未登录',
+    plotCount: '--',
+    courseCount: 0,
+    collectedCount: 0,
+    points: 0
+  },
+
+  onLoad() {
+    const info = wx.getSystemInfoSync()
+    this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+  },
+
   onShow() {
+    this.refreshPage()
+  },
+
+  async refreshPage() {
+    const loggedIn = auth.isLoggedIn()
     const user = auth.getUser()
-    const name = user && (user.real_name || user.phone || '棉')
-    this.setData({ loggedIn: auth.isLoggedIn(), user, initial: name ? String(name).charAt(0) : '棉' })
+    const displayName = user && (user.real_name || user.nickname || user.phone) || '棉农朋友'
+    const learning = learningSummary()
+    this.setData({
+      loggedIn,
+      user,
+      displayName,
+      initial: String(displayName).charAt(0) || '棉',
+      verificationText: !loggedIn ? '登录后查看' : (user && (user.is_verified || user.verification_status === 'approved') ? '已认证' : '未认证'),
+      courseCount: learning.completed,
+      points: learning.points,
+      collectedCount: collectedCount(),
+      plotCount: loggedIn ? '...' : '--'
+    })
+    if (loggedIn) this.loadPlots()
   },
-  login() { wx.navigateTo({ url: '/pages/login/index' }) },
-  open(e) {
-    const routes = { fields: '/pages/fields/index', records: '/pages/records/index', calendar: '/pages/records/calendar' }
-    if (routes[e.currentTarget.dataset.key]) wx.navigateTo({ url: routes[e.currentTarget.dataset.key] })
+
+  async loadPlots() {
+    try {
+      const res = await auth.request('GET', '/api/plots')
+      this.setData({ plotCount: res.code === 200 && Array.isArray(res.data) ? res.data.length : '--' })
+    } catch {
+      this.setData({ plotCount: '--' })
+    }
   },
-  about() { wx.showModal({ title: '关于平台', content: '喀什优棉公益平台面向棉农提供公益农技学习、权威资讯和田间生产工具。', showCancel: false }) },
-  logout() { wx.showModal({ title: '退出登录', content: '确定退出当前账号吗？', success: r => r.confirm && auth.logout() }) }
+
+  login() {
+    wx.navigateTo({ url: '/pages/login/index' })
+  },
+
+  openPage(event) {
+    const key = event.currentTarget.dataset.key
+    const protectedKeys = ['verification', 'fields']
+    if (protectedKeys.includes(key) && !auth.isLoggedIn()) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      setTimeout(() => this.login(), 500)
+      return
+    }
+    const routes = {
+      verification: '/pages/verification/index',
+      fields: '/pages/fields/index',
+      learning: '/pages/learning/index',
+      collection: '/pages/collection/index',
+      settings: '/pages/settings/index',
+      about: '/pages/about/index'
+    }
+    if (routes[key]) wx.navigateTo({ url: routes[key] })
+  },
+
+  logout() {
+    wx.showModal({
+      title: '退出登录',
+      content: '退出后，本机课程和收藏记录仍会保留。',
+      confirmColor: '#b64d43',
+      success: result => result.confirm && auth.logout()
+    })
+  }
 })

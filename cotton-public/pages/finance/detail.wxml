@@ -1,0 +1,57 @@
+<view class="finance-detail-page">
+  <view class="detail-hero">
+    <view class="detail-nav">
+      <button bindtap="back">‹</button>
+      <text>金融知识</text>
+      <button class="read-button {{hasRead?'done':''}}" bindtap="markRead">{{hasRead?'已读':'标为已读'}}</button>
+    </view>
+    <view class="detail-labels"><label>{{article.categoryName}}</label><label>{{article.badge}}</label><small>{{article.readMinutes}} 分钟阅读</small></view>
+    <text class="detail-title">{{article.title}}</text>
+    <text class="detail-summary">{{article.summary}}</text>
+  </view>
+
+  <view class="boundary-card">
+    <view class="boundary-icon">!</view>
+    <view><text>公益科普，不是业务办理页面</text><small>不申请贷款、不投保、不开户交易；办理前请通过官方渠道核验。</small></view>
+  </view>
+
+  <view class="key-section">
+    <view class="key-title">先记住这几点</view>
+    <view class="key-row" wx:for="{{article.heroPoints}}" wx:key="*this"><text>✓</text><view>{{item}}</view></view>
+  </view>
+
+  <view class="content-section" wx:for="{{article.sections}}" wx:key="title">
+    <view class="content-title"><i></i><text>{{item.title}}</text></view>
+    <text class="paragraph" wx:for="{{item.paragraphs}}" wx:for-item="paragraph" wx:key="*this">{{paragraph}}</text>
+    <view class="bullet-row" wx:for="{{item.bullets}}" wx:for-item="bullet" wx:key="*this"><text>•</text><view>{{bullet}}</view></view>
+  </view>
+
+  <view class="content-section checklist-section">
+    <view class="content-title"><i></i><text>准备与核验清单</text></view>
+    <view class="check-row" wx:for="{{article.checklist}}" wx:key="*this"><text>□</text><view>{{item}}</view></view>
+  </view>
+
+  <view class="channel-card">
+    <view class="channel-head"><view><text>官方入口指引</text><small>平台不代办，只告诉你去哪里核验</small></view><label>防诈骗</label></view>
+    <view class="channel-row" wx:for="{{article.channels}}" wx:key="*this"><text>{{index+1}}</text><view>{{item}}</view></view>
+    <button bindtap="showChannels">查看并复制咨询清单</button>
+  </view>
+
+  <view class="risk-card"><text>重要风险提示</text><small>{{article.risk}}</small></view>
+
+  <view class="source-section" wx:if="{{sources.length}}">
+    <view class="source-title"><text>内容核验依据</text><small>仅列政府及监管机构官方网站</small></view>
+    <view class="source-row" wx:for="{{sources}}" wx:key="url" bindtap="copySource" data-url="{{item.url}}">
+      <view><text>{{item.title}}</text><small>点击复制官方链接</small></view><text>复制</text>
+    </view>
+  </view>
+
+  <view class="policy-button" wx:if="{{article.category==='policy'}}" bindtap="openPolicyCenter"><text>前往政策中心核验政策原文</text><small>›</small></view>
+
+  <view class="related-section">
+    <view class="related-title">继续学习</view>
+    <view class="related-card" wx:for="{{relatedArticles}}" wx:key="id" bindtap="openArticle" data-id="{{item.id}}">
+      <view><label>{{item.categoryName}}</label><text>{{item.title}}</text></view><text>›</text>
+    </view>
+  </view>
+</view>

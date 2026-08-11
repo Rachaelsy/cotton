@@ -1,14 +1,49 @@
 <view class="page">
-  <view class="hero">
+  <view class="hero" style="padding-top:{{statusBarHeight + 30}}px">
+    <view class="hero-orb orb-one"></view><view class="hero-orb orb-two"></view>
     <view class="brand">喀什优棉公益平台</view>
     <view class="profile">
       <view class="avatar">{{initial}}</view>
-      <view wx:if="{{loggedIn}}"><strong>{{user.real_name || user.phone || '棉农用户'}}</strong><small>{{user.location || '新疆棉农'}} · 公益学习用户</small></view>
-      <view wx:else><strong>登录后使用完整服务</strong><small>同步地块、农事记录和学习进度</small></view>
+      <view class="profile-copy">
+        <text class="name">{{loggedIn ? displayName : '你好，棉农朋友'}}</text>
+        <text class="identity">{{loggedIn ? '公益学习用户 · 为每一块棉田服务' : '登录后同步地块与服务数据'}}</text>
+      </view>
+      <button wx:if="{{!loggedIn}}" class="login-button" bindtap="login">登录</button>
     </view>
-    <button wx:if="{{!loggedIn}}" bindtap="login">登录 / 注册</button>
+    <view class="summary">
+      <view><text class="summary-number">{{plotCount}}</text><text class="summary-label">我的地块</text></view>
+      <view><text class="summary-number">{{courseCount}}</text><text class="summary-label">已学课程</text></view>
+      <view><text class="summary-number">{{collectedCount}}</text><text class="summary-label">政策收藏</text></view>
+    </view>
   </view>
-  <view class="stats"><view><strong>320</strong><small>学习积分</small></view><view><strong>4</strong><small>已学课程</small></view><view><strong>0</strong><small>学习证书</small></view></view>
-  <view class="menu"><view bindtap="open" data-key="fields"><i>田</i><text>我的地块</text><b>›</b></view><view bindtap="open" data-key="records"><i>记</i><text>农事记录</text><b>›</b></view><view bindtap="open" data-key="calendar"><i>历</i><text>农事日历</text><b>›</b></view><view bindtap="about"><i>公</i><text>关于公益平台</text><b>›</b></view></view>
-  <button class="logout" wx:if="{{loggedIn}}" bindtap="logout">退出登录</button>
+
+  <view class="content">
+    <view class="section-title"><text>个人服务</text><text class="section-note">资料与学习进度</text></view>
+    <view class="menu-card">
+      <view class="menu-row" bindtap="openPage" data-key="verification">
+        <view class="menu-icon green">✓</view><view class="menu-copy"><text>实名认证</text><text>用于需要身份核验的服务</text></view><text class="menu-status">{{verificationText}}</text><text class="arrow">›</text>
+      </view>
+      <view class="menu-row" bindtap="openPage" data-key="fields">
+        <view class="menu-icon mint">田</view><view class="menu-copy"><text>我的地块</text><text>查看地块、边界与种植信息</text></view><text class="arrow">›</text>
+      </view>
+      <view class="menu-row" bindtap="openPage" data-key="learning">
+        <view class="menu-icon gold">学</view><view class="menu-copy"><text>我的学习</text><text>{{courseCount}} 门已学 · {{points}} 学习积分</text></view><text class="arrow">›</text>
+      </view>
+    </view>
+
+    <view class="section-title second"><text>更多服务</text><text class="section-note">反馈与平台信息</text></view>
+    <view class="menu-card">
+      <view class="menu-row" bindtap="openPage" data-key="collection">
+        <view class="menu-icon peach">藏</view><view class="menu-copy"><text>收藏与评价</text><text>收藏的政策与平台意见反馈</text></view><text class="arrow">›</text>
+      </view>
+      <view class="menu-row" bindtap="openPage" data-key="settings">
+        <view class="menu-icon blue">设</view><view class="menu-copy"><text>设置与帮助</text><text>使用帮助、权限与登录管理</text></view><text class="arrow">›</text>
+      </view>
+      <view class="menu-row" bindtap="openPage" data-key="about">
+        <view class="menu-icon gray">公</view><view class="menu-copy"><text>关于我们</text><text>了解公益平台与服务边界</text></view><text class="arrow">›</text>
+      </view>
+    </view>
+    <button wx:if="{{loggedIn}}" class="logout" bindtap="logout">退出登录</button>
+    <text class="footer">公益知识服务 · 不提供交易撮合</text>
+  </view>
 </view>

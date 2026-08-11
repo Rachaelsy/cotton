@@ -1,0 +1,19 @@
+<view class="page"><view class="nav" style="padding-top:{{statusBarHeight}}px"><view class="back" bindtap="back">‹</view><text>实名认证</text><view class="space"></view></view><scroll-view class="content" scroll-y>
+  <view class="notice"><view class="shield">✓</view><view><text>认证资料仅用于身份核验</text><text>实名认证为可选服务，证件信息由后端安全保存，不会展示给其他用户。</text></view></view>
+  <view wx:if="{{status === 'loading'}}" class="state"><text>正在加载认证状态…</text></view>
+  <view wx:if="{{status === 'pending'}}" class="state"><view class="state-icon pending">审</view><text class="state-title">资料正在审核</text><text class="state-sub">审核完成后会更新状态，请稍后回来查看。</text></view>
+  <view wx:if="{{status === 'approved'}}" class="state"><view class="state-icon approved">✓</view><text class="state-title">实名认证已通过</text><text class="state-sub">身份资料已经核验，无需重复提交。</text></view>
+  <view wx:if="{{status === 'not_submitted' || status === 'rejected'}}">
+    <view wx:if="{{status === 'rejected'}}" class="reject"><text class="reject-title">认证未通过</text><text>{{reason || '请核对资料后重新提交。'}}</text><button bindtap="retry">重新填写</button></view>
+    <view class="form-card">
+      <text class="label">真实姓名</text><input value="{{realName}}" data-field="realName" bindinput="onInput" placeholder="请输入身份证上的姓名" />
+      <text class="label">身份证号码</text><input value="{{idNumber}}" data-field="idNumber" bindinput="onInput" maxlength="18" placeholder="请输入18位身份证号码" />
+      <text class="label">证件照片</text><view class="photos">
+        <view class="photo" data-side="front" bindtap="chooseImage"><image wx:if="{{frontPath}}" src="{{frontPath}}" mode="aspectFill"/><view wx:if="{{!frontPath}}" class="photo-empty"><text>＋</text><text>上传人像面</text></view></view>
+        <view class="photo" data-side="back" bindtap="chooseImage"><image wx:if="{{backPath}}" src="{{backPath}}" mode="aspectFill"/><view wx:if="{{!backPath}}" class="photo-empty"><text>＋</text><text>上传国徽面</text></view></view>
+      </view>
+      <checkbox-group bindchange="onConsent"><label class="consent"><checkbox value="agree" checked="{{consent}}" color="#187554"/><text>我已阅读并同意以上实名认证说明，并确认资料真实有效。</text></label></checkbox-group>
+      <button class="primary" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">提交审核</button>
+    </view>
+  </view>
+</scroll-view></view>

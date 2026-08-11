@@ -89,7 +89,8 @@ Page({
     const routes = {
       fields: '/pages/fields/index', pest: '/pages/pest/index', weather: '/pages/weather/index',
       expert: '/pages/expert/index', records: '/pages/records/index',
-      academy: '/pages/academy/index', policy: '/pages/policy/index'
+      academy: '/pages/academy/index', policy: '/pages/policy/index',
+      finance: '/pages/finance/index'
     }
     if (routes[key]) wx.navigateTo({ url: routes[key] })
   },

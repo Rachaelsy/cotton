@@ -107,3 +107,27 @@ page {
   flex-shrink: 0;
   height: 152rpx;
 }
+
+/* 棉花金融详情页：官方内容核验来源 */
+.source-section {
+  margin: 24rpx 26rpx;
+  padding: 27rpx;
+  border-radius: 26rpx;
+  background: #fff;
+  box-shadow: 0 7rpx 25rpx rgba(27, 64, 52, 0.04);
+}
+
+.source-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 14rpx;
+}
+
+.source-title text { font-size: 25rpx; font-weight: 800; }
+.source-title small { color: #929c97; font-size: 16rpx; }
+.source-row { display: flex; align-items: center; padding: 16rpx 0; border-top: 1rpx solid #edf1ee; }
+.source-row > view { display: flex; flex: 1; min-width: 0; flex-direction: column; }
+.source-row > view text { font-size: 20rpx; font-weight: 700; line-height: 1.45; }
+.source-row > view small { margin-top: 5rpx; color: #929c97; font-size: 17rpx; }
+.source-row > text { margin-left: 16rpx; padding: 5rpx 10rpx; border-radius: 8rpx; background: #edf5f0; color: #1b7053; font-size: 17rpx; }
