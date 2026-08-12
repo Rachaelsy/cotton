@@ -1,38 +1,29 @@
 <view class="page">
   <view class="hero" style="padding-top:{{statusBarHeight + 12}}px">
     <view class="nav"><button bindtap="back">‹</button><text>农机服务</text><view></view></view>
-    <view class="hero-content">
-      <view><text>棉田全周期农机指南</text><small>认识作业环节，合理选择机型，提升作业质量</small></view>
-      <view class="hero-mark">机</view>
-    </view>
-    <view class="summary"><view><strong>4</strong><small>作业环节</small></view><view><strong>5</strong><small>主要机型</small></view><view><strong>全程</strong><small>选用指引</small></view></view>
+    <view class="hero-content"><view><text>棉田农机产品</text><small>按作业环节查看具体机型与产品特点</small></view><view class="hero-mark">机</view></view>
+    <view class="summary"><view><strong>{{allProducts.length}}</strong><small>上架产品</small></view><view><strong>4</strong><small>作业类型</small></view><view><strong>严选</strong><small>信息展示</small></view></view>
   </view>
 
-  <view class="view-tabs">
-    <button class="{{activeView === 'work' ? 'on' : ''}}" data-view="work" bindtap="selectView">作业类型</button>
-    <button class="{{activeView === 'model' ? 'on' : ''}}" data-view="model" bindtap="selectView">机型介绍</button>
+  <view class="category-tabs">
+    <button wx:for="{{categories}}" wx:key="id" class="{{activeCategory === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="selectCategory"><text>{{item.icon}}</text><small>{{item.id}}</small></button>
   </view>
 
-  <view wx:if="{{activeView === 'work'}}">
-    <view class="work-tabs">
-      <button wx:for="{{workTypes}}" wx:key="id" class="{{activeWork === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="selectWork"><text>{{item.icon}}</text><small>{{item.name}}</small></button>
-    </view>
-    <view class="feature-card">
-      <view class="feature-head"><view class="feature-icon">{{currentWork.icon}}</view><view><text>{{currentWork.name}}</text><small>{{currentWork.season}}</small></view></view>
-      <text class="intro">{{currentWork.intro}}</text>
-      <view class="sub-title">常用机械</view>
-      <view class="chips"><text wx:for="{{currentWork.machines}}" wx:key="*this">{{item}}</text></view>
-      <view class="sub-title">作业检查要点</view>
-      <view class="point" wx:for="{{currentWork.points}}" wx:key="*this"><text>✓</text><label>{{item}}</label></view>
+  <view class="section-head"><view><text>{{activeCategory}}</text><small>已上架 {{products.length}} 个产品</small></view></view>
+  <view wx:if="{{loading}}" class="empty">正在加载农机产品…</view>
+  <view wx:if="{{!loading && !products.length}}" class="empty"><text>当前分类暂无上架产品</text><small>{{errorText || '管理员上架产品后将在这里展示'}}</small></view>
+
+  <view wx:if="{{!loading && products.length}}" class="product-list">
+    <view class="product-card" wx:for="{{products}}" wx:key="id">
+      <view class="product-top">
+        <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load="{{true}}"/>
+        <view wx:if="{{!item.coverUrl}}" class="cover placeholder">机</view>
+        <view class="product-copy"><view class="tags"><text wx:if="{{item.isFeatured}}">优先展示</text><label>{{item.category}}</label></view><strong>{{item.name}}</strong><small>{{item.modelName || '具体型号以产品资料为准'}}</small><label class="brand">{{item.brand || item.manufacturer || '品牌信息待补充'}}</label></view>
+      </view>
+      <text class="intro">{{item.intro}}</text>
+      <view wx:if="{{item.features.length}}" class="features"><text wx:for="{{item.features}}" wx:key="*this">{{item}}</text></view>
+      <view class="product-foot"><text>适用：{{item.applicable || '请结合地块与作业要求选择'}}</text><small>{{item.region || '喀什地区'}}</small></view>
     </view>
   </view>
-
-  <view wx:if="{{activeView === 'model'}}" class="model-list">
-    <view class="model-card" wx:for="{{models}}" wx:key="name">
-      <view class="model-icon">{{item.icon}}</view>
-      <view class="model-copy"><view><text>{{item.name}}</text><label>{{item.tag}}</label></view><small>{{item.desc}}</small><strong>{{item.uses}}</strong></view>
-    </view>
-  </view>
-
-  <view class="notice"><text>服务说明</text><small>本页面用于农机知识介绍和作业选择参考，不展示未经核验的机手、报价或设备库存。实际作业前请确认服务方资质、机具状态、作业标准与结算方式。</small></view>
+  <view class="notice">本模块展示管理员审核上架的农机产品资料，不代表平台提供交易或履约担保。选择设备和作业服务前，请进一步核验厂家、机型参数及服务方资质。</view>
 </view>

@@ -12,7 +12,7 @@
 
 #### 公益小程序管理员与 Markdown 政策发布
 
-公益平台提供独立、可扩展的小程序管理员账号，不需要把账号提升为核心平台管理员。后台“政策资讯”统一管理政策中心与行业资讯，支持 Markdown 编辑和分类发布。首次部署或更新后，容器启动会自动创建或升级 `community_admins` 和 `policy_articles` 表。
+公益平台提供独立、可扩展的小程序管理员账号，不需要把账号提升为核心平台管理员。后台“政策资讯”统一管理政策中心与行业资讯，支持 Markdown 编辑和分类发布；“农机服务”和“农资服务”用于维护小程序中展示的具体产品目录；“加工服务”用于维护加工厂、地图坐标、产能、联系人、图片与发布状态。首次部署或更新后，容器启动会自动创建或升级管理员、文章和生产服务数据表。
 
 政策资讯文章支持公开读取评论、登录农户发表评论；评论按文章和用户保存到 `policy_comments`，限制为 2–300 字，并对短时间重复提交进行拦截。小程序收藏保存在当前设备，转发使用微信原生分享能力。
 
@@ -25,7 +25,45 @@ docker compose exec community node db/create_community_admin.js 你的11位手�
 
 管理员从统一入口 `/admin/login.html?role=admin` 登录，后端根据账号类型自动进入公益小程序管理后台 `/knowledge/policy-admin.html`。公益管理员不能进入核心订单、商户等后台；当前可编辑 Markdown 政策、实时预览、保存草稿和正式发布。公开接口 `GET /api/policies` 和 `GET /api/policies/:id` 只返回已发布文章。
 
-公益小程序后台沿用核心管理员后台的视觉布局，但左侧导航按公益产品权限独立生成，目前提供“政策资讯”“农户管理”和“账号安全”，不会暴露核心平台的商户、订单等菜单。
+公益小程序后台沿用核心管理员后台的视觉布局，但左侧导航按公益产品权限独立生成，目前提供“政策资讯”“农机服务”“农资服务”“加工服务”“农户管理”和“账号安全”，不会暴露核心平台的商户、订单等菜单。
+
+#### 农机与农资产品上架
+
+管理员可以分别进入“农机服务”和“农资服务”，新增具体产品并维护名称、分类、机型/品种、品牌、生产厂家、图片地址、简介、特点、适用条件和展示顺序。产品状态分为草稿、已上架、已下架，只有已上架数据会通过公开接口进入 `cotton-public` 小程序。
+
+| 接口 | 用途 |
+|---|---|
+| `GET /api/service-products?type=machinery` | 读取已上架农机产品 |
+| `GET /api/service-products?type=supplies` | 读取已上架农资产品 |
+| `GET /api/service-products/admin/list?type=...` | 后台读取含草稿、下架状态的管理列表 |
+| `POST /api/service-products/admin` | 新增产品 |
+| `PUT /api/service-products/admin/:id` | 编辑产品 |
+| `PATCH /api/service-products/admin/:id/status` | 上架或下架产品 |
+| `DELETE /api/service-products/admin/:id` | 删除产品 |
+
+生产部署拉取新代码后需重新构建公益服务，容器入口会先执行 `node db/migrate.js`，自动创建 `community_service_products` 表：
+
+```bash
+cd /root/cotton
+docker compose up -d --build community nginx
+docker compose logs --tail=100 community
+```
+
+#### 加工厂数据与后台维护
+
+加工厂资料保存在 `community_processing_factories` 表，包含名称、简称、县市、地址、经纬度、年加工产能、负责人、联系电话、简介、图片 URL 列表、服务范围、公示代码、诚信等级、来源、核验日期及发布状态。公示代码允许为空；填写后保持唯一。公益管理员可在后台“加工服务”中新增、编辑、发布、下线和删除记录。
+
+| 接口 | 用途 |
+|---|---|
+| `GET /api/processing-factories` | 小程序读取已发布加工厂列表 |
+| `GET /api/processing-factories/:id` | 小程序读取单个已发布加工厂详情 |
+| `GET /api/processing-factories/admin/list` | 后台读取全部状态记录 |
+| `POST /api/processing-factories/admin` | 新增加工厂 |
+| `PUT /api/processing-factories/admin/:id` | 修改加工厂 |
+| `PATCH /api/processing-factories/admin/:id/status` | 发布或下线 |
+| `DELETE /api/processing-factories/admin/:id` | 删除加工厂 |
+
+更新后需重新构建 `community` 和 `nginx`，启动迁移会创建数据表并以不覆盖后台修改的方式写入首批已核验记录。
 
 - 棉花种植培训：播种、苗期、水肥、病虫害、花铃期和采收六类图文文章。
 - 图文课程：图文资料、图片、课后小测试、评论和 AI 助学。
@@ -192,7 +230,7 @@ npm test
 ### 公益小程序管理员
 
 - 公益管理员统一从 `/admin/login.html?role=admin` 登录，系统按账号权限进入公益管理后台。
-- 左侧目前提供“政策资讯”“农户管理”和“账号安全”；政策资讯可选择政策中心/行业资讯及其分类，账号安全可校验当前密码并设置高强度新密码。
+- 左侧目前提供“政策资讯”“农机服务”“农资服务”“农户管理”和“账号安全”；政策资讯可选择政策中心/行业资讯及其分类，两个生产服务菜单管理具体上架产品，账号安全可校验当前密码并设置高强度新密码。
 - 密码修改后，旧令牌立即失效，管理员必须使用新密码重新登录。
 - 退出登录统一清理本地管理令牌并返回 `/admin/login.html?role=admin`。
 - 原独立页面 `/knowledge/admin-login.html` 已删除；为兼容旧收藏地址，服务端会将该地址重定向到统一登录页。

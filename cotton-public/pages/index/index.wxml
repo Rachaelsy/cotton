@@ -60,7 +60,7 @@
       </view>
       <view class="production-card processing" bindtap="openProduction" data-type="processing">
         <view class="production-icon">加</view>
-        <view class="production-copy"><strong>加工服务</strong><small>轧花 · 仓储 · 衔接</small></view>
+        <view class="production-copy"><strong>加工服务</strong><small>轧花 · 检测 · 仓储</small></view>
         <text class="production-arrow">›</text>
       </view>
     </view>

@@ -10,6 +10,7 @@
     "pages/machinery/index",
     "pages/supplies/index",
     "pages/production/index",
+    "pages/production/detail",
     "pages/academy/index",
     "pages/academy/course",
     "pages/academy/exam",
@@ -60,17 +61,6 @@
     "WechatSI": { "version": "0.3.7", "provider": "wx069ba97219f66d99" }
   },
   "style": "v2",
-  "renderer": "skyline",
-  "rendererOptions": {
-    "skyline": {
-      "defaultDisplayBlock": true,
-      "defaultContentBox": true,
-      "tagNameStyleIsolation": "legacy",
-      "disableABTest": true,
-      "sdkVersionBegin": "3.0.0",
-      "sdkVersionEnd": "15.255.255"
-    }
-  },
   "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"

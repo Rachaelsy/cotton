@@ -8,7 +8,7 @@
     "start": "node server.js",
     "migrate": "node db/migrate.js",
     "admin:create": "node db/create_community_admin.js",
-    "test": "node tests/community.test.js && node tests/knowledge.test.js && node tests/policies.test.js && node tests/points.test.js && node tests/site.test.js && node tests/production-readiness.test.js"
+    "test": "node tests/community.test.js && node tests/knowledge.test.js && node tests/policies.test.js && node tests/service-products.test.js && node tests/processing-service.test.js && node tests/miniapp-scrolling.test.js && node tests/points.test.js && node tests/site.test.js && node tests/production-readiness.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

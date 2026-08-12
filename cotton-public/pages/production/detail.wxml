@@ -1,0 +1,16 @@
+<view class="page">
+  <view class="hero" style="padding-top:{{statusBarHeight + 12}}px">
+    <view class="nav"><button bindtap="back">‹</button><text>加工厂详情</text><view></view></view>
+    <block wx:if="{{factory}}"><view class="factory-title"><view class="factory-logo">厂</view><view><text>{{factory.name}}</text><small>{{factory.county}} · {{factory.statusText}}</small></view></view><text class="hero-intro">{{factory.intro}}</text></block>
+  </view>
+  <view wx:if="{{loading}}" class="page-state"><text>正在加载加工厂详情...</text></view>
+  <view wx:if="{{!loading && errorText}}" class="page-state error"><text>{{errorText}}</text><button bindtap="retry">重新加载</button></view>
+  <block wx:if="{{factory}}">
+    <view class="quick-card"><view><small>年加工产能</small><strong>{{factory.capacityText}}</strong></view><view><small>负责人</small><strong>{{factory.managerText}}</strong></view><view><small>联系电话</small><strong>{{factory.contactText}}</strong></view></view>
+    <scroll-view wx:if="{{factory.imageUrls.length}}" class="gallery" scroll-x enhanced show-scrollbar="{{false}}"><view class="gallery-row"><image wx:for="{{factory.imageUrls}}" wx:key="*this" src="{{item}}" mode="aspectFill" data-src="{{item}}" bindtap="previewImage"></image></view></scroll-view>
+    <view class="section verify-section"><view class="section-title"><text>公开信息</text><small>核验于 {{factory.verifiedAtText}}</small></view><view class="verify-row"><text>公示代码</text><strong>{{factory.publicCode || '未填写'}}</strong></view><view class="verify-row"><text>评价等级</text><strong>{{factory.rating || '未填写'}}</strong></view><view class="verify-row"><text>官方地址</text><strong>{{factory.officialAddress || factory.address}}</strong></view><view class="verify-row"><text>地图名称</text><strong>{{factory.mapName || factory.shortName}}</strong></view><view wx:if="{{factory.officialSource}}" class="source-note">主体来源：{{factory.officialSource}}</view><view wx:if="{{factory.mapSource}}" class="source-note">坐标来源：{{factory.mapSource}}</view></view>
+    <view class="section"><view class="section-title"><text>服务范围</text><small>以企业现场确认为准</small></view><view wx:if="{{factory.services.length}}" class="tag-list"><text wx:for="{{factory.services}}" wx:key="*this">{{item}}</text></view><view wx:if="{{!factory.services.length}}" class="empty-line">暂未填写服务范围</view></view>
+    <view class="section map-section"><view class="section-title"><text>位置与联系</text><small>{{factory.county}}</small></view><map class="detail-map" latitude="{{factory.latitude}}" longitude="{{factory.longitude}}" scale="14" markers="{{markers}}"></map><view class="address"><view><strong>{{factory.address}}</strong><small>坐标：{{factory.longitude}}, {{factory.latitude}}</small></view><button bindtap="openLocation">地图导航</button></view><button wx:if="{{factory.contactPhone}}" class="contact-button" bindtap="callFactory">联系加工厂</button></view>
+    <view class="boundary">本页信息由公益平台后台发布。公开公示、地图坐标或联系方式可能发生变化，不构成平台对产能、质量、价格、营业状态或履约能力的认证与推荐。开展业务前请再次向企业及主管部门核实，并以正式书面凭证为准。</view>
+  </block>
+</view>

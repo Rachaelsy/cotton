@@ -39,6 +39,8 @@ for (const route of [
   '/api/community-auth/',
   '/api/community-ai/',
   '/api/public-service/',
+  '/api/service-products/',
+  '/api/processing-factories/',
   '/api/community-health'
 ]) {
   assert(nginx.includes(route), `Nginx is missing community route: ${route}`)

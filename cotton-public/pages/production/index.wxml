@@ -1,22 +1,44 @@
 <view class="page">
   <view class="hero" style="padding-top:{{statusBarHeight + 12}}px">
     <view class="nav"><button bindtap="back">‹</button><text>加工服务</text><view></view></view>
-    <view class="hero-main"><view class="hero-icon">{{service.icon}}</view><view><text>{{service.name}}</text><small>{{service.intro}}</small></view></view>
+    <view class="hero-main"><view><text>从籽棉到皮棉</text><small>了解轧花、检测与仓储，查看周边加工服务点</small></view><view class="hero-icon">加</view></view>
+    <view class="hero-stats"><view><strong>3</strong><small>服务环节</small></view><view><strong>{{allFactories.length}}</strong><small>已发布点位</small></view><view><strong>动态</strong><small>后台统一维护</small></view></view>
   </view>
 
-  <view class="section">
-    <view class="section-title"><text>服务分类</text><small>选择需要了解的服务</small></view>
-    <view class="service-item" wx:for="{{service.items}}" wx:key="title" data-index="{{index}}" bindtap="openItem">
-      <view class="item-icon">{{item.icon}}</view>
-      <view class="item-copy"><text>{{item.title}}</text><small>{{item.desc}}</small></view>
-      <text class="arrow">›</text>
+  <view class="concept-section">
+    <view class="section-title"><view><text>加工服务概览</text><small>认识产后加工的关键环节</small></view></view>
+    <view class="concept-grid">
+      <view class="concept-card" wx:for="{{concepts}}" wx:key="id" data-index="{{index}}" bindtap="showConcept">
+        <view class="concept-icon">{{item.icon}}</view><strong>{{item.title}}</strong><small>{{item.subtitle}}</small><text>查看介绍 ›</text>
+      </view>
     </view>
   </view>
 
-  <view class="section tips">
-    <view class="section-title"><text>服务提示</text><small>交易或预约前请注意</small></view>
-    <view class="tip" wx:for="{{service.tips}}" wx:key="*this"><text>{{index + 1}}</text><label>{{item}}</label></view>
+  <view class="factory-section">
+    <view class="section-title"><view><text>加工厂分布</text><small>点击列表或地图标记查看详情</small></view></view>
+    <view class="view-tabs"><button class="{{activeView === 'list' ? 'on' : ''}}" data-view="list" bindtap="switchView">加工厂列表</button><button class="{{activeView === 'map' ? 'on' : ''}}" data-view="map" bindtap="switchView">地图分布</button></view>
+    <scroll-view class="area-tabs" scroll-x enhanced show-scrollbar="{{false}}"><view class="area-row"><button wx:for="{{areas}}" wx:key="*this" class="{{activeArea === item ? 'on' : ''}}" data-area="{{item}}" bindtap="selectArea">{{item}}</button></view></scroll-view>
+
+    <view wx:if="{{loading}}" class="state-card"><text>正在加载加工厂信息...</text></view>
+    <view wx:if="{{!loading && errorText}}" class="state-card error"><text>{{errorText}}</text><button bindtap="retry">重新加载</button></view>
+    <view wx:if="{{!loading && !errorText && !factories.length}}" class="state-card"><text>当前分类暂无已发布的加工厂</text></view>
+
+    <view wx:if="{{!loading && !errorText && activeView === 'list'}}" class="factory-list">
+      <view class="factory-card" wx:for="{{factories}}" wx:key="id" data-id="{{item.id}}" bindtap="openFactory">
+        <image wx:if="{{item.imageUrls.length}}" class="factory-cover" src="{{item.imageUrls[0]}}" mode="aspectFill"></image>
+        <view class="factory-head"><view class="factory-mark">厂</view><view><strong>{{item.name}}</strong><small>{{item.county}} · {{item.statusText}}</small></view><text>›</text></view>
+        <text class="factory-intro">{{item.intro}}</text>
+        <view class="service-tags"><text wx:for="{{item.services}}" wx:key="*this">{{item}}</text></view>
+        <view class="factory-foot"><text>⌖ {{item.address}}</text><small>查看详情</small></view>
+      </view>
+    </view>
+
+    <view wx:if="{{!loading && !errorText && factories.length && activeView === 'map'}}" class="map-panel">
+      <map id="factoryMap" class="factory-map" latitude="{{mapLatitude}}" longitude="{{mapLongitude}}" scale="{{mapScale}}" markers="{{markers}}" bindmarkertap="openMarker" bindcallouttap="openMarker" enable-zoom enable-scroll></map>
+      <view class="map-tip">点击地图标记进入加工厂详情</view>
+      <view class="map-factory" wx:for="{{factories}}" wx:key="id" data-id="{{item.id}}" bindtap="openFactory"><view class="map-dot"></view><view><strong>{{item.shortName}}</strong><small>{{item.county}} · {{item.address}}</small></view><text>详情 ›</text></view>
+    </view>
   </view>
 
-  <view class="boundary"><text>公益服务说明</text><small>当前页面提供生产服务信息和入口指引，不直接提供交易、收款或履约担保。服务机构接入后将展示资质核验状态。</small></view>
+  <view class="boundary"><text>信息说明</text><small>加工厂资料由公益平台管理员统一维护并发布。地图位置仅用于查找，可能与实际入口存在偏差；产能、电话、价格、接收时间等信息须在出发前向企业核实。平台不直接交易、收款，也不提供推荐或履约担保。</small></view>
 </view>

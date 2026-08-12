@@ -1,34 +1,71 @@
-const PROCESSING = {
-  name: '加工服务',
-  icon: '加',
-  intro: '衔接籽棉交售、轧花加工、仓储与运输等产后服务信息',
-  items: [
-    { icon: '轧', title: '轧花加工', desc: '了解加工服务范围、质量要求和交接流程' },
-    { icon: '仓', title: '仓储服务', desc: '查看储存条件、防潮防火和出入库事项' },
-    { icon: '运', title: '运输衔接', desc: '了解装卸、运输预约和交接信息要求' }
-  ],
-  tips: ['交售前确认水分、杂质和质量要求', '留存称重、交接和结算凭证', '选择具备相应条件的加工与运输服务方']
+const auth = require('../../utils/auth')
+const { SERVICE_CONCEPTS } = require('../../utils/processing-data')
+
+function imageUrl(value) {
+  const url = String(value || '').trim()
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url)) return url
+  return url.startsWith('/') ? `${auth.BASE_URL}${url}` : ''
+}
+
+function normalize(item) {
+  return {
+    ...item,
+    shortName: item.shortName || item.name,
+    statusText: item.verifiedAt ? '公开信息已核验' : '平台已发布',
+    services: Array.isArray(item.services) ? item.services : [],
+    imageUrls: Array.isArray(item.imageUrls) ? item.imageUrls.map(imageUrl).filter(Boolean) : []
+  }
+}
+
+function markersOf(factories) {
+  return factories.map(item => ({
+    id: Number(item.id), latitude: Number(item.latitude), longitude: Number(item.longitude), title: item.shortName,
+    callout: { content: item.shortName, display: 'ALWAYS', color: '#173c2f', fontSize: 12, borderRadius: 6, bgColor: '#ffffff', padding: 6 }
+  }))
+}
+
+function mapCenter(factories) {
+  if (!factories.length) return { latitude: 39.47, longitude: 75.99 }
+  const total = factories.reduce((result, item) => ({ latitude: result.latitude + Number(item.latitude), longitude: result.longitude + Number(item.longitude) }), { latitude: 0, longitude: 0 })
+  return { latitude: total.latitude / factories.length, longitude: total.longitude / factories.length }
 }
 
 Page({
   data: {
-    statusBarHeight: 20,
-    service: PROCESSING
+    statusBarHeight: 20, concepts: SERVICE_CONCEPTS, areas: ['全部'], activeArea: '全部', activeView: 'list',
+    allFactories: [], factories: [], markers: [], mapLatitude: 39.47, mapLongitude: 75.99, mapScale: 8,
+    loading: true, errorText: ''
   },
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.loadFactories()
   },
-  openItem(e) {
-    const item = this.data.service.items[e.currentTarget.dataset.index]
-    wx.showModal({
-      title: item.title,
-      content: `${item.desc}\n\n具体服务机构与预约信息将在完成资质核验后接入。`,
-      showCancel: false,
-      confirmText: '我知道了'
-    })
+  async loadFactories() {
+    this.setData({ loading: true, errorText: '' })
+    try {
+      const res = await auth.request('GET', '/api/processing-factories')
+      if (res.code !== 200) throw new Error(res.msg || '加工厂信息加载失败')
+      const allFactories = (res.data || []).map(normalize)
+      this.setData({ allFactories, areas: ['全部', ...new Set(allFactories.map(item => item.county))], loading: false }, () => this.applyArea('全部'))
+    } catch (error) {
+      this.setData({ loading: false, allFactories: [], factories: [], markers: [], errorText: error.message || '加工厂信息加载失败' })
+    }
   },
-  back() {
-    wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/index/index' }) })
-  }
+  applyArea(activeArea) {
+    const factories = activeArea === '全部' ? this.data.allFactories : this.data.allFactories.filter(item => item.county === activeArea)
+    const center = mapCenter(factories)
+    this.setData({ activeArea, factories, markers: markersOf(factories), mapLatitude: center.latitude, mapLongitude: center.longitude, mapScale: factories.length === 1 ? 12 : factories.length ? 10 : 8 })
+  },
+  showConcept(e) {
+    const item = this.data.concepts[e.currentTarget.dataset.index]
+    wx.showModal({ title: item.title, content: `${item.description}\n\n${item.points.map((point, index) => `${index + 1}. ${point}`).join('\n')}`, showCancel: false, confirmText: '我知道了' })
+  },
+  switchView(e) { this.setData({ activeView: e.currentTarget.dataset.view }) },
+  selectArea(e) { this.applyArea(e.currentTarget.dataset.area) },
+  retry() { this.loadFactories() },
+  openFactory(e) { const id = Number(e.currentTarget.dataset.id); if (id) wx.navigateTo({ url: `/pages/production/detail?id=${id}` }) },
+  openMarker(e) { const id = Number((e.detail && e.detail.markerId) || e.markerId); if (id) wx.navigateTo({ url: `/pages/production/detail?id=${id}` }) },
+  back() { wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/index/index' }) }) }
 })

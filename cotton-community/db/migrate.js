@@ -93,6 +93,85 @@ async function run() {
   `)
 
   await db.query(`
+    CREATE TABLE IF NOT EXISTS community_service_products (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      service_type ENUM('machinery','supplies') NOT NULL,
+      category VARCHAR(40) NOT NULL,
+      name VARCHAR(160) NOT NULL,
+      model_name VARCHAR(160) NOT NULL DEFAULT '',
+      brand VARCHAR(120) NOT NULL DEFAULT '',
+      manufacturer VARCHAR(180) NOT NULL DEFAULT '',
+      cover_url VARCHAR(500) NOT NULL DEFAULT '',
+      intro VARCHAR(1000) NOT NULL DEFAULT '',
+      features_json TEXT,
+      applicable VARCHAR(500) NOT NULL DEFAULT '',
+      region VARCHAR(160) NOT NULL DEFAULT '喀什地区',
+      status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
+      is_featured TINYINT(1) NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      published_at DATETIME DEFAULT NULL,
+      created_by INT UNSIGNED DEFAULT NULL,
+      updated_by INT UNSIGNED DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_service_product_public (service_type,status,category,is_featured,sort_order,published_at),
+      INDEX idx_service_product_admin (service_type,status,updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台农机农资产品目录'
+  `)
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS community_processing_factories (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(200) NOT NULL,
+      short_name VARCHAR(100) NOT NULL DEFAULT '',
+      county VARCHAR(80) NOT NULL,
+      address VARCHAR(300) NOT NULL,
+      longitude DECIMAL(11,7) NOT NULL,
+      latitude DECIMAL(10,7) NOT NULL,
+      annual_capacity_tons DECIMAL(14,2) DEFAULT NULL,
+      manager_name VARCHAR(80) NOT NULL DEFAULT '',
+      contact_phone VARCHAR(40) NOT NULL DEFAULT '',
+      intro TEXT NOT NULL,
+      image_urls_json TEXT,
+      services_json TEXT,
+      public_code VARCHAR(40) DEFAULT NULL,
+      rating VARCHAR(20) NOT NULL DEFAULT '',
+      official_address VARCHAR(300) NOT NULL DEFAULT '',
+      map_name VARCHAR(200) NOT NULL DEFAULT '',
+      official_source VARCHAR(500) NOT NULL DEFAULT '',
+      map_source VARCHAR(300) NOT NULL DEFAULT '',
+      verified_at DATE DEFAULT NULL,
+      status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
+      is_featured TINYINT(1) NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      published_at DATETIME DEFAULT NULL,
+      created_by INT UNSIGNED DEFAULT NULL,
+      updated_by INT UNSIGNED DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uk_processing_factory_public_code (public_code),
+      INDEX idx_processing_factory_public (status,is_featured,sort_order,id),
+      INDEX idx_processing_factory_county (county,status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台加工厂地图与详情'
+  `)
+  // 兼容曾使用 NOT NULL 默认空字符串的开发库；空公示代码应存为 NULL，避免唯一索引冲突。
+  await db.query('ALTER TABLE community_processing_factories MODIFY public_code VARCHAR(40) DEFAULT NULL')
+
+  const processingSeed = [
+    ['新疆棉花产业（集团）巴楚棉业有限责任公司色力布亚轧花厂','色力布亚轧花厂','巴楚县','新疆喀什地区巴楚县色力布亚镇',77.82704,39.30513,'该企业列入自治区棉花加工企业公开名单，地图 POI 可匹配到巴楚县色力布亚镇的轧花厂位置。平台仅汇集公开信息，不对实际接收、加工或仓储能力作出承诺。','["自治区公示棉花加工企业"]','653165263','A','新疆喀什地区巴楚县色力布亚镇','巴楚公司色力布亚轧花厂','自治区 2025 年度第一批棉花加工企业诚信经营评价结果公示名单','图吧地图公开 POI','2026-08-12',1],
+    ['新疆棉花产业（集团）麦盖提棉业有限责任公司县城轧花厂','麦盖提县城轧花厂','麦盖提县','新疆喀什地区麦盖提县央塔克北路001号',77.65416,38.90886,'该企业列入 2025 年度自治区棉花加工企业公示及诚信经营评价名单，公开地图以“麦盖提棉业公司县城轧花厂”收录对应位置。','["自治区公示棉花加工企业","参与追溯（公示信息）"]','653165060','A','新疆喀什地区麦盖提县央塔克北路001号','麦盖提棉业公司县城轧花厂','自治区 2025 年度第一批棉花目标价格改革加工企业公示及诚信经营评价结果','图吧地图公开 POI','2026-08-12',2],
+    ['新疆棉花产业集团岳普湖棉业有限公司县城轧花厂','岳普湖县城轧花厂','岳普湖县','新疆喀什地区岳普湖县库木萨热依南路21号院',76.76648,39.23027,'该企业列入 2025 年度自治区棉花加工企业公示及诚信经营评价名单。公开地图仍使用“岳普湖县棉麻公司县城轧花厂”的历史简称，地址区域与官方公示相符。','["自治区公示棉花加工企业","参与追溯（公示信息）"]','653165395','A','新疆喀什地区岳普湖县库木萨热依南路21号院','岳普湖县棉麻公司县城轧花厂','自治区 2025 年度第一批棉花目标价格改革加工企业公示及诚信经营评价结果','图吧地图公开 POI（历史简称）','2026-08-12',3]
+  ]
+  for (const factory of processingSeed) {
+    await db.query(
+      `INSERT IGNORE INTO community_processing_factories
+       (name,short_name,county,address,longitude,latitude,intro,image_urls_json,services_json,public_code,rating,official_address,map_name,official_source,map_source,verified_at,status,is_featured,sort_order,published_at)
+       VALUES (?,?,?,?,?,?,?,'[]',?,?,?,?,?,?,?,?,'published',1,?,NOW())`,
+      factory
+    )
+  }
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS experts (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       phone VARCHAR(20) NOT NULL UNIQUE,

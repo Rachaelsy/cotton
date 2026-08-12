@@ -1,29 +1,28 @@
 <view class="page">
   <view class="hero" style="padding-top:{{statusBarHeight + 12}}px">
     <view class="nav"><button bindtap="back">‹</button><text>农资服务</text><view></view></view>
-    <view class="hero-content"><view><text>棉田农资知识库</text><small>看懂标签，科学选用，安全生产</small></view><view class="hero-mark">资</view></view>
+    <view class="hero-content"><view><text>棉田农资产品</text><small>查看具体品种、规格与产品特点</small></view><view class="hero-mark">资</view></view>
   </view>
 
   <view class="category-tabs">
-    <button wx:for="{{categories}}" wx:key="id" class="{{activeId === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="selectCategory"><text>{{item.icon}}</text><small>{{item.name}}</small></button>
+    <button wx:for="{{categories}}" wx:key="id" class="{{activeCategory === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="selectCategory"><text>{{item.icon}}</text><small>{{item.id}}</small></button>
   </view>
 
-  <view class="overview">
-    <view class="overview-head"><view class="category-icon">{{current.icon}}</view><view><text>{{current.name}}</text><small>{{current.sub}}</small></view></view>
-    <text class="intro">{{current.intro}}</text>
-    <view class="types"><text wx:for="{{current.types}}" wx:key="*this">{{item}}</text></view>
-  </view>
+  <view class="section-head"><view><text>{{activeCategory}}</text><small>已上架 {{products.length}} 个产品</small></view></view>
+  <view wx:if="{{loading}}" class="empty">正在加载农资产品…</view>
+  <view wx:if="{{!loading && !products.length}}" class="empty"><text>当前分类暂无上架产品</text><small>{{errorText || '管理员上架产品后将在这里展示'}}</small></view>
 
-  <view class="section">
-    <view class="section-head"><view><text>选购核验要点</text><small>购买和使用前逐项确认</small></view><label>CHECK</label></view>
-    <view class="check" wx:for="{{current.checks}}" wx:key="*this"><text>✓</text><label>{{item}}</label></view>
+  <view wx:if="{{!loading && products.length}}" class="product-list">
+    <view class="product-card" wx:for="{{products}}" wx:key="id">
+      <view class="product-top">
+        <image wx:if="{{item.coverUrl}}" class="cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load="{{true}}"/>
+        <view wx:if="{{!item.coverUrl}}" class="cover placeholder">资</view>
+        <view class="product-copy"><view class="tags"><text wx:if="{{item.isFeatured}}">优先展示</text><label>{{item.category}}</label></view><strong>{{item.name}}</strong><small>{{item.modelName || '具体品种或规格以产品资料为准'}}</small><label class="brand">{{item.brand || item.manufacturer || '品牌信息待补充'}}</label></view>
+      </view>
+      <text class="intro">{{item.intro}}</text>
+      <view wx:if="{{item.features.length}}" class="features"><text wx:for="{{item.features}}" wx:key="*this">{{item}}</text></view>
+      <view class="product-foot"><text>适用：{{item.applicable || '请结合地块条件和产品标签选择'}}</text><small>{{item.region || '喀什地区'}}</small></view>
+    </view>
   </view>
-
-  <view class="section">
-    <view class="section-head"><view><text>包装标签重点看</text><small>信息不完整时谨慎购买</small></view></view>
-    <view class="label-grid"><view wx:for="{{current.labels}}" wx:key="*this"><text>{{index + 1}}</text><label>{{item}}</label></view></view>
-  </view>
-
-  <view class="warning"><view>!</view><view><text>安全提醒</text><small>{{current.caution}}</small></view></view>
-  <view class="boundary">页面内容用于公益科普，不代替产品标签、当地农技指导或监管部门要求。平台当前不直接销售农资，也不为第三方产品作质量或效果承诺。</view>
+  <view class="notice">本模块展示管理员审核上架的农资产品资料，不代表平台直接销售或承诺使用效果。购买前请核验产品登记、标签、生产厂家及当地适用要求。</view>
 </view>
