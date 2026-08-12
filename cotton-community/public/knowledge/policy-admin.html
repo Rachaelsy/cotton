@@ -15,33 +15,32 @@
 <body>
   <aside class="sidebar">
     <div class="sidebar-logo"><div class="logo-mark">🌾</div><strong>喀什优棉公益后台</strong><small>Public Mini Program Admin</small></div>
-    <nav class="nav"><div class="nav-item active" data-view="policies"><span class="nav-icon">📜</span><span>政策中心</span></div><div class="nav-item" data-view="farmers"><span class="nav-icon">👨‍🌾</span><span>农户管理</span></div><div class="nav-item" data-view="security"><span class="nav-icon">🔒</span><span>账号安全</span></div></nav>
+    <nav class="nav"><div class="nav-item active" data-view="policies"><span class="nav-icon">📰</span><span>政策资讯</span></div><div class="nav-item" data-view="farmers"><span class="nav-icon">👨‍🌾</span><span>农户管理</span></div><div class="nav-item" data-view="security"><span class="nav-icon">🔒</span><span>账号安全</span></div></nav>
     <div class="sidebar-user"><small>当前登录</small><strong id="adminName">公益小程序管理员</strong><button class="logout-btn" id="logoutBtn">退出登录</button></div>
   </aside>
   <main class="main">
-    <header class="topbar"><h1 id="pageTitle">政策中心</h1><time id="clock"></time></header>
+    <header class="topbar"><h1 id="pageTitle">政策资讯</h1><time id="clock"></time></header>
     <div class="content">
       <section id="listPanel" class="panel-card">
-        <div class="toolbar"><div><h2>政策文章管理</h2><p>草稿不会出现在小程序；发布后将同步到小程序“政策中心”。</p></div><button class="btn" id="addBtn">＋ 新增政策</button></div>
-        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>标题</th><th>层级/分类</th><th>发布单位</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead><tbody id="articleTable"><tr><td colspan="6">加载中...</td></tr></tbody></table></div>
+        <div class="toolbar"><div><h2>政策资讯管理</h2><p>统一管理政策中心与行业资讯；草稿不展示，发布后自动同步到小程序对应栏目。</p></div><button class="btn" id="addBtn">＋ 新增资讯</button></div>
+        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>标题</th><th>内容类型/分类</th><th>发布单位</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead><tbody id="articleTable"><tr><td colspan="6">加载中...</td></tr></tbody></table></div>
       </section>
       <section id="editorPanel" class="hidden">
         <div class="editor-shell">
           <form class="editor-card" id="policyForm">
-            <div class="editor-head"><div><h2 id="editorTitle">新增政策</h2></div><button type="button" class="btn secondary" id="backBtn">返回列表</button></div>
+            <div class="editor-head"><div><h2 id="editorTitle">新增资讯</h2></div><button type="button" class="btn secondary" id="backBtn">返回列表</button></div>
             <div class="editor-body"><input type="hidden" id="articleId"><div class="policy-fields">
               <div class="full"><label>文章标题 *</label><input id="title" maxlength="180" required></div>
-              <div class="full"><label>摘要 *</label><textarea class="summary-input" id="summary" maxlength="500" required></textarea></div>
-              <div><label>政策层级</label><select id="level"><option>国家</option><option>自治区</option><option selected>地区</option><option>县级</option></select></div>
-              <div><label>政策分类</label><input id="category" value="政策动态"></div>
+              <div><label>内容类型 *</label><select id="contentType"><option value="policy">政策中心</option><option value="industry">行业资讯</option></select></div>
+              <div><label>内容分类 *</label><select id="section"></select></div>
               <div><label>发布单位</label><input id="issuer"></div><div><label>适用地区</label><input id="region" value="喀什地区"></div>
-              <div><label>政策文号</label><input id="documentNo"></div><div><label>申报/办理时间</label><input id="deadline"></div>
-              <div class="full"><label>政府原文链接（HTTPS）</label><input id="originalUrl" type="url" placeholder="https://..."></div>
-              <div class="full"><label>Markdown 正文 *</label><textarea id="markdown" maxlength="200000" required placeholder="# 政策标题&#10;&#10;## 主要内容&#10;&#10;- 第一项&#10;- 第二项"></textarea></div>
+              <div><label>政策文号（行业资讯可不填）</label><input id="documentNo"></div><div><label>申报/有效时间（可选）</label><input id="deadline"></div>
+              <div class="full"><label>官方原文链接（HTTPS）</label><input id="originalUrl" type="url" placeholder="https://..."></div>
+              <div class="full"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px"><label style="margin:0">Markdown 正文 *</label><button type="button" class="small-btn primary" id="importMarkdownBtn">导入 .md 文件</button></div><input id="markdownFile" class="hidden" type="file" accept=".md,.markdown,text/markdown,text/plain"><textarea id="markdown" maxlength="200000" required placeholder="# 文章标题&#10;&#10;## 主要内容&#10;&#10;- 第一项&#10;- 第二项"></textarea></div>
               <div><label>排序</label><input id="sortOrder" type="number" value="0"></div><div><label class="checkbox-label"><input id="featured" type="checkbox">首页优先展示</label></div>
             </div><p class="form-message" id="message"></p><div class="editor-actions"><button type="button" class="btn secondary" data-save="draft">保存草稿</button><button type="button" class="btn" data-save="published">发布文章</button></div></div>
           </form>
-          <aside class="preview-card"><div class="preview-head"><h2>Markdown 实时预览</h2><div class="preview-meta" id="previewMeta">填写内容后自动预览</div></div><article class="markdown-preview" id="preview"></article></aside>
+          <aside class="preview-card"><div class="preview-head"><h2>Markdown 实时预览</h2><div class="preview-meta" id="previewMeta">类型 · 分类 · 发布单位</div></div><article class="markdown-preview" id="preview"></article></aside>
         </div>
       </section>
       <section id="securityPanel" class="panel-card hidden">

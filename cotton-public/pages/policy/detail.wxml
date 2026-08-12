@@ -1,26 +1,16 @@
-<view class="detail-page">
-  <view class="detail-hero">
-    <view class="detail-nav"><button bindtap="back">‹</button><text>政策详情</text><button class="collect-btn" bindtap="toggleCollect">{{collected?'已收藏':'收藏'}}</button></view>
-    <view class="detail-tags"><text>{{policy.level}}</text><text>{{policy.category}}</text><text class="status">{{policy.status}}</text></view>
-    <text class="detail-title">{{policy.title}}</text>
-    <view class="detail-publisher"><text>{{policy.issuer}}</text><text>{{policy.publishDate}}</text></view>
+<view class="page">
+  <view class="top-nav" style="padding-top:{{statusBarHeight}}px"><button bindtap="back">‹</button><text>{{isIndustry?'行业资讯':'政策中心'}}</text><view class="nav-space"></view></view>
+  <view wx:if="{{loading}}" class="loading">正在加载正文…</view>
+  <view wx:if="{{!loading}}" class="article-wrap">
+    <view class="article-head"><text class="article-title">{{policy.title}}</text><view class="source-line"><text>{{policy.issuer || '待补充来源'}}</text><text>{{policy.publishDate}}</text><text>{{policy.section || (isIndustry?policy.category:policy.level)}}</text></view></view>
+    <view class="article-divider"></view>
+    <view class="article-body"><rich-text wx:if="{{bodyNodes.length && policy.markdown}}" nodes="{{bodyNodes}}"></rich-text><view wx:if="{{!policy.markdown}}"><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view></view>
+    <view class="source-note"><text>信息来源：{{policy.issuer || '待补充发布单位'}}</text><text>{{policy.originalUrl?'已提供官方原文链接':'请以发布单位正式原文为准'}}</text><button bindtap="copySource">{{policy.originalUrl?'复制原文链接':'复制来源说明'}}</button></view>
+    <view class="comments"><view class="comments-title"><i></i><text>评论</text><small>{{comments.length ? comments.length + ' 条' : ''}}</small></view>
+      <view wx:if="{{commentsLoading}}" class="comment-empty">评论加载中…</view>
+      <view wx:if="{{!commentsLoading && !comments.length}}" class="comment-empty"><view class="empty-icon">评</view><text>暂无评论，欢迎发表观点</text></view>
+      <view wx:if="{{!commentsLoading && comments.length}}"><view class="comment" wx:for="{{comments}}" wx:key="id"><view class="avatar">{{item.initial}}</view><view class="comment-main"><view class="comment-meta"><text>{{item.author}}</text><text>{{item.timeText}}</text></view><text class="comment-content">{{item.content}}</text></view></view></view>
+    </view>
   </view>
-
-  <view class="official-warning"><text>政策核验提示</text><view>{{demoMode?'当前为演示内容。':'本页由公益平台管理员发布。'}}正式申报前，请核对政府部门发布的政策原文、文号和办理通知。</view></view>
-
-  <view class="key-card">
-    <view><small>适用地区</small><text>{{policy.region}}</text></view>
-    <view><small>办理时间</small><text>{{policy.deadline}}</text></view>
-    <view class="wide"><small>政策文号</small><text>{{policy.documentNo}}</text></view>
-  </view>
-
-  <view class="detail-section"><view class="section-title"><i></i><text>政策摘要</text></view><text class="summary">{{policy.summary}}</text><rich-text wx:if="{{bodyNodes.length}}" class="markdown-body" nodes="{{bodyNodes}}"></rich-text><view wx:else><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view></view>
-
-  <view class="detail-section" wx:if="{{policy.applicable && policy.applicable.length}}"><view class="section-title"><i></i><text>适用对象</text></view><view class="check-row" wx:for="{{policy.applicable}}" wx:key="*this"><text>✓</text><view>{{item}}</view></view></view>
-
-  <view class="detail-section" wx:if="{{policy.steps && policy.steps.length}}"><view class="section-title"><i></i><text>办理流程</text></view><view class="step-row" wx:for="{{policy.steps}}" wx:key="*this"><text>{{index+1}}</text><view><small>第 {{index+1}} 步</small><text>{{item}}</text></view></view></view>
-
-  <view class="detail-section" wx:if="{{policy.materials && policy.materials.length}}"><view class="section-title"><i></i><text>材料清单</text></view><view class="material-row" wx:for="{{policy.materials}}" wx:key="*this"><text>□</text><view>{{item}}</view></view></view>
-
-  <view class="source-card"><text>信息来源</text><view>{{policy.issuer||'待补充发布单位'}}</view><small>{{policy.originalUrl?'已提供政府原文链接':'未提供原文链接，请向发布单位核验'}}</small><button bindtap="copySource">{{policy.originalUrl?'复制原文链接':'复制来源说明'}}</button></view>
+  <view class="bottom-bar"><view class="comment-input" bindtap="focusComment"><input value="{{commentText}}" focus="{{commentFocus}}" bindinput="onCommentInput" bindblur="onCommentBlur" bindconfirm="submitComment" confirm-type="send" maxlength="300" placeholder="欢迎发表评论"/><button wx:if="{{commentText}}" loading="{{submittingComment}}" bindtap="submitComment">发送</button></view><view class="action" bindtap="focusComment"><text class="action-icon">评</text><small>评论</small></view><view class="action" bindtap="toggleCollect"><text class="action-icon {{collected?'active':''}}">{{collected?'★':'☆'}}</text><small>{{collected?'已收藏':'收藏'}}</small></view><button class="action share" open-type="share"><text class="action-icon">↗</text><small>转发</small></button></view>
 </view>

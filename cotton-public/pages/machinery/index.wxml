@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="hero" style="padding-top:{{statusBarHeight + 12}}px">
+    <view class="nav"><button bindtap="back">‹</button><text>农机服务</text><view></view></view>
+    <view class="hero-content">
+      <view><text>棉田全周期农机指南</text><small>认识作业环节，合理选择机型，提升作业质量</small></view>
+      <view class="hero-mark">机</view>
+    </view>
+    <view class="summary"><view><strong>4</strong><small>作业环节</small></view><view><strong>5</strong><small>主要机型</small></view><view><strong>全程</strong><small>选用指引</small></view></view>
+  </view>
+
+  <view class="view-tabs">
+    <button class="{{activeView === 'work' ? 'on' : ''}}" data-view="work" bindtap="selectView">作业类型</button>
+    <button class="{{activeView === 'model' ? 'on' : ''}}" data-view="model" bindtap="selectView">机型介绍</button>
+  </view>
+
+  <view wx:if="{{activeView === 'work'}}">
+    <view class="work-tabs">
+      <button wx:for="{{workTypes}}" wx:key="id" class="{{activeWork === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="selectWork"><text>{{item.icon}}</text><small>{{item.name}}</small></button>
+    </view>
+    <view class="feature-card">
+      <view class="feature-head"><view class="feature-icon">{{currentWork.icon}}</view><view><text>{{currentWork.name}}</text><small>{{currentWork.season}}</small></view></view>
+      <text class="intro">{{currentWork.intro}}</text>
+      <view class="sub-title">常用机械</view>
+      <view class="chips"><text wx:for="{{currentWork.machines}}" wx:key="*this">{{item}}</text></view>
+      <view class="sub-title">作业检查要点</view>
+      <view class="point" wx:for="{{currentWork.points}}" wx:key="*this"><text>✓</text><label>{{item}}</label></view>
+    </view>
+  </view>
+
+  <view wx:if="{{activeView === 'model'}}" class="model-list">
+    <view class="model-card" wx:for="{{models}}" wx:key="name">
+      <view class="model-icon">{{item.icon}}</view>
+      <view class="model-copy"><view><text>{{item.name}}</text><label>{{item.tag}}</label></view><small>{{item.desc}}</small><strong>{{item.uses}}</strong></view>
+    </view>
+  </view>
+
+  <view class="notice"><text>服务说明</text><small>本页面用于农机知识介绍和作业选择参考，不展示未经核验的机手、报价或设备库存。实际作业前请确认服务方资质、机具状态、作业标准与结算方式。</small></view>
+</view>

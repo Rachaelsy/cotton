@@ -46,7 +46,7 @@
     </view>
   </view>
 
-  <view class="policy-button" wx:if="{{article.category==='policy'}}" bindtap="openPolicyCenter"><text>前往政策中心核验政策原文</text><small>›</small></view>
+  <view class="policy-button" wx:if="{{article.category==='policy'}}" bindtap="openPolicyCenter"><text>前往政策资讯核验政策原文</text><small>›</small></view>
 
   <view class="related-section">
     <view class="related-title">继续学习</view>

@@ -69,6 +69,28 @@ async function run() {
       INDEX idx_policy_filter (policy_level,category,status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台政策文章'
   `)
+  if (!await hasColumn('policy_articles', 'content_type')) {
+    await db.query(`
+      ALTER TABLE policy_articles
+      ADD COLUMN content_type VARCHAR(32) NOT NULL DEFAULT 'policy' AFTER body_markdown,
+      ADD INDEX idx_policy_content_type (content_type,status,published_at)
+    `)
+  }
+  await db.query("UPDATE policy_articles SET content_type='policy' WHERE content_type IS NULL OR content_type=''")
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS policy_comments (
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      article_id INT UNSIGNED NOT NULL,
+      user_id INT UNSIGNED NOT NULL,
+      content VARCHAR(300) NOT NULL,
+      status ENUM('published','hidden') NOT NULL DEFAULT 'published',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_policy_comment_article (article_id,status,created_at),
+      INDEX idx_policy_comment_user (user_id,created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='政策资讯文章评论'
+  `)
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS experts (

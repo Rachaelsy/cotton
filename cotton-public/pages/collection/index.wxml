@@ -8,7 +8,7 @@
   </view>
   <scroll-view class="content" scroll-y>
     <view wx:if="{{tab === 'favorites'}}">
-      <view class="intro"><text>已收藏政策</text><text>收藏保存在当前设备，可进入政策详情继续阅读。</text></view>
+      <view class="intro"><text>已收藏资讯</text><text>政策与行业资讯收藏在当前设备，可进入详情继续阅读。</text></view>
       <view wx:if="{{!policies.length}}" class="empty"><view>☆</view><text>暂无收藏内容</text><text>在政策详情页点击“收藏”后会显示在这里</text><button bindtap="back">去看看</button></view>
       <view wx:if="{{policies.length}}">
         <view class="policy" wx:for="{{policies}}" wx:key="id">

@@ -34,11 +34,35 @@
       <view class="quick" bindtap="openModule" data-key="fields"><i class="green">田</i><text>地块管理</text></view>
       <view class="quick" bindtap="openModule" data-key="pest"><i class="brown">识</i><text>病虫害识别</text></view>
       <view class="quick" bindtap="openModule" data-key="weather"><i class="blue">气</i><text>地块气象</text></view>
-      <view class="quick" bindtap="openModule" data-key="policy"><i class="policy">政</i><text>政策中心</text></view>
+      <view class="quick" bindtap="openModule" data-key="policy"><i class="policy">讯</i><text>政策资讯</text></view>
       <view class="quick" bindtap="openModule" data-key="expert"><i class="gold">讲</i><text>专家讲堂</text></view>
       <view class="quick" bindtap="openModule" data-key="records"><i class="mint">记</i><text>农事记录</text></view>
       <view class="quick" bindtap="openModule" data-key="academy"><i class="orange">学</i><text>棉知学堂</text></view>
       <view class="quick" bindtap="openModule" data-key="finance"><i class="finance">金</i><text>棉花金融</text></view>
+    </view>
+  </view>
+
+  <view class="section production-section">
+    <view class="section-head">
+      <view><text>生产服务</text><small>连接农机、农资与加工服务</small></view>
+      <text class="section-badge">服务棉农</text>
+    </view>
+    <view class="production-grid">
+      <view class="production-card machine" bindtap="openProduction" data-type="machine">
+        <view class="production-icon">机</view>
+        <view class="production-copy"><strong>农机服务</strong><small>作业 · 检修 · 调度</small></view>
+        <text class="production-arrow">›</text>
+      </view>
+      <view class="production-card supplies" bindtap="openProduction" data-type="supplies">
+        <view class="production-icon">资</view>
+        <view class="production-copy"><strong>农资服务</strong><small>种子 · 肥料 · 植保</small></view>
+        <text class="production-arrow">›</text>
+      </view>
+      <view class="production-card processing" bindtap="openProduction" data-type="processing">
+        <view class="production-icon">加</view>
+        <view class="production-copy"><strong>加工服务</strong><small>轧花 · 仓储 · 衔接</small></view>
+        <text class="production-arrow">›</text>
+      </view>
     </view>
   </view>
 

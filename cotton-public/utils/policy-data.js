@@ -1,6 +1,7 @@
 const policies = [
   {
     id: 'target-price-guide',
+    isFeatured: true, coverImage: '/images/cotton-seedling-inspection-v1.jpg',
     level: '国家', category: '目标价格', status: '申报提醒', statusTone: 'warning',
     title: '棉花目标价格补贴申报指南（示例）',
     summary: '帮助棉农了解申报对象、登记流程、面积核验和常见材料，具体执行以当地正式通知为准。',
@@ -16,6 +17,7 @@ const policies = [
   },
   {
     id: 'machine-subsidy',
+    coverImage: '/images/course-scouting-v2.webp',
     level: '自治区', category: '农机补贴', status: '办理指南', statusTone: 'green',
     title: '棉花生产农机购置与应用补贴办理提醒（示例）',
     summary: '梳理采棉机、播种机和植保设备补贴查询、申请、核验与兑付的基本步骤。',
@@ -61,6 +63,43 @@ const policies = [
     materials: ['项目申请材料', '地块与灌溉设施资料', '投资或建设方案'],
     steps: ['关注当地项目申报', '核对支持范围和建设标准', '准备项目资料', '接受项目验收与绩效评价'],
     paragraphs: ['具体支持方式可能包括项目建设、技术服务或示范推广，应以正式项目指南为准。']
+  },
+  {
+    id: 'industry-chain-update', contentType: 'industry', level: '行业资讯', category: '产业', status: '产业观察', statusTone: 'green',
+    isFeatured: true, coverImage: '/images/cotton-seedling-inspection-v1.jpg',
+    title: '喀什棉花产业链生产服务观察（示例）',
+    summary: '关注从种植管理、采收到加工流通的产业协同与服务变化。',
+    issuer: '示例：平台资讯编辑部', publishDate: '2026-08-09', deadline: '', region: '喀什地区', documentNo: '',
+    paragraphs: ['本栏目用于汇集棉花产业发展信息。正式内容应注明来源、发布时间，并区分事实信息与分析判断。']
+  },
+  {
+    id: 'industry-machine-season', contentType: 'industry', level: '行业资讯', category: '农机', status: '农机动态', statusTone: 'blue',
+    title: '采棉季农机检修与服务信息提示（示例）',
+    summary: '整理采棉机、打包设备和运输衔接的季前检查重点。',
+    issuer: '示例：农机服务信息', publishDate: '2026-08-08', deadline: '', region: '喀什地区', documentNo: '',
+    paragraphs: ['设备作业前应由专业人员完成检查，具体维护要求以设备说明书和服务机构意见为准。']
+  },
+  {
+    id: 'industry-market-brief', contentType: 'industry', level: '行业资讯', category: '市场', status: '市场简讯', statusTone: 'warning',
+    title: '棉花市场信息阅读要点（示例）',
+    summary: '帮助农户区分现货价格、期货价格和加工企业报价等不同市场口径。',
+    issuer: '示例：市场信息整理', publishDate: '2026-08-07', deadline: '', region: '全国', documentNo: '',
+    paragraphs: ['市场信息具有时效性，本栏目不构成交易建议，实际价格以交易双方确认和权威渠道发布为准。']
+  },
+  {
+    id: 'industry-inputs-safety', contentType: 'industry', level: '行业资讯', category: '农资', status: '农资提示', statusTone: 'green',
+    title: '棉田农资选购与安全使用提示（示例）',
+    summary: '介绍种子、肥料和植保产品选购时需要核对的登记信息、使用说明与保存要求。',
+    issuer: '示例：农业生产服务信息', publishDate: '2026-08-08', deadline: '', region: '喀什地区', documentNo: '',
+    paragraphs: ['农资产品应通过正规渠道购买，使用前核对标签、登记信息和适用范围，并严格按照产品说明和农技人员指导操作。']
+  },
+  {
+    id: 'industry-weather-watch', contentType: 'industry', level: '行业资讯', category: '气象', status: '气象关注', statusTone: 'neutral',
+    coverImage: '/images/course-water-v2.webp',
+    title: '高温天气对棉田管理的影响提示（示例）',
+    summary: '关注阶段性高温对蕾铃期水肥管理和田间作业安排的影响。',
+    issuer: '示例：农业气象信息', publishDate: '2026-08-06', deadline: '', region: '新疆棉区', documentNo: '',
+    paragraphs: ['气象资讯用于趋势参考，短临预警和作业安排请以当地气象部门最新信息为准。']
   }
 ]
 

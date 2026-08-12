@@ -64,7 +64,7 @@
 
   <view class="policy-link" bindtap="openPolicyCenter">
     <view class="policy-icon">政</view>
-    <view><text>查看政策中心</text><small>核对正式政策原文、办理期限与发布单位</small></view>
+    <view><text>查看政策资讯</text><small>核对正式政策原文、办理期限与发布单位</small></view>
     <text>›</text>
   </view>
 

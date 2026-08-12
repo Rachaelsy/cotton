@@ -13,6 +13,24 @@ function tokenPayload(req) {
   try { return jwt.verify(authorization.slice(7), process.env.JWT_SECRET) } catch { return null }
 }
 
+function userAuth(req, res, next) {
+  const payload = tokenPayload(req)
+  if (!payload || !payload.id || payload.role !== 'farmer') return fail(res, '请先登录后发表评论', 401)
+  req.viewer = payload
+  next()
+}
+
+function formatComment(row) {
+  const name = String(row.real_name || '').trim()
+  const phone = String(row.phone || '')
+  return {
+    id: Number(row.id),
+    content: row.content || '',
+    author: name || (phone.length >= 7 ? `${phone.slice(0, 3)}****${phone.slice(-4)}` : '棉农用户'),
+    createdAt: row.created_at || null
+  }
+}
+
 async function policyAdminAuth(req, res, next) {
   const payload = tokenPayload(req)
   if (!payload) return fail(res, '管理员登录已过期', 401)
@@ -63,12 +81,28 @@ function validateAdminPassword(value) {
 
 function articleBody(body = {}) {
   const status = body.status === 'published' ? 'published' : 'draft'
+  const markdown = String(body.body_markdown || body.markdown || '').trim().slice(0, 200000)
+  const generatedSummary = markdown
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/[#>*_`~\-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 180)
+  const contentType = body.content_type === 'industry' || body.contentType === 'industry' ? 'industry' : 'policy'
+  const policyLevels = new Set(['国家', '自治区', '地区', '县级'])
+  const industryCategories = new Set(['产业', '农机', '农资', '市场', '气象'])
+  const requestedSection = String(body.section || body.category || body.policy_level || body.level || '').trim()
+  const section = contentType === 'industry'
+    ? (industryCategories.has(requestedSection) ? requestedSection : '产业')
+    : (policyLevels.has(requestedSection) ? requestedSection : '地区')
   return {
     title: String(body.title || '').trim().slice(0, 180),
-    summary: String(body.summary || '').trim().slice(0, 500),
-    markdown: String(body.body_markdown || body.markdown || '').trim().slice(0, 200000),
-    level: String(body.policy_level || body.level || '地区').trim().slice(0, 32),
-    category: String(body.category || '政策动态').trim().slice(0, 64),
+    summary: generatedSummary,
+    markdown,
+    contentType,
+    level: contentType === 'policy' ? section : '行业资讯',
+    category: contentType === 'industry' ? section : section,
     issuer: String(body.issuer || '').trim().slice(0, 160),
     region: String(body.region || '喀什地区').trim().slice(0, 160),
     documentNo: String(body.document_no || body.documentNo || '').trim().slice(0, 120),
@@ -81,12 +115,17 @@ function articleBody(body = {}) {
 }
 
 function normalize(row, includeMarkdown = false) {
+  const contentType = row.content_type === 'industry' ? 'industry' : 'policy'
+  const imageMatch = String(row.body_markdown || '').match(/!\[[^\]]*\]\(\s*(https?:\/\/[^\s)]+|\/[^\s)]+)\s*(?:["'][^"']*["'])?\s*\)/i)
   const article = {
     id: Number(row.id), title: row.title || '', summary: row.summary || '',
+    contentType,
     level: row.policy_level || '地区', category: row.category || '政策动态',
+    section: contentType === 'industry' ? (row.category || '产业') : (row.policy_level || '地区'),
     issuer: row.issuer || '', region: row.region || '', documentNo: row.document_no || '',
     deadline: row.deadline || '', originalUrl: row.original_url || '', status: row.status || 'draft',
     isFeatured: !!row.is_featured, sortOrder: Number(row.sort_order || 0),
+    coverImage: imageMatch ? imageMatch[1] : '',
     publishDate: row.published_at || row.created_at || null,
     createdAt: row.created_at || null, updatedAt: row.updated_at || null
   }
@@ -98,6 +137,16 @@ router.get('/', async (req, res) => {
   try {
     const params = []
     const conditions = ["status='published'"]
+    if (req.query.type === 'policy' || req.query.type === 'industry') {
+      conditions.push('content_type=?')
+      params.push(req.query.type)
+    }
+    const section = String(req.query.section || '').trim().slice(0, 32)
+    if (section) {
+      if (req.query.type === 'industry') conditions.push('category=?')
+      else conditions.push('policy_level=?')
+      params.push(section)
+    }
     if (req.query.level && req.query.level !== '全部') { conditions.push('policy_level=?'); params.push(String(req.query.level).slice(0, 32)) }
     if (req.query.category && req.query.category !== '全部') { conditions.push('category=?'); params.push(String(req.query.category).slice(0, 64)) }
     const q = String(req.query.q || '').trim().slice(0, 80)
@@ -152,13 +201,13 @@ router.post('/admin/change-password', policyAdminAuth, async (req, res) => {
 
 router.post('/admin', policyAdminAuth, async (req, res) => {
   const article = articleBody(req.body)
-  if (!article.title || !article.summary || !article.markdown) return fail(res, '标题、摘要和 Markdown 正文不能为空')
+  if (!article.title || !article.markdown) return fail(res, '标题和 Markdown 正文不能为空')
   try {
     const [result] = await db.query(
       `INSERT INTO policy_articles
-       (title,summary,body_markdown,policy_level,category,issuer,region,document_no,deadline,original_url,status,is_featured,sort_order,published_at,created_by,updated_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,IF(?='published',NOW(),NULL),?,?)`,
-      [article.title,article.summary,article.markdown,article.level,article.category,article.issuer,article.region,
+       (title,summary,body_markdown,content_type,policy_level,category,issuer,region,document_no,deadline,original_url,status,is_featured,sort_order,published_at,created_by,updated_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,IF(?='published',NOW(),NULL),?,?)`,
+      [article.title,article.summary,article.markdown,article.contentType,article.level,article.category,article.issuer,article.region,
        article.documentNo,article.deadline,article.originalUrl,article.status,article.featured,article.sortOrder,
        article.status,req.policyAdmin.id,req.policyAdmin.id]
     )
@@ -168,13 +217,13 @@ router.post('/admin', policyAdminAuth, async (req, res) => {
 
 router.put('/admin/:id', policyAdminAuth, async (req, res) => {
   const article = articleBody(req.body)
-  if (!article.title || !article.summary || !article.markdown) return fail(res, '标题、摘要和 Markdown 正文不能为空')
+  if (!article.title || !article.markdown) return fail(res, '标题和 Markdown 正文不能为空')
   try {
     const [result] = await db.query(
-      `UPDATE policy_articles SET title=?,summary=?,body_markdown=?,policy_level=?,category=?,issuer=?,region=?,
+      `UPDATE policy_articles SET title=?,summary=?,body_markdown=?,content_type=?,policy_level=?,category=?,issuer=?,region=?,
        document_no=?,deadline=?,original_url=?,status=?,is_featured=?,sort_order=?,
        published_at=CASE WHEN ?='published' THEN COALESCE(published_at,NOW()) ELSE NULL END,updated_by=? WHERE id=?`,
-      [article.title,article.summary,article.markdown,article.level,article.category,article.issuer,article.region,
+      [article.title,article.summary,article.markdown,article.contentType,article.level,article.category,article.issuer,article.region,
        article.documentNo,article.deadline,article.originalUrl,article.status,article.featured,article.sortOrder,
        article.status,req.policyAdmin.id,req.params.id]
     )
@@ -189,6 +238,45 @@ router.delete('/admin/:id', policyAdminAuth, async (req, res) => {
     if (!result.affectedRows) return fail(res, '政策文章不存在', 404)
     return ok(res, null, '政策文章已删除')
   } catch (error) { console.error('[policy-admin-delete]', error); return fail(res, '政策删除失败', 500) }
+})
+
+router.get('/:id/comments', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT c.id,c.content,c.created_at,u.real_name,u.phone
+         FROM policy_comments c
+         LEFT JOIN users u ON u.id=c.user_id
+        WHERE c.article_id=? AND c.status='published'
+        ORDER BY c.created_at DESC,c.id DESC
+        LIMIT 100`,
+      [req.params.id]
+    )
+    return ok(res, rows.map(formatComment))
+  } catch (error) {
+    console.error('[policy-comments-list]', error)
+    return fail(res, '评论加载失败', 500)
+  }
+})
+
+router.post('/:id/comments', userAuth, async (req, res) => {
+  const content = String(req.body.content || '').trim().slice(0, 300)
+  if (content.length < 2) return fail(res, '评论至少需要2个字')
+  try {
+    const [[article]] = await db.query("SELECT id FROM policy_articles WHERE id=? AND status='published' LIMIT 1", [req.params.id])
+    if (!article) return fail(res, '文章不存在或尚未发布', 404)
+    const [[user]] = await db.query("SELECT id,real_name,phone FROM users WHERE id=? AND role='farmer' AND is_active=1 LIMIT 1", [req.viewer.id])
+    if (!user) return fail(res, '账号不存在或已停用', 403)
+    const [[recent]] = await db.query(
+      'SELECT id FROM policy_comments WHERE user_id=? AND created_at>DATE_SUB(NOW(),INTERVAL 15 SECOND) LIMIT 1',
+      [req.viewer.id]
+    )
+    if (recent) return fail(res, '评论发送太频繁，请稍后再试', 429)
+    const [result] = await db.query('INSERT INTO policy_comments (article_id,user_id,content) VALUES (?,?,?)', [article.id, user.id, content])
+    return ok(res, formatComment({ id: result.insertId, content, created_at: new Date(), real_name: user.real_name, phone: user.phone }), '评论已发表')
+  } catch (error) {
+    console.error('[policy-comment-create]', error)
+    return fail(res, '评论发表失败', 500)
+  }
 })
 
 router.get('/:id', async (req, res) => {

@@ -1,0 +1,52 @@
+<view class="page">
+  <view class="hero {{type === 'industry' ? 'industry' : ''}}" style="padding-top:{{statusBarHeight + 14}}px">
+    <view class="nav">
+      <button bindtap="back">‹</button>
+      <view class="nav-title">
+        <text>{{title}}</text>
+        <small>{{type === 'industry' ? '棉花产业动态与生产信息' : '政策文件 · 政策解读 · 办事指南'}}</small>
+      </view>
+      <view class="nav-space"></view>
+    </view>
+    <view class="search">
+      <text class="search-icon">⌕</text>
+      <input value="{{keyword}}" bindinput="onInput" placeholder="搜索标题、来源或关键词" placeholder-class="search-placeholder"/>
+      <text wx:if="{{keyword}}" class="clear" bindtap="clear">×</text>
+    </view>
+  </view>
+
+  <scroll-view class="tabs" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="tabs-inner">
+      <button wx:for="{{sections}}" wx:key="*this" class="{{activeSection === item ? 'on' : ''}}" data-value="{{item}}" bindtap="selectSection">{{item}}</button>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{demoMode}}" class="demo-tip">云端内容暂时无法加载，当前展示演示数据。</view>
+
+  <view class="feed-head">
+    <view class="feed-title"><text></text><label>{{activeSection === '全部' ? title : activeSection}}</label></view>
+    <small>{{loading ? '加载中…' : visible.length + ' 篇内容'}}</small>
+  </view>
+
+  <view wx:if="{{!loading && !visible.length}}" class="empty">
+    <text>{{emptyText}}</text>
+    <small>试试切换栏目或更换搜索关键词</small>
+  </view>
+
+  <view wx:if="{{!loading && visible.length}}" class="feed">
+    <view class="article" wx:for="{{visible}}" wx:key="id" data-id="{{item.id}}" bindtap="openDetail">
+      <view class="article-copy">
+        <view class="labels">
+          <text wx:if="{{item.isFeatured}}" class="featured">重点</text>
+          <text>{{item.section}}</text>
+        </view>
+        <text class="article-title">{{item.title}}</text>
+        <view class="meta">
+          <text>{{item.issuer || '喀什优棉公益平台'}}</text>
+          <text>{{item.publishDate}}</text>
+        </view>
+      </view>
+      <image wx:if="{{item.coverImage}}" class="cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}"/>
+    </view>
+  </view>
+</view>

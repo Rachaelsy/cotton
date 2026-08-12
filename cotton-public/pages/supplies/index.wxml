@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="hero" style="padding-top:{{statusBarHeight + 12}}px">
+    <view class="nav"><button bindtap="back">‹</button><text>农资服务</text><view></view></view>
+    <view class="hero-content"><view><text>棉田农资知识库</text><small>看懂标签，科学选用，安全生产</small></view><view class="hero-mark">资</view></view>
+  </view>
+
+  <view class="category-tabs">
+    <button wx:for="{{categories}}" wx:key="id" class="{{activeId === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="selectCategory"><text>{{item.icon}}</text><small>{{item.name}}</small></button>
+  </view>
+
+  <view class="overview">
+    <view class="overview-head"><view class="category-icon">{{current.icon}}</view><view><text>{{current.name}}</text><small>{{current.sub}}</small></view></view>
+    <text class="intro">{{current.intro}}</text>
+    <view class="types"><text wx:for="{{current.types}}" wx:key="*this">{{item}}</text></view>
+  </view>
+
+  <view class="section">
+    <view class="section-head"><view><text>选购核验要点</text><small>购买和使用前逐项确认</small></view><label>CHECK</label></view>
+    <view class="check" wx:for="{{current.checks}}" wx:key="*this"><text>✓</text><label>{{item}}</label></view>
+  </view>
+
+  <view class="section">
+    <view class="section-head"><view><text>包装标签重点看</text><small>信息不完整时谨慎购买</small></view></view>
+    <view class="label-grid"><view wx:for="{{current.labels}}" wx:key="*this"><text>{{index + 1}}</text><label>{{item}}</label></view></view>
+  </view>
+
+  <view class="warning"><view>!</view><view><text>安全提醒</text><small>{{current.caution}}</small></view></view>
+  <view class="boundary">页面内容用于公益科普，不代替产品标签、当地农技指导或监管部门要求。平台当前不直接销售农资，也不为第三方产品作质量或效果承诺。</view>
+</view>

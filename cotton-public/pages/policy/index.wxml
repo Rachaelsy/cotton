@@ -1,24 +1,48 @@
-<view class="policy-page">
-  <view class="policy-hero">
-    <view class="policy-nav"><button bindtap="back">‹</button><view><text>政策中心</text><small>POLICY CENTER</small></view><text class="policy-nav-mark">权威发布</text></view>
-    <view class="policy-hero-copy"><text>让惠农政策看得懂、找得到、办得成</text><small>汇集棉花生产相关政策、申报提醒与通俗解读</small></view>
-    <view class="policy-search"><text>⌕</text><input value="{{keyword}}" bindinput="onSearch" placeholder="搜索政策、补贴、保险、品种……"/><text wx:if="{{keyword}}" bindtap="clearSearch">×</text></view>
+<view class="page">
+  <view class="nav" style="padding-top:{{statusBarHeight + 8}}px">
+    <button bindtap="back">‹</button>
+    <text>政策资讯</text>
+    <view></view>
   </view>
 
-  <view class="demo-tip" wx:if="{{demoMode}}"><text>说明</text><view>云端政策暂时无法加载，当前展示演示数据；正式政策以政府部门原文为准。</view></view>
+  <view class="primary-tabs">
+    <button wx:for="{{primaryTabs}}" wx:key="id" class="{{activeType === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="selectType">{{item.name}}</button>
+  </view>
 
-  <scroll-view class="level-tabs" scroll-x enhanced show-scrollbar="{{false}}"><view class="level-tabs-inner"><button wx:for="{{levels}}" wx:key="*this" class="{{activeLevel===item?'on':''}}" data-value="{{item}}" bindtap="onLevel">{{item}}</button></view></scroll-view>
-  <scroll-view class="category-tabs" scroll-x enhanced show-scrollbar="{{false}}"><view class="category-tabs-inner"><button wx:for="{{categories}}" wx:key="*this" class="{{activeCategory===item?'on':''}}" data-value="{{item}}" bindtap="onCategory">{{item}}</button></view></scroll-view>
+  <view class="secondary-tabs">
+    <view class="secondary-inner">
+      <button wx:for="{{sections}}" wx:key="*this" class="{{activeSection === item ? 'on' : ''}}" data-section="{{item}}" bindtap="selectSection">{{item}}</button>
+    </view>
+  </view>
 
-  <view class="policy-result-head"><text>政策动态</text><small>{{loading?'加载中...':'共 '+visible.length+' 条'}}</small></view>
-  <view class="empty-policy" wx:if="{{!visible.length}}"><text>暂未找到相关政策</text><small>试试其他地区、分类或关键词</small></view>
-  <view class="policy-list" wx:else>
-    <view class="policy-card" wx:for="{{visible}}" wx:key="id" bindtap="openDetail" data-id="{{item.id}}">
-      <view class="policy-card-top"><view><text class="level-tag">{{item.level}}</text><text class="category-tag">{{item.category}}</text></view><text class="status-tag {{item.statusTone}}">{{item.status}}</text></view>
-      <text class="policy-card-title">{{item.title}}</text>
-      <text class="policy-card-summary">{{item.summary}}</text>
-      <view class="policy-meta"><text>{{item.issuer}}</text><text>{{item.publishDate}}</text></view>
-      <view class="policy-card-foot"><text>适用地区：{{item.region}}</text><text>查看详情 ›</text></view>
+  <view wx:if="{{demoMode}}" class="demo-tip">云端资讯暂时无法加载，当前展示演示内容。</view>
+
+  <view wx:if="{{loading}}" class="empty">正在加载政策资讯…</view>
+  <view wx:if="{{!loading && !visible.length}}" class="empty">
+    <text>“{{activeSection}}”栏目暂无文章</text>
+    <small>请切换其他分类，或等待管理员发布内容</small>
+  </view>
+
+  <view wx:if="{{!loading && visible.length}}" class="feed">
+    <view class="article" wx:for="{{visible}}" wx:key="id" data-id="{{item.id}}" bindtap="openDetail">
+      <view class="article-main">
+        <view class="article-copy">
+          <text class="article-title">{{item.title}}</text>
+          <view class="meta">
+            <text>{{item.issuer || '喀什优棉公益平台'}}</text>
+            <text>{{item.publishDate}}</text>
+          </view>
+        </view>
+        <image wx:if="{{item.coverImage}}" class="cover" src="{{item.coverImage}}" mode="aspectFill" lazy-load="{{true}}"/>
+      </view>
+      <view class="article-bottom">
+        <view>
+          <text wx:if="{{item.isFeatured}}" class="featured">重点</text>
+          <text>{{activeTypeName}}</text>
+          <text>{{item.section}}</text>
+        </view>
+        <text class="read">阅读全文 ›</text>
+      </view>
     </view>
   </view>
 </view>

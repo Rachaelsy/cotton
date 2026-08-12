@@ -96,6 +96,15 @@ Page({
   },
 
   openNews() { wx.navigateTo({ url: '/pages/news/index' }) },
+  openProduction(e) {
+    const type = e.currentTarget.dataset.type || 'machine'
+    const routes = {
+      machine: '/pages/machinery/index',
+      supplies: '/pages/supplies/index',
+      processing: '/pages/production/index'
+    }
+    wx.navigateTo({ url: routes[type] || routes.machine })
+  },
   openPolicy(e) {
     const id = e.currentTarget.dataset.id
     wx.navigateTo({ url: id ? `/pages/policy/detail?id=${id}` : '/pages/policy/index' })
