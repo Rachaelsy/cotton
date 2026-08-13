@@ -35,7 +35,7 @@
 .back-text,
 .manage-btn text {
   color: #FFFFFF;
-  font-size: 23rpx;
+  font-size: 25rpx;
   font-weight: 700;
 }
 
@@ -64,7 +64,7 @@
 .header-sub {
   margin-top: 3rpx;
   color: rgba(255, 255, 255, .65);
-  font-size: 17rpx;
+  font-size: 19rpx;
   letter-spacing: 4rpx;
 }
 
@@ -100,7 +100,7 @@
 .stat-unit,
 .stat-desc {
   color: rgba(255, 255, 255, .68);
-  font-size: 20rpx;
+  font-size: 22rpx;
 }
 
 .stat-desc {
@@ -146,7 +146,7 @@
   color: #7A5A26;
   background: #FFF8EA;
   border-bottom: 1rpx solid #EFE0BE;
-  font-size: 22rpx;
+  font-size: 24rpx;
   text-align: center;
 }
 
@@ -198,7 +198,7 @@
   color: #58655B;
   background: #F8FAF5;
   border: 1rpx solid #E3E9DE;
-  font-size: 22rpx;
+  font-size: 24rpx;
   box-sizing: border-box;
 }
 
@@ -210,19 +210,19 @@
 
 .filter-caret {
   color: #8A948B;
-  font-size: 22rpx;
+  font-size: 24rpx;
 }
 
 .reset-filter {
   color: #B9852F;
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 700;
 }
 
 .result-count {
   margin-left: auto;
   color: #8A948B;
-  font-size: 21rpx;
+  font-size: 23rpx;
 }
 
 .scroll {
@@ -261,7 +261,7 @@
   border-radius: 999rpx;
   color: #8A948B;
   background: #EAF0E6;
-  font-size: 19rpx;
+  font-size: 21rpx;
 }
 
 .field-card {
@@ -312,7 +312,7 @@
   justify-content: center;
   color: #7A5A26;
   background: #EAF0E6;
-  font-size: 20rpx;
+  font-size: 22rpx;
 }
 
 .preview-empty text:first-child {
@@ -386,7 +386,7 @@
 
 .score-unit {
   color: #B7C0B8;
-  font-size: 17rpx;
+  font-size: 19rpx;
 }
 
 .field-meta {
@@ -395,7 +395,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   color: #58655B;
-  font-size: 21rpx;
+  font-size: 23rpx;
 }
 
 .status-tag {
@@ -403,7 +403,7 @@
   gap: 7rpx;
   padding: 5rpx 12rpx;
   border-radius: 999rpx;
-  font-size: 19rpx;
+  font-size: 21rpx;
   font-weight: 700;
 }
 
@@ -418,7 +418,7 @@
 
 .field-date {
   color: #B7C0B8;
-  font-size: 18rpx;
+  font-size: 20rpx;
   white-space: nowrap;
 }
 
@@ -439,7 +439,7 @@
   color: #2D86B8;
   background: #EDF7FB;
   border: 1rpx solid #CDE5F0;
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 800;
   box-sizing: border-box;
 }
@@ -469,7 +469,7 @@
 .loading-text {
   margin-top: 16rpx;
   color: #8A948B;
-  font-size: 22rpx;
+  font-size: 24rpx;
 }
 
 .state-title {
@@ -483,7 +483,7 @@
   max-width: 540rpx;
   margin-top: 10rpx;
   color: #8A948B;
-  font-size: 22rpx;
+  font-size: 24rpx;
   line-height: 1.6;
   text-align: center;
 }

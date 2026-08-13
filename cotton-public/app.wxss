@@ -28,6 +28,8 @@ page {
   --radius-card: 26rpx;
   --radius-inner: 18rpx;
   background-color: #F6F8F3;
+  font-size: 24rpx;
+  line-height: 1.5;
   font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
   box-sizing: border-box;
 }

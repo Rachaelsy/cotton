@@ -1,5 +1,5 @@
 const auth = require('../../utils/auth')
-const { categories, articles } = require('../../utils/finance-data')
+const { categories } = require('../../utils/finance-data')
 
 function getReadStorageKey() {
   const user = auth.getUser && auth.getUser()
@@ -29,7 +29,7 @@ Page({
     categories,
     statusBarHeight: 20,
     readCount: 0,
-    totalCount: articles.length,
+    totalCount: categories.length,
     quoteLoading: true,
     quoteError: '',
     quote: {
@@ -48,7 +48,7 @@ Page({
   onShow() {
     const readIds = wx.getStorageSync(getReadStorageKey()) || []
     const readSet = new Set(Array.isArray(readIds) ? readIds : [])
-    this.setData({ readCount: articles.filter(item => readSet.has(item.id)).length })
+    this.setData({ readCount: categories.filter(item => readSet.has(item.key)).length })
     this.loadQuote()
     this.startQuoteTimer()
   },

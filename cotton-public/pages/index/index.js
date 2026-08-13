@@ -40,9 +40,15 @@ Page({
       const res = await auth.request('GET', '/api/policies?homepage=1')
       const rows = res.code === 200 && Array.isArray(res.data) ? res.data.slice(0, 5) : []
       const fallbacks = ['/images/cotton-seedling-inspection-v1.jpg', '/images/course-water-v2.webp', '/images/course-scouting-v2.webp']
+      const financeKeys = { loan: 'loan', insurance: 'insurance', futures: 'futures', 'finance-policy': 'policy' }
       const news = rows.map((item, index) => ({
         id: item.id,
-        tag: item.contentType === 'industry' ? (item.section || '行业资讯') : (item.section || '政策资讯'),
+        contentType: item.contentType,
+        section: item.section,
+        targetUrl: item.contentType === 'finance'
+          ? `/pages/finance/channel?key=${financeKeys[item.section] || 'loan'}`
+          : `/pages/policy/detail?id=${item.id}`,
+        tag: item.contentType === 'finance' ? '优棉金融' : item.contentType === 'home' ? (item.section === 'homepage' ? '首页专稿' : item.section) : item.contentType === 'industry' ? (item.section || '行业资讯') : (item.section || '政策资讯'),
         title: item.title,
         source: item.issuer || '喀什优棉公共服务平台',
         date: item.publishDate ? String(item.publishDate).slice(0, 10) : '',
@@ -139,8 +145,9 @@ Page({
     wx.navigateTo({ url: routes[type] || routes.machine })
   },
   openPolicy(e) {
+    const url = e.currentTarget.dataset.url
     const id = e.currentTarget.dataset.id
-    wx.navigateTo({ url: id ? `/pages/policy/detail?id=${id}` : '/pages/policy/index' })
+    wx.navigateTo({ url: url || (id ? `/pages/policy/detail?id=${id}` : '/pages/policy/index') })
   },
   openAi() { wx.switchTab({ url: '/pages/ai/index' }) }
 })

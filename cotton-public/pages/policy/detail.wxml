@@ -1,9 +1,10 @@
 <view class="page">
-  <view class="top-nav" style="padding-top:{{statusBarHeight}}px"><button bindtap="back">‹</button><text>{{isIndustry?'行业资讯':'政策中心'}}</text><view class="nav-space"></view></view>
+  <view class="article-hero {{isIndustry?'industry':''}}" style="padding-top:{{statusBarHeight}}px">
+    <view class="top-nav"><button bindtap="back">‹</button><text>{{isHome?'首页推荐':isIndustry?'行业资讯':'政策中心'}}</text><view class="nav-space"></view></view>
+    <view wx:if="{{!loading}}" class="article-head"><text class="article-kicker">{{policy.section || (isIndustry?policy.category:policy.level)}}</text><text class="article-title">{{policy.title}}</text><view class="source-line"><text>{{policy.issuer || '待补充来源'}}</text><text>{{policy.publishDate}}</text></view></view>
+  </view>
   <view wx:if="{{loading}}" class="loading">正在加载正文…</view>
   <view wx:if="{{!loading}}" class="article-wrap">
-    <view class="article-head"><text class="article-title">{{policy.title}}</text><view class="source-line"><text>{{policy.issuer || '待补充来源'}}</text><text>{{policy.publishDate}}</text><text>{{policy.section || (isIndustry?policy.category:policy.level)}}</text></view></view>
-    <view class="article-divider"></view>
     <view class="article-body"><rich-text wx:if="{{bodyNodes.length && policy.markdown}}" nodes="{{bodyNodes}}"></rich-text><view wx:if="{{!policy.markdown}}"><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view></view>
     <view class="source-note"><text>信息来源：{{policy.issuer || '待补充发布单位'}}</text><text>{{policy.originalUrl?'已提供官方原文链接':'请以发布单位正式原文为准'}}</text><button bindtap="copySource">{{policy.originalUrl?'复制原文链接':'复制来源说明'}}</button></view>
     <view class="comments"><view class="comments-title"><i></i><text>评论</text><small>{{comments.length ? comments.length + ' 条' : ''}}</small></view>
@@ -12,5 +13,8 @@
       <view wx:if="{{!commentsLoading && comments.length}}"><view class="comment" wx:for="{{comments}}" wx:key="id"><view class="avatar">{{item.initial}}</view><view class="comment-main"><view class="comment-meta"><text>{{item.author}}</text><text>{{item.timeText}}</text></view><text class="comment-content">{{item.content}}</text></view></view></view>
     </view>
   </view>
-  <view class="bottom-bar"><view class="comment-input" bindtap="focusComment"><input value="{{commentText}}" focus="{{commentFocus}}" bindinput="onCommentInput" bindblur="onCommentBlur" bindconfirm="submitComment" confirm-type="send" maxlength="300" placeholder="欢迎发表评论"/><button wx:if="{{commentText}}" loading="{{submittingComment}}" bindtap="submitComment">发送</button></view><view class="action" bindtap="focusComment"><text class="action-icon">评</text><small>评论</small></view><view class="action" bindtap="toggleCollect"><text class="action-icon {{collected?'active':''}}">{{collected?'★':'☆'}}</text><small>{{collected?'已收藏':'收藏'}}</small></view><button class="action share" open-type="share"><text class="action-icon">↗</text><small>转发</small></button></view>
+  <view class="bottom-bar">
+    <view class="comment-input" bindtap="focusComment"><input value="{{commentText}}" focus="{{commentFocus}}" bindinput="onCommentInput" bindblur="onCommentBlur" bindconfirm="submitComment" confirm-type="send" maxlength="300" placeholder="欢迎发表评论"/><button wx:if="{{commentText}}" loading="{{submittingComment}}" bindtap="submitComment">发送</button></view>
+    <view class="action-group"><view class="action" bindtap="focusComment"><text class="action-icon">评</text><small>评论</small></view><view class="action" bindtap="toggleCollect"><text class="action-icon {{collected?'active':''}}">{{collected?'★':'☆'}}</text><small>{{collected?'已收藏':'收藏'}}</small></view><button class="action share" open-type="share"><text class="action-icon">↗</text><small>转发</small></button></view>
+  </view>
 </view>

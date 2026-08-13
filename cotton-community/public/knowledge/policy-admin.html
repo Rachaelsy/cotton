@@ -15,7 +15,7 @@
 <body>
   <aside class="sidebar">
     <div class="sidebar-logo"><div class="logo-mark">🌾</div><strong>喀什优棉公共服务后台</strong><small>Public Service Platform Admin</small></div>
-    <nav class="nav"><div class="nav-item active" data-view="policies"><span class="nav-icon">📰</span><span>政策资讯</span></div><div class="nav-item" data-view="experts"><span class="nav-icon">🎓</span><span>专家讲堂</span></div><div class="nav-item" data-view="products" data-product-type="machinery"><span class="nav-icon">🚜</span><span>农机服务</span></div><div class="nav-item" data-view="products" data-product-type="supplies"><span class="nav-icon">🌱</span><span>农资服务</span></div><div class="nav-item" data-view="factories"><span class="nav-icon">🏭</span><span>加工服务</span></div><div class="nav-item" data-view="farmers"><span class="nav-icon">👨‍🌾</span><span>农户管理</span></div><div class="nav-item" data-view="security"><span class="nav-icon">🔒</span><span>账号安全</span></div></nav>
+    <nav class="nav"><div class="nav-item active" data-view="policies"><span class="nav-icon">📰</span><span>政策资讯</span></div><div class="nav-item" data-view="finance"><span class="nav-icon">💳</span><span>优棉金融</span></div><div class="nav-item" data-view="homepage"><span class="nav-icon">🏠</span><span>首页推送</span></div><div class="nav-item" data-view="experts"><span class="nav-icon">🎓</span><span>专家讲堂</span></div><div class="nav-item" data-view="products" data-product-type="machinery"><span class="nav-icon">🚜</span><span>农机服务</span></div><div class="nav-item" data-view="products" data-product-type="supplies"><span class="nav-icon">🌱</span><span>农资服务</span></div><div class="nav-item" data-view="factories"><span class="nav-icon">🏭</span><span>加工服务</span></div><div class="nav-item" data-view="farmers"><span class="nav-icon">👨‍🌾</span><span>农户管理</span></div><div class="nav-item" data-view="security"><span class="nav-icon">🔒</span><span>账号安全</span></div></nav>
     <div class="sidebar-user"><small>当前登录</small><strong id="adminName">公共服务平台管理员</strong><button class="logout-btn" id="logoutBtn">退出登录</button></div>
   </aside>
   <main class="main">
@@ -24,6 +24,14 @@
       <section id="listPanel" class="panel-card">
         <div class="toolbar"><div><h2>政策资讯管理</h2><p>统一管理政策中心与行业资讯；已发布文章可推送至小程序首页，最多同时推送 5 篇。</p></div><button class="btn" id="addBtn">＋ 新增资讯</button></div>
         <div class="data-table-wrap"><table class="data-table"><thead><tr><th>标题</th><th>内容类型/分类</th><th>发布单位</th><th>状态</th><th>首页推送</th><th>更新时间</th><th>操作</th></tr></thead><tbody id="articleTable"><tr><td colspan="7">加载中...</td></tr></tbody></table></div>
+      </section>
+      <section id="financePanel" class="panel-card hidden">
+        <div class="toolbar"><div><h2>优棉金融文章管理</h2><p>四个入口各展示一篇 Markdown 文章；发布后可单独推送至小程序首页。</p></div></div>
+        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>专题</th><th>文章标题</th><th>来源</th><th>状态</th><th>首页推送</th><th>更新时间</th><th>操作</th></tr></thead><tbody id="financeArticleTable"><tr><td colspan="7">加载中...</td></tr></tbody></table></div>
+      </section>
+      <section id="homepagePanel" class="panel-card hidden">
+        <div class="toolbar"><div><h2>首页推送管理</h2><p id="homepageQueueHint">统一管理政策、行业、金融文章和仅在首页展示的专稿，最多同时推送 5 篇。</p></div><button class="btn" id="addHomepageArticleBtn">＋ 新增首页专稿</button></div>
+        <div class="data-table-wrap"><table class="data-table"><thead><tr><th>内容</th><th>来源栏目</th><th>发布单位</th><th>状态</th><th>首页状态</th><th>更新时间</th><th>操作</th></tr></thead><tbody id="homepageArticleTable"><tr><td colspan="7">加载中...</td></tr></tbody></table></div>
       </section>
       <section id="editorPanel" class="hidden">
         <div class="editor-shell">
@@ -85,6 +93,18 @@
         <div><label>棉田面积（亩）</label><input id="farmerLand" type="number" min="0" step="0.01"></div>
         <div><label>实名状态</label><select id="farmerVerified"><option value="0">未实名</option><option value="1">已实名</option></select></div>
       </div><p class="form-message" id="farmerMessage"></p><div class="editor-actions"><button class="btn secondary" id="cancelFarmerBtn" type="button">取消</button><button class="btn" type="submit">保存农户</button></div></div>
+    </form>
+  </div>
+  <div id="managedArticleModal" class="modal-mask hidden" role="dialog" aria-modal="true" aria-labelledby="managedArticleModalTitle">
+    <form class="modal-card wide product-form" id="managedArticleForm">
+      <div class="modal-head"><h2 id="managedArticleModalTitle">编辑文章</h2><button class="modal-close" id="closeManagedArticleModal" type="button" aria-label="关闭">×</button></div>
+      <div class="modal-body"><input id="managedArticleId" type="hidden"><input id="managedArticleType" type="hidden"><input id="managedArticleSection" type="hidden"><div class="policy-fields">
+        <div class="full"><label>文章标题 *</label><input id="managedArticleTitle" maxlength="180" required></div>
+        <div><label>发布单位 / 来源</label><input id="managedArticleIssuer" maxlength="160" placeholder="喀什优棉公共服务平台"></div><div><label>状态</label><select id="managedArticleStatus"><option value="draft">保存草稿</option><option value="published">发布到小程序</option></select></div>
+        <div class="full"><label>封面图片地址（HTTPS，可选）</label><input id="managedArticleCover" type="url" maxlength="500" placeholder="https://..."></div>
+        <div class="full"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px"><label style="margin:0">Markdown 正文 *</label><button type="button" class="small-btn primary" id="importManagedMarkdownBtn">导入 .md 文件</button></div><input id="managedMarkdownFile" class="hidden" type="file" accept=".md,.markdown,text/markdown,text/plain"><textarea id="managedArticleMarkdown" class="features-input" maxlength="200000" required placeholder="# 标题&#10;&#10;正文内容"></textarea></div>
+        <div class="full"><label class="checkbox-label"><input id="managedArticleHome" type="checkbox">推送至小程序首页（全平台最多 5 篇）</label></div>
+      </div><p class="form-message" id="managedArticleMessage"></p><div class="editor-actions"><button class="btn secondary" id="cancelManagedArticleBtn" type="button">取消</button><button class="btn" type="submit">保存文章</button></div></div>
     </form>
   </div>
   <div id="productModal" class="modal-mask hidden" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
@@ -160,5 +180,5 @@
       </div><p class="form-message" id="expertContentMessage"></p><div class="editor-actions"><button class="btn secondary" id="cancelExpertContentBtn" type="button">取消</button><button class="btn" type="submit">保存内容</button></div></div>
     </form>
   </div>
-  <script src="/knowledge/site/runtime.js"></script><script src="/knowledge/policy-admin.js"></script><script src="/knowledge/product-admin.js"></script><script src="/knowledge/factory-admin.js"></script><script src="/knowledge/expert-studio-admin.js"></script>
+  <script src="/knowledge/site/runtime.js"></script><script src="/knowledge/policy-admin.js"></script><script src="/knowledge/product-admin.js"></script><script src="/knowledge/factory-admin.js"></script><script src="/knowledge/expert-studio-admin.js"></script><script src="/knowledge/content-admin.js"></script>
 </body></html>

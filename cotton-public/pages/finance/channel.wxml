@@ -1,30 +1,20 @@
-<view class="channel-page {{module.tone}}">
-  <view class="channel-hero" style="padding-top:{{statusBarHeight + 14}}px">
-    <view class="channel-nav"><button bindtap="back">‹</button><text>优棉金融</text><button class="info" bindtap="showBoundary">说明</button></view>
-    <view class="channel-mark"><view>{{module.icon}}</view><text>{{module.eyebrow}}</text></view>
-    <text class="channel-title">{{module.title}}</text>
-    <text class="channel-subtitle">{{module.subtitle}}</text>
+<view class="article-page {{meta.tone}}">
+  <view class="article-hero" style="padding-top:{{statusBarHeight}}px">
+    <view class="article-nav"><button bindtap="back">‹</button><text>优棉金融</text><view></view></view>
+    <view class="hero-mark"><view>{{meta.icon}}</view><text>{{meta.eyebrow}}</text></view>
+    <text class="hero-title">{{article.title || meta.title}}</text>
+    <view wx:if="{{!loading && !error}}" class="hero-meta"><text>{{article.issuer || '喀什优棉公共服务平台'}}</text><text>{{article.publishDate}}</text></view>
   </view>
-
-  <view class="highlight-card">
-    <view class="card-head"><text>先了解三件事</text><small>做决定前逐项核对</small></view>
-    <view class="highlight-row" wx:for="{{module.highlights}}" wx:key="*this"><text>✓</text><view>{{item}}</view></view>
-  </view>
-
-  <view class="section-card">
-    <view class="card-head"><text>办理与学习路径</text><small>平台提供信息指引，不代替机构审核</small></view>
-    <view class="step-row" wx:for="{{module.steps}}" wx:key="no">
-      <text class="step-no">{{item.no}}</text><view><strong>{{item.title}}</strong><small>{{item.text}}</small></view>
+  <view wx:if="{{loading}}" class="state-card">正在加载文章…</view>
+  <view wx:if="{{!loading && error}}" class="state-card error"><text>{{error}}</text><button bindtap="loadArticle">重新加载</button></view>
+  <view wx:if="{{!loading && !error}}" class="article-shell">
+    <view class="article-body"><rich-text nodes="{{bodyNodes}}"></rich-text></view>
+    <view class="source-note"><text>信息来源：{{article.issuer || '喀什优棉公共服务平台'}}</text><text>金融科普与入口指引，不构成贷款、保险或投资建议</text><button bindtap="copySource">{{article.originalUrl?'复制原文链接':'复制来源说明'}}</button></view>
+    <view class="comments"><view class="comments-title"><i></i><text>评论</text><small>{{comments.length ? comments.length + ' 条' : ''}}</small></view>
+      <view wx:if="{{commentsLoading}}" class="comment-empty">评论加载中…</view>
+      <view wx:if="{{!commentsLoading && !comments.length}}" class="comment-empty"><view class="empty-icon">评</view><text>暂无评论，欢迎发表观点</text></view>
+      <view class="comment" wx:for="{{comments}}" wx:key="id"><view class="avatar">{{item.initial}}</view><view class="comment-main"><view class="comment-meta"><text>{{item.author}}</text><text>{{item.timeText}}</text></view><text class="comment-content">{{item.content}}</text></view></view>
     </view>
   </view>
-
-  <view class="section-card">
-    <view class="card-head"><text>专题内容</text><small>{{articles.length}} 篇实用知识</small></view>
-    <view class="article-row" wx:for="{{articles}}" wx:key="id" bindtap="openArticle" data-id="{{item.id}}">
-      <view><label>{{item.badge}}</label><strong>{{item.title}}</strong><small>{{item.readMinutes}} 分钟 · {{item.hasRead?'已读':'未读'}}</small></view><text>›</text>
-    </view>
-  </view>
-
-  <view class="policy-link" wx:if="{{module.key==='policy'}}" bindtap="openPolicyCenter"><view>政</view><text>前往政策资讯核验最新文件</text><small>›</small></view>
-  <view class="notice-card"><text>重要提示</text><small>{{module.notice}}</small></view>
+  <view wx:if="{{!loading && !error}}" class="bottom-bar"><view class="comment-input" bindtap="focusComment"><input value="{{commentText}}" focus="{{commentFocus}}" bindinput="onCommentInput" bindblur="onCommentBlur" bindconfirm="submitComment" confirm-type="send" maxlength="300" placeholder="欢迎发表评论"/><button wx:if="{{commentText}}" loading="{{submittingComment}}" bindtap="submitComment">发送</button></view><view class="action-group"><view class="action" bindtap="focusComment"><text class="action-icon">评</text><small>评论</small></view><view class="action" bindtap="toggleCollect"><text class="action-icon {{collected?'active':''}}">{{collected?'★':'☆'}}</text><small>{{collected?'已收藏':'收藏'}}</small></view><button class="action share" open-type="share"><text class="action-icon">↗</text><small>转发</small></button></view></view>
 </view>

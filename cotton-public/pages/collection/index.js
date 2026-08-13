@@ -10,12 +10,12 @@ Page({
   switchTab(e){this.setData({tab:e.currentTarget.dataset.tab})},
   async loadFavorites(){
     let policies=demoPolicies
-    try{const res=await auth.request('GET','/api/policies');if(res.code===200&&Array.isArray(res.data))policies=res.data}catch{}
+    try{const [main,finance,home]=await Promise.all([auth.request('GET','/api/policies'),auth.request('GET','/api/policies?type=finance'),auth.request('GET','/api/policies?type=home')]);policies=[main,finance,home].flatMap(res=>res.code===200&&Array.isArray(res.data)?res.data:[])}catch{}
     const keys=wx.getStorageInfoSync().keys||[];const ids=new Set(keys.filter(key=>key.indexOf('policy_collected_')===0&&wx.getStorageSync(key)).map(key=>key.replace('policy_collected_','')))
     this.setData({policies:policies.filter(item=>ids.has(String(item.id)))})
   },
   async loadFeedbacks(){this.setData({loading:true});try{const res=await auth.request('GET','/api/feedback');if(res.code!==200)throw new Error(res.msg);this.setData({feedbacks:(res.data||[]).map(item=>({...item,createdText:formatTime(item.created_at),statusText:item.admin_reply?'已回复':item.status==='closed'?'已处理':'待回复'}))})}catch(error){wx.showToast({title:error.message||'反馈记录加载失败',icon:'none'})}finally{this.setData({loading:false});wx.stopPullDownRefresh()}},
-  openPolicy(e){wx.navigateTo({url:`/pages/policy/detail?id=${e.currentTarget.dataset.id}`})},
+  openPolicy(e){const item=this.data.policies.find(row=>String(row.id)===String(e.currentTarget.dataset.id));const keys={loan:'loan',insurance:'insurance',futures:'futures','finance-policy':'policy'};wx.navigateTo({url:item&&item.contentType==='finance'?`/pages/finance/channel?key=${keys[item.section]||'loan'}`:`/pages/policy/detail?id=${e.currentTarget.dataset.id}`})},
   removeFavorite(e){wx.removeStorageSync(`policy_collected_${e.currentTarget.dataset.id}`);this.loadFavorites();wx.showToast({title:'已取消收藏',icon:'none'})},
   onInput(e){this.setData({content:e.detail.value})},
   login(){wx.navigateTo({url:'/pages/login/index'})},

@@ -33,7 +33,7 @@
   </view>
 
   <view class="section quick-section">
-    <view class="section-head"><view><text>常用工具</text><small>田间管理与学习服务</small></view></view>
+    <view class="section-head"><view><text>常用工具</text></view></view>
     <view class="quick-grid">
       <view class="quick" bindtap="openModule" data-key="fields"><i class="green">田</i><text>地块管理</text></view>
       <view class="quick" bindtap="openModule" data-key="pest"><i class="brown">识</i><text>病虫害识别</text></view>
@@ -48,23 +48,22 @@
 
   <view class="section production-section">
     <view class="section-head">
-      <view><text>生产服务</text><small>连接农机、农资与加工服务</small></view>
-      <text class="section-badge">服务棉农</text>
+      <view><text>生产服务</text></view>
     </view>
     <view class="production-grid">
       <view class="production-card machine" bindtap="openProduction" data-type="machine">
         <view class="production-icon">机</view>
-        <view class="production-copy"><strong>农机服务</strong><small>作业 · 检修 · 调度</small></view>
+        <view class="production-copy"><strong>农机服务</strong></view>
         <text class="production-arrow">›</text>
       </view>
       <view class="production-card supplies" bindtap="openProduction" data-type="supplies">
         <view class="production-icon">资</view>
-        <view class="production-copy"><strong>农资服务</strong><small>种子 · 肥料 · 植保</small></view>
+        <view class="production-copy"><strong>农资服务</strong></view>
         <text class="production-arrow">›</text>
       </view>
       <view class="production-card processing" bindtap="openProduction" data-type="processing">
         <view class="production-icon">加</view>
-        <view class="production-copy"><strong>加工服务</strong><small>轧花 · 检测 · 仓储</small></view>
+        <view class="production-copy"><strong>加工服务</strong></view>
         <text class="production-arrow">›</text>
       </view>
     </view>
@@ -72,16 +71,16 @@
 
   <view class="ai-card" bindtap="openAi">
     <view class="ai-icon">AI</view>
-    <view class="ai-copy"><small>智能农技助手</small><strong>有种植问题，随时来问</strong><text>病虫诊断 · 水肥建议 · 田间管理</text></view>
+    <view class="ai-copy"><strong>智能农技助手</strong></view>
     <text class="arrow">›</text>
   </view>
 
   <view class="section news-section">
-    <view class="section-head"><view><text>棉花资讯</text><small>掌握棉业动态与实用农技</small></view><button bindtap="openNews">查看全部 ›</button></view>
-    <view class="news" wx:for="{{news}}" wx:key="id" bindtap="openPolicy" data-id="{{item.id}}">
+    <view class="section-head"><view><text>首页推送</text></view><button bindtap="openNews">查看全部 ›</button></view>
+    <view class="news" wx:for="{{news}}" wx:key="id" bindtap="openPolicy" data-id="{{item.id}}" data-url="{{item.targetUrl}}">
       <view><label>{{item.tag}}</label><strong>{{item.title}}</strong><small>{{item.source}}{{item.date ? ' · ' + item.date : ''}}</small></view><image src="{{item.image}}" mode="aspectFill"/>
     </view>
-    <view class="news-empty" wx:if="{{!newsLoading && !news.length}}" bindtap="openNews"><text>暂未推送首页资讯</text><small>管理员可在政策资讯后台选择最多 5 篇文章推送</small></view>
+    <view class="news-empty" wx:if="{{!newsLoading && !news.length}}" bindtap="openNews"><text>暂时没有首页推送</text><small>管理员可在“首页推送”后台管理最多 5 篇内容</small></view>
   </view>
   <view class="notice"><view class="notice-icon">!</view><view><text>重要提醒</text><small>未来三天持续高温，请及时关注地块墒情变化。</small></view></view>
 </view>

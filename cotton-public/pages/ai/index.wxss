@@ -74,7 +74,7 @@
 }
 
 .ai-badge-text {
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 700;
   color: #ffffff;
 }
@@ -102,7 +102,7 @@
 }
 
 .ai-status-text {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #2F8A52;
 }
 
@@ -141,7 +141,7 @@
 }
 
 .chat-date-text {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #8A948B;
   background: rgba(33,61,42,0.05);
   border-radius: 999rpx;
@@ -205,13 +205,13 @@
 }
 
 .cac-ai-text {
-  font-size: 17rpx;
+  font-size: 19rpx;
   font-weight: 700;
   color: #ffffff;
 }
 
 .cac-sub {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #8A948B;
 }
 
@@ -277,7 +277,7 @@
 }
 
 .user-avatar-text {
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 700;
   color: #ffffff;
 }
@@ -289,13 +289,13 @@
 }
 
 .msg-nm-left {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #8A948B;
   margin-bottom: 6rpx;
 }
 
 .msg-nm-right {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #8A948B;
   margin-bottom: 6rpx;
   text-align: right;
@@ -347,11 +347,11 @@ rich-text.bubble-text {
 }
 
 .replay-answer-icon {
-  font-size: 22rpx;
+  font-size: 24rpx;
 }
 
 .replay-answer-text {
-  font-size: 21rpx;
+  font-size: 23rpx;
   color: #6F552B;
   font-weight: 700;
 }
@@ -390,7 +390,7 @@ rich-text.bubble-text {
 }
 
 .jump-kicker {
-  font-size: 19rpx;
+  font-size: 21rpx;
   color: #A16E25;
   font-weight: 700;
 }
@@ -402,7 +402,7 @@ rich-text.bubble-text {
 }
 
 .jump-desc {
-  font-size: 21rpx;
+  font-size: 23rpx;
   color: #758076;
   line-height: 1.35;
 }
@@ -412,7 +412,7 @@ rich-text.bubble-text {
   color: #ffffff;
   border-radius: 999rpx;
   padding: 10rpx 18rpx;
-  font-size: 22rpx;
+  font-size: 24rpx;
   font-weight: 800;
   flex-shrink: 0;
 }
@@ -529,13 +529,13 @@ rich-text.bubble-text {
 }
 
 .voice-answer-label {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #3B342D;
   font-weight: 800;
 }
 
 .voice-answer-state {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #8A7B6D;
 }
 
@@ -597,7 +597,7 @@ rich-text.bubble-text {
 
 .voice-live-text {
   max-width: 100%;
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #6F552B;
   line-height: 1.35;
   overflow: hidden;

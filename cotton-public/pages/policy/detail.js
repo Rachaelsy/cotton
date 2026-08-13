@@ -14,10 +14,14 @@ function formatTime(value) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+function articleMarkdown(value) {
+  return String(value || '').replace(/^\s*#\s+[^\n]+\n+/, '')
+}
+
 Page({
   data: {
     statusBarHeight: 20, policy: {}, collected: false, loading: true, demoMode: false,
-    bodyNodes: [], isIndustry: false, comments: [], commentsLoading: true,
+    bodyNodes: [], isIndustry: false, isHome: false, comments: [], commentsLoading: true,
     commentText: '', commentFocus: false, submittingComment: false
   },
 
@@ -41,12 +45,14 @@ Page({
 
   applyArticle(policy, demoMode) {
     const isIndustry = policy.contentType === 'industry'
+    const isHome = policy.contentType === 'home'
     this.setData({
       policy,
       isIndustry,
+      isHome,
       demoMode,
       loading: false,
-      bodyNodes: markdownToRichTextNodes(policy.markdown || ''),
+      bodyNodes: markdownToRichTextNodes(articleMarkdown(policy.markdown)),
       collected: !!wx.getStorageSync(`policy_collected_${policy.id}`)
     })
   },

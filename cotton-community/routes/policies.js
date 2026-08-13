@@ -89,26 +89,31 @@ function articleBody(body = {}) {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 180)
-  const contentType = body.content_type === 'industry' || body.contentType === 'industry' ? 'industry' : 'policy'
+  const requestedType = String(body.content_type || body.contentType || 'policy').trim()
+  const contentType = ['policy', 'industry', 'finance', 'home'].includes(requestedType) ? requestedType : 'policy'
   const policyLevels = new Set(['国家', '自治区', '地区', '县级'])
   const industryCategories = new Set(['产业', '农机', '农资', '市场', '气象'])
+  const financeCategories = new Set(['loan', 'insurance', 'futures', 'finance-policy'])
   const requestedSection = String(body.section || body.category || body.policy_level || body.level || '').trim()
-  const section = contentType === 'industry'
-    ? (industryCategories.has(requestedSection) ? requestedSection : '产业')
-    : (policyLevels.has(requestedSection) ? requestedSection : '地区')
+  let section = '地区'
+  if (contentType === 'industry') section = industryCategories.has(requestedSection) ? requestedSection : '产业'
+  else if (contentType === 'finance') section = financeCategories.has(requestedSection) ? requestedSection : 'loan'
+  else if (contentType === 'home') section = 'homepage'
+  else section = policyLevels.has(requestedSection) ? requestedSection : '地区'
   const homeFeatured = body.is_home_featured === true || body.isHomeFeatured === true || body.is_home_featured === 1 || body.is_home_featured === '1' ? 1 : 0
   return {
     title: String(body.title || '').trim().slice(0, 180),
     summary: generatedSummary,
     markdown,
     contentType,
-    level: contentType === 'policy' ? section : '行业资讯',
-    category: contentType === 'industry' ? section : section,
+    level: contentType === 'policy' ? section : contentType === 'industry' ? '行业资讯' : contentType === 'finance' ? '优棉金融' : '首页专稿',
+    category: section,
     issuer: String(body.issuer || '').trim().slice(0, 160),
     region: String(body.region || '喀什地区').trim().slice(0, 160),
     documentNo: String(body.document_no || body.documentNo || '').trim().slice(0, 120),
     deadline: String(body.deadline || '').trim().slice(0, 120),
     originalUrl: safeUrl(body.original_url || body.originalUrl),
+    coverUrl: safeUrl(body.cover_url || body.coverUrl),
     status,
     featured: body.is_featured === true || body.is_featured === 1 || body.is_featured === '1' ? 1 : 0,
     homeFeatured: status === 'published' ? homeFeatured : 0,
@@ -133,18 +138,18 @@ async function assertHomeCapacity(article, excludeId = 0) {
 }
 
 function normalize(row, includeMarkdown = false) {
-  const contentType = row.content_type === 'industry' ? 'industry' : 'policy'
+  const contentType = ['policy', 'industry', 'finance', 'home'].includes(row.content_type) ? row.content_type : 'policy'
   const imageMatch = String(row.body_markdown || '').match(/!\[[^\]]*\]\(\s*(https?:\/\/[^\s)]+|\/[^\s)]+)\s*(?:["'][^"']*["'])?\s*\)/i)
   const article = {
     id: Number(row.id), title: row.title || '', summary: row.summary || '',
     contentType,
     level: row.policy_level || '地区', category: row.category || '政策动态',
-    section: contentType === 'industry' ? (row.category || '产业') : (row.policy_level || '地区'),
+    section: contentType === 'policy' ? (row.policy_level || '地区') : (row.category || (contentType === 'industry' ? '产业' : contentType === 'finance' ? 'loan' : 'homepage')),
     issuer: row.issuer || '', region: row.region || '', documentNo: row.document_no || '',
     deadline: row.deadline || '', originalUrl: row.original_url || '', status: row.status || 'draft',
     isFeatured: !!row.is_featured, isHomeFeatured: !!row.is_home_featured,
     homeFeaturedAt: row.home_featured_at || null, sortOrder: Number(row.sort_order || 0),
-    coverImage: imageMatch ? imageMatch[1] : '',
+    coverImage: row.cover_url || (imageMatch ? imageMatch[1] : ''),
     publishDate: row.published_at || row.created_at || null,
     createdAt: row.created_at || null, updatedAt: row.updated_at || null
   }
@@ -158,13 +163,16 @@ router.get('/', async (req, res) => {
     const conditions = ["status='published'"]
     const homepage = req.query.homepage === '1' || req.query.homepage === 'true'
     if (homepage) conditions.push('is_home_featured=1')
-    if (req.query.type === 'policy' || req.query.type === 'industry') {
+    const requestedType = ['policy', 'industry', 'finance', 'home'].includes(req.query.type) ? req.query.type : ''
+    if (requestedType) {
       conditions.push('content_type=?')
-      params.push(req.query.type)
+      params.push(requestedType)
+    } else if (!homepage) {
+      conditions.push("content_type IN ('policy','industry')")
     }
     const section = String(req.query.section || '').trim().slice(0, 32)
     if (section) {
-      if (req.query.type === 'industry') conditions.push('category=?')
+      if (['industry', 'finance', 'home'].includes(requestedType)) conditions.push('category=?')
       else conditions.push('policy_level=?')
       params.push(section)
     }
@@ -227,10 +235,10 @@ router.post('/admin', policyAdminAuth, async (req, res) => {
     await assertHomeCapacity(article)
     const [result] = await db.query(
       `INSERT INTO policy_articles
-       (title,summary,body_markdown,content_type,policy_level,category,issuer,region,document_no,deadline,original_url,status,is_featured,is_home_featured,home_featured_at,sort_order,published_at,created_by,updated_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,IF(?=1,NOW(),NULL),?,IF(?='published',NOW(),NULL),?,?)`,
+       (title,summary,body_markdown,content_type,policy_level,category,issuer,region,document_no,deadline,original_url,cover_url,status,is_featured,is_home_featured,home_featured_at,sort_order,published_at,created_by,updated_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,IF(?=1,NOW(),NULL),?,IF(?='published',NOW(),NULL),?,?)`,
       [article.title,article.summary,article.markdown,article.contentType,article.level,article.category,article.issuer,article.region,
-       article.documentNo,article.deadline,article.originalUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,
+       article.documentNo,article.deadline,article.originalUrl,article.coverUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,
        article.sortOrder,article.status,req.policyAdmin.id,req.policyAdmin.id]
     )
     return ok(res, { id: Number(result.insertId) }, article.status === 'published' ? '政策已发布' : '草稿已保存')
@@ -244,11 +252,11 @@ router.put('/admin/:id', policyAdminAuth, async (req, res) => {
     await assertHomeCapacity(article, Number(req.params.id))
     const [result] = await db.query(
       `UPDATE policy_articles SET title=?,summary=?,body_markdown=?,content_type=?,policy_level=?,category=?,issuer=?,region=?,
-       document_no=?,deadline=?,original_url=?,status=?,is_featured=?,is_home_featured=?,
+       document_no=?,deadline=?,original_url=?,cover_url=?,status=?,is_featured=?,is_home_featured=?,
        home_featured_at=CASE WHEN ?=1 THEN COALESCE(home_featured_at,NOW()) ELSE NULL END,sort_order=?,
        published_at=CASE WHEN ?='published' THEN COALESCE(published_at,NOW()) ELSE NULL END,updated_by=? WHERE id=?`,
       [article.title,article.summary,article.markdown,article.contentType,article.level,article.category,article.issuer,article.region,
-       article.documentNo,article.deadline,article.originalUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,article.sortOrder,
+       article.documentNo,article.deadline,article.originalUrl,article.coverUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,article.sortOrder,
        article.status,req.policyAdmin.id,req.params.id]
     )
     if (!result.affectedRows) return fail(res, '政策文章不存在', 404)

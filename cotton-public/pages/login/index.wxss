@@ -51,7 +51,7 @@
 }
 .logo-emoji  { font-size: 64rpx; }
 .brand-name  { font-size: 40rpx; font-weight: 800; color: #fff; }
-.brand-sub   { font-size: 22rpx; color: rgba(255,255,255,0.8); margin-top: 6rpx; }
+.brand-sub   { font-size: 24rpx; color: rgba(255,255,255,0.8); margin-top: 6rpx; }
 
 /* ── 内容卡滚动区 ──────────────────────────── */
 .card-scroll {
@@ -117,7 +117,7 @@
 .role-icon   { font-size: 52rpx; }
 .role-info   { flex: 1; }
 .role-name   { display: block; font-size: 32rpx; font-weight: 800; color: #18231A; margin-bottom: 6rpx; }
-.role-desc   { display: block; font-size: 22rpx; color: #8A948B; }
+.role-desc   { display: block; font-size: 24rpx; color: #8A948B; }
 .role-arr    { font-size: 40rpx; color: #C5CCC5; flex-shrink: 0; }
 
 /* ── 表单字段 ──────────────────────────────── */
@@ -234,4 +234,4 @@
   margin: 28rpx 0 8rpx;
 }
 .divider-line { flex: 1; height: 1rpx; background: #E5DDD3; }
-.divider-text { font-size: 22rpx; color: #B7C0B8; flex-shrink: 0; }
+.divider-text { font-size: 24rpx; color: #B7C0B8; flex-shrink: 0; }

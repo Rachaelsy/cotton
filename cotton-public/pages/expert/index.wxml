@@ -27,7 +27,7 @@
     <view wx:if="{{loadError}}" class="notice-card weak">{{loadError}}</view>
 
     <view wx:if="{{activeLectureTab === 'qa'}}" class="lecture-panel">
-      <view class="ask-banner" bindtap="onAskExpert"><view><text class="ask-title">有生产问题，向专家提问</text><text class="ask-desc">可关联地块和现场图片，回复记录随时查看</text></view><text class="ask-action">去提问 ›</text></view>
+      <view class="ask-banner" bindtap="onAskExpert"><view><text class="ask-title">有生产问题，向专家提问</text></view><text class="ask-action">去提问 ›</text></view>
       <view class="qa-list">
         <view class="qa-item" wx:for="{{qaContents}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
           <view class="qa-mark">问</view><view class="qa-main"><text class="qa-title">{{item.title}}</text><text class="qa-answer">{{item.intro || item.content}}</text><view class="qa-meta"><text>{{item.teacher}}</text><text>{{item.category}}</text><text>查看解答 ›</text></view></view>

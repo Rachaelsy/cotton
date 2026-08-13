@@ -83,7 +83,7 @@
 }
 
 .recognize-kicker-text {
-  font-size: 20rpx;
+  font-size: 22rpx;
   font-weight: 800;
   color: #fff;
 }
@@ -216,7 +216,7 @@
   padding: 6rpx 14rpx;
   border-radius: 999rpx;
   background: #f4efe3;
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #8d6a35;
   font-weight: 700;
 }
@@ -228,7 +228,7 @@
 }
 
 .toolbar-sub {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #8a948b;
   line-height: 1.45;
 }
@@ -313,7 +313,7 @@
 }
 
 .history-summary {
-  font-size: 22rpx;
+  font-size: 24rpx;
   line-height: 1.55;
   color: #58655b;
   min-height: 68rpx;
@@ -335,7 +335,7 @@
   padding: 6rpx 14rpx;
   border-radius: 999rpx;
   background: #eef7f4;
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #2d8678;
 }
 
@@ -429,7 +429,7 @@
 }
 
 .hot-badge-text {
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 700;
   color: #fff;
 }
@@ -473,7 +473,7 @@
 .tag-physio { background: #e8f0ff; }
 
 .grid-type-text {
-  font-size: 20rpx;
+  font-size: 22rpx;
 }
 
 .tag-bug .grid-type-text { color: #d97918; }
@@ -482,7 +482,7 @@
 
 .grid-cta {
   margin-top: auto;
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #b9852f;
   font-weight: 700;
   line-height: 1.5;
