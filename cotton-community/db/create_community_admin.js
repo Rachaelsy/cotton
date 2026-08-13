@@ -10,7 +10,7 @@ function randomPassword() {
 
 async function run() {
   const phone = String(process.argv[2] || '').trim()
-  const displayName = String(process.argv.slice(3).join(' ') || '公益平台管理员').trim().slice(0, 64)
+  const displayName = String(process.argv.slice(3).join(' ') || '公共服务平台管理员').trim().slice(0, 64)
   if (!/^1\d{10}$/.test(phone)) {
     throw new Error('用法：node db/create_community_admin.js <11位手机号> [管理员名称]')
   }
@@ -33,7 +33,7 @@ async function run() {
     [phone, hash, displayName]
   )
 
-  console.log('公益小程序管理员已创建或重置。')
+  console.log('公共服务平台管理员已创建或重置。')
   console.log(`登录手机号：${phone}`)
   if (!suppliedPassword) {
     console.log(`一次性初始密码：${password}`)

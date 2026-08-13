@@ -51,7 +51,12 @@ async function run() {
   `)
   console.log('✅ experts 表已就绪')
 
+  await addColumn('experts', 'avatar_url', "avatar_url VARCHAR(500) NOT NULL DEFAULT '' COMMENT '专家展示头像图片'")
+  await addColumn('experts', 'profile_only', "profile_only TINYINT(1) NOT NULL DEFAULT 0 COMMENT '仅作为公开专家资料展示'")
+  await addColumn('experts', 'sort_order', "sort_order INT NOT NULL DEFAULT 0 COMMENT '公开展示排序'")
+
   await addColumn('expert_contents', 'expert_id', 'expert_id INT UNSIGNED DEFAULT NULL COMMENT "发布专家ID"')
+  await addColumn('expert_contents', 'is_featured', 'is_featured TINYINT(1) NOT NULL DEFAULT 0 COMMENT "精选内容"')
   await addIndex('expert_contents', 'idx_expert_contents_expert', '(expert_id)')
 
   process.exit(0)

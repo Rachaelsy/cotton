@@ -76,6 +76,6 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: this.data.article.title || '棉花金融公益科普', path: `/pages/finance/detail?id=${this.data.article.id}` }
+    return { title: this.data.article.title || '优棉金融知识服务', path: `/pages/finance/detail?id=${this.data.article.id}` }
   }
 })

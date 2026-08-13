@@ -4,5 +4,5 @@ Page({
   openPolicy(){wx.navigateTo({url:'/pages/policy/index'})},
   openAcademy(){wx.navigateTo({url:'/pages/academy/index'})},
   back(){if(getCurrentPages().length>1)wx.navigateBack();else wx.switchTab({url:'/pages/my/index'})},
-  onShareAppMessage(){return{title:'喀什优棉公益平台',path:'/pages/index/index'}}
+  onShareAppMessage(){return{title:'喀什优棉公共服务平台',path:'/pages/index/index'}}
 })

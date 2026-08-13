@@ -123,7 +123,7 @@ Page({
   },
 
   onBuy() {
-    wx.showToast({ title: '公益平台不提供农资交易', icon: 'none' })
+    wx.showToast({ title: '公共服务平台不提供农资交易', icon: 'none' })
   },
 
   onReminder() {

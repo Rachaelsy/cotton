@@ -58,6 +58,8 @@
     $('editorPanel').classList.add('hidden')
     $('securityPanel').classList.add('hidden')
     $('farmerPanel').classList.add('hidden')
+    $('factoryPanel').classList.add('hidden')
+    $('expertPanel').classList.add('hidden')
     $('productPanel').classList.remove('hidden')
     document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item.dataset.productType === type))
     $('pageTitle').textContent = names[type]

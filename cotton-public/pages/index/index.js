@@ -3,22 +3,55 @@ const { buildWeatherFromApi } = require('../../utils/weather')
 
 Page({
   data: {
+    heroTop: 64,
     userName: '棉农朋友',
     weatherPreview: {
       locationLabel: '正在定位',
       weather: { temp: '--', desc: '天气加载中', icon: '⛅', high: '--', low: '--', wind: '--' },
       tipText: '正在获取当前位置天气与农事建议'
     },
-    news: [
-      { id: 1, tag: '政策解读', title: '棉花生产支持政策要点，一文读懂', source: '农业资讯中心', image: '/images/cotton-seedling-inspection-v1.jpg' },
-      { id: 2, tag: '农技指导', title: '高温天气来临，花铃期水肥管理这样做', source: '农技专家组', image: '/images/course-water-v2.webp' }
-    ]
+    news: [],
+    newsLoading: true
+  },
+
+  onLoad() {
+    let heroTop = 64
+    try {
+      const info = wx.getSystemInfoSync()
+      const capsule = wx.getMenuButtonBoundingClientRect && wx.getMenuButtonBoundingClientRect()
+      heroTop = capsule && capsule.bottom
+        ? capsule.bottom + 12
+        : (info.statusBarHeight || 20) + 48
+    } catch (error) {
+      heroTop = 64
+    }
+    this.setData({ heroTop })
   },
 
   onShow() {
     const user = auth.getUser && auth.getUser()
     if (user) this.setData({ userName: user.real_name || user.phone || '棉农朋友' })
     this.loadLocationWeather()
+    this.loadHomeNews()
+  },
+
+  async loadHomeNews() {
+    try {
+      const res = await auth.request('GET', '/api/policies?homepage=1')
+      const rows = res.code === 200 && Array.isArray(res.data) ? res.data.slice(0, 5) : []
+      const fallbacks = ['/images/cotton-seedling-inspection-v1.jpg', '/images/course-water-v2.webp', '/images/course-scouting-v2.webp']
+      const news = rows.map((item, index) => ({
+        id: item.id,
+        tag: item.contentType === 'industry' ? (item.section || '行业资讯') : (item.section || '政策资讯'),
+        title: item.title,
+        source: item.issuer || '喀什优棉公共服务平台',
+        date: item.publishDate ? String(item.publishDate).slice(0, 10) : '',
+        image: item.coverImage || fallbacks[index % fallbacks.length]
+      }))
+      this.setData({ news, newsLoading: false })
+    } catch (error) {
+      this.setData({ news: [], newsLoading: false })
+    }
   },
 
   getCurrentLocation() {
@@ -95,7 +128,7 @@ Page({
     if (routes[key]) wx.navigateTo({ url: routes[key] })
   },
 
-  openNews() { wx.navigateTo({ url: '/pages/news/index' }) },
+  openNews() { wx.navigateTo({ url: '/pages/policy/index' }) },
   openProduction(e) {
     const type = e.currentTarget.dataset.type || 'machine'
     const routes = {

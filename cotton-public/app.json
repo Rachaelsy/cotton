@@ -6,6 +6,7 @@
     "pages/policy/channel",
     "pages/policy/detail",
     "pages/finance/index",
+    "pages/finance/channel",
     "pages/finance/detail",
     "pages/machinery/index",
     "pages/supplies/index",

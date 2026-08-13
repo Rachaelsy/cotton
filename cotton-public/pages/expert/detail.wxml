@@ -7,7 +7,8 @@
     </view>
 
     <view class="expert-block">
-      <text class="expert-avatar">{{expert.avatar}}</text>
+      <image wx:if="{{expert.avatarUrl}}" class="expert-avatar expert-avatar-image" src="{{expert.avatarUrl}}" mode="aspectFill"></image>
+      <text wx:if="{{!expert.avatarUrl}}" class="expert-avatar">{{expert.avatar}}</text>
       <view class="expert-main">
         <text class="expert-name">{{expert.name}}</text>
         <text class="expert-org">{{expert.org}}</text>

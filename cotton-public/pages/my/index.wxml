@@ -1,7 +1,7 @@
 <view class="page">
   <view class="hero" style="padding-top:{{statusBarHeight + 30}}px">
     <view class="hero-orb orb-one"></view><view class="hero-orb orb-two"></view>
-    <view class="brand">喀什优棉公益平台</view>
+    <view class="brand">喀什优棉公共服务平台</view>
     <view class="profile">
       <view class="avatar">{{initial}}</view>
       <view class="profile-copy">
@@ -40,7 +40,7 @@
         <view class="menu-icon blue">设</view><view class="menu-copy"><text>设置与帮助</text><text>使用帮助、权限与登录管理</text></view><text class="arrow">›</text>
       </view>
       <view class="menu-row" bindtap="openPage" data-key="about">
-        <view class="menu-icon gray">公</view><view class="menu-copy"><text>关于我们</text><text>了解公益平台与服务边界</text></view><text class="arrow">›</text>
+        <view class="menu-icon gray">公</view><view class="menu-copy"><text>关于我们</text><text>了解公共服务平台与服务边界</text></view><text class="arrow">›</text>
       </view>
     </view>
     <button wx:if="{{loggedIn}}" class="logout" bindtap="logout">退出登录</button>

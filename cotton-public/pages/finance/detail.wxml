@@ -2,7 +2,7 @@
   <view class="detail-hero">
     <view class="detail-nav">
       <button bindtap="back">‹</button>
-      <text>金融知识</text>
+      <text>优棉金融</text>
       <button class="read-button {{hasRead?'done':''}}" bindtap="markRead">{{hasRead?'已读':'标为已读'}}</button>
     </view>
     <view class="detail-labels"><label>{{article.categoryName}}</label><label>{{article.badge}}</label><small>{{article.readMinutes}} 分钟阅读</small></view>

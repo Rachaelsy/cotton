@@ -17,7 +17,7 @@
   }
 
   function statusName(status) { return status === 'published' ? '已发布' : status === 'offline' ? '已下线' : '草稿' }
-  function hidePanels() { ['listPanel', 'editorPanel', 'productPanel', 'securityPanel', 'farmerPanel'].forEach(id => $(id).classList.add('hidden')) }
+  function hidePanels() { ['listPanel', 'editorPanel', 'productPanel', 'expertPanel', 'securityPanel', 'farmerPanel'].forEach(id => $(id).classList.add('hidden')) }
 
   function render() {
     $('factoryTable').innerHTML = state.factories.length ? state.factories.map(item => `

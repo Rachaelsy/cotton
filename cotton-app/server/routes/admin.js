@@ -331,7 +331,7 @@ router.post('/login', async (req, res) => {
         {
           id: Number(publicAdmin.id),
           phone: publicAdmin.phone,
-          real_name: publicAdmin.display_name || '公益平台管理员',
+          real_name: publicAdmin.display_name || '公共服务平台管理员',
           role: 'community_admin',
           is_community_admin: true,
           permission: publicAdmin.permission_key || 'public_admin',
@@ -345,7 +345,7 @@ router.post('/login', async (req, res) => {
         msg: '登录成功',
         data: {
           token,
-          real_name: publicAdmin.display_name || '公益平台管理员',
+          real_name: publicAdmin.display_name || '公共服务平台管理员',
           admin_type: 'public',
           dashboard: '/knowledge/policy-admin.html'
         }

@@ -39,6 +39,7 @@ function normalizeCourse(item = {}) {
     students: item.students || 0,
     coverUrl: item.coverUrl || item.cover_url || '',
     videoUrl: item.videoUrl || item.video_url || '',
+    isFeatured: !!item.isFeatured,
     isPaid,
     tag: item.tag || (isPaid ? `¥${Number(item.price || 0).toFixed(2)}` : '免费')
   }
@@ -80,12 +81,15 @@ Page({
     loadError: '',
     copy: i18n.getPageCopy('expert'),
     categories: [],
+    activeLectureTab: 'qa',
     activeCategoryKey: 'all',
     experts: [],
     featured: [],
     allCourses: [],
     filteredCourses: [],
     quickQuestions: QUICK_QUESTIONS,
+    qaContents: [],
+    videoContents: [],
     myQuestions: [],
     showQuestionModal: false,
     questionSubmitting: false,
@@ -117,27 +121,17 @@ Page({
 
   onShow() {
     this.applyLanguage()
+    if (this._hasShown) this.loadRemoteContents()
+    this._hasShown = true
     this.loadMyQuestions()
     this.loadPlots()
   },
 
   applyLanguage() {
     const lang = i18n.getLanguage()
-    const fallback = fallbackState(lang, this.data.activeCategoryKey)
-    const hasRemote = this._remoteCourses && this._remoteCourses.length
     this.setData({
       lang,
-      copy: fallback.copy,
-      ...(hasRemote
-        ? {
-          allCourses: this._remoteCourses,
-          featured: this._remoteCourses.slice(0, 2),
-          filteredCourses: filterCourses(this._remoteCourses, this.data.activeCategoryKey),
-          categories: this._remoteCategories || fallback.categories,
-          experts: this._remoteExperts || fallback.experts,
-          quickQuestions: this._remoteQuickQuestions || QUICK_QUESTIONS
-        }
-        : fallback)
+      copy: i18n.getPageCopy('expert', lang)
     })
   },
 
@@ -148,24 +142,24 @@ Page({
       if (res.code !== 200) throw new Error(res.msg || '加载失败')
       const data = res.data || {}
       const courses = (data.contents || []).map(normalizeCourse)
-      if (!courses.length) throw new Error('暂无上架内容')
       this._remoteCourses = courses
       this._remoteCategories = data.categories || this.data.categories
       this._remoteExperts = (data.experts || []).map(item => ({
         ...item,
         avatar: item.avatar || '👨‍🌾',
+        avatarUrl: toDisplayImage(item.avatarUrl || item.avatar_url || ''),
         tags: item.tags || [],
         online: item.online !== false
       }))
-      this._remoteQuickQuestions = data.quickQuestions || QUICK_QUESTIONS
       this.setData({
         loading: false,
         allCourses: courses,
-        featured: courses.slice(0, 2),
+        qaContents: courses.filter(item => item.type === 'qa'),
+        videoContents: courses.filter(item => item.type === 'video'),
+        featured: courses.filter(item => item.isFeatured),
         filteredCourses: filterCourses(courses, this.data.activeCategoryKey),
         categories: this._remoteCategories,
-        experts: this._remoteExperts.length ? this._remoteExperts : [DEFAULT_EXPERT],
-        quickQuestions: this._remoteQuickQuestions
+        experts: this._remoteExperts
       })
     } catch (error) {
       this.setData({ loading: false, loadError: error.message || '专家讲堂加载失败' })
@@ -206,6 +200,11 @@ Page({
       activeCategoryKey,
       filteredCourses: filterCourses(this.data.allCourses, activeCategoryKey)
     })
+  },
+
+  onLectureTab(e) {
+    const tab = e.currentTarget.dataset.tab
+    if (['qa', 'experts', 'video'].includes(tab)) this.setData({ activeLectureTab: tab })
   },
 
   onCourseTap(e) {

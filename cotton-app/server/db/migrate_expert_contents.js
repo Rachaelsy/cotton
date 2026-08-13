@@ -28,6 +28,7 @@ async function run() {
       students INT UNSIGNED NOT NULL DEFAULT 0,
       sort_order INT NOT NULL DEFAULT 0,
       is_published TINYINT(1) NOT NULL DEFAULT 1,
+      is_featured TINYINT(1) NOT NULL DEFAULT 0,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_type (type),

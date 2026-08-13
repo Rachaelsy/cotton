@@ -1,8 +1,8 @@
 <view class="page">
-  <view class="hero">
+  <view class="hero" style="padding-top:{{heroTop}}px">
     <view class="hero-head">
       <view class="brand-copy">
-        <text class="eyebrow">喀什优棉公益平台</text>
+        <text class="eyebrow">喀什优棉公共服务平台</text>
         <text class="welcome">你好，{{userName}}</text>
       </view>
       <view class="hero-mark">棉</view>
@@ -12,13 +12,17 @@
       <view class="weather-copy">
         <view class="weather-location">
           <text>定位</text>
-          <text>{{weatherPreview.locationLabel}}</text>
+          <text class="weather-location-name">{{weatherPreview.locationLabel}}</text>
         </view>
         <view class="weather-main">
           <text class="weather-temp">{{weatherPreview.weather.temp}}{{weatherPreview.weather.temp === '--' ? '' : '°'}}</text>
           <view class="weather-detail">
             <strong>{{weatherPreview.weather.desc}}</strong>
-            <small>{{weatherPreview.weather.low}}{{weatherPreview.weather.low === '--' ? '' : '°'}} ~ {{weatherPreview.weather.high}}{{weatherPreview.weather.high === '--' ? '' : '°'}} · {{weatherPreview.weather.wind}}</small>
+            <view class="weather-facts">
+              <text>最低 {{weatherPreview.weather.low}}{{weatherPreview.weather.low === '--' ? '' : '°'}}</text>
+              <text>最高 {{weatherPreview.weather.high}}{{weatherPreview.weather.high === '--' ? '' : '°'}}</text>
+              <text>{{weatherPreview.weather.wind}}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -38,7 +42,7 @@
       <view class="quick" bindtap="openModule" data-key="expert"><i class="gold">讲</i><text>专家讲堂</text></view>
       <view class="quick" bindtap="openModule" data-key="records"><i class="mint">记</i><text>农事记录</text></view>
       <view class="quick" bindtap="openModule" data-key="academy"><i class="orange">学</i><text>棉知学堂</text></view>
-      <view class="quick" bindtap="openModule" data-key="finance"><i class="finance">金</i><text>棉花金融</text></view>
+      <view class="quick" bindtap="openModule" data-key="finance"><i class="finance">金</i><text>优棉金融</text></view>
     </view>
   </view>
 
@@ -74,9 +78,10 @@
 
   <view class="section news-section">
     <view class="section-head"><view><text>棉花资讯</text><small>掌握棉业动态与实用农技</small></view><button bindtap="openNews">查看全部 ›</button></view>
-    <view class="news" wx:for="{{news}}" wx:key="id">
-      <view><label>{{item.tag}}</label><strong>{{item.title}}</strong><small>{{item.source}} · 今天</small></view><image src="{{item.image}}" mode="aspectFill"/>
+    <view class="news" wx:for="{{news}}" wx:key="id" bindtap="openPolicy" data-id="{{item.id}}">
+      <view><label>{{item.tag}}</label><strong>{{item.title}}</strong><small>{{item.source}}{{item.date ? ' · ' + item.date : ''}}</small></view><image src="{{item.image}}" mode="aspectFill"/>
     </view>
+    <view class="news-empty" wx:if="{{!newsLoading && !news.length}}" bindtap="openNews"><text>暂未推送首页资讯</text><small>管理员可在政策资讯后台选择最多 5 篇文章推送</small></view>
   </view>
   <view class="notice"><view class="notice-icon">!</view><view><text>重要提醒</text><small>未来三天持续高温，请及时关注地块墒情变化。</small></view></view>
 </view>

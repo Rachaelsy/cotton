@@ -80,6 +80,8 @@ app.use('/api/public-service', require('./routes/public-service'))
 app.use('/api/policies', require('./routes/policies'))
 app.use('/api/service-products', require('./routes/service-products'))
 app.use('/api/processing-factories', require('./routes/processing-factories'))
+app.use('/api/expert-studio', require('./routes/expert-studio'))
+app.use('/api/market', require('./routes/market'))
 
 app.get('/api/community-health', async (_req, res) => {
   try {

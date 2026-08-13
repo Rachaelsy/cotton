@@ -1,75 +1,40 @@
 <view class="finance-page">
-  <view class="finance-hero">
-    <view class="finance-nav">
-      <button bindtap="back">‹</button>
-      <view><text>棉花金融</text><small>COTTON FINANCE</small></view>
-      <button class="boundary-button" bindtap="showBoundary">说明</button>
-    </view>
-    <view class="hero-copy">
-      <text>懂政策 · 识风险 · 找入口</text>
-      <small>面向棉农的公益金融知识与办事指引</small>
-    </view>
-    <view class="hero-boundary" bindtap="showBoundary">
-      <view class="shield">盾</view>
-      <view><text>只做科普与入口指引</text><small>不放贷、不代办、不销售保险、不提供期货交易</small></view>
-      <text class="hero-arrow">›</text>
+  <view class="finance-hero" style="padding-top:{{statusBarHeight + 14}}px">
+    <view class="finance-nav"><button bindtap="back">‹</button><view><text>优棉金融</text><small>YOU MIAN FINANCE</small></view><button class="boundary-button" bindtap="showBoundary">说明</button></view>
+    <view class="hero-copy"><text>看行情 · 懂保障 · 知政策</text><small>面向棉花生产者的金融知识公共服务</small></view>
+
+    <view class="quote-card {{quote.trendClass}}" bindtap="refreshQuote">
+      <view class="quote-head"><view><text>棉花期货实时行情参考</text><small>{{quote.contract}} · CF · 郑州商品交易所</small></view><label>{{quoteLoading?'获取中':quote.stale?'缓存':'自动刷新'}}</label></view>
+      <view class="quote-main">
+        <view class="quote-price"><strong>{{quote.priceText}}</strong><small>{{quote.unit}}</small></view>
+        <view class="quote-change"><text>{{quote.changeText}}</text><small>{{quote.percentText}}</small></view>
+      </view>
+      <view class="quote-facts" style="display:flex;margin-top:18rpx;padding:15rpx 0;border-top:1rpx solid rgba(255,255,255,.11);border-bottom:1rpx solid rgba(255,255,255,.11)">
+        <view style="display:flex;width:33.333%;flex-direction:column;align-items:center"><small style="color:rgba(255,255,255,.5);font-size:15rpx">开盘</small><text style="margin-top:5rpx;font-size:20rpx;font-weight:750">{{quote.openText}}</text></view>
+        <view style="display:flex;width:33.333%;flex-direction:column;align-items:center;border-left:1rpx solid rgba(255,255,255,.1)"><small style="color:rgba(255,255,255,.5);font-size:15rpx">最高</small><text style="margin-top:5rpx;font-size:20rpx;font-weight:750">{{quote.highText}}</text></view>
+        <view style="display:flex;width:33.333%;flex-direction:column;align-items:center;border-left:1rpx solid rgba(255,255,255,.1)"><small style="color:rgba(255,255,255,.5);font-size:15rpx">最低</small><text style="margin-top:5rpx;font-size:20rpx;font-weight:750">{{quote.lowText}}</text></view>
+      </view>
+      <view class="quote-meta"><text>{{quote.updatedText}}</text><text>{{quote.source || '点击刷新'}}</text></view>
+      <view class="quote-error" wx:if="{{quoteError}}">{{quoteError}}</view>
+      <view class="quote-notice">{{quote.delayNotice}}</view>
     </view>
   </view>
 
   <view class="progress-card">
-    <view><text>金融知识必读</text><small>先了解规则，再做重要决定</small></view>
+    <view><text>金融知识学习</text><small>先了解规则，再做重要决定</small></view>
     <view class="progress-copy"><text>{{readCount}}</text><small>/ {{totalCount}} 篇</small></view>
     <view class="progress-track"><view style="width: {{totalCount ? readCount / totalCount * 100 : 0}}%"></view></view>
   </view>
 
-  <view class="finance-section category-section">
-    <view class="section-title"><view><text>知识导航</text><small>从你关心的问题开始</small></view></view>
-    <view class="category-grid">
-      <view class="category-card" wx:for="{{categories}}" wx:key="key" bindtap="openCategory" data-key="{{item.key}}">
-        <view class="category-icon {{item.tone}}">{{item.icon}}</view>
-        <view><text>{{item.title}}</text><small>{{item.short}}</small></view>
-        <text class="category-arrow">›</text>
+  <view class="finance-section">
+    <view class="section-title"><view><text>金融服务导航</text><small>每个专题均有独立学习与办事指引</small></view></view>
+    <view class="module-list">
+      <view class="module-card {{item.tone}}" wx:for="{{categories}}" wx:key="key" bindtap="openCategory" data-key="{{item.key}}">
+        <view class="module-icon">{{item.icon}}</view><view class="module-copy"><text>{{item.title}}</text><small>{{item.short}}</small></view><text class="module-arrow">›</text>
       </view>
     </view>
   </view>
 
-  <view class="market-section">
-    <view class="market-head"><view><text>行情简讯</text><small>学会辨别信息口径</small></view><label>科普内容 · 非实时行情</label></view>
-    <scroll-view class="brief-scroll" scroll-x enhanced show-scrollbar="{{false}}">
-      <view class="brief-row">
-        <view class="brief-card" wx:for="{{marketBriefs}}" wx:key="label">
-          <label>{{item.label}}</label><text>{{item.title}}</text><small>{{item.text}}</small>
-        </view>
-      </view>
-    </scroll-view>
-    <view class="market-link" bindtap="openArticle" data-id="market-brief-reading"><text>行情阅读入门</text><small>了解现货、期货和基差 ›</small></view>
-  </view>
-
-  <view class="finance-section article-section" id="finance-articles">
-    <view class="section-title"><view><text>金融知识库</text><small>内容均为一般性公益科普</small></view></view>
-    <scroll-view class="tab-scroll" scroll-x enhanced show-scrollbar="{{false}}">
-      <view class="tab-row">
-        <button class="{{activeCategory===item.key?'on':''}}" wx:for="{{tabs}}" wx:key="key" bindtap="chooseCategory" data-key="{{item.key}}">{{item.title}}</button>
-      </view>
-    </scroll-view>
-    <view class="article-list">
-      <view class="article-card" wx:for="{{visibleArticles}}" wx:key="id" bindtap="openArticle" data-id="{{item.id}}">
-        <view class="article-top"><label>{{item.badge}}</label><small>{{item.readMinutes}} 分钟</small></view>
-        <text class="article-title">{{item.title}}</text>
-        <text class="article-summary">{{item.summary}}</text>
-        <view class="article-foot"><text>{{item.categoryName}}</text><small>{{item.hasRead?'已读':'开始阅读'}} ›</small></view>
-      </view>
-    </view>
-  </view>
-
-  <view class="policy-link" bindtap="openPolicyCenter">
-    <view class="policy-icon">政</view>
-    <view><text>查看政策资讯</text><small>核对正式政策原文、办理期限与发布单位</small></view>
-    <text>›</text>
-  </view>
-
-  <view class="finance-disclaimer">
-    <text>风险提示</text>
-    <small>本模块不构成贷款、保险、证券期货或其他金融产品的推荐与承诺。涉及资金和个人信息时，请通过政府部门、持牌金融机构及监管机构公布的官方渠道核验。</small>
-  </view>
+  <view class="policy-link" bindtap="openPolicyCenter"><view class="policy-icon">讯</view><view><text>政策资讯</text><small>核对政策原文、发布机关与办理期限</small></view><text>›</text></view>
+  <view class="finance-disclaimer"><text>风险与行情提示</text><small>行情信息可能存在延迟或中断，不构成交易报价和投资建议。贷款、保险和期货业务请通过政府部门、持牌金融机构及监管机构公布的官方渠道核验办理。</small></view>
 </view>

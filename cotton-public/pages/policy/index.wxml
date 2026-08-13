@@ -29,7 +29,7 @@
         <view class="article-copy">
           <text class="article-title">{{item.title}}</text>
           <view class="meta">
-            <text>{{item.issuer || '喀什优棉公益平台'}}</text>
+            <text>{{item.issuer || '喀什优棉公共服务平台'}}</text>
             <text>{{item.publishDate}}</text>
           </view>
         </view>

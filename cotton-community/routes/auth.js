@@ -36,7 +36,7 @@ function signCommunityAdmin(account) {
     {
       id: Number(account.id),
       phone: account.phone,
-      real_name: account.display_name || '公益平台管理员',
+      real_name: account.display_name || '公共服务平台管理员',
       role: 'community_admin',
       is_community_admin: true,
       permission: account.permission_key || 'public_admin',
@@ -194,7 +194,7 @@ router.post('/admin/login', async (req, res) => {
       await db.query('UPDATE community_admins SET last_login_at=NOW() WHERE id=?', [communityAdmin.id])
       return ok(res, {
         token: signCommunityAdmin(communityAdmin),
-        real_name: communityAdmin.display_name || '公益平台管理员',
+        real_name: communityAdmin.display_name || '公共服务平台管理员',
         permission: communityAdmin.permission_key || 'public_admin',
         redirect: '/knowledge/policy-admin.html'
       }, '登录成功')

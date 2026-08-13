@@ -95,6 +95,7 @@ function normalizeContent(row, req) {
     expertId: row.expert_id || PLATFORM_EXPERT.id,
     expertName: row.expert_name || row.teacher || PLATFORM_EXPERT.name,
     expertAvatar: row.expert_profile_avatar || row.expert_avatar || PLATFORM_EXPERT.avatar,
+    expertAvatarUrl: toPublicUrl(row.expert_profile_avatar_url, req),
     tags,
     intro: row.intro || '',
     content: row.content || '',
@@ -109,6 +110,7 @@ function normalizeContent(row, req) {
     aiPrompt: row.ai_prompt || '',
     students: row.students || 0,
     sortOrder: row.sort_order || 0,
+    isFeatured: !!row.is_featured,
     isPublished: !!row.is_published,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -136,6 +138,7 @@ function buildExperts(experts, contents) {
         titleName: item.title || '',
         org: item.org || 'Cotton 棉花平台',
         avatar: item.avatar || '专',
+        avatarUrl: item.avatar_url || '',
         tags: tags.length ? tags : (categoryTags.length ? categoryTags : PLATFORM_EXPERT.tags),
         online: !!item.is_active,
         bio: item.bio || ''
@@ -176,7 +179,8 @@ router.get('/', async (req, res) => {
   try {
     const params = []
     let sql = `SELECT ec.*, e.name AS expert_name, e.title AS expert_title,
-      e.org AS expert_org, e.avatar AS expert_profile_avatar, e.specialties AS expert_specialties
+      e.org AS expert_org, e.avatar AS expert_profile_avatar, e.avatar_url AS expert_profile_avatar_url,
+      e.specialties AS expert_specialties
       FROM expert_contents ec
       LEFT JOIN experts e ON ec.expert_id = e.id
       WHERE ec.is_published=1`
@@ -188,10 +192,10 @@ router.get('/', async (req, res) => {
       sql += ' AND ec.category_key=?'
       params.push(req.query.category)
     }
-    sql += ' ORDER BY ec.sort_order ASC, ec.id DESC'
+    sql += ' ORDER BY ec.is_featured DESC, ec.sort_order ASC, ec.id DESC'
     const [rows] = await db.query(sql, params)
     const [expertRows] = await db.query(
-      'SELECT id,name,title,org,avatar,specialties,bio,is_active FROM experts WHERE is_active=1 ORDER BY id DESC LIMIT 20'
+      'SELECT id,name,title,org,avatar,avatar_url,specialties,bio,is_active FROM experts WHERE is_active=1 ORDER BY sort_order ASC,id DESC LIMIT 50'
     )
     const contents = rows.map(row => normalizeContent(row, req))
     res.json({
@@ -270,7 +274,8 @@ router.get('/:id', async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT ec.*, e.name AS expert_name, e.title AS expert_title,
-        e.org AS expert_org, e.avatar AS expert_profile_avatar, e.specialties AS expert_specialties
+        e.org AS expert_org, e.avatar AS expert_profile_avatar, e.avatar_url AS expert_profile_avatar_url,
+        e.specialties AS expert_specialties
        FROM expert_contents ec
        LEFT JOIN experts e ON ec.expert_id = e.id
        WHERE ec.id=? AND ec.is_published=1 LIMIT 1`,
@@ -289,6 +294,7 @@ router.get('/:id', async (req, res) => {
           title: rows[0].expert_title || content.titleName,
           org: rows[0].expert_org || content.org,
           avatar: rows[0].expert_profile_avatar || content.expertAvatar,
+          avatar_url: rows[0].expert_profile_avatar_url || content.expertAvatarUrl,
           specialties: rows[0].expert_specialties || JSON.stringify(content.tags || []),
           bio: ''
         }] : [], [content])[0]

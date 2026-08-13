@@ -96,6 +96,7 @@ function articleBody(body = {}) {
   const section = contentType === 'industry'
     ? (industryCategories.has(requestedSection) ? requestedSection : '产业')
     : (policyLevels.has(requestedSection) ? requestedSection : '地区')
+  const homeFeatured = body.is_home_featured === true || body.isHomeFeatured === true || body.is_home_featured === 1 || body.is_home_featured === '1' ? 1 : 0
   return {
     title: String(body.title || '').trim().slice(0, 180),
     summary: generatedSummary,
@@ -110,7 +111,24 @@ function articleBody(body = {}) {
     originalUrl: safeUrl(body.original_url || body.originalUrl),
     status,
     featured: body.is_featured === true || body.is_featured === 1 || body.is_featured === '1' ? 1 : 0,
+    homeFeatured: status === 'published' ? homeFeatured : 0,
     sortOrder: Math.max(-9999, Math.min(9999, Number.parseInt(body.sort_order, 10) || 0))
+  }
+}
+
+async function assertHomeCapacity(article, excludeId = 0) {
+  if (!article.homeFeatured) return
+  const params = []
+  let exclude = ''
+  if (excludeId) { exclude = ' AND id<>?'; params.push(excludeId) }
+  const [[row]] = await db.query(
+    `SELECT COUNT(*) AS total FROM policy_articles WHERE status='published' AND is_home_featured=1${exclude}`,
+    params
+  )
+  if (Number(row.total || 0) >= 5) {
+    const error = new Error('首页最多推送5篇文章，请先取消一篇现有推送')
+    error.status = 409
+    throw error
   }
 }
 
@@ -124,7 +142,8 @@ function normalize(row, includeMarkdown = false) {
     section: contentType === 'industry' ? (row.category || '产业') : (row.policy_level || '地区'),
     issuer: row.issuer || '', region: row.region || '', documentNo: row.document_no || '',
     deadline: row.deadline || '', originalUrl: row.original_url || '', status: row.status || 'draft',
-    isFeatured: !!row.is_featured, sortOrder: Number(row.sort_order || 0),
+    isFeatured: !!row.is_featured, isHomeFeatured: !!row.is_home_featured,
+    homeFeaturedAt: row.home_featured_at || null, sortOrder: Number(row.sort_order || 0),
     coverImage: imageMatch ? imageMatch[1] : '',
     publishDate: row.published_at || row.created_at || null,
     createdAt: row.created_at || null, updatedAt: row.updated_at || null
@@ -137,6 +156,8 @@ router.get('/', async (req, res) => {
   try {
     const params = []
     const conditions = ["status='published'"]
+    const homepage = req.query.homepage === '1' || req.query.homepage === 'true'
+    if (homepage) conditions.push('is_home_featured=1')
     if (req.query.type === 'policy' || req.query.type === 'industry') {
       conditions.push('content_type=?')
       params.push(req.query.type)
@@ -152,7 +173,7 @@ router.get('/', async (req, res) => {
     const q = String(req.query.q || '').trim().slice(0, 80)
     if (q) { conditions.push('(title LIKE ? OR summary LIKE ? OR issuer LIKE ? OR body_markdown LIKE ?)'); params.push(...Array(4).fill(`%${q}%`)) }
     const [rows] = await db.query(
-      `SELECT * FROM policy_articles WHERE ${conditions.join(' AND ')} ORDER BY is_featured DESC,sort_order ASC,published_at DESC,id DESC LIMIT 100`,
+      `SELECT * FROM policy_articles WHERE ${conditions.join(' AND ')} ORDER BY ${homepage ? 'home_featured_at DESC,' : ''}is_featured DESC,sort_order ASC,published_at DESC,id DESC LIMIT ${homepage ? 5 : 100}`,
       params
     )
     return ok(res, rows.map(row => normalize(row)))
@@ -203,33 +224,54 @@ router.post('/admin', policyAdminAuth, async (req, res) => {
   const article = articleBody(req.body)
   if (!article.title || !article.markdown) return fail(res, '标题和 Markdown 正文不能为空')
   try {
+    await assertHomeCapacity(article)
     const [result] = await db.query(
       `INSERT INTO policy_articles
-       (title,summary,body_markdown,content_type,policy_level,category,issuer,region,document_no,deadline,original_url,status,is_featured,sort_order,published_at,created_by,updated_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,IF(?='published',NOW(),NULL),?,?)`,
+       (title,summary,body_markdown,content_type,policy_level,category,issuer,region,document_no,deadline,original_url,status,is_featured,is_home_featured,home_featured_at,sort_order,published_at,created_by,updated_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,IF(?=1,NOW(),NULL),?,IF(?='published',NOW(),NULL),?,?)`,
       [article.title,article.summary,article.markdown,article.contentType,article.level,article.category,article.issuer,article.region,
-       article.documentNo,article.deadline,article.originalUrl,article.status,article.featured,article.sortOrder,
-       article.status,req.policyAdmin.id,req.policyAdmin.id]
+       article.documentNo,article.deadline,article.originalUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,
+       article.sortOrder,article.status,req.policyAdmin.id,req.policyAdmin.id]
     )
     return ok(res, { id: Number(result.insertId) }, article.status === 'published' ? '政策已发布' : '草稿已保存')
-  } catch (error) { console.error('[policy-admin-create]', error); return fail(res, '政策保存失败', 500) }
+  } catch (error) { console.error('[policy-admin-create]', error); return fail(res, error.message || '政策保存失败', error.status || 500) }
 })
 
 router.put('/admin/:id', policyAdminAuth, async (req, res) => {
   const article = articleBody(req.body)
   if (!article.title || !article.markdown) return fail(res, '标题和 Markdown 正文不能为空')
   try {
+    await assertHomeCapacity(article, Number(req.params.id))
     const [result] = await db.query(
       `UPDATE policy_articles SET title=?,summary=?,body_markdown=?,content_type=?,policy_level=?,category=?,issuer=?,region=?,
-       document_no=?,deadline=?,original_url=?,status=?,is_featured=?,sort_order=?,
+       document_no=?,deadline=?,original_url=?,status=?,is_featured=?,is_home_featured=?,
+       home_featured_at=CASE WHEN ?=1 THEN COALESCE(home_featured_at,NOW()) ELSE NULL END,sort_order=?,
        published_at=CASE WHEN ?='published' THEN COALESCE(published_at,NOW()) ELSE NULL END,updated_by=? WHERE id=?`,
       [article.title,article.summary,article.markdown,article.contentType,article.level,article.category,article.issuer,article.region,
-       article.documentNo,article.deadline,article.originalUrl,article.status,article.featured,article.sortOrder,
+       article.documentNo,article.deadline,article.originalUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,article.sortOrder,
        article.status,req.policyAdmin.id,req.params.id]
     )
     if (!result.affectedRows) return fail(res, '政策文章不存在', 404)
     return ok(res, null, article.status === 'published' ? '政策已发布' : '草稿已保存')
-  } catch (error) { console.error('[policy-admin-update]', error); return fail(res, '政策保存失败', 500) }
+  } catch (error) { console.error('[policy-admin-update]', error); return fail(res, error.message || '政策保存失败', error.status || 500) }
+})
+
+router.patch('/admin/:id/home-featured', policyAdminAuth, async (req, res) => {
+  const enabled = req.body.enabled === true || req.body.enabled === 1 || req.body.enabled === '1'
+  try {
+    const [[article]] = await db.query('SELECT id,status,is_home_featured FROM policy_articles WHERE id=? LIMIT 1', [req.params.id])
+    if (!article) return fail(res, '政策资讯不存在', 404)
+    if (enabled && article.status !== 'published') return fail(res, '只有已发布文章才能推送到首页', 409)
+    if (enabled && !article.is_home_featured) await assertHomeCapacity({ homeFeatured: 1 }, Number(req.params.id))
+    await db.query(
+      'UPDATE policy_articles SET is_home_featured=?,home_featured_at=IF(?=1,NOW(),NULL),updated_by=? WHERE id=?',
+      [enabled ? 1 : 0, enabled ? 1 : 0, req.policyAdmin.id, req.params.id]
+    )
+    return ok(res, null, enabled ? '文章已推送到小程序首页' : '已取消首页推送')
+  } catch (error) {
+    console.error('[policy-home-featured]', error)
+    return fail(res, error.message || '首页推送设置失败', error.status || 500)
+  }
 })
 
 router.delete('/admin/:id', policyAdminAuth, async (req, res) => {

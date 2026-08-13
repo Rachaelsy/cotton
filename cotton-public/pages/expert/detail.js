@@ -20,6 +20,7 @@ function normalizeCourse(item = {}) {
     org: item.org || '',
     coverUrl: item.coverUrl || item.cover_url || '',
     videoUrl: item.videoUrl || item.video_url || '',
+    expertAvatarUrl: item.expertAvatarUrl || item.expert_avatar_url || '',
     price: Number(item.price || 0),
     isPaid,
     tag: item.tag || (isPaid ? `¥${Number(item.price || 0).toFixed(2)}` : '免费'),
@@ -98,6 +99,7 @@ Page({
           titleName: this._selectedExpert.titleName || '',
           org: this._selectedExpert.org || '',
           avatar: this._selectedExpert.avatar || '👨‍🌾',
+          avatarUrl: this._selectedExpert.avatarUrl || '',
           tags: this._selectedExpert.tags || [],
           bio: this._selectedExpert.bio || ''
         },
@@ -127,6 +129,7 @@ Page({
         titleName: course.titleName,
         org: course.org,
         avatar: course.expertAvatar || data.expert?.avatar || '👨‍🌾',
+        avatarUrl: course.expertAvatarUrl || data.expert?.avatarUrl || '',
         tags: course.tags || data.expert?.tags || [],
         bio: course.intro
       }

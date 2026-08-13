@@ -32,7 +32,7 @@ async function run() {
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       phone VARCHAR(20) NOT NULL UNIQUE,
       password VARCHAR(100) NOT NULL,
-      display_name VARCHAR(64) NOT NULL DEFAULT '公益平台管理员',
+      display_name VARCHAR(64) NOT NULL DEFAULT '公共服务平台管理员',
       permission_key VARCHAR(64) NOT NULL DEFAULT 'public_admin',
       is_active TINYINT(1) NOT NULL DEFAULT 1,
       auth_version INT UNSIGNED NOT NULL DEFAULT 0,
@@ -40,8 +40,10 @@ async function run() {
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_community_admin_active (is_active)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台独立管理员'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务平台独立管理员'
   `)
+  await db.query("ALTER TABLE community_admins MODIFY display_name VARCHAR(64) NOT NULL DEFAULT '公共服务平台管理员'")
+  await db.query("UPDATE community_admins SET display_name='公共服务平台管理员' WHERE display_name IN ('公益平台管理员','公益小程序管理员')")
   await db.query("UPDATE community_admins SET permission_key='public_admin' WHERE permission_key='policy_editor'")
 
   await db.query(`
@@ -77,6 +79,28 @@ async function run() {
     `)
   }
   await db.query("UPDATE policy_articles SET content_type='policy' WHERE content_type IS NULL OR content_type=''")
+  if (!await hasColumn('policy_articles', 'is_home_featured')) {
+    await db.query(`
+      ALTER TABLE policy_articles
+      ADD COLUMN is_home_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER is_featured,
+      ADD COLUMN home_featured_at DATETIME DEFAULT NULL AFTER is_home_featured,
+      ADD INDEX idx_policy_home (status,is_home_featured,home_featured_at)
+    `)
+    const [legacyFeatured] = await db.query(
+      `SELECT id FROM policy_articles
+        WHERE status='published' AND is_featured=1
+        ORDER BY sort_order ASC,published_at DESC,id DESC LIMIT 5`
+    )
+    if (legacyFeatured.length) {
+      const ids = legacyFeatured.map(row => Number(row.id)).filter(Number.isInteger)
+      const placeholders = ids.map(() => '?').join(',')
+      await db.query(
+        `UPDATE policy_articles SET is_home_featured=1,home_featured_at=COALESCE(published_at,updated_at,NOW())
+          WHERE id IN (${placeholders})`,
+        ids
+      )
+    }
+  }
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS policy_comments (
@@ -188,6 +212,57 @@ async function run() {
       INDEX idx_experts_active (is_active)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='共享专家账号'
   `)
+  if (!await hasColumn('experts', 'avatar_url')) {
+    await db.query("ALTER TABLE experts ADD COLUMN avatar_url VARCHAR(500) NOT NULL DEFAULT '' AFTER avatar")
+  }
+  if (!await hasColumn('experts', 'profile_only')) {
+    await db.query('ALTER TABLE experts ADD COLUMN profile_only TINYINT(1) NOT NULL DEFAULT 0 AFTER bio')
+  }
+  if (!await hasColumn('experts', 'sort_order')) {
+    await db.query('ALTER TABLE experts ADD COLUMN sort_order INT NOT NULL DEFAULT 0 AFTER profile_only')
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS expert_contents (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      type ENUM('video','article','qa') NOT NULL DEFAULT 'video',
+      title VARCHAR(160) NOT NULL,
+      subtitle VARCHAR(255) DEFAULT '',
+      category_key VARCHAR(40) DEFAULT 'planting',
+      category_name VARCHAR(64) DEFAULT '',
+      teacher VARCHAR(64) DEFAULT '',
+      teacher_title VARCHAR(64) DEFAULT '',
+      org VARCHAR(128) DEFAULT '',
+      expert_avatar VARCHAR(16) DEFAULT '专',
+      expert_tags VARCHAR(512) DEFAULT '[]',
+      intro TEXT,
+      content MEDIUMTEXT,
+      cover_url VARCHAR(500) DEFAULT '',
+      video_url VARCHAR(500) DEFAULT '',
+      duration VARCHAR(32) DEFAULT '',
+      price_type ENUM('free','paid') NOT NULL DEFAULT 'free',
+      price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+      quiz_json MEDIUMTEXT,
+      ai_prompt TEXT,
+      students INT UNSIGNED NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      is_published TINYINT(1) NOT NULL DEFAULT 1,
+      expert_id INT UNSIGNED DEFAULT NULL,
+      is_featured TINYINT(1) NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_expert_content_type (type),
+      INDEX idx_expert_content_expert (expert_id),
+      INDEX idx_expert_content_public (is_published,is_featured,sort_order,id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='专家讲堂运营内容'
+  `)
+  if (!await hasColumn('expert_contents', 'expert_id')) {
+    await db.query('ALTER TABLE expert_contents ADD COLUMN expert_id INT UNSIGNED DEFAULT NULL AFTER is_published')
+  }
+  if (!await hasColumn('expert_contents', 'is_featured')) {
+    await db.query('ALTER TABLE expert_contents ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER expert_id')
+  }
+  await db.query('ALTER TABLE expert_contents MODIFY cover_url VARCHAR(500) DEFAULT NULL, MODIFY video_url VARCHAR(500) DEFAULT NULL')
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS expert_questions (

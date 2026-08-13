@@ -1,11 +1,60 @@
 const categories = [
-  { key: 'loan', title: '种植贷', icon: '贷', short: '申请条件与材料', tone: 'green', articleId: 'planting-loan-guide' },
-  { key: 'insurance', title: '保险科普', icon: '保', short: '保障范围与理赔', tone: 'blue', articleId: 'cotton-insurance-basics' },
-  { key: 'insurance-guide', title: '投保指引', icon: '指', short: '投保前后怎么做', tone: 'cyan', articleId: 'insurance-application-guide' },
-  { key: 'futures', title: '期货基础', icon: '期', short: '术语、合约与风险', tone: 'purple', articleId: 'futures-first-lesson' },
-  { key: 'market', title: '行情简讯', icon: '讯', short: '学会看价格信息', tone: 'orange', articleId: 'market-brief-reading' },
-  { key: 'policy', title: '政策解读', icon: '政', short: '金融支农政策', tone: 'gold', articleId: 'finance-policy-guide' }
+  { key: 'loan', title: '种植贷', icon: '贷', short: '资金规划与申请准备', tone: 'green' },
+  { key: 'insurance', title: '棉花保险', icon: '保', short: '保障责任与投保流程', tone: 'blue' },
+  { key: 'futures', title: '期货基础', icon: '期', short: '看懂合约、行情和风险', tone: 'purple' },
+  { key: 'policy', title: '金融政策解读', icon: '政', short: '贴息、担保与保费补贴', tone: 'gold' }
 ]
+
+const modules = {
+  loan: {
+    key: 'loan', title: '种植贷', icon: '贷', eyebrow: 'PLANTING FINANCE',
+    subtitle: '先算投入与现金流，再准备真实申请材料', tone: 'green',
+    articleIds: ['planting-loan-guide'],
+    highlights: ['明确真实生产用途', '测算还款来源与时间', '只咨询持牌金融机构'],
+    steps: [
+      { no: '01', title: '算资金缺口', text: '核对种子、农资、农机、水肥等投入和自有资金。' },
+      { no: '02', title: '备经营资料', text: '准备身份、土地经营、种植计划和历史收支资料。' },
+      { no: '03', title: '走官方渠道', text: '通过银行或正规涉农金融机构咨询，以审批结果为准。' }
+    ],
+    notice: '种植贷需要偿还本金和利息。平台不放贷、不担保、不收取代办费用。'
+  },
+  insurance: {
+    key: 'insurance', title: '棉花保险', icon: '保', eyebrow: 'COTTON INSURANCE',
+    subtitle: '读懂保险责任、免赔约定、报案和理赔流程', tone: 'blue',
+    articleIds: ['cotton-insurance-basics', 'insurance-application-guide'],
+    highlights: ['核对承保地块与面积', '逐条阅读责任与除外责任', '出险及时报案并保留现场'],
+    steps: [
+      { no: '01', title: '看当年通知', text: '确认承保区域、截止时间、承保机构和保费分担。' },
+      { no: '02', title: '核对保单', text: '检查姓名、地块、面积、保险期间和联系方式。' },
+      { no: '03', title: '留存凭证', text: '保存保单、缴费凭证、报案号、照片和查勘记录。' }
+    ],
+    notice: '实际保障以当地当年度正式通知、保险合同和承保机构说明为准。'
+  },
+  futures: {
+    key: 'futures', title: '期货基础', icon: '期', eyebrow: 'FUTURES BASICS',
+    subtitle: '认识棉花合约、保证金、主力连续与价格风险', tone: 'purple',
+    articleIds: ['futures-first-lesson', 'market-brief-reading'],
+    highlights: ['主力连续不是可直接交易的单一合约', '保证金会同时放大盈利与亏损', '行情信息不等于买卖建议'],
+    steps: [
+      { no: '01', title: '认清合约', text: '先看合约月份、报价单位、交易时间和交割规则。' },
+      { no: '02', title: '理解杠杆', text: '了解每日结算、追加保证金和强制平仓风险。' },
+      { no: '03', title: '统一口径', text: '比较价格前核对时间、品质、地区、单位和数据来源。' }
+    ],
+    notice: '期货风险较高。平台不提供开户、荐单、喊单、交易或收益预测。'
+  },
+  policy: {
+    key: 'policy', title: '金融政策解读', icon: '政', eyebrow: 'FINANCIAL POLICY',
+    subtitle: '分清政策支持、机构审批和申请人的还款责任', tone: 'gold',
+    articleIds: ['finance-policy-guide'],
+    highlights: ['核对政策文号和发布机关', '确认适用地区、对象与期限', '通过政策指定渠道办理'],
+    steps: [
+      { no: '01', title: '找政策原文', text: '优先查政府部门官网和正式发布文件。' },
+      { no: '02', title: '核适用条件', text: '逐项确认地区、对象、期限、材料和资金上限。' },
+      { no: '03', title: '问受理部门', text: '向文件明确的主管部门或经办机构核验。' }
+    ],
+    notice: '政策会随年度和地区调整，截图、转述和短视频不能替代最新正式文件。'
+  }
+}
 
 const marketBriefs = [
   { label: '现货观察', title: '报价不能只看一个数字', text: '对比棉花等级、交货地点、含税方式和结算周期，才是同口径价格。' },
@@ -132,4 +181,13 @@ function getArticlesByCategory(category) {
   return category === 'all' ? articles : articles.filter(item => item.category === category)
 }
 
-module.exports = { categories, marketBriefs, articles, sourceGuides, getArticle, getArticlesByCategory }
+function getModule(key) {
+  return modules[key] || modules.loan
+}
+
+function getModuleArticles(key) {
+  const module = getModule(key)
+  return module.articleIds.map(getArticle).filter(Boolean)
+}
+
+module.exports = { categories, modules, marketBriefs, articles, sourceGuides, getArticle, getArticlesByCategory, getModule, getModuleArticles }
