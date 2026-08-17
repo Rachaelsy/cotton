@@ -2,7 +2,7 @@
   <view class="detail-hero" style="padding-top: {{statusBarHeight}}px">
     <view class="detail-topbar" style="padding-right: {{capsuleSafeRight}}px">
       <view class="detail-back" bindtap="onBack"><text>‹</text></view>
-      <text class="detail-top-title">{{isExpertOnly ? copy.expertHome : copy.courseDetail}}</text>
+      <text class="detail-top-title">{{isExpertOnly ? copy.expertHome : (isQa ? '精选问答' : copy.courseDetail)}}</text>
       <view class="detail-share"><text>···</text></view>
     </view>
 
@@ -18,12 +18,12 @@
   </view>
 
   <scroll-view class="detail-scroll" scroll-y enhanced show-scrollbar="{{false}}">
-    <view wx:if="{{loading}}" class="notice-card">课程加载中...</view>
-    <view wx:elif="{{loadError}}" class="notice-card weak">{{loadError}}</view>
+    <view wx:if="{{loading}}" class="notice-card">内容加载中...</view>
+    <view wx:if="{{!loading && loadError}}" class="notice-card weak">{{loadError}}</view>
 
-    <view wx:if="{{!isExpertOnly}}" class="course-hero-card">
+    <view wx:if="{{!isExpertOnly && !isQa}}" class="course-hero-card">
       <image wx:if="{{course.coverUrl}}" class="course-cover" src="{{course.coverUrl}}" mode="aspectFill"></image>
-      <view wx:else class="course-icon"><text>{{course.icon}}</text></view>
+      <view wx:if="{{!course.coverUrl}}" class="course-icon"><text>{{course.icon}}</text></view>
       <view class="course-main">
         <text class="course-title">{{course.title}}</text>
         <text class="course-meta">{{course.typeLabel}} · {{course.category}} · {{course.duration}}</text>
@@ -31,19 +31,40 @@
       <view class="play-btn {{course.isPaid ? 'paid' : ''}}" bindtap="onPlay"><text>{{course.tag || copy.play}}</text></view>
     </view>
 
-    <video wx:if="{{!isExpertOnly && course.videoUrl && !course.isPaid}}" class="course-video" src="{{course.videoUrl}}" controls></video>
+    <video wx:if="{{!isExpertOnly && !isQa && course.videoUrl && !course.isPaid}}" class="course-video" src="{{course.videoUrl}}" controls></video>
 
-    <view class="card">
-      <text class="card-title">{{isExpertOnly ? copy.expertIntro : copy.courseIntro}}</text>
-      <text class="card-text">{{isExpertOnly ? expert.bio : course.intro}}</text>
+    <view wx:if="{{!isExpertOnly && isQa}}" class="faq-detail-card">
+      <view class="faq-question">
+        <text class="faq-label question">问</text>
+        <text class="faq-question-text">{{course.title}}</text>
+      </view>
+      <view class="faq-divider"></view>
+      <view class="faq-answer">
+        <text class="faq-label answer">答</text>
+        <view class="faq-answer-copy">
+          <text wx:if="{{course.intro}}" class="faq-answer-lead">{{course.intro}}</text>
+          <text wx:if="{{course.content}}" class="faq-answer-body">{{course.content}}</text>
+        </view>
+      </view>
+      <view class="faq-meta"><text>{{course.category}}</text><text>{{course.teacher}}</text></view>
     </view>
 
-    <view wx:if="{{!isExpertOnly && course.content}}" class="card">
+    <view wx:if="{{isExpertOnly}}" class="card">
+      <text class="card-title">{{copy.expertIntro}}</text>
+      <text class="card-text">{{expert.bio}}</text>
+    </view>
+
+    <view wx:if="{{!isExpertOnly && !isQa && course.intro}}" class="card">
+      <text class="card-title">{{copy.courseIntro}}</text>
+      <text class="card-text">{{course.intro}}</text>
+    </view>
+
+    <view wx:if="{{!isExpertOnly && !isQa && course.content}}" class="card">
       <text class="card-title">课程内容</text>
       <text class="card-text">{{course.content}}</text>
     </view>
 
-    <view wx:if="{{!isExpertOnly}}" class="card">
+    <view wx:if="{{!isExpertOnly && !isQa}}" class="card">
       <text class="card-title">{{copy.points}}</text>
       <view class="point-row" wx:for="{{course.points}}" wx:key="*this">
         <text class="point-num">{{index + 1}}</text>
@@ -52,7 +73,7 @@
       <view wx:if="{{!course.points || course.points.length === 0}}" class="empty-hint">暂无要点，管理员可在后台补充图文正文。</view>
     </view>
 
-    <view wx:if="{{!isExpertOnly && quizItems.length}}" class="card">
+    <view wx:if="{{!isExpertOnly && !isQa && quizItems.length}}" class="card">
       <text class="card-title">互动小测</text>
       <view class="quiz-item" wx:for="{{quizItems}}" wx:key="id">
         <text class="quiz-title">{{index + 1}}. {{item.question}}</text>
@@ -75,9 +96,10 @@
     </view>
 
     <view class="card qa-card">
-      <text class="card-title">AI 陪练</text>
-      <text class="card-text">围绕这节课和 AI 一问一答训练，适合边学边巩固。</text>
-      <view class="ask-btn" bindtap="onAsk"><text>{{copy.askAction}}</text></view>
+      <text class="card-title">{{isQa ? '继续追问' : 'AI 陪练'}}</text>
+      <text wx:if="{{isQa}}" class="card-text">如需更有针对性的建议，请补充地块位置、生育期、田间症状和近期操作。</text>
+      <text wx:if="{{!isQa}}" class="card-text">围绕这节课和 AI 一问一答训练，适合边学边巩固。</text>
+      <view class="ask-btn" bindtap="onAsk"><text>{{isQa ? '向 AI 农技助手追问' : copy.askAction}}</text></view>
     </view>
 
     <view class="bottom-gap"></view>

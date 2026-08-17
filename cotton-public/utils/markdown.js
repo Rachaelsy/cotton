@@ -46,7 +46,7 @@ function parseInline(markdown) {
   return nodes.length ? nodes : [textNode(source)]
 }
 
-function parseLine(line) {
+function parseLine(line, options = {}) {
   const raw = String(line || '')
   const trimmed = raw.trim()
   if (!trimmed) return []
@@ -70,15 +70,17 @@ function parseLine(line) {
     return [textNode(`${ordered[1]}. `), ...parseInline(ordered[2])]
   }
 
-  return parseInline(raw)
+  return options.indentParagraphs
+    ? [textNode('\u3000\u3000'), ...parseInline(raw.trimStart())]
+    : parseInline(raw)
 }
 
-function markdownToRichTextNodes(markdown) {
+function markdownToRichTextNodes(markdown, options = {}) {
   const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n')
   const nodes = []
 
   lines.forEach((line, index) => {
-    nodes.push(...parseLine(line))
+    nodes.push(...parseLine(line, options))
     if (index < lines.length - 1) nodes.push(elementNode('br', []))
   })
 

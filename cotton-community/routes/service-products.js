@@ -27,7 +27,7 @@ async function productAdminAuth(req, res, next) {
         [payload.id]
       )
       if (!account || !account.is_active || Number(account.auth_version) !== Number(payload.auth_version || 0)) {
-        return fail(res, '公益管理员账号已停用或登录已失效', 401)
+        return fail(res, '公共服务管理员账号已停用或登录已失效', 401)
       }
       req.productAdmin = { id: Number(account.id), type: 'community' }
       return next()

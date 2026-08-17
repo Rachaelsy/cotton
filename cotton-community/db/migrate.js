@@ -47,6 +47,27 @@ async function run() {
   await db.query("UPDATE community_admins SET permission_key='public_admin' WHERE permission_key='policy_editor'")
 
   await db.query(`
+    CREATE TABLE IF NOT EXISTS community_daily_todos (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      todo_date DATE NOT NULL,
+      time_label VARCHAR(40) NOT NULL DEFAULT '',
+      title VARCHAR(120) NOT NULL,
+      content VARCHAR(500) NOT NULL DEFAULT '',
+      voice_text VARCHAR(1000) NOT NULL DEFAULT '',
+      priority ENUM('normal','important','urgent') NOT NULL DEFAULT 'normal',
+      status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
+      sort_order INT NOT NULL DEFAULT 0,
+      published_at DATETIME DEFAULT NULL,
+      created_by INT UNSIGNED DEFAULT NULL,
+      updated_by INT UNSIGNED DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_daily_todo_public (todo_date,status,sort_order,id),
+      INDEX idx_daily_todo_admin (todo_date,updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序首页今日待办'
+  `)
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS policy_articles (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(180) NOT NULL,
@@ -59,6 +80,7 @@ async function run() {
       document_no VARCHAR(120) NOT NULL DEFAULT '',
       deadline VARCHAR(120) NOT NULL DEFAULT '',
       original_url VARCHAR(500) NOT NULL DEFAULT '',
+      source_published_at DATETIME DEFAULT NULL,
       status ENUM('draft','published') NOT NULL DEFAULT 'draft',
       is_featured TINYINT(1) NOT NULL DEFAULT 0,
       sort_order INT NOT NULL DEFAULT 0,
@@ -69,7 +91,7 @@ async function run() {
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_policy_public (status,is_featured,sort_order,published_at),
       INDEX idx_policy_filter (policy_level,category,status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台政策文章'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务平台政策文章'
   `)
   if (!await hasColumn('policy_articles', 'content_type')) {
     await db.query(`
@@ -107,6 +129,24 @@ async function run() {
       ADD COLUMN cover_url VARCHAR(500) NOT NULL DEFAULT '' AFTER original_url
     `)
   }
+  if (!await hasColumn('policy_articles', 'source_published_at')) {
+    if (await hasColumn('policy_articles', 'source_published_on')) {
+      await db.query(`
+        ALTER TABLE policy_articles
+        CHANGE COLUMN source_published_on source_published_at DATETIME DEFAULT NULL
+      `)
+    } else {
+      await db.query(`
+        ALTER TABLE policy_articles
+        ADD COLUMN source_published_at DATETIME DEFAULT NULL AFTER original_url
+      `)
+    }
+  }
+  await db.query(
+    `UPDATE policy_articles SET source_published_at='2026-05-25 18:44:27'
+      WHERE original_url='https://www.xinhuanet.com/20260525/1b268d4488ae49a191b4f10406d1e5cd/c.html'
+        AND source_published_at IS NULL`
+  )
 
   const financeArticles = [
     {
@@ -247,13 +287,31 @@ async function run() {
       id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       article_id INT UNSIGNED NOT NULL,
       user_id INT UNSIGNED NOT NULL,
+      parent_id BIGINT UNSIGNED DEFAULT NULL,
       content VARCHAR(300) NOT NULL,
       status ENUM('published','hidden') NOT NULL DEFAULT 'published',
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_policy_comment_article (article_id,status,created_at),
+      INDEX idx_policy_comment_parent (parent_id,created_at),
       INDEX idx_policy_comment_user (user_id,created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='政策资讯文章评论'
+  `)
+  if (!await hasColumn('policy_comments', 'parent_id')) {
+    await db.query(`
+      ALTER TABLE policy_comments
+      ADD COLUMN parent_id BIGINT UNSIGNED DEFAULT NULL AFTER user_id,
+      ADD INDEX idx_policy_comment_parent (parent_id,created_at)
+    `)
+  }
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS policy_comment_likes (
+      comment_id BIGINT UNSIGNED NOT NULL,
+      user_id INT UNSIGNED NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (comment_id,user_id),
+      INDEX idx_policy_comment_like_user (user_id,created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='政策资讯评论点赞'
   `)
 
   await db.query(`
@@ -280,8 +338,90 @@ async function run() {
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_service_product_public (service_type,status,category,is_featured,sort_order,published_at),
       INDEX idx_service_product_admin (service_type,status,updated_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台农机农资产品目录'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务平台农机农资产品目录'
   `)
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS community_cotton_varieties (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      trial_year SMALLINT UNSIGNED NOT NULL,
+      trial_area VARCHAR(160) NOT NULL DEFAULT '喀什地区',
+      name VARCHAR(160) NOT NULL,
+      lint_percent DECIMAL(6,2) DEFAULT NULL,
+      lint_rank SMALLINT UNSIGNED DEFAULT NULL,
+      lint_weighted DECIMAL(7,3) DEFAULT NULL,
+      fiber_length_mm DECIMAL(6,2) DEFAULT NULL,
+      fiber_length_rank SMALLINT UNSIGNED DEFAULT NULL,
+      fiber_length_weighted DECIMAL(7,3) DEFAULT NULL,
+      fiber_strength_cn_tex DECIMAL(6,2) DEFAULT NULL,
+      fiber_strength_rank SMALLINT UNSIGNED DEFAULT NULL,
+      fiber_strength_weighted DECIMAL(7,3) DEFAULT NULL,
+      micronaire_value DECIMAL(5,2) DEFAULT NULL,
+      micronaire_rank SMALLINT UNSIGNED DEFAULT NULL,
+      micronaire_weighted DECIMAL(7,3) DEFAULT NULL,
+      uniformity_percent DECIMAL(6,2) DEFAULT NULL,
+      uniformity_rank SMALLINT UNSIGNED DEFAULT NULL,
+      uniformity_weighted DECIMAL(7,3) DEFAULT NULL,
+      seed_cotton_yield_kg_mu DECIMAL(8,2) DEFAULT NULL,
+      yield_rank SMALLINT UNSIGNED DEFAULT NULL,
+      yield_weighted DECIMAL(7,3) DEFAULT NULL,
+      weighted_total DECIMAL(8,3) DEFAULT NULL,
+      overall_rank SMALLINT UNSIGNED DEFAULT NULL,
+      cover_url VARCHAR(500) NOT NULL DEFAULT '',
+      suitable_conditions VARCHAR(1000) NOT NULL DEFAULT '',
+      strengths_json TEXT,
+      recommended_counties_json TEXT,
+      notes TEXT,
+      source_name VARCHAR(300) NOT NULL DEFAULT '',
+      status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
+      is_featured TINYINT(1) NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      published_at DATETIME DEFAULT NULL,
+      created_by INT UNSIGNED DEFAULT NULL,
+      updated_by INT UNSIGNED DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uk_cotton_variety_trial (trial_year,name),
+      INDEX idx_cotton_variety_public (status,trial_year,overall_rank,sort_order),
+      INDEX idx_cotton_variety_admin (status,updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='喀什棉花品种试验指标与优选资料'
+  `)
+
+  const varietyTrial2025 = [
+    ['中棉9001',46.2,3,0.45,28.9,15,3,31.6,11,2.2,5,8,0.8,82.1,16,3.2,394.1,19,2.85,12.5,20],
+    ['中棉698',43.5,15,2.25,29.9,8,1.6,30.1,16,3.2,4.7,7,0.7,84.4,7,1.4,481.8,3,0.45,9.6,11],
+    ['ZZ1786',43.1,16,2.4,30.3,4,0.8,31.1,13,2.6,4.5,5,0.5,85.1,5,1,429.6,12,1.8,9.1,9],
+    ['新陆中86号',43.5,15,2.25,29.8,9,1.8,30.9,15,3,4.4,4,0.4,83.9,12,2.4,478.5,4,0.6,10.45,16],
+    ['九棉35',43.1,16,2.4,30.1,6,1.2,31.6,11,2.2,4.5,5,0.5,85.4,2,0.4,435.8,11,1.65,8.35,7],
+    ['中生棉17',45,7,1.05,29.6,11,2.2,32.5,8,1.6,4.7,7,0.7,84.9,6,1.2,389.2,20,3,9.75,13],
+    ['塔河2号',43.9,12,1.8,30.4,3,0.6,33.4,6,1.2,4.7,7,0.7,85.2,4,0.8,482.7,2,0.3,5.4,3],
+    ['新塔棉11号',45.4,5,0.75,29.8,9,1.8,31.2,12,2.4,4.6,6,0.6,84,11,2.2,461.1,6,0.9,8.65,8],
+    ['新塔棉5号',44,11,1.65,29.4,12,2.4,33.6,5,1,4.6,6,0.6,83.7,13,2.6,425.5,13,1.95,10.2,15],
+    ['源棉8号',40.7,18,2.7,30.2,5,1,35.6,1,0.2,4,1,0.1,84.2,9,1.8,454.5,9,1.35,7.15,4],
+    ['K621',44.1,10,1.5,29.3,13,2.6,31.1,13,2.6,4.3,3,0.3,83,15,3,419.7,14,2.1,12.1,19],
+    ['J8031',44.1,10,1.5,29.8,9,1.8,31.1,13,2.6,4.6,6,0.6,85.1,5,1,385.1,21,3.15,10.65,17],
+    ['新陆中84号',43.6,14,2.1,29.7,10,2,34.4,2,0.4,4.2,2,0.2,83,15,3,416.8,15,2.25,9.95,14],
+    ['鲁丰花861',43.8,13,1.95,29.7,10,2,33.9,4,0.8,4.7,7,0.7,85.1,5,1,455.1,8,1.2,7.65,5],
+    ['新棉92号',44,11,1.65,30.2,5,1,32.4,9,1.8,4.5,5,0.5,84.1,10,2,400.4,18,2.7,9.65,12],
+    ['新陆中88号',45.2,6,0.9,29.1,14,2.8,33.1,7,1.4,4.4,4,0.4,84.1,10,2,471.4,5,0.75,8.25,6],
+    ['96G',45.7,4,0.6,29.9,8,1.6,33.1,7,1.4,4.2,2,0.2,81.9,17,3.4,401.5,17,2.55,9.75,13],
+    ['前海211',47.8,1,0.15,30.6,2,0.4,33.4,6,1.2,4.5,5,0.5,85.3,3,0.6,404.1,16,2.4,5.25,2],
+    ['HD258',41.3,17,2.55,31.4,1,0.2,34.1,3,0.6,4,1,0.1,86.5,1,0.2,496.2,1,0.15,3.8,1],
+    ['禾春洲10号',46.9,2,0.3,30,7,1.4,31,14,2.8,4.2,2,0.2,83.2,14,2.8,338.5,22,3.3,10.8,18],
+    ['盛棉2号',44.2,9,1.35,29.1,14,2.8,33.4,6,1.2,4.5,5,0.5,84,11,2.2,451.9,10,1.5,9.55,10],
+    ['AW05',44.8,8,1.2,28.8,16,3.2,31.8,10,2,4.7,7,0.7,84.3,8,1.6,459.6,7,1.05,9.75,13]
+  ]
+  for (const variety of varietyTrial2025) {
+    await db.query(
+      `INSERT IGNORE INTO community_cotton_varieties
+       (trial_year,trial_area,name,lint_percent,lint_rank,lint_weighted,fiber_length_mm,fiber_length_rank,fiber_length_weighted,
+        fiber_strength_cn_tex,fiber_strength_rank,fiber_strength_weighted,micronaire_value,micronaire_rank,micronaire_weighted,
+        uniformity_percent,uniformity_rank,uniformity_weighted,seed_cotton_yield_kg_mu,yield_rank,yield_weighted,
+        weighted_total,overall_rank,source_name,status,is_featured,sort_order,published_at)
+       VALUES (2025,'喀什地区',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'2025年喀什地区棉花品种对比试验各项指标统计表','published',?, ?,NOW())`,
+      [...variety, variety[20] <= 5 ? 1 : 0, variety[20]]
+    )
+  }
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS community_processing_factories (
@@ -316,7 +456,7 @@ async function run() {
       UNIQUE KEY uk_processing_factory_public_code (public_code),
       INDEX idx_processing_factory_public (status,is_featured,sort_order,id),
       INDEX idx_processing_factory_county (county,status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台加工厂地图与详情'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务平台加工厂地图与详情'
   `)
   // 兼容曾使用 NOT NULL 默认空字符串的开发库；空公示代码应存为 NULL，避免唯一索引冲突。
   await db.query('ALTER TABLE community_processing_factories MODIFY public_code VARCHAR(40) DEFAULT NULL')
@@ -402,7 +542,33 @@ async function run() {
   if (!await hasColumn('expert_contents', 'is_featured')) {
     await db.query('ALTER TABLE expert_contents ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER expert_id')
   }
+  if (!await hasColumn('expert_contents', 'source_key')) {
+    await db.query('ALTER TABLE expert_contents ADD COLUMN source_key VARCHAR(100) DEFAULT NULL AFTER is_featured')
+  }
   await db.query('ALTER TABLE expert_contents MODIFY cover_url VARCHAR(500) DEFAULT NULL, MODIFY video_url VARCHAR(500) DEFAULT NULL')
+
+  await db.query(`CREATE TABLE IF NOT EXISTS community_seed_runs (
+    seed_key VARCHAR(100) PRIMARY KEY,
+    applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务初始化内容批次'`)
+  const expertQaSeedBatch = 'expert-qa-production-faq-v1'
+  const [[expertQaSeeded]] = await db.query('SELECT seed_key FROM community_seed_runs WHERE seed_key=? LIMIT 1', [expertQaSeedBatch])
+  if (!expertQaSeeded) {
+    const expertQaSeed = require('./expert_qa_seed')
+    for (const item of expertQaSeed) {
+      const [[existing]] = await db.query('SELECT id FROM expert_contents WHERE source_key=? LIMIT 1', [item.key])
+      if (existing) continue
+      await db.query(
+        `INSERT INTO expert_contents
+         (type,title,subtitle,category_key,category_name,teacher,teacher_title,org,expert_avatar,expert_tags,
+          intro,content,duration,price_type,price,ai_prompt,students,sort_order,is_published,expert_id,is_featured,source_key)
+         VALUES ('qa',?,?,?,?,?,'内容审核','喀什优棉公共服务平台','农技',?,?,?,?,
+          'free',0,?,0,?,1,NULL,1,?)`,
+        [item.title,item.subtitle,item.categoryKey,item.categoryName,'平台农技组',JSON.stringify(item.tags),item.intro,item.content,'约5分钟',item.aiPrompt,item.sortOrder,item.key]
+      )
+    }
+    await db.query('INSERT INTO community_seed_runs (seed_key) VALUES (?)', [expertQaSeedBatch])
+  }
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS expert_questions (
@@ -482,7 +648,7 @@ async function run() {
       INDEX idx_status_sort (status,is_featured,sort_order,id),
       INDEX idx_category (category_key,status),
       INDEX idx_type (type,status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台课程内容'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务平台课程内容'
   `)
 
   if (!(await hasColumn('knowledge_contents', 'quiz_json'))) {
@@ -558,7 +724,7 @@ async function run() {
       INDEX idx_forum_status (status,updated_at,id),
       INDEX idx_forum_user (user_id,id),
       INDEX idx_forum_category (category_key,status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台公开问答'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务平台公开问答'
   `)
 
   await db.query(`
@@ -576,7 +742,7 @@ async function run() {
       INDEX idx_answer_question (question_id,status,id),
       INDEX idx_answer_user (user_id,id),
       CONSTRAINT fk_knowledge_answer_question FOREIGN KEY (question_id) REFERENCES knowledge_questions(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台问题回答'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务平台问题回答'
   `)
 
   await db.query(`
@@ -588,7 +754,7 @@ async function run() {
       UNIQUE KEY uk_answer_vote (answer_id,user_id),
       INDEX idx_vote_user (user_id,id),
       CONSTRAINT fk_knowledge_vote_answer FOREIGN KEY (answer_id) REFERENCES knowledge_answers(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公益平台回答点赞'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公共服务平台回答点赞'
   `)
 
   await db.query(`
@@ -640,7 +806,7 @@ async function run() {
       UNIQUE KEY uk_community_sso_ticket (ticket_hash),
       INDEX idx_community_sso_expiry (expires_at,used_at),
       CONSTRAINT fk_community_sso_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序到公益平台的一次性登录票据'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序到公共服务平台的一次性登录票据'
   `)
 
   await db.query(`

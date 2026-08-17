@@ -12,6 +12,8 @@
     "pages/supplies/index",
     "pages/production/index",
     "pages/production/detail",
+    "pages/varieties/index",
+    "pages/varieties/detail",
     "pages/academy/index",
     "pages/academy/course",
     "pages/academy/exam",

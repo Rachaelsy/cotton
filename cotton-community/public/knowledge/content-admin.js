@@ -107,7 +107,7 @@
       await request(`/admin${id ? `/${id}` : ''}`, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       closeEditor()
       await loadAll()
-      runtime.notify('文章已保存并同步到小程序', 'success')
+      runtime.notify('文章已保存并同步到小程序和网页端', 'success')
     } catch (error) { $('managedArticleMessage').textContent = error.message }
   }
 

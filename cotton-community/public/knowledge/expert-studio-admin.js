@@ -75,7 +75,9 @@
 
   function syncContentType(type) {
     const video = type === 'video'
-    $('studioContentType').value = video ? 'video' : 'qa'; $('studioContentTitleLabel').textContent = video ? '视频标题 *' : '问题标题 *'; $('studioContentIntroLabel').textContent = video ? '视频导语' : '答案导语'; $('studioContentBodyLabel').textContent = video ? '视频正文说明 *' : '专家答案 *'
+    $('studioContentType').value = video ? 'video' : 'qa'; $('studioContentTitleLabel').textContent = video ? '视频标题 *' : '问题 *'; $('studioContentSubtitleLabel').textContent = video ? '副标题（可选）' : '补充说明（可选）'; $('studioContentIntroLabel').textContent = video ? '视频导语' : '答案摘要'; $('studioContentBodyLabel').textContent = video ? '视频正文说明 *' : '完整答案 *'
+    $('studioContentIntro').placeholder = video ? '用于列表中的视频导语' : '在问答列表中显示的简短答案'
+    $('studioContentBody').placeholder = video ? '输入视频的正文说明' : '直接填写问题的完整解答，可分段列出判断要点和处理建议'
     $('studioVideoRow').classList.toggle('hidden', !video); $('studioDurationRow').classList.toggle('hidden', !video)
   }
   function openContent(id = 0) {
@@ -95,7 +97,7 @@
     const body = { type: $('studioContentType').value, title: $('studioContentTitle').value.trim(), subtitle: $('studioContentSubtitle').value.trim(), expert_id: $('studioContentExpert').value, category_key: category[0], category_name: category[1], cover_url: $('studioContentCover').value.trim(), video_url: $('studioContentVideo').value.trim(), duration: $('studioContentDuration').value.trim(), intro: $('studioContentIntro').value.trim(), content: $('studioContentBody').value.trim(), tags: lines($('studioContentTags').value), sort_order: $('studioContentSort').value, is_featured: $('studioContentFeatured').checked, is_published: $('studioContentPublished').checked }
     if (!body.title || !body.content || (body.type === 'video' && !body.video_url)) { $('expertContentMessage').textContent = body.type === 'video' ? '视频标题、视频文件和正文说明不能为空' : '问题标题和专家答案不能为空'; return }
     $('expertContentMessage').textContent = '正在保存...'
-    try { await api(`/admin/contents${id ? `/${id}` : ''}`, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); closeContent(); await load(); runtime.notify(body.is_published ? '内容已发布到小程序' : '草稿已保存', 'success') } catch (error) { $('expertContentMessage').textContent = error.message }
+    try { await api(`/admin/contents${id ? `/${id}` : ''}`, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); closeContent(); await load(); runtime.notify(body.is_published ? '内容已同步发布到小程序和网页端' : '草稿已保存', 'success') } catch (error) { $('expertContentMessage').textContent = error.message }
   }
   async function removeContent(id) { if (!confirm('确定删除这条内容？此操作不可恢复。')) return; try { await api(`/admin/contents/${id}`, { method: 'DELETE' }); await load(); runtime.notify('内容已删除', 'success') } catch (error) { runtime.notify(error.message, 'error') } }
 

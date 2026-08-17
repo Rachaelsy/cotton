@@ -222,7 +222,7 @@ router.post('/admin/change-password', async (req, res) => {
   if (!authorization.startsWith('Bearer ')) return fail(res, '请先登录', 401)
   let payload
   try { payload = jwt.verify(authorization.slice(7), process.env.JWT_SECRET) } catch { return fail(res, '登录已过期，请重新登录', 401) }
-  if (!payload.is_community_admin || payload.role !== 'community_admin') return fail(res, '无公益管理员权限', 403)
+  if (!payload.is_community_admin || payload.role !== 'community_admin') return fail(res, '无公共服务管理员权限', 403)
 
   const oldPassword = String(req.body.old_password || '')
   const newPassword = String(req.body.new_password || '')
@@ -233,7 +233,7 @@ router.post('/admin/change-password', async (req, res) => {
 
   try {
     const [[account]] = await db.query('SELECT password,is_active FROM community_admins WHERE id=? LIMIT 1', [payload.id])
-    if (!account || !account.is_active) return fail(res, '公益管理员账号不存在或已停用', 404)
+    if (!account || !account.is_active) return fail(res, '公共服务管理员账号不存在或已停用', 404)
     if (!await bcrypt.compare(oldPassword, account.password)) return fail(res, '当前密码不正确', 401)
     const hash = await bcrypt.hash(newPassword, 12)
     await db.query('UPDATE community_admins SET password=?,auth_version=auth_version+1 WHERE id=?', [hash, payload.id])

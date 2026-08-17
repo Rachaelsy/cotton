@@ -19,7 +19,7 @@ async function factoryAdminAuth(req, res, next) {
     if (payload.is_community_admin && ['public_admin', 'policy_editor'].includes(payload.permission)) {
       const [[account]] = await db.query('SELECT id,is_active,auth_version FROM community_admins WHERE id=? LIMIT 1', [payload.id])
       if (!account || !account.is_active || Number(account.auth_version) !== Number(payload.auth_version || 0)) {
-        return fail(res, '公益管理员账号已停用或登录已失效', 401)
+        return fail(res, '公共服务管理员账号已停用或登录已失效', 401)
       }
       req.factoryAdmin = { id: Number(account.id), type: 'community' }
       return next()

@@ -5,6 +5,16 @@ const path = require('path')
 const root = path.resolve(__dirname, '..', '..', 'cotton-public')
 const read = relativePath => fs.readFileSync(path.join(root, relativePath), 'utf8')
 const app = JSON.parse(read('app.json'))
+const homeWxml = read('pages/index/index.wxml')
+const homeWxss = read('pages/index/index.wxss')
+
+for (const icon of ['fields', 'pest', 'weather', 'policy', 'expert', 'records', 'academy', 'finance', 'machine', 'supplies', 'processing', 'varieties']) {
+  assert(homeWxml.includes(`/images/home-icons/${icon}.png`), `home page is missing the ${icon} service icon`)
+  assert(fs.existsSync(path.join(root, 'images', 'home-icons', `${icon}.png`)), `home page icon file is missing: ${icon}.png`)
+}
+assert(!/<i\b[^>]*>[田识气讯讲记学金]<\/i>/.test(homeWxml), 'home page should use designed service icons instead of single-character placeholders')
+assert(homeWxss.includes('.tool-icon-art') && homeWxss.includes('.production-icon-art'), 'home service icons should use compact local image styles')
+assert(!homeWxss.includes('data:image/svg+xml'), 'home page should avoid large inline SVG data that can break WebView synchronization')
 
 assert.notStrictEqual(
   app.renderer,

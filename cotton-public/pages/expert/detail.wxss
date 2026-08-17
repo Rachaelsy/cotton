@@ -16,6 +16,18 @@
 .detail-scroll { flex: 1; height: 0; }
 .notice-card { margin: 22rpx 28rpx 0; padding: 20rpx 24rpx; border-radius: 18rpx; background: #fff; color: #58655B; font-size: 24rpx; font-weight: 700; box-shadow: 0 4rpx 20rpx rgba(33,61,42,.05); }
 .notice-card.weak { color: #A06C28; background: #FFF9ED; }
+.faq-detail-card { margin: 24rpx 28rpx 0; overflow: hidden; border: 1rpx solid #E1E9E2; border-radius: 28rpx; background: #fff; box-shadow: 0 8rpx 28rpx rgba(33,61,42,.07); }
+.faq-question, .faq-answer { display: flex; align-items: flex-start; gap: 20rpx; padding: 30rpx 28rpx; }
+.faq-question { background: linear-gradient(135deg, #FBF7EA, #FFF); }
+.faq-label { width: 64rpx; height: 64rpx; border-radius: 18rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 30rpx; font-weight: 900; }
+.faq-label.question { background: #E7B952; color: #244A39; }
+.faq-label.answer { background: #157B5C; color: #fff; }
+.faq-question-text { flex: 1; color: #16271E; font-size: 34rpx; font-weight: 900; line-height: 1.55; }
+.faq-divider { height: 1rpx; margin: 0 28rpx; background: #E8EEE9; }
+.faq-answer-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 20rpx; }
+.faq-answer-lead { color: #214A39; font-size: 29rpx; font-weight: 800; line-height: 1.75; }
+.faq-answer-body { color: #405047; font-size: 28rpx; line-height: 1.95; white-space: pre-wrap; }
+.faq-meta { display: flex; justify-content: flex-end; gap: 18rpx; padding: 0 28rpx 26rpx 112rpx; color: #8A948B; font-size: 23rpx; }
 .course-hero-card, .card { background: #fff; border-radius: 26rpx; margin: 24rpx 28rpx 0; padding: 28rpx; box-shadow: 0 4rpx 20rpx rgba(33,61,42,.05); }
 .course-hero-card { display: flex; align-items: center; gap: 18rpx; }
 .course-icon { width: 88rpx; height: 88rpx; border-radius: 22rpx; background: linear-gradient(135deg, #F1E2BF, #B9852F); display: flex; align-items: center; justify-content: center; font-size: 46rpx; flex-shrink: 0; }

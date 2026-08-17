@@ -1,0 +1,36 @@
+<view class="page">
+  <view class="hero" style="padding-top:{{statusBarHeight + 12}}px">
+    <view class="nav"><button bindtap="back">‹</button><text>品种优选</text><view></view></view>
+    <view class="hero-copy"><view><text>{{trialYear}} 棉花品种试验</text><small>{{trialArea}} · 实测指标辅助选种</small></view><view class="hero-mark">种</view></view>
+    <view class="hero-stats"><view><strong>{{allVarieties.length}}</strong><small>参试品种</small></view><view><strong>6</strong><small>核心指标</small></view><view><strong>综合</strong><small>加权排名</small></view></view>
+  </view>
+
+  <view class="search-box"><text>⌕</text><input value="{{keyword}}" bindinput="inputKeyword" placeholder="搜索品种名称"/><small>{{varieties.length}} 个结果</small></view>
+
+  <scroll-view class="sort-tabs" scroll-x enhanced show-scrollbar="{{false}}"><view class="sort-row"><button wx:for="{{sorts}}" wx:key="id" class="{{activeSort === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="selectSort">{{item.label}}</button></view></scroll-view>
+
+  <view class="method-card"><view class="method-icon">i</view><view><strong>{{methodTitle}}</strong><text>{{methodDescription}}</text></view></view>
+
+  <view wx:if="{{loading}}" class="state-card">正在加载品种试验数据…</view>
+  <view wx:if="{{!loading && errorText}}" class="state-card error"><text>{{errorText}}</text><button bindtap="retry">重新加载</button></view>
+  <view wx:if="{{!loading && !errorText && !varieties.length}}" class="state-card">没有找到匹配的品种</view>
+
+  <view wx:if="{{!loading && varieties.length}}" class="variety-list">
+    <view class="variety-card {{item.highlight ? 'top' : ''}}" wx:for="{{varieties}}" wx:key="id" data-id="{{item.id}}" bindtap="openDetail">
+      <view class="card-head">
+        <view class="rank"><strong>{{item.displayRank}}</strong><small>{{item.rankLabel}}</small></view>
+        <view class="name"><view><text wx:if="{{item.highlight}}">优</text><strong>{{item.name}}</strong></view><small>{{item.trialYear}} 年 · {{item.trialArea}}</small></view>
+        <view class="score"><small>{{item.displayValueLabel}}</small><strong>{{item.displayValue}}<text wx:if="{{item.displayValueUnit}}"> {{item.displayValueUnit}}</text></strong></view>
+      </view>
+      <view class="metric-grid">
+        <view><strong>{{item.yieldText}}</strong><small>籽棉产量 kg/亩</small></view>
+        <view><strong>{{item.lintText}}%</strong><small>衣分</small></view>
+        <view><strong>{{item.lengthText}} mm</strong><small>纤维长度</small></view>
+        <view><strong>{{item.strengthText}}</strong><small>断裂比强度 cN/tex</small></view>
+      </view>
+      <view class="card-foot"><text>马克隆值 {{item.micronaireText}}</text><text>整齐度 {{item.uniformityText}}%</text><small>查看完整指标 ›</small></view>
+    </view>
+  </view>
+
+  <view class="source-note"><strong>数据来源</strong><text>《2025年喀什地区棉花品种对比试验各项指标统计表》。后续将逐步补充各县主推品种、适宜条件与棉田匹配分析；实际选种请同时核对品种审定、种植区域和当年技术指导。</text></view>
+</view>

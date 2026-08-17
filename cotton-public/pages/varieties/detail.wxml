@@ -1,0 +1,39 @@
+<view class="page">
+  <view class="hero" style="padding-top:{{statusBarHeight + 12}}px">
+    <view class="nav"><button bindtap="back">‹</button><text>品种指标详情</text><view></view></view>
+    <block wx:if="{{item}}"><view class="title-row"><view><small>{{item.trialYear}} 年 · {{item.trialArea}}</small><text>{{item.name}}</text></view><view class="rank"><strong>{{item.overallRank || '—'}}</strong><small>综合名次</small></view></view><view class="hero-score"><view><small>综合加权值</small><strong>{{item.weightedText}}</strong></view><text>数值越低，综合名次越靠前</text></view></block>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">正在加载完整指标…</view>
+  <view wx:if="{{!loading && errorText}}" class="state-card error"><text>{{errorText}}</text><button bindtap="retry">重新加载</button></view>
+
+  <block wx:if="{{item}}">
+    <view class="section">
+      <view class="section-head"><view><text>核心试验指标</text><small>同批 22 个参试品种中的单项表现</small></view></view>
+      <view class="metric-list">
+        <view class="metric" wx:for="{{metrics}}" wx:key="label"><view class="metric-top"><text>{{item.label}}</text><view><strong>{{item.value}}</strong><small>{{item.unit}}</small><label>第 {{item.rank}} 名</label></view></view><view class="track"><view style="width:{{item.width}}%"></view></view></view>
+      </view>
+    </view>
+
+    <view class="section assessment">
+      <view class="section-head"><view><text>综合评估说明</text><small>按原表权重口径展示</small></view></view>
+      <view class="weights"><text>衣分 15%</text><text>纤维长度 20%</text><text>强度 20%</text><text>马克隆值 10%</text><text>整齐度 20%</text><text>产量 15%</text></view>
+      <text class="assessment-copy">综合加权值由各指标排名乘以对应权重后汇总，因此加权值越小，综合表现名次越靠前。该结果用于理解本次区域对比试验，不应脱离试验年份、地点和栽培条件单独使用。</text>
+    </view>
+
+    <view class="section" wx:if="{{item.strengths.length || item.suitableConditions}}">
+      <view class="section-head"><view><text>品种补充资料</text><small>由后台持续维护</small></view></view>
+      <view wx:if="{{item.strengths.length}}" class="tag-list"><text wx:for="{{item.strengths}}" wx:key="*this">{{item}}</text></view>
+      <view wx:if="{{item.suitableConditions}}" class="copy-block"><strong>适宜条件</strong><text>{{item.suitableConditions}}</text></view>
+    </view>
+
+    <view class="section county-section">
+      <view class="section-head"><view><text>县域主推与棉田匹配</text><small>为后续专项分析预留</small></view></view>
+      <view wx:if="{{item.recommendedCounties.length}}" class="county-list"><text wx:for="{{item.recommendedCounties}}" wx:key="*this">{{item}}</text></view>
+      <view wx:if="{{!item.recommendedCounties.length}}" class="pending"><strong>尚未形成县域推荐结论</strong><text>需要结合品种审定范围、当地积温、无霜期、土壤、水源、机采条件和多年试验数据后再发布。</text></view>
+    </view>
+
+    <view wx:if="{{item.notes}}" class="section"><view class="section-head"><view><text>管理备注</text></view></view><text class="notes">{{item.notes}}</text></view>
+    <view class="source"><strong>数据来源</strong><text>{{item.sourceName || '2025年喀什地区棉花品种对比试验各项指标统计表'}}</text><small>页面不构成种子审定、销售推荐或产量承诺，选种前请核对主管部门最新发布信息。</small></view>
+  </block>
+</view>

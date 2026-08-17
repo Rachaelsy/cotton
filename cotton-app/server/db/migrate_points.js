@@ -60,7 +60,7 @@ async function run() {
       UNIQUE KEY uk_community_sso_ticket (ticket_hash),
       INDEX idx_community_sso_expiry (expires_at,used_at),
       CONSTRAINT fk_community_sso_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序到公益平台的一次性登录票据'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序到公共服务平台的一次性登录票据'
   `)
 
   await addColumnIfMissing(

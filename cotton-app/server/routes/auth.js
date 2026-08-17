@@ -369,7 +369,7 @@ router.get('/verify', authMiddleware, async (req, res) => {
   }
 })
 
-// 小程序进入公益平台时签发一次性票据。票据只保存哈希，5分钟内仅可兑换一次。
+// 小程序进入公共服务平台时签发一次性票据。票据只保存哈希，5分钟内仅可兑换一次。
 router.post('/community-ticket', authMiddleware, async (req, res) => {
   if (req.user.role !== 'farmer') return fail(res, '仅农户账号可进入公益学习空间', 403)
   try {
@@ -386,10 +386,10 @@ router.post('/community-ticket', authMiddleware, async (req, res) => {
        VALUES (?,?,DATE_ADD(NOW(),INTERVAL 5 MINUTE))`,
       [ticketHash, req.user.id]
     )
-    return ok(res, { ticket, expiresIn: 300 }, '公益平台登录票据已生成')
+    return ok(res, { ticket, expiresIn: 300 }, '公共服务平台登录票据已生成')
   } catch (error) {
     console.error('[community-ticket]', error)
-    return fail(res, '暂时无法进入公益平台，请稍后重试', 500)
+    return fail(res, '暂时无法进入公共服务平台，请稍后重试', 500)
   }
 })
 

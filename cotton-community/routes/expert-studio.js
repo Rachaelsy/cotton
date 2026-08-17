@@ -37,7 +37,7 @@ async function adminAuth(req, res, next) {
   try {
     if (payload.is_community_admin && ['public_admin', 'policy_editor'].includes(payload.permission)) {
       const [[account]] = await db.query('SELECT id,is_active,auth_version FROM community_admins WHERE id=? LIMIT 1', [payload.id])
-      if (!account || !account.is_active || Number(account.auth_version) !== Number(payload.auth_version || 0)) return fail(res, '公益管理员账号已停用或登录已失效', 401)
+      if (!account || !account.is_active || Number(account.auth_version) !== Number(payload.auth_version || 0)) return fail(res, '公共服务管理员账号已停用或登录已失效', 401)
       req.expertAdmin = { id: Number(account.id), type: 'community' }
       return next()
     }
@@ -80,6 +80,49 @@ function contentBody(body = {}) {
   const type = body.type === 'qa' ? 'qa' : 'video'
   return { type, title: String(body.title || '').trim().slice(0, 160), subtitle: String(body.subtitle || '').trim().slice(0, 255), categoryKey: String(body.category_key || 'planting').trim().slice(0, 40), categoryName: String(body.category_name || '种植技术').trim().slice(0, 64), expertId: Number(body.expert_id) > 0 ? Number(body.expert_id) : null, intro: String(body.intro || '').trim().slice(0, 4000), content: String(body.content || '').trim().slice(0, 200000), coverUrl: safeUrl(body.cover_url), videoUrl: safeUrl(body.video_url), duration: String(body.duration || '').trim().slice(0, 32), tags: stringList(body.tags), published: body.is_published === true || body.is_published === 1 || body.is_published === '1' ? 1 : 0, featured: body.is_featured === true || body.is_featured === 1 || body.is_featured === '1' ? 1 : 0, sortOrder: Math.max(-9999, Math.min(9999, Number.parseInt(body.sort_order, 10) || 0)) }
 }
+
+function normalizePublicContent(row) {
+  const item = normalizeContent(row)
+  return {
+    ...item,
+    teacher: row.teacher || row.expert_name || '',
+    teacherTitle: row.teacher_title || row.expert_title || '',
+    org: row.org || row.expert_org || '',
+    expertAvatar: row.expert_avatar || row.profile_avatar || '专',
+    expertAvatarUrl: row.profile_avatar_url || '',
+    createdAt: row.created_at || null
+  }
+}
+
+router.get('/public', async (_req, res) => {
+  try {
+    const [experts] = await db.query(`SELECT id,name,title,org,avatar,avatar_url,specialties,bio,is_active
+      FROM experts WHERE is_active=1 ORDER BY sort_order ASC,id DESC LIMIT 100`)
+    const [contents] = await db.query(`SELECT ec.*,e.name AS expert_name,e.title AS expert_title,e.org AS expert_org,
+      e.avatar AS profile_avatar,e.avatar_url AS profile_avatar_url
+      FROM expert_contents ec LEFT JOIN experts e ON e.id=ec.expert_id
+      WHERE ec.type IN ('qa','video') AND ec.is_published=1
+      ORDER BY ec.is_featured DESC,ec.sort_order ASC,ec.id DESC LIMIT 500`)
+    return ok(res, { experts: experts.map(normalizeExpert), contents: contents.map(normalizePublicContent) })
+  } catch (error) {
+    console.error('[expert-studio-public]', error)
+    return fail(res, '专家讲堂内容加载失败', 500)
+  }
+})
+
+router.get('/public/:id', async (req, res) => {
+  try {
+    const [[row]] = await db.query(`SELECT ec.*,e.name AS expert_name,e.title AS expert_title,e.org AS expert_org,
+      e.avatar AS profile_avatar,e.avatar_url AS profile_avatar_url
+      FROM expert_contents ec LEFT JOIN experts e ON e.id=ec.expert_id
+      WHERE ec.id=? AND ec.type IN ('qa','video') AND ec.is_published=1 LIMIT 1`, [req.params.id])
+    if (!row) return fail(res, '专家讲堂内容不存在或尚未发布', 404)
+    return ok(res, normalizePublicContent(row))
+  } catch (error) {
+    console.error('[expert-studio-public-detail]', error)
+    return fail(res, '专家讲堂详情加载失败', 500)
+  }
+})
 
 router.get('/admin/overview', adminAuth, async (_req, res) => {
   try {
@@ -133,7 +176,7 @@ router.post('/admin/contents', adminAuth, async (req, res) => {
   try {
     const [[expert]] = item.expertId ? await db.query('SELECT name,title,org,avatar,specialties FROM experts WHERE id=? LIMIT 1', [item.expertId]) : [[]]
     const [result] = await db.query(`INSERT INTO expert_contents (type,title,subtitle,category_key,category_name,teacher,teacher_title,org,expert_avatar,expert_tags,intro,content,cover_url,video_url,duration,price_type,price,sort_order,is_published,expert_id,is_featured) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?,?)`, [item.type,item.title,item.subtitle,item.categoryKey,item.categoryName,expert?.name||'',expert?.title||'',expert?.org||'',expert?.avatar||'专',expert?.specialties||JSON.stringify(item.tags),item.intro,item.content,item.coverUrl,item.videoUrl,item.duration,'free',item.sortOrder,item.published,item.expertId,item.featured])
-    return ok(res, { id: Number(result.insertId) }, item.published ? '内容已发布到小程序' : '草稿已保存')
+    return ok(res, { id: Number(result.insertId) }, item.published ? '内容已同步发布到小程序和网页端' : '草稿已保存')
   } catch (error) { console.error('[expert-studio-content-create]', error); return fail(res, '专家内容保存失败', 500) }
 })
 

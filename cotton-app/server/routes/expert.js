@@ -19,7 +19,7 @@ const PLATFORM_EXPERT = {
 const TYPE_META = {
   video: { label: '视频课', icon: '▶️' },
   article: { label: '图文课', icon: '📖' },
-  qa: { label: '问答课', icon: '💬' }
+  qa: { label: '生产问答', icon: '💬' }
 }
 
 function parseJson(value, fallback) {

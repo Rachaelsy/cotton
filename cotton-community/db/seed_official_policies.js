@@ -287,6 +287,10 @@ async function run() {
       [article.url]
     )
     if (existing) {
+      await db.query(
+        'UPDATE policy_articles SET source_published_at=COALESCE(source_published_at,?) WHERE id=?',
+        [article.publishedAt, existing.id]
+      )
       skipped += 1
       console.log(`[skip] #${existing.id} ${existing.title}`)
       continue
@@ -301,10 +305,10 @@ async function run() {
     const [result] = await db.query(
       `INSERT INTO policy_articles
        (title,summary,body_markdown,content_type,policy_level,category,issuer,region,document_no,deadline,
-        original_url,status,is_featured,sort_order,published_at,created_by,updated_by)
-       VALUES (?,?,?,?,?,?,?,?,?, '', ?, 'published',?,?,?,NULL,NULL)`,
+        original_url,source_published_at,status,is_featured,sort_order,published_at,created_by,updated_by)
+       VALUES (?,?,?,?,?,?,?,?,?, '', ?,?,'published',?,?,?,NULL,NULL)`,
       [article.title, summary, article.markdown, article.type, level, article.section, article.issuer,
-        article.region, article.documentNo, article.url, article.featured, article.sortOrder, article.publishedAt]
+        article.region, article.documentNo, article.url, article.publishedAt, article.featured, article.sortOrder, article.publishedAt]
     )
     inserted += 1
     console.log(`[insert] #${result.insertId} ${article.title}`)

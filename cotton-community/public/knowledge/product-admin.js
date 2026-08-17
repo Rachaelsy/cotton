@@ -46,8 +46,8 @@
     state.type = type
     $('productPanelTitle').textContent = `${names[type]}产品管理`
     $('productPanelIntro').textContent = type === 'machinery'
-      ? '上架具体农机、机型及其特点，上架后展示在小程序农机服务。'
-      : '上架种子、肥料、农药和地膜产品，上架后展示在小程序农资服务。'
+      ? '上架具体农机、机型及其特点，上架后同步展示在小程序和公共服务网页端。'
+      : '上架种子、肥料、农药和地膜产品，上架后同步展示在小程序和公共服务网页端。'
     $('productTable').innerHTML = '<tr><td colspan="7">加载中...</td></tr>'
     state.products = await api(`/admin/list?type=${encodeURIComponent(type)}`)
     render()
@@ -121,7 +121,7 @@
       await api(`/admin${id ? `/${id}` : ''}`, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       closeModal()
       await load(state.type)
-      runtime.notify(body.status === 'published' ? '产品已上架到小程序' : '产品已保存', 'success')
+      runtime.notify(body.status === 'published' ? '产品已同步上架到小程序和网页端' : '产品已保存', 'success')
     } catch (error) { $('productMessage').textContent = error.message }
   }
 

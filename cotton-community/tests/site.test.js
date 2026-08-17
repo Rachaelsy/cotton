@@ -13,7 +13,9 @@ const app = read('public/site/app.js')
 const styles = read('public/site/styles.css')
 const dataSource = read('public/site/data.js')
 const learning = read('public/site/learning.js')
+const publicModules = read('public/site/public-modules.js')
 const publicService = read('routes/public-service.js')
+const expertStudio = read('routes/expert-studio.js')
 
 const context = { window: {} }
 vm.runInNewContext(dataSource, context)
@@ -36,8 +38,19 @@ for (const routePath of [
   "'/public/privacy'",
   "'/public/consult'",
   "'/public/experts'",
+  "'/public/experts/:id'",
   "'/public/policies'",
   "'/public/policies/:id'",
+  "'/public/finance'",
+  "'/public/finance/:id'",
+  "'/public/machinery'",
+  "'/public/machinery/:id'",
+  "'/public/supplies'",
+  "'/public/supplies/:id'",
+  "'/public/processing'",
+  "'/public/processing/:id'",
+  "'/public/varieties'",
+  "'/public/varieties/:id'",
   "'/public/pests'",
   "'/public/pests/:id'",
   "'/public/activities'",
@@ -70,7 +83,7 @@ assert(app.includes('function renderMachinery()') && app.includes('function rend
 assert(app.includes('function renderExperts()'), 'expert consultation should live in the public platform')
 assert(app.includes('function renderPolicies()') && app.includes('function renderPests()') && app.includes('function renderActivities()'), 'public service areas should have independent views')
 assert(app.includes("pageGroup === 'courses'") && app.includes("pageGroup === 'forum'") && app.includes("pageGroup === 'login'"), 'integrated public learning routes should be rendered by the shared shell')
-assert(app.includes('相关公益培训') && app.includes('相关商业资料'), 'the two platforms should cross-link related content')
+assert(app.includes('相关农技培训') && app.includes('相关商业资料'), 'the two platforms should cross-link related content')
 assert(app.includes("platform === 'public'") && app.includes("platform === 'business'"), 'routing should enforce platform-specific views')
 assert(app.includes('/api/public-service') && app.includes("localStorage.getItem('knowledge_token')"), 'expert consultation should reuse shared login and API data')
 assert(publicService.includes('FROM experts') && publicService.includes('INSERT INTO expert_questions'), 'expert consultation should reuse shared expert tables')
@@ -82,7 +95,16 @@ assert(businessHome.includes("item.category !== 'policy'"), 'business homepage m
 assert(businessHome.includes('农资供应') && businessHome.includes('农机服务') && businessHome.includes('数字履约'), 'business homepage should explain the core business chain')
 
 assert(shell.includes('/knowledge/site/learning.js'), 'shared site should load integrated course and forum behavior')
+assert(shell.includes('/knowledge/site/public-modules.js'), 'shared site should load database-backed public service modules')
 assert(learning.includes('renderCourses') && learning.includes('renderCourseDetail') && learning.includes('renderForum') && learning.includes('renderForumDetail') && learning.includes('renderLogin'), 'public learning views should be feature complete')
+for (const renderer of ['renderPolicies', 'renderExperts', 'renderFinance', 'renderProducts', 'renderProcessing', 'renderVarieties']) {
+  assert(publicModules.includes(renderer), `database-backed website module is missing ${renderer}`)
+}
+for (const endpoint of ['/api/policies', '/api/expert-studio/public', '/api/service-products', '/api/processing-factories', '/api/cotton-varieties']) {
+  assert(publicModules.includes(endpoint), `public website should read shared endpoint ${endpoint}`)
+}
+assert(expertStudio.includes("router.get('/public'") && expertStudio.includes("router.get('/public/:id'"), 'expert studio should expose published content to the website')
+assert(app.includes("pageGroup === 'finance'") && app.includes("pageGroup === 'processing'") && app.includes("pageGroup === 'varieties'"), 'public module routes should be rendered inside the website shell')
 assert(learning.includes('/public/courses') || learning.includes("publicLink('/courses"), 'course links should stay inside the public platform')
 assert(!app.includes('图文课程 / 登录'), 'courses and login must not share one header action')
 
@@ -132,6 +154,7 @@ assert(publicService.includes('INSERT INTO community_service_requests'), 'servic
 assert(publicService.includes("'农机服务'") && app.includes('referenceType'), 'machinery inquiries should use the real business request flow')
 assert(!app.includes('保存需求到本机') && !app.includes('保存参与意向到本机') && !app.includes('仅保存在当前设备'), 'production forms should not behave like local-only demos')
 assert(!learning.includes('课程直接归入公益平台') && !app.includes('已归入公益平台'), 'visitor-facing copy should not expose internal platform migration wording')
+assert(!app.includes('公益平台') && !learning.includes('公益平台') && !shell.includes('公益平台'), 'visitor-facing platform name should consistently use public service platform')
 assert(!shell.includes('购物车') && !app.includes('购物车') && !app.includes('/pay'), 'public website should not expose cart or payment flows')
 assert(!shell.includes('0991-0000000') && !shell.includes('演示地址') && !app.includes('第一版模拟'), 'website should not publish placeholder contact or mock-content claims')
 assert(!data.news.some(item => item.category === 'company'), 'business news should not invent company updates')

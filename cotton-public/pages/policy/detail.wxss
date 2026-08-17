@@ -6,3 +6,5 @@
 .bottom-bar .action-group .action{width:76rpx!important;min-width:76rpx!important;max-width:76rpx!important;height:76rpx;flex:0 0 76rpx!important;margin:0!important;padding:0!important;border:0!important;box-sizing:border-box}
 .bottom-bar .action-group button.action{display:flex!important;background:transparent!important;line-height:normal!important}
 .bottom-bar .action-group button.action::after{border:0!important}
+.comment-send{flex:none;padding:0 10rpx;color:#aeb8b3;font-size:23rpx;font-weight:800;line-height:58rpx}
+.comment-send.ready{color:#167553}

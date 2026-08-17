@@ -1,4 +1,4 @@
-<view wx:if="{{loading}}" class="state">正在同步账号并打开公益平台...</view>
+<view wx:if="{{loading}}" class="state">正在同步账号并打开公共服务平台...</view>
 <view wx:elif="{{error}}" class="state error">
   <text>{{error}}</text>
   <button bindtap="onRetry">重新打开</button>

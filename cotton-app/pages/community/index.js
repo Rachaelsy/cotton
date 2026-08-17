@@ -19,7 +19,7 @@ Page({
       const params = `ticket=${encodeURIComponent(result.data.ticket)}&next=${encodeURIComponent(next)}`
       this.setData({ url: `${auth.COMMUNITY_URL}/login?${params}`, loading: false })
     } catch (error) {
-      this.setData({ loading: false, error: error.message || '暂时无法打开公益平台' })
+      this.setData({ loading: false, error: error.message || '暂时无法打开公共服务平台' })
     }
   },
 

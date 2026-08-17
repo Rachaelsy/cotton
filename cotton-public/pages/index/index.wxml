@@ -1,3 +1,14 @@
+<template name="todoItems">
+  <view class="todo-item {{item.priority}}" wx:for="{{todos}}" wx:key="id">
+    <view class="todo-order">{{item.order}}</view>
+    <view class="todo-copy">
+      <view class="todo-row"><strong>{{item.title}}</strong><label class="priority-label">{{item.priorityLabel}}</label></view>
+      <text class="todo-voice-text">{{item.displayText}}</text>
+      <text wx:if="{{item.timeLabel}}" class="todo-time">{{item.timeLabel}}</text>
+    </view>
+  </view>
+</template>
+
 <view class="page">
   <view class="hero" style="padding-top:{{heroTop}}px">
     <view class="hero-head">
@@ -32,17 +43,40 @@
     <view class="farm-tip"><text>今日农事</text><strong>{{weatherPreview.tipText}}</strong></view>
   </view>
 
+  <view class="todo-section {{todoScrollable?'scrollable':''}} {{!todos.length?'empty':''}}" style="height:{{todoScrollable?'492rpx':'auto'}}">
+    <view class="todo-accent"></view>
+    <view class="todo-head">
+      <view class="todo-title"><view class="todo-mark">今</view><view><text>今日待办</text><small>{{todoDate}} · 农事提醒</small></view></view>
+    </view>
+    <view wx:if="{{todosLoading}}" class="todo-empty">正在加载今日安排…</view>
+    <view wx:if="{{!todosLoading && !todos.length}}" class="todo-empty">今日暂无待办，管理员可在公共服务后台发布</view>
+    <view wx:if="{{!todosLoading && todos.length && !todoScrollable}}" class="todo-scroll todo-list" style="height:auto">
+      <template is="todoItems" data="{{todos: todos}}"></template>
+    </view>
+    <scroll-view wx:if="{{!todosLoading && todos.length && todoScrollable}}" class="todo-scroll" scroll-y="true" enhanced="true" show-scrollbar="false">
+      <template is="todoItems" data="{{todos: todos}}"></template>
+    </scroll-view>
+    <view wx:if="{{todos.length}}" class="todo-summary"><text>共 {{todos.length}} 项今日安排</text><small wx:if="{{todoScrollable}}">上下滑动查看更多</small></view>
+  </view>
+
+  <view wx:if="{{todos.length}}" class="todo-voice-fab {{todoSpeaking?'playing':''}}" style="width:94rpx;min-width:94rpx;max-width:94rpx;height:94rpx;min-height:94rpx;max-height:94rpx;border-radius:999rpx" bindtap="toggleTodoSpeech" role="button" aria-label="{{todoSpeaking?'停止播报':'播报今日待办'}}">
+    <view class="todo-voice-inner" style="display:flex;width:70rpx;height:70rpx;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 2rpx rgba(255,255,255,.22)">
+      <view wx:if="{{!todoSpeaking}}" class="todo-mic"><view class="todo-mic-head"></view><view class="todo-mic-arc"></view><view class="todo-mic-stem"></view></view>
+      <view wx:else class="todo-stop"></view>
+    </view>
+  </view>
+
   <view class="section quick-section">
     <view class="section-head"><view><text>常用工具</text></view></view>
     <view class="quick-grid">
-      <view class="quick" bindtap="openModule" data-key="fields"><i class="green">田</i><text>地块管理</text></view>
-      <view class="quick" bindtap="openModule" data-key="pest"><i class="brown">识</i><text>病虫害识别</text></view>
-      <view class="quick" bindtap="openModule" data-key="weather"><i class="blue">气</i><text>地块气象</text></view>
-      <view class="quick" bindtap="openModule" data-key="policy"><i class="policy">讯</i><text>政策资讯</text></view>
-      <view class="quick" bindtap="openModule" data-key="expert"><i class="gold">讲</i><text>专家讲堂</text></view>
-      <view class="quick" bindtap="openModule" data-key="records"><i class="mint">记</i><text>农事记录</text></view>
-      <view class="quick" bindtap="openModule" data-key="academy"><i class="orange">学</i><text>棉知学堂</text></view>
-      <view class="quick" bindtap="openModule" data-key="finance"><i class="finance">金</i><text>优棉金融</text></view>
+      <view class="quick" bindtap="openModule" data-key="fields"><view class="tool-icon green"><image class="tool-icon-art" src="/images/home-icons/fields.png" mode="aspectFit"></image></view><text>地块管理</text></view>
+      <view class="quick" bindtap="openModule" data-key="pest"><view class="tool-icon brown"><image class="tool-icon-art" src="/images/home-icons/pest.png" mode="aspectFit"></image></view><text>病虫害识别</text></view>
+      <view class="quick" bindtap="openModule" data-key="weather"><view class="tool-icon blue"><image class="tool-icon-art" src="/images/home-icons/weather.png" mode="aspectFit"></image></view><text>地块气象</text></view>
+      <view class="quick" bindtap="openModule" data-key="policy"><view class="tool-icon policy"><image class="tool-icon-art" src="/images/home-icons/policy.png" mode="aspectFit"></image></view><text>政策资讯</text></view>
+      <view class="quick" bindtap="openModule" data-key="expert"><view class="tool-icon gold"><image class="tool-icon-art" src="/images/home-icons/expert.png" mode="aspectFit"></image></view><text>专家讲堂</text></view>
+      <view class="quick" bindtap="openModule" data-key="records"><view class="tool-icon mint"><image class="tool-icon-art" src="/images/home-icons/records.png" mode="aspectFit"></image></view><text>农事记录</text></view>
+      <view class="quick" bindtap="openModule" data-key="academy"><view class="tool-icon orange"><image class="tool-icon-art" src="/images/home-icons/academy.png" mode="aspectFit"></image></view><text>棉知学堂</text></view>
+      <view class="quick" bindtap="openModule" data-key="finance"><view class="tool-icon finance"><image class="tool-icon-art" src="/images/home-icons/finance.png" mode="aspectFit"></image></view><text>优棉金融</text></view>
     </view>
   </view>
 
@@ -52,18 +86,23 @@
     </view>
     <view class="production-grid">
       <view class="production-card machine" bindtap="openProduction" data-type="machine">
-        <view class="production-icon">机</view>
+        <view class="production-icon"><image class="production-icon-art" src="/images/home-icons/machine.png" mode="aspectFit"></image></view>
         <view class="production-copy"><strong>农机服务</strong></view>
         <text class="production-arrow">›</text>
       </view>
       <view class="production-card supplies" bindtap="openProduction" data-type="supplies">
-        <view class="production-icon">资</view>
+        <view class="production-icon"><image class="production-icon-art" src="/images/home-icons/supplies.png" mode="aspectFit"></image></view>
         <view class="production-copy"><strong>农资服务</strong></view>
         <text class="production-arrow">›</text>
       </view>
       <view class="production-card processing" bindtap="openProduction" data-type="processing">
-        <view class="production-icon">加</view>
+        <view class="production-icon"><image class="production-icon-art" src="/images/home-icons/processing.png" mode="aspectFit"></image></view>
         <view class="production-copy"><strong>加工服务</strong></view>
+        <text class="production-arrow">›</text>
+      </view>
+      <view class="production-card varieties" bindtap="openProduction" data-type="varieties">
+        <view class="production-icon"><image class="production-icon-art" src="/images/home-icons/varieties.png" mode="aspectFit"></image></view>
+        <view class="production-copy"><strong>品种优选</strong></view>
         <text class="production-arrow">›</text>
       </view>
     </view>

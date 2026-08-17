@@ -1,6 +1,18 @@
 const auth = require('../../utils/auth')
 const { buildWeatherFromApi } = require('../../utils/weather')
 
+function loadWechatSI() {
+  if (typeof requirePlugin !== 'function') return null
+  try { return requirePlugin('WechatSI') } catch { return null }
+}
+
+const WechatSI = loadWechatSI()
+
+function localDate(date = new Date()) {
+  const pad = number => String(number).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 Page({
   data: {
     heroTop: 64,
@@ -10,6 +22,11 @@ Page({
       weather: { temp: '--', desc: '天气加载中', icon: '⛅', high: '--', low: '--', wind: '--' },
       tipText: '正在获取当前位置天气与农事建议'
     },
+    todoDate: '',
+    todos: [],
+    todosLoading: true,
+    todoScrollable: false,
+    todoSpeaking: false,
     news: [],
     newsLoading: true
   },
@@ -32,7 +49,83 @@ Page({
     const user = auth.getUser && auth.getUser()
     if (user) this.setData({ userName: user.real_name || user.phone || '棉农朋友' })
     this.loadLocationWeather()
+    this.loadTodayTodos()
     this.loadHomeNews()
+  },
+
+  async loadTodayTodos() {
+    const date = localDate()
+    const priorityNames = { normal: '日常', important: '重要', urgent: '紧急' }
+    try {
+      const res = await auth.request('GET', `/api/daily-todos?date=${encodeURIComponent(date)}`)
+      const rows = res.code === 200 && Array.isArray(res.data) ? res.data : []
+      const todos = rows.map((item, index) => ({
+        ...item,
+        order: index + 1,
+        priorityLabel: priorityNames[item.priority] || '日常',
+        displayText: item.voiceText || [item.timeLabel, item.title, item.content].filter(Boolean).join('，')
+      }))
+      const estimatedHeight = todos.reduce((total, item) => {
+        const titleLines = Math.max(1, Math.ceil(Array.from(String(item.title || '')).length / 17))
+        const textLines = Math.max(1, Math.ceil(Array.from(String(item.displayText || '')).length / 22))
+        return total + 38 + titleLines * 36 + textLines * 35 + (item.timeLabel ? 34 : 0)
+      }, 0)
+      this.setData({
+        todoDate: date,
+        todos,
+        todoScrollable: estimatedHeight > 310,
+        todosLoading: false
+      })
+    } catch (error) {
+      this.setData({ todoDate: date, todos: [], todoScrollable: false, todosLoading: false })
+    }
+  },
+
+  toggleTodoSpeech() {
+    if (this.data.todoSpeaking) {
+      this.stopTodoSpeech()
+      return
+    }
+    if (!this.data.todos.length) return wx.showToast({ title: '今天暂时没有可播报的待办', icon: 'none' })
+    if (!(WechatSI && typeof WechatSI.textToSpeech === 'function')) {
+      return wx.showToast({ title: '语音播报插件暂不可用', icon: 'none' })
+    }
+    const content = this.data.todos
+      .map((item, index) => `${index + 1}，${item.voiceText || [item.timeLabel, item.title, item.content].filter(Boolean).join('，')}`)
+      .join('。')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 500)
+    if (!content) return
+    this.setData({ todoSpeaking: true })
+    WechatSI.textToSpeech({
+      lang: 'zh_CN', tts: true, content: `今日待办。${content}`,
+      success: res => {
+        const src = res && (res.filename || res.fileName)
+        if (!src) { this.setData({ todoSpeaking: false }); return }
+        if (!this.todoAudio) {
+          this.todoAudio = wx.createInnerAudioContext()
+          this.todoAudio.onEnded(() => this.setData({ todoSpeaking: false }))
+          this.todoAudio.onError(() => {
+            this.setData({ todoSpeaking: false })
+            wx.showToast({ title: '语音播放失败，请稍后重试', icon: 'none' })
+          })
+        }
+        if (typeof wx.setInnerAudioOption === 'function') wx.setInnerAudioOption({ obeyMuteSwitch: false, mixWithOther: false })
+        this.todoAudio.stop()
+        this.todoAudio.src = src
+        this.todoAudio.play()
+      },
+      fail: () => {
+        this.setData({ todoSpeaking: false })
+        wx.showToast({ title: '语音生成失败，请稍后重试', icon: 'none' })
+      }
+    })
+  },
+
+  stopTodoSpeech() {
+    if (this.todoAudio) this.todoAudio.stop()
+    this.setData({ todoSpeaking: false })
   },
 
   async loadHomeNews() {
@@ -140,7 +233,8 @@ Page({
     const routes = {
       machine: '/pages/machinery/index',
       supplies: '/pages/supplies/index',
-      processing: '/pages/production/index'
+      processing: '/pages/production/index',
+      varieties: '/pages/varieties/index'
     }
     wx.navigateTo({ url: routes[type] || routes.machine })
   },
@@ -149,5 +243,10 @@ Page({
     const id = e.currentTarget.dataset.id
     wx.navigateTo({ url: url || (id ? `/pages/policy/detail?id=${id}` : '/pages/policy/index') })
   },
-  openAi() { wx.switchTab({ url: '/pages/ai/index' }) }
+  openAi() { wx.switchTab({ url: '/pages/ai/index' }) },
+  onHide() { this.stopTodoSpeech() },
+  onUnload() {
+    if (this.todoAudio) this.todoAudio.destroy()
+    this.todoAudio = null
+  }
 })

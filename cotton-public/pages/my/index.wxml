@@ -44,6 +44,6 @@
       </view>
     </view>
     <button wx:if="{{loggedIn}}" class="logout" bindtap="logout">退出登录</button>
-    <text class="footer">公益知识服务 · 不提供交易撮合</text>
+    <text class="footer">公共知识服务 · 不提供交易撮合</text>
   </view>
 </view>

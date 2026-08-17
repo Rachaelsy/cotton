@@ -25,9 +25,12 @@ function formatComment(row) {
   const phone = String(row.phone || '')
   return {
     id: Number(row.id),
+    parentId: row.parent_id ? Number(row.parent_id) : null,
     content: row.content || '',
     author: name || (phone.length >= 7 ? `${phone.slice(0, 3)}****${phone.slice(-4)}` : '棉农用户'),
-    createdAt: row.created_at || null
+    createdAt: row.created_at || null,
+    likeCount: Number(row.like_count || 0),
+    liked: !!row.viewer_liked
   }
 }
 
@@ -41,7 +44,7 @@ async function policyAdminAuth(req, res, next) {
         [payload.id]
       )
       if (!account || !account.is_active || Number(account.auth_version) !== Number(payload.auth_version || 0)) {
-        return fail(res, '公益管理员账号已停用或登录已失效', 401)
+        return fail(res, '公共服务管理员账号已停用或登录已失效', 401)
       }
       req.policyAdmin = { id: Number(account.id), type: 'community' }
       return next()
@@ -68,6 +71,18 @@ async function policyAdminAuth(req, res, next) {
 function safeUrl(value) {
   const url = String(value || '').trim().slice(0, 500)
   return !url || /^https:\/\//i.test(url) ? url : ''
+}
+
+function dateTimeText(value) {
+  if (!value) return ''
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const pad = number => String(number).padStart(2, '0')
+    const chinaTime = new Date(value.getTime() + 8 * 60 * 60 * 1000)
+    return `${chinaTime.getUTCFullYear()}-${pad(chinaTime.getUTCMonth() + 1)}-${pad(chinaTime.getUTCDate())} ${pad(chinaTime.getUTCHours())}:${pad(chinaTime.getUTCMinutes())}:${pad(chinaTime.getUTCSeconds())}`
+  }
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/)
+  if (!match) return ''
+  return `${match[1]}-${match[2]}-${match[3]}${match[4] ? ` ${match[4]}:${match[5]}:${match[6] || '00'}` : ''}`
 }
 
 function validateAdminPassword(value) {
@@ -101,6 +116,7 @@ function articleBody(body = {}) {
   else if (contentType === 'home') section = 'homepage'
   else section = policyLevels.has(requestedSection) ? requestedSection : '地区'
   const homeFeatured = body.is_home_featured === true || body.isHomeFeatured === true || body.is_home_featured === 1 || body.is_home_featured === '1' ? 1 : 0
+  const sourcePublishedAt = dateTimeText(body.source_published_at || body.sourcePublishedAt)
   return {
     title: String(body.title || '').trim().slice(0, 180),
     summary: generatedSummary,
@@ -113,6 +129,7 @@ function articleBody(body = {}) {
     documentNo: String(body.document_no || body.documentNo || '').trim().slice(0, 120),
     deadline: String(body.deadline || '').trim().slice(0, 120),
     originalUrl: safeUrl(body.original_url || body.originalUrl),
+    sourcePublishedAt,
     coverUrl: safeUrl(body.cover_url || body.coverUrl),
     status,
     featured: body.is_featured === true || body.is_featured === 1 || body.is_featured === '1' ? 1 : 0,
@@ -150,7 +167,8 @@ function normalize(row, includeMarkdown = false) {
     isFeatured: !!row.is_featured, isHomeFeatured: !!row.is_home_featured,
     homeFeaturedAt: row.home_featured_at || null, sortOrder: Number(row.sort_order || 0),
     coverImage: row.cover_url || (imageMatch ? imageMatch[1] : ''),
-    publishDate: row.published_at || row.created_at || null,
+    sourcePublishedAt: dateTimeText(row.source_published_at) || null,
+    publishDate: dateTimeText(row.source_published_at) || dateTimeText(row.published_at) || dateTimeText(row.created_at) || null,
     createdAt: row.created_at || null, updatedAt: row.updated_at || null
   }
   if (includeMarkdown) article.markdown = row.body_markdown || ''
@@ -199,7 +217,7 @@ router.get('/admin/list', policyAdminAuth, async (_req, res) => {
 })
 
 router.post('/admin/change-password', policyAdminAuth, async (req, res) => {
-  if (req.policyAdmin.type !== 'community') return fail(res, '该入口仅供公益管理员修改密码', 403)
+  if (req.policyAdmin.type !== 'community') return fail(res, '该入口仅供公共服务管理员修改密码', 403)
   const oldPassword = String(req.body.old_password || '')
   const newPassword = String(req.body.new_password || '')
   if (!oldPassword || !newPassword) return fail(res, '请填写当前密码和新密码')
@@ -212,7 +230,7 @@ router.post('/admin/change-password', policyAdminAuth, async (req, res) => {
       'SELECT password,is_active FROM community_admins WHERE id=? LIMIT 1',
       [req.policyAdmin.id]
     )
-    if (!account || !account.is_active) return fail(res, '公益管理员账号不存在或已停用', 404)
+    if (!account || !account.is_active) return fail(res, '公共服务管理员账号不存在或已停用', 404)
     if (!account.password || !await bcrypt.compare(oldPassword, account.password)) {
       return fail(res, '当前密码不正确', 401)
     }
@@ -231,14 +249,15 @@ router.post('/admin/change-password', policyAdminAuth, async (req, res) => {
 router.post('/admin', policyAdminAuth, async (req, res) => {
   const article = articleBody(req.body)
   if (!article.title || !article.markdown) return fail(res, '标题和 Markdown 正文不能为空')
+  if (['policy', 'industry'].includes(article.contentType) && !article.sourcePublishedAt) return fail(res, '请填写原文发布时间')
   try {
     await assertHomeCapacity(article)
     const [result] = await db.query(
       `INSERT INTO policy_articles
-       (title,summary,body_markdown,content_type,policy_level,category,issuer,region,document_no,deadline,original_url,cover_url,status,is_featured,is_home_featured,home_featured_at,sort_order,published_at,created_by,updated_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,IF(?=1,NOW(),NULL),?,IF(?='published',NOW(),NULL),?,?)`,
+       (title,summary,body_markdown,content_type,policy_level,category,issuer,region,document_no,deadline,original_url,source_published_at,cover_url,status,is_featured,is_home_featured,home_featured_at,sort_order,published_at,created_by,updated_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,IF(?=1,NOW(),NULL),?,IF(?='published',NOW(),NULL),?,?)`,
       [article.title,article.summary,article.markdown,article.contentType,article.level,article.category,article.issuer,article.region,
-       article.documentNo,article.deadline,article.originalUrl,article.coverUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,
+       article.documentNo,article.deadline,article.originalUrl,article.sourcePublishedAt,article.coverUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,
        article.sortOrder,article.status,req.policyAdmin.id,req.policyAdmin.id]
     )
     return ok(res, { id: Number(result.insertId) }, article.status === 'published' ? '政策已发布' : '草稿已保存')
@@ -248,15 +267,16 @@ router.post('/admin', policyAdminAuth, async (req, res) => {
 router.put('/admin/:id', policyAdminAuth, async (req, res) => {
   const article = articleBody(req.body)
   if (!article.title || !article.markdown) return fail(res, '标题和 Markdown 正文不能为空')
+  if (['policy', 'industry'].includes(article.contentType) && !article.sourcePublishedAt) return fail(res, '请填写原文发布时间')
   try {
     await assertHomeCapacity(article, Number(req.params.id))
     const [result] = await db.query(
       `UPDATE policy_articles SET title=?,summary=?,body_markdown=?,content_type=?,policy_level=?,category=?,issuer=?,region=?,
-       document_no=?,deadline=?,original_url=?,cover_url=?,status=?,is_featured=?,is_home_featured=?,
+       document_no=?,deadline=?,original_url=?,source_published_at=?,cover_url=?,status=?,is_featured=?,is_home_featured=?,
        home_featured_at=CASE WHEN ?=1 THEN COALESCE(home_featured_at,NOW()) ELSE NULL END,sort_order=?,
        published_at=CASE WHEN ?='published' THEN COALESCE(published_at,NOW()) ELSE NULL END,updated_by=? WHERE id=?`,
       [article.title,article.summary,article.markdown,article.contentType,article.level,article.category,article.issuer,article.region,
-       article.documentNo,article.deadline,article.originalUrl,article.coverUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,article.sortOrder,
+       article.documentNo,article.deadline,article.originalUrl,article.sourcePublishedAt,article.coverUrl,article.status,article.featured,article.homeFeatured,article.homeFeatured,article.sortOrder,
        article.status,req.policyAdmin.id,req.params.id]
     )
     if (!result.affectedRows) return fail(res, '政策文章不存在', 404)
@@ -292,14 +312,23 @@ router.delete('/admin/:id', policyAdminAuth, async (req, res) => {
 
 router.get('/:id/comments', async (req, res) => {
   try {
+    const viewer = tokenPayload(req)
+    const viewerId = viewer && viewer.role === 'farmer' ? Number(viewer.id || 0) : 0
     const [rows] = await db.query(
-      `SELECT c.id,c.content,c.created_at,u.real_name,u.phone
+      `SELECT c.id,c.parent_id,c.content,c.created_at,u.real_name,u.phone,
+              COALESCE(likes.like_count,0) AS like_count,
+              CASE WHEN viewer_like.user_id IS NULL THEN 0 ELSE 1 END AS viewer_liked
          FROM policy_comments c
          LEFT JOIN users u ON u.id=c.user_id
+         LEFT JOIN (
+           SELECT comment_id,COUNT(*) AS like_count
+             FROM policy_comment_likes GROUP BY comment_id
+         ) likes ON likes.comment_id=c.id
+         LEFT JOIN policy_comment_likes viewer_like ON viewer_like.comment_id=c.id AND viewer_like.user_id=?
         WHERE c.article_id=? AND c.status='published'
-        ORDER BY c.created_at DESC,c.id DESC
-        LIMIT 100`,
-      [req.params.id]
+        ORDER BY c.created_at ASC,c.id ASC
+        LIMIT 200`,
+      [viewerId, req.params.id]
     )
     return ok(res, rows.map(formatComment))
   } catch (error) {
@@ -310,22 +339,61 @@ router.get('/:id/comments', async (req, res) => {
 
 router.post('/:id/comments', userAuth, async (req, res) => {
   const content = String(req.body.content || '').trim().slice(0, 300)
+  const requestedParentId = Number.parseInt(req.body.parent_id, 10) || 0
   if (content.length < 2) return fail(res, '评论至少需要2个字')
   try {
     const [[article]] = await db.query("SELECT id FROM policy_articles WHERE id=? AND status='published' LIMIT 1", [req.params.id])
     if (!article) return fail(res, '文章不存在或尚未发布', 404)
     const [[user]] = await db.query("SELECT id,real_name,phone FROM users WHERE id=? AND role='farmer' AND is_active=1 LIMIT 1", [req.viewer.id])
     if (!user) return fail(res, '账号不存在或已停用', 403)
+    let parentId = null
+    if (requestedParentId) {
+      const [[parent]] = await db.query(
+        "SELECT id FROM policy_comments WHERE id=? AND article_id=? AND status='published' LIMIT 1",
+        [requestedParentId, article.id]
+      )
+      if (!parent) return fail(res, '要回复的评论不存在', 404)
+      parentId = Number(parent.id)
+    }
     const [[recent]] = await db.query(
       'SELECT id FROM policy_comments WHERE user_id=? AND created_at>DATE_SUB(NOW(),INTERVAL 15 SECOND) LIMIT 1',
       [req.viewer.id]
     )
     if (recent) return fail(res, '评论发送太频繁，请稍后再试', 429)
-    const [result] = await db.query('INSERT INTO policy_comments (article_id,user_id,content) VALUES (?,?,?)', [article.id, user.id, content])
-    return ok(res, formatComment({ id: result.insertId, content, created_at: new Date(), real_name: user.real_name, phone: user.phone }), '评论已发表')
+    const [result] = await db.query('INSERT INTO policy_comments (article_id,user_id,parent_id,content) VALUES (?,?,?,?)', [article.id, user.id, parentId, content])
+    return ok(res, formatComment({ id: result.insertId, parent_id: parentId, content, created_at: new Date(), real_name: user.real_name, phone: user.phone }), parentId ? '回复已发表' : '评论已发表')
   } catch (error) {
     console.error('[policy-comment-create]', error)
     return fail(res, '评论发表失败', 500)
+  }
+})
+
+router.post('/:id/comments/:commentId/like', userAuth, async (req, res) => {
+  try {
+    const [[user]] = await db.query(
+      "SELECT id FROM users WHERE id=? AND role='farmer' AND is_active=1 LIMIT 1",
+      [req.viewer.id]
+    )
+    if (!user) return fail(res, '账号不存在或已停用', 403)
+    const [[comment]] = await db.query(
+      "SELECT id FROM policy_comments WHERE id=? AND article_id=? AND status='published' LIMIT 1",
+      [req.params.commentId, req.params.id]
+    )
+    if (!comment) return fail(res, '评论不存在', 404)
+    const [[existing]] = await db.query(
+      'SELECT comment_id FROM policy_comment_likes WHERE comment_id=? AND user_id=? LIMIT 1',
+      [comment.id, req.viewer.id]
+    )
+    if (existing) {
+      await db.query('DELETE FROM policy_comment_likes WHERE comment_id=? AND user_id=?', [comment.id, req.viewer.id])
+    } else {
+      await db.query('INSERT INTO policy_comment_likes (comment_id,user_id) VALUES (?,?)', [comment.id, req.viewer.id])
+    }
+    const [[count]] = await db.query('SELECT COUNT(*) AS total FROM policy_comment_likes WHERE comment_id=?', [comment.id])
+    return ok(res, { liked: !existing, likeCount: Number(count.total || 0) }, existing ? '已取消点赞' : '已点赞')
+  } catch (error) {
+    console.error('[policy-comment-like]', error)
+    return fail(res, '点赞操作失败', 500)
   }
 })
 

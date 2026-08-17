@@ -281,7 +281,7 @@ async function adminAuth(req, res, next) {
   }
 }
 
-// 公益管理员只获得农户管理能力；其余核心后台接口仍使用 adminAuth。
+// 公共服务管理员只获得农户管理能力；其余核心后台接口仍使用 adminAuth。
 async function farmerAdminAuth(req, res, next) {
   const auth = req.headers.authorization || ''
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
@@ -298,7 +298,7 @@ async function farmerAdminAuth(req, res, next) {
     )
     if (!account || !account.is_active || account.permission_key !== 'public_admin' ||
         Number(payload.auth_version || 0) !== Number(account.auth_version || 0)) {
-      return res.status(401).json({ code: 401, msg: '公益管理员登录状态已失效，请重新登录' })
+      return res.status(401).json({ code: 401, msg: '公共服务管理员登录状态已失效，请重新登录' })
     }
     req.admin = payload
     req.adminScope = 'public_farmer_management'
@@ -324,7 +324,7 @@ router.post('/login', async (req, res) => {
       if (error.code !== 'ER_NO_SUCH_TABLE') throw error
     }
     if (publicAdmin) {
-      if (!publicAdmin.is_active) return res.status(403).json({ code: 403, msg: '公益管理员账号已停用' })
+      if (!publicAdmin.is_active) return res.status(403).json({ code: 403, msg: '公共服务管理员账号已停用' })
       const matched = await bcrypt.compare(password, publicAdmin.password)
       if (!matched) return res.status(401).json({ code: 401, msg: '密码错误' })
       const token = jwt.sign(
@@ -1119,7 +1119,7 @@ router.patch('/users/:id/status', adminAuth, async (req, res) => {
   }
 })
 
-// 公益管理员专用的农户状态接口，先验证目标确实是农户，避免越权停用其他角色。
+// 公共服务管理员专用的农户状态接口，先验证目标确实是农户，避免越权停用其他角色。
 router.patch('/farmers/:id/status', farmerAdminAuth, async (req, res) => {
   try {
     const [[farmer]] = await db.query('SELECT user_id FROM farmers WHERE user_id=? LIMIT 1', [req.params.id])

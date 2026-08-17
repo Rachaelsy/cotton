@@ -193,7 +193,7 @@
   }
 
   function renderPublicHome() {
-    setMeta('公益平台', '免费开放的种植培训、图文课程、政策资讯、专家咨询、病虫害知识和公益活动')
+    setMeta('公共服务平台', '免费开放的种植培训、图文课程、政策资讯、专家咨询、病虫害知识和公共服务活动')
     setActiveNav('home')
     main.innerHTML = `
       <section class="home-hero public-home-hero">
@@ -201,7 +201,7 @@
         <div class="shell home-hero-inner">
           <div class="hero-copy">
             <span class="hero-kicker">PUBLIC COTTON SERVICE · 免费开放</span>
-            <h1>棉知公益平台</h1>
+            <h1>喀什优棉公共服务平台</h1>
             <p>面向种植户和农业从业者开放棉花培训、田间问题交流与 AI 助学，让可靠知识更容易被找到和使用。</p>
             <div class="hero-actions">
               <a class="button primary" href="${publicLink('/training')}">开始学习</a>
@@ -220,17 +220,16 @@
       </section>
       <section class="section-block public-sectors-section">
         <div class="shell">
-          ${sectionHeading('PUBLIC SERVICE AREAS', '六大公益服务专区', '知识公开浏览，咨询和学习记录在登录后与棉花平台账号同步。')}
+          ${sectionHeading('LEARNING & COMMUNITY', '学习与互动专区', '保留种植培训、课程、病虫害知识和公共活动，与下方数据库驱动的业务内容互为补充。')}
           <div class="public-sector-grid">
             <a class="public-sector-card" href="${publicLink('/training')}"><span>01</span><strong>棉花种植培训</strong><p>从播种、苗期到采收的全生育期管理文章与田间清单。</p><b>进入专区 →</b></a>
             <a class="public-sector-card" href="${publicLink('/courses')}"><span>02</span><strong>图文课程</strong><p>图文、图片、小测试、评论与 AI 解答组成的互动课程。</p><b>进入专区 →</b></a>
-            <a class="public-sector-card" href="${publicLink('/policies')}"><span>03</span><strong>政策资讯</strong><p>整理权威信息的阅读方法、适用范围与来源核验要点。</p><b>进入专区 →</b></a>
-            <a class="public-sector-card" href="${publicLink('/experts')}"><span>04</span><strong>专家咨询</strong><p>查看共享专家队伍，提交田间问题并跟踪后台回复。</p><b>进入专区 →</b></a>
-            <a class="public-sector-card" href="${publicLink('/pests')}"><span>05</span><strong>病虫害知识</strong><p>按症状、发生阶段和调查方法建立规范排查顺序。</p><b>进入专区 →</b></a>
-            <a class="public-sector-card" href="${publicLink('/activities')}"><span>06</span><strong>公益活动</strong><p>田间开放日、公益工作坊、公开课和志愿服务活动。</p><b>进入专区 →</b></a>
+            <a class="public-sector-card" href="${publicLink('/pests')}"><span>03</span><strong>病虫害知识</strong><p>按症状、发生阶段和调查方法建立规范排查顺序。</p><b>进入专区 →</b></a>
+            <a class="public-sector-card" href="${publicLink('/activities')}"><span>04</span><strong>公共服务活动</strong><p>田间开放日、公共服务工作坊、公开课和志愿服务活动。</p><b>进入专区 →</b></a>
           </div>
         </div>
       </section>
+      ${publicModulesViews?.homeSection() || ''}
       <section class="section-block">
         <div class="shell">
           ${sectionHeading('COTTON TRAINING', '棉花全生育期培训', '围绕当前田间阶段学习，文章末尾附有可执行的检查清单。', `<a class="section-action" href="${publicLink('/training')}">查看全部培训</a>`)}
@@ -250,7 +249,7 @@
           <div class="public-service-copy">
             <span class="eyebrow">QUESTIONS & SUPPORT</span>
             <h2>从学习资料走到专家咨询</h2>
-            <p>公益平台把共享专家、课程评论、棉友问答与 AI 助学连接起来。登录后可提交问题、查看回复并保留学习记录。</p>
+            <p>公共服务平台把共享专家、课程评论、棉友问答与 AI 助学连接起来。登录后可提交问题、查看回复并保留学习记录。</p>
             <div class="hero-actions">
               <a class="button primary" href="${publicLink('/experts')}">进入专家咨询</a>
               <a class="button outline" href="${publicLink('/forum')}">进入棉友问答</a>
@@ -261,7 +260,7 @@
       </section>
       <section class="cross-platform-band">
         <div class="shell cross-platform-inner">
-          <div><span class="eyebrow">CONNECTED BUSINESS</span><h2>需要了解生产资料和公司服务？</h2><p>商业内容独立展示，但仍可从商品详情回到相关公益培训。</p></div>
+          <div><span class="eyebrow">CONNECTED BUSINESS</span><h2>需要了解生产资料和公司服务？</h2><p>商业内容独立展示，但仍可从商品详情回到相关农技培训。</p></div>
           <a class="button light" href="${businessLink('/')}">前往商业平台</a>
         </div>
       </section>`
@@ -297,7 +296,7 @@
         <div class="shell service-ribbon-grid">
           <div><strong>农资供应</strong><span>种子、肥料、植保、农膜和滴灌材料</span></div>
           <div><strong>农机服务</strong><span>整地、播种、植保、田管、采收与转运</span></div>
-          <div><strong>技术内容</strong><span>用公益培训和田间知识降低决策成本</span></div>
+          <div><strong>技术内容</strong><span>用农技培训和田间知识降低决策成本</span></div>
           <div><strong>商务协同</strong><span>连接农户、商户、农机手与平台运营</span></div>
         </div>
       </section>
@@ -353,8 +352,8 @@
 
       <section class="cross-platform-band business-cross-band">
         <div class="shell cross-platform-inner">
-          <div><span class="eyebrow">PUBLIC KNOWLEDGE</span><h2>查找种植培训与农技交流</h2><p>公益平台提供免费培训、图文课程、政策资讯、专家咨询和棉友问答。</p></div>
-          <a class="button light" href="${publicLink('/')}">前往公益平台</a>
+          <div><span class="eyebrow">PUBLIC KNOWLEDGE</span><h2>查找种植培训与农技交流</h2><p>公共服务平台提供免费培训、图文课程、政策资讯、专家咨询和棉友问答。</p></div>
+          <a class="button light" href="${publicLink('/')}">前往公共服务平台</a>
         </div>
       </section>
 
@@ -480,7 +479,7 @@
       </section>
       <section class="section-block connected-content-section">
         <div class="shell">
-          ${sectionHeading('PUBLIC LEARNING', '相关公益培训', '商品资料与公益知识内容互相关联，帮助用户先了解适用场景和使用边界。', `<a class="section-action" href="${publicLink('/training')}">进入公益培训</a>`)}
+          ${sectionHeading('PUBLIC LEARNING', '相关农技培训', '商品资料与公共知识内容互相关联，帮助用户先了解适用场景和使用边界。', `<a class="section-action" href="${publicLink('/training')}">进入农技培训</a>`)}
           <div class="article-grid">${relatedTraining.map(trainingCard).join('')}</div>
         </div>
       </section>
@@ -620,7 +619,7 @@
       </section>
       <section class="section-block connected-content-section">
         <div class="shell">
-          ${sectionHeading('PUBLIC LEARNING', '相关公益培训', '在预约作业前了解对应农时、田间条件和质量检查要点。', `<a class="section-action" href="${publicLink('/training')}">进入公益培训</a>`)}
+          ${sectionHeading('PUBLIC LEARNING', '相关农技培训', '在预约作业前了解对应农时、田间条件和质量检查要点。', `<a class="section-action" href="${publicLink('/training')}">进入农技培训</a>`)}
           <div class="article-grid">${relatedTraining.map(trainingCard).join('')}</div>
         </div>
       </section>
@@ -647,7 +646,7 @@
         </div>
       </section>
       <section class="academy-band">
-        <div class="shell academy-band-inner"><div><span class="eyebrow">QUESTIONS & DISCUSSION</span><h2>需要针对具体问题继续交流？</h2><p>公益平台提供课程评论、回复、公开提问、学习记录和 AI 助学功能。</p></div><a class="button light" href="${publicLink('/forum')}">进入棉友问答</a></div>
+        <div class="shell academy-band-inner"><div><span class="eyebrow">QUESTIONS & DISCUSSION</span><h2>需要针对具体问题继续交流？</h2><p>公共服务平台提供课程评论、回复、公开提问、学习记录和 AI 助学功能。</p></div><a class="button light" href="${publicLink('/forum')}">进入棉友问答</a></div>
       </section>`
 
     document.getElementById('trainingFilters').addEventListener('click', event => {
@@ -864,7 +863,7 @@
       </article>
       <section class="section-block connected-content-section">
         <div class="shell">
-          ${sectionHeading('CONNECTED PRODUCTS', '相关商业资料', '公益培训与商业平台共享内容关联，但产品选择和实际使用仍需单独核验。', `<a class="section-action" href="${businessLink('/products')}">前往商业平台</a>`)}
+          ${sectionHeading('CONNECTED PRODUCTS', '相关商业资料', '农技培训与商业平台共享内容关联，但产品选择和实际使用仍需单独核验。', `<a class="section-action" href="${businessLink('/products')}">前往商业平台</a>`)}
           <div class="product-grid related-grid">${relatedProducts.map(productCard).join('')}</div>
         </div>
       </section>`
@@ -1049,7 +1048,7 @@
     const businessNews = data.news.filter(item => item.category !== 'policy')
 
     main.innerHTML = `
-      ${pageHero('NEWS & INSIGHTS', '新闻资讯', '整理棉花产业、质量标准和加工动态，内容保留官方来源；农业政策可在公益平台查阅。', 'news-hero')}
+      ${pageHero('NEWS & INSIGHTS', '新闻资讯', '整理棉花产业、质量标准和加工动态，内容保留官方来源；农业政策可在公共服务平台查阅。', 'news-hero')}
       <section class="section-block">
         <div class="shell news-layout">
           <div>
@@ -1134,7 +1133,7 @@
       <section class="section-block">
         <div class="shell about-intro">
           <div><span class="eyebrow">OUR PURPOSE</span><h2>让供需信息更透明，让田间服务更连续</h2></div>
-          <div><p>棉知商业平台面向新疆棉花产业集中展示农资品类、农机作业、产业资讯和数字服务能力。培训、技术交流和公开问答由独立的公益平台承载，两端通过内容关联和统一数据保持协同。</p><p>产品是否适用、农机是否可调度、实际规格与价格，都需要结合地块、作物阶段、农时和当地要求，由服务人员进一步确认。</p></div>
+          <div><p>棉知商业平台面向新疆棉花产业集中展示农资品类、农机作业、产业资讯和数字服务能力。培训、技术交流和公开问答由独立的公共服务平台承载，两端通过内容关联和统一数据保持协同。</p><p>产品是否适用、农机是否可调度、实际规格与价格，都需要结合地块、作物阶段、农时和当地要求，由服务人员进一步确认。</p></div>
         </div>
       </section>
       <section class="section-block about-photo-section">
@@ -1153,7 +1152,7 @@
       </section>
       <section class="section-block">
         <div class="shell">
-          ${sectionHeading('BUSINESS SCOPE', '商业平台服务范围', '以下内容形成独立商业展示，并可与公益培训建立关联。')}
+          ${sectionHeading('BUSINESS SCOPE', '商业平台服务范围', '以下内容形成独立商业展示，并可与公共服务平台的农技培训建立关联。')}
           <div class="scope-grid">
             <div><strong>农资产品</strong><p>种子、肥料、植保、农膜、滴灌材料的列表和详情。</p></div>
             <div><strong>农机服务</strong><p>从耕整地、播种到植保、采收和转运的关键农时服务。</p></div>
@@ -1250,7 +1249,7 @@
     setActiveNav('')
     const token = localStorage.getItem('knowledge_token') || ''
     main.innerHTML = `
-      ${pageHero('PRIVACY & ACCOUNT DATA', '个人信息使用说明', '说明公益与商业网站在账号、学习、咨询和服务需求中如何使用信息，并提供可追踪的处理申请入口。', 'privacy-hero')}
+      ${pageHero('PRIVACY & ACCOUNT DATA', '个人信息使用说明', '说明公共服务与商业网站在账号、学习、咨询和服务需求中如何使用信息，并提供可追踪的处理申请入口。', 'privacy-hero')}
       <section class="section-block">
         <div class="shell privacy-layout">
           <article class="privacy-content">
@@ -1335,18 +1334,18 @@
       try { account = JSON.parse(localStorage.getItem('knowledge_user') || 'null') } catch {}
       document.body.dataset.platform = 'public'
       brand.href = publicLink('/')
-      brand.setAttribute('aria-label', '棉知公益平台首页')
-      brandName.textContent = '棉知公益平台'
+      brand.setAttribute('aria-label', '喀什优棉公共服务平台首页')
+      brandName.textContent = '喀什优棉公共服务平台'
       brandSub.textContent = 'PUBLIC COTTON SERVICE'
-      serviceLabel.textContent = '种植培训 · 政策资讯 · 专家咨询 · 公益活动'
+      serviceLabel.textContent = '政策资讯 · 专家讲堂 · 生产服务 · 品种优选'
       nav.innerHTML = `
-        <a href="${publicLink('/')}" data-nav="home">公益首页</a>
-        <a href="${publicLink('/training')}" data-nav="training">种植培训</a>
-        <a href="${publicLink('/courses')}" data-nav="courses">图文课程</a>
+        <a href="${publicLink('/')}" data-nav="home">公共服务首页</a>
         <a href="${publicLink('/policies')}" data-nav="policies">政策资讯</a>
-        <a href="${publicLink('/experts')}" data-nav="experts">专家咨询</a>
-        <a href="${publicLink('/pests')}" data-nav="pests">病虫害</a>
-        <a href="${publicLink('/activities')}" data-nav="activities">公益活动</a>
+        <a href="${publicLink('/experts')}" data-nav="experts">专家讲堂</a>
+        <a href="${publicLink('/finance')}" data-nav="finance">优棉金融</a>
+        <a href="${publicLink('/machinery')}" data-nav="services">生产服务</a>
+        <a href="${publicLink('/varieties')}" data-nav="varieties">品种优选</a>
+        <a href="${publicLink('/courses')}" data-nav="courses">棉知学堂</a>
         <a class="platform-switch-link" href="${businessLink('/')}">商业平台</a>`
       action.href = publicLink('/login')
       action.textContent = account ? (account.real_name || account.name || '我的账号') : '登录'
@@ -1363,18 +1362,18 @@
         <a href="${businessLink('/machinery')}" data-nav="machinery">农机服务</a>
         <a href="${businessLink('/news')}" data-nav="news">新闻资讯</a>
         <a href="${businessLink('/about')}" data-nav="about">关于我们</a>
-        <a class="platform-switch-link" href="${publicLink('/')}">公益平台</a>`
+        <a class="platform-switch-link" href="${publicLink('/')}">公共服务平台</a>`
       action.href = businessLink('/contact')
       action.textContent = '商务联系'
     } else {
       document.body.dataset.platform = 'public'
       brand.href = publicLink('/')
-      brand.setAttribute('aria-label', '棉知公益平台首页')
+      brand.setAttribute('aria-label', '喀什优棉公共服务平台首页')
       brandName.textContent = '棉知农业服务'
       brandSub.textContent = 'PUBLIC COTTON SERVICE'
-      serviceLabel.textContent = '公益知识服务 · 农业商业服务'
+      serviceLabel.textContent = '公共服务平台 · 农业商业服务'
       nav.innerHTML = `
-        <a href="${publicLink('/')}">公益平台</a>
+        <a href="${publicLink('/')}">公共服务平台</a>
         <a href="${businessLink('/')}">商业平台</a>`
       action.href = '/platform/admin'
       action.textContent = '业务平台登录'
@@ -1405,6 +1404,14 @@
     renderNotFound
   })
 
+  const publicModulesViews = window.COTTON_PUBLIC_MODULES?.create({
+    main,
+    escapeHtml,
+    publicLink,
+    setMeta,
+    setActiveNav
+  })
+
   setupHeader()
 
   if (platform === 'hub' && (routePath === '/' || routePath === '/index.html')) window.location.replace(publicLink('/'))
@@ -1417,9 +1424,21 @@
   else if (platform === 'public' && pageGroup === 'forum') learningViews?.renderForumDetail(pathParts[1])
   else if (platform === 'public' && pageGroup === 'login') learningViews?.renderLogin()
   else if (platform === 'public' && pageGroup === 'privacy') renderPrivacy()
-  else if (platform === 'public' && (pageGroup === 'consult' || pageGroup === 'experts')) renderExperts()
-  else if (platform === 'public' && pageGroup === 'policies' && pathParts.length === 1) renderPolicies()
-  else if (platform === 'public' && pageGroup === 'policies') renderNewsDetail(newsById(pathParts[1]), 'public')
+  else if (platform === 'public' && pageGroup === 'consult') renderExperts()
+  else if (platform === 'public' && pageGroup === 'experts' && pathParts.length === 1) publicModulesViews?.renderExperts()
+  else if (platform === 'public' && pageGroup === 'experts') publicModulesViews?.renderExpertDetail(pathParts[1])
+  else if (platform === 'public' && pageGroup === 'policies' && pathParts.length === 1) publicModulesViews?.renderPolicies()
+  else if (platform === 'public' && pageGroup === 'policies') publicModulesViews?.renderArticleDetail(pathParts[1], 'policy')
+  else if (platform === 'public' && pageGroup === 'finance' && pathParts.length === 1) publicModulesViews?.renderFinance()
+  else if (platform === 'public' && pageGroup === 'finance') publicModulesViews?.renderArticleDetail(pathParts[1], 'finance')
+  else if (platform === 'public' && pageGroup === 'machinery' && pathParts.length === 1) publicModulesViews?.renderProducts('machinery')
+  else if (platform === 'public' && pageGroup === 'machinery') publicModulesViews?.renderProductDetail('machinery', pathParts[1])
+  else if (platform === 'public' && pageGroup === 'supplies' && pathParts.length === 1) publicModulesViews?.renderProducts('supplies')
+  else if (platform === 'public' && pageGroup === 'supplies') publicModulesViews?.renderProductDetail('supplies', pathParts[1])
+  else if (platform === 'public' && pageGroup === 'processing' && pathParts.length === 1) publicModulesViews?.renderProcessing()
+  else if (platform === 'public' && pageGroup === 'processing') publicModulesViews?.renderProcessingDetail(pathParts[1])
+  else if (platform === 'public' && pageGroup === 'varieties' && pathParts.length === 1) publicModulesViews?.renderVarieties()
+  else if (platform === 'public' && pageGroup === 'varieties') publicModulesViews?.renderVarietyDetail(pathParts[1])
   else if (platform === 'public' && pageGroup === 'pests' && pathParts.length === 1) renderPests()
   else if (platform === 'public' && pageGroup === 'pests') renderPestDetail(pestById(pathParts[1]))
   else if (platform === 'public' && pageGroup === 'activities' && pathParts.length === 1) renderActivities()

@@ -182,7 +182,7 @@
       }
 
       async function renderCourses() {
-        setMeta('图文课程', '公益平台图文、视频、图片、小测试、评论和 AI 助学课程')
+        setMeta('图文课程', '公共服务平台图文、视频、图片、小测试、评论和 AI 助学课程')
         setActiveNav('courses')
         const params = new URLSearchParams(location.search)
         const requestedScope = params.get('view')
@@ -405,7 +405,7 @@
             <article class="integrated-course-page">
               <header class="reading-header course-reading-header">
                 <div class="shell reading-header-inner">
-                  <nav class="breadcrumbs" aria-label="面包屑"><a href="${publicLink('/')}">公益首页</a><span>/</span><a href="${publicLink('/courses')}">图文课程</a><span>/</span><span>${escapeHtml(item.categoryName)}</span></nav>
+                  <nav class="breadcrumbs" aria-label="面包屑"><a href="${publicLink('/')}">公共服务首页</a><span>/</span><a href="${publicLink('/courses')}">图文课程</a><span>/</span><span>${escapeHtml(item.categoryName)}</span></nav>
                   <span class="eyebrow">${escapeHtml(item.categoryName)} · ${escapeHtml(typeNames[item.type] || '知识课')}</span>
                   <h1>${escapeHtml(item.title)}</h1>
                   <p>${escapeHtml(item.subtitle)}</p>
@@ -843,7 +843,7 @@
               ${state.isAdmin ? `<div class="public-admin-bar"><div class="shell"><span>管理员预览</span><a href="/knowledge/admin.html?view=forum">问答管理</a><button id="hideForumQuestion" type="button">隐藏问题</button></div></div>` : ''}
               <section class="forum-detail-header">
                 <div class="shell">
-                  <nav class="breadcrumbs" aria-label="面包屑"><a href="${publicLink('/')}">公益首页</a><span>/</span><a href="${publicLink('/forum')}">棉友问答</a><span>/</span><span>${escapeHtml(question.categoryName)}</span></nav>
+                  <nav class="breadcrumbs" aria-label="面包屑"><a href="${publicLink('/')}">公共服务首页</a><span>/</span><a href="${publicLink('/forum')}">棉友问答</a><span>/</span><span>${escapeHtml(question.categoryName)}</span></nav>
                   <div class="forum-question-labels">${question.status === 'solved' ? '<span class="solved">已解决</span>' : '<span>等待回答</span>'}<span>${escapeHtml(question.categoryName)}</span>${question.tags.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
                   <h1>${escapeHtml(question.title)}</h1>
                   <div class="forum-question-meta"><span>${escapeHtml(question.nickname)} 提问</span><time>${escapeHtml(formatDate(question.createdAt))}</time><span>${Number(question.viewCount || 0)} 次浏览</span></div>
@@ -929,7 +929,7 @@
       }
 
       function renderLogin() {
-        setMeta('账号登录', '公益平台账号登录和注册')
+        setMeta('账号登录', '公共服务平台账号登录和注册')
         setActiveNav('login')
         const params = new URLSearchParams(location.search)
         const next = safeNext(params.get('next'))
@@ -986,14 +986,14 @@
         }
 
         main.innerHTML = `
-          ${pageHero('PUBLIC ACCOUNT', '公益平台账号', '登录与图文课程分开。账号只用于保存学习记录、参与评论问答和提交专家咨询。', 'login-hero')}
+          ${pageHero('PUBLIC ACCOUNT', '公共服务平台账号', '登录与图文课程分开。账号只用于保存学习记录、参与评论问答和提交专家咨询。', 'login-hero')}
           <section class="section-block">
             <div class="shell public-auth-layout">
               <div class="public-auth-context">
                 <span class="eyebrow">ONE ACCOUNT</span>
                 <h2>沿用棉花平台账号</h2>
                 <p>已有农户或平台账号可以直接登录。没有账号时，可在这里注册农户学习账号。</p>
-                <div><strong>无需登录</strong><span>浏览公益培训、图文课程、政策和病虫害知识</span></div>
+                <div><strong>无需登录</strong><span>浏览农技培训、图文课程、政策和病虫害知识</span></div>
                 <div><strong>登录后</strong><span>保存进度、收藏课程、发表评论、参与问答和专家咨询</span></div>
               </div>
               <div class="public-auth-card">
@@ -1001,7 +1001,7 @@
                 <form id="publicLoginForm">
                   <label><span>手机号</span><input name="phone" inputmode="numeric" maxlength="11" autocomplete="tel" required></label>
                   <label><span>登录密码</span><input name="password" type="password" maxlength="20" autocomplete="current-password" required></label>
-                  <button class="button primary full" type="submit">登录公益平台</button>
+                  <button class="button primary full" type="submit">登录公共服务平台</button>
                   <p class="auth-message" id="publicLoginMessage" role="status"></p>
                 </form>
                 <form class="hidden" id="publicRegisterForm">

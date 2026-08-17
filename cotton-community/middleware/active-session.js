@@ -40,7 +40,7 @@ function createActiveSessionGuard(options = {}) {
         })
       }
       if (isCommunityAdmin && Number(payload.auth_version || 0) !== Number(account.auth_version || 0)) {
-        return res.status(401).json({ code: 401, msg: '公益管理员登录状态已失效，请重新登录', data: null })
+        return res.status(401).json({ code: 401, msg: '公共服务管理员登录状态已失效，请重新登录', data: null })
       }
       if (isAdmin && (
         !Number(account.is_admin) ||

@@ -18,7 +18,7 @@
     </view>
 
     <view class="actions">
-      <view class="action primary" bindtap="onLearn"><text class="action-title">去公益平台学习</text><text>完成课程得积分</text></view>
+      <view class="action primary" bindtap="onLearn"><text class="action-title">去公共服务平台学习</text><text>完成课程得积分</text></view>
       <view class="action" bindtap="onSupplies"><text class="action-title">购买农资</text><text>结算时自动抵扣</text></view>
     </view>
 

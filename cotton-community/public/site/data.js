@@ -812,7 +812,7 @@ window.COTTON_SITE_DATA = {
       date: '2026-07-28',
       image: '/assets/cotton-seedling-leaf-inspection-v1.jpg',
       summary: '用发布主体、文号、适用区域、执行期限和属地通知五项信息核验补贴与项目申报消息。',
-      source: '中国政府网政策栏目与棉知公益平台整理',
+      source: '中国政府网政策栏目与喀什优棉公共服务平台整理',
       sourceUrl: 'https://www.gov.cn/zhengce/',
       content: [
         {

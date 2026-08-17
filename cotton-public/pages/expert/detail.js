@@ -8,9 +8,9 @@ function normalizeCourse(item = {}) {
     ...item,
     id: item.id,
     type: item.type || 'video',
-    typeLabel: item.typeLabel || (item.type === 'article' ? '图文课' : item.type === 'qa' ? '问答课' : '视频课'),
+    typeLabel: item.typeLabel || (item.type === 'article' ? '图文课' : item.type === 'qa' ? '生产问答' : '视频课'),
     icon: item.icon || (item.type === 'article' ? '📖' : item.type === 'qa' ? '💬' : '▶️'),
-    title: item.title || '专家课程',
+    title: item.title || (item.type === 'qa' ? '棉花生产常见问题' : '专家课程'),
     category: item.category || item.category_name || '种植技术',
     intro: item.intro || '',
     content: item.content || '',
@@ -40,7 +40,7 @@ function buildFallbackDetail(options = {}, lang = i18n.getLanguage()) {
   const expert = expertId
     ? (experts.find(item => item.id === expertId) || experts[0] || {})
     : (experts.find(item => item.id === course.expertId) || experts[0] || {})
-  return { copy, course, expert, isExpertOnly: !!expertId }
+  return { copy, course, expert, isExpertOnly: !!expertId, isQa: !expertId && course.type === 'qa' }
 }
 
 function buildQuizState(quiz = []) {
@@ -62,6 +62,7 @@ Page({
     course: {},
     expert: {},
     isExpertOnly: false,
+    isQa: false,
     loading: false,
     loadError: '',
     quizItems: [],
@@ -103,14 +104,15 @@ Page({
           tags: this._selectedExpert.tags || [],
           bio: this._selectedExpert.bio || ''
         },
-        isExpertOnly: true
+        isExpertOnly: true,
+        isQa: false
       }
       : fallback
     this.setData({
       lang,
       copy: fallback.copy,
       ...(this._remoteCourse
-        ? { course: this._remoteCourse, expert: this._remoteExpert, isExpertOnly: false }
+        ? { course: this._remoteCourse, expert: this._remoteExpert, isExpertOnly: false, isQa: this._remoteCourse.type === 'qa' }
         : expertOnlyState),
       quizItems: this._remoteCourse ? this.data.quizItems : buildQuizState(fallback.course.quiz || [])
     })
@@ -140,10 +142,11 @@ Page({
         course,
         expert,
         isExpertOnly: false,
+        isQa: course.type === 'qa',
         quizItems: buildQuizState(course.quiz || [])
       })
     } catch (error) {
-      this.setData({ loading: false, loadError: error.message || '课程加载失败' })
+      this.setData({ loading: false, loadError: error.message || '内容加载失败' })
     }
   },
 
@@ -164,8 +167,9 @@ Page({
 
   onAsk() {
     const course = this.data.course || {}
-    const prompt = course.aiPrompt ||
-      `我正在学习专家讲堂课程《${course.title || ''}》。请作为棉花种植培训教练，围绕这节课用简单问答训练我，先问我一个问题，再根据我的回答继续讲解。`
+    const prompt = course.aiPrompt || (course.type === 'qa'
+      ? `我正在查看棉花生产问题“${course.title || ''}”的专家解答。请作为棉花农技顾问，先询问我的地块位置、棉花生育期、田间症状和近期操作，再结合这些信息给出进一步的排查与处置建议。`
+      : `我正在学习专家讲堂课程《${course.title || ''}》。请作为棉花种植培训教练，围绕这节课用简单问答训练我，先问我一个问题，再根据我的回答继续讲解。`)
     wx.setStorageSync('ai_training_prompt', prompt)
     wx.navigateTo({ url: '/pages/ai/index?from=expert' })
   },

@@ -7,14 +7,40 @@
   <view wx:if="{{!loading}}" class="article-wrap">
     <view class="article-body"><rich-text wx:if="{{bodyNodes.length && policy.markdown}}" nodes="{{bodyNodes}}"></rich-text><view wx:if="{{!policy.markdown}}"><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view></view>
     <view class="source-note"><text>信息来源：{{policy.issuer || '待补充发布单位'}}</text><text>{{policy.originalUrl?'已提供官方原文链接':'请以发布单位正式原文为准'}}</text><button bindtap="copySource">{{policy.originalUrl?'复制原文链接':'复制来源说明'}}</button></view>
-    <view class="comments"><view class="comments-title"><i></i><text>评论</text><small>{{comments.length ? comments.length + ' 条' : ''}}</small></view>
+    <view class="comments"><view class="comments-title"><i></i><text>评论</text><small>{{commentCount ? commentCount + ' 条' : ''}}</small></view>
       <view wx:if="{{commentsLoading}}" class="comment-empty">评论加载中…</view>
       <view wx:if="{{!commentsLoading && !comments.length}}" class="comment-empty"><view class="empty-icon">评</view><text>暂无评论，欢迎发表观点</text></view>
-      <view wx:if="{{!commentsLoading && comments.length}}"><view class="comment" wx:for="{{comments}}" wx:key="id"><view class="avatar">{{item.initial}}</view><view class="comment-main"><view class="comment-meta"><text>{{item.author}}</text><text>{{item.timeText}}</text></view><text class="comment-content">{{item.content}}</text></view></view></view>
+      <view wx:if="{{!commentsLoading && comments.length}}">
+        <view class="comment" wx:for="{{comments}}" wx:key="id">
+          <view class="avatar">{{item.initial}}</view>
+          <view class="comment-main">
+            <view class="comment-meta"><text>{{item.author}}</text><text>{{item.timeText}}</text></view>
+            <text class="comment-content">{{item.content}}</text>
+            <view style="display:flex;align-items:center;justify-content:flex-end;gap:34rpx;margin-top:14rpx;color:#7a837f;font-size:22rpx">
+              <text data-id="{{item.id}}" data-author="{{item.author}}" bindtap="startReply">回复</text>
+              <text data-id="{{item.id}}" bindtap="toggleCommentLike" style="color:{{item.liked?'#167553':'#7a837f'}}">{{item.liked?'♥':'♡'}} {{item.likeCount || '点赞'}}</text>
+            </view>
+            <view wx:if="{{item.replies.length}}" style="margin-top:18rpx;padding:4rpx 18rpx;border-radius:16rpx;background:#f5f8f6">
+              <view wx:for="{{item.replies}}" wx:for-item="reply" wx:key="id" style="padding:18rpx 0;border-bottom:1rpx solid #e7ece9">
+                <view style="display:flex;align-items:center;justify-content:space-between;color:#68736e;font-size:21rpx"><text>{{reply.author}} 回复 {{reply.replyToAuthor}}</text><text>{{reply.timeText}}</text></view>
+                <text style="display:block;margin-top:9rpx;color:#303532;font-size:24rpx;line-height:1.65">{{reply.content}}</text>
+                <view style="display:flex;align-items:center;justify-content:flex-end;gap:30rpx;margin-top:10rpx;color:#7a837f;font-size:21rpx">
+                  <text data-id="{{reply.id}}" data-author="{{reply.author}}" bindtap="startReply">回复</text>
+                  <text data-id="{{reply.id}}" bindtap="toggleCommentLike" style="color:{{reply.liked?'#167553':'#7a837f'}}">{{reply.liked?'♥':'♡'}} {{reply.likeCount || '点赞'}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
   <view class="bottom-bar">
-    <view class="comment-input" bindtap="focusComment"><input value="{{commentText}}" focus="{{commentFocus}}" bindinput="onCommentInput" bindblur="onCommentBlur" bindconfirm="submitComment" confirm-type="send" maxlength="300" placeholder="欢迎发表评论"/><button wx:if="{{commentText}}" loading="{{submittingComment}}" bindtap="submitComment">发送</button></view>
+    <view class="comment-input" bindtap="focusComment">
+      <text wx:if="{{replyTargetId}}" bindtap="cancelReply" style="flex:none;margin-right:8rpx;color:#167553;font-size:21rpx">回复 {{replyTargetAuthor}} ×</text>
+      <input value="{{commentText}}" focus="{{commentFocus}}" adjust-position="true" cursor-spacing="18" bindinput="onCommentInput" bindblur="onCommentBlur" bindconfirm="submitComment" confirm-type="send" maxlength="300" placeholder="{{replyTargetId?'写下回复…':'欢迎发表评论'}}"/>
+      <text class="comment-send {{commentText?'ready':''}}" catchtap="submitComment">发送</text>
+    </view>
     <view class="action-group"><view class="action" bindtap="focusComment"><text class="action-icon">评</text><small>评论</small></view><view class="action" bindtap="toggleCollect"><text class="action-icon {{collected?'active':''}}">{{collected?'★':'☆'}}</text><small>{{collected?'已收藏':'收藏'}}</small></view><button class="action share" open-type="share"><text class="action-icon">↗</text><small>转发</small></button></view>
   </view>
 </view>

@@ -19,6 +19,9 @@ function run() {
   const adminRoute = readServerFile('routes', 'admin.js')
 
   assert.ok(login.includes('Cotton'), 'unified login should keep Cotton branding')
+  assert.ok(login.includes('<strong>公共服务平台</strong>'), 'unified login should use the public service platform name')
+  assert.ok(!login.includes('<strong>公益平台</strong>'), 'legacy public platform name should not remain on the unified login')
+  assert.ok(!login.includes('class="points"') && !login.includes('<em>培训') && !login.includes('<em>农资'), 'decorative subtitles and small gateway tags should be removed')
   assert.ok(login.includes('data-role="admin"'), 'admin role card should exist')
   assert.ok(login.includes('data-role="merchant"'), 'merchant role card should exist')
   assert.ok(login.includes('data-role="operator"'), 'operator role card should exist')
