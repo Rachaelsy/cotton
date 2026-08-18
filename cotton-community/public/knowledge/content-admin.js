@@ -19,7 +19,7 @@
   }
 
   function hideSharedPanels() {
-    ['listPanel', 'editorPanel', 'securityPanel', 'farmerPanel', 'productPanel', 'factoryPanel', 'expertPanel', 'financePanel', 'homepagePanel']
+    ['listPanel', 'editorPanel', 'securityPanel', 'farmerPanel', 'plotPanel', 'productPanel', 'factoryPanel', 'expertPanel', 'financePanel', 'homepagePanel']
       .forEach(id => { const node = $(id); if (node) node.classList.add('hidden') })
   }
 

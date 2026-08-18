@@ -14,7 +14,7 @@
     const result = await runtime.requestJson(`/api/expert-studio${path}`, options, { token, onUnauthorized: unauthorized })
     return result.data
   }
-  function hidePanels() { ['listPanel', 'editorPanel', 'productPanel', 'factoryPanel', 'securityPanel', 'farmerPanel'].forEach(id => $(id).classList.add('hidden')) }
+  function hidePanels() { ['listPanel', 'editorPanel', 'productPanel', 'factoryPanel', 'securityPanel', 'farmerPanel', 'plotPanel'].forEach(id => $(id).classList.add('hidden')) }
   function status(value) { return `<span class="status-pill ${value ? 'published' : ''}">${value ? '已发布' : '草稿'}</span>` }
   function expertOptions(selected) { $('studioContentExpert').innerHTML = '<option value="">平台专家</option>' + state.experts.map(item => `<option value="${item.id}"${Number(selected) === item.id ? ' selected' : ''}>${esc(item.name)} · ${esc(item.title || item.org || '专家')}</option>`).join('') }
 

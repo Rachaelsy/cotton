@@ -3,5 +3,5 @@
   <view class="card"><text class="card-title">我们在做什么</text><text class="paragraph">平台面向棉农提供地块管理、气象参考、农事记录、病虫害识别、公益课程、政策资讯和 AI 农技问答等服务，帮助用户更方便地获取生产知识与记录田间信息。</text></view>
   <view class="card"><text class="card-title">核心服务</text><view class="services"><view><text>田</text><text>生产工具</text></view><view><text>学</text><text>公益学习</text></view><view><text>政</text><text>政策资讯</text></view><view><text>AI</text><text>农技问答</text></view></view></view>
   <view class="card boundary"><text class="card-title">服务边界</text><view><text>✓</text><text>知识内容和预报信息用于生产参考</text></view><view><text>✓</text><text>金融模块只做科普与官方入口指引</text></view><view><text>✓</text><text>不提供交易撮合，不代办贷款、保险或期货业务</text></view><view><text>✓</text><text>重要决策请以政府部门、专业机构和现场情况为准</text></view></view>
-  <view class="quick"><view bindtap="openPolicy"><text>政策资讯</text><text>查看政策与行业动态 ›</text></view><view bindtap="openAcademy"><text>棉知学堂</text><text>进入公共服务课程体系 ›</text></view></view><text class="footer">喀什优棉公共服务平台项目组</text>
+  <view class="quick"><view bindtap="openPolicy"><text>政策资讯</text><text>查看政策与行业动态 ›</text></view><view bindtap="openAcademy"><text>优棉学堂</text><text>进入公共服务课程体系 ›</text></view></view><text class="footer">喀什优棉公共服务平台项目组</text>
 </scroll-view></view>

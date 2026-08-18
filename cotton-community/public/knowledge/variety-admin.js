@@ -45,7 +45,7 @@
   }
 
   function hidePanels() {
-    ['listPanel','editorPanel','financePanel','homepagePanel','productPanel','factoryPanel','expertPanel','securityPanel','farmerPanel'].forEach(id => {
+    ['listPanel','editorPanel','financePanel','homepagePanel','productPanel','factoryPanel','expertPanel','securityPanel','farmerPanel','plotPanel'].forEach(id => {
       const panel = $(id)
       if (panel) panel.classList.add('hidden')
     })

@@ -20,7 +20,7 @@
     return result.data
   }
   function hidePanels() {
-    ['listPanel', 'editorPanel', 'homepagePanel', 'financePanel', 'productPanel', 'varietyPanel', 'factoryPanel', 'expertPanel', 'securityPanel', 'farmerPanel'].forEach(id => $(id).classList.add('hidden'))
+    ['listPanel', 'editorPanel', 'homepagePanel', 'financePanel', 'productPanel', 'varietyPanel', 'factoryPanel', 'expertPanel', 'securityPanel', 'farmerPanel', 'plotPanel'].forEach(id => $(id).classList.add('hidden'))
   }
   function render() {
     $('todoCountHint').textContent = `${$('todoFilterDate').value} 共 ${state.rows.length} 条`

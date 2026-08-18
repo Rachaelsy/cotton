@@ -58,6 +58,7 @@
     $('editorPanel').classList.add('hidden')
     $('securityPanel').classList.add('hidden')
     $('farmerPanel').classList.add('hidden')
+    $('plotPanel').classList.add('hidden')
     $('factoryPanel').classList.add('hidden')
     $('expertPanel').classList.add('hidden')
     $('productPanel').classList.remove('hidden')

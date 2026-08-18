@@ -1119,6 +1119,272 @@ router.patch('/users/:id/status', adminAuth, async (req, res) => {
   }
 })
 
+function maskFarmerPhone(value) {
+  const phone = String(value || '')
+  return /^1\d{10}$/.test(phone) ? `${phone.slice(0, 3)}****${phone.slice(-4)}` : '—'
+}
+
+function farmerLocationParts(value) {
+  const location = String(value || '').trim()
+  const countyMatch = location.match(/([^，,·\s]+?(?:县|市|区))/)
+  const townshipMatches = [...location.matchAll(/([^，,·\s]+?(?:乡|镇|街道))/g)]
+  return {
+    county: countyMatch ? countyMatch[1] : (location || '未填写地区'),
+    township: townshipMatches.length ? townshipMatches[townshipMatches.length - 1][1] : '未填写乡镇'
+  }
+}
+
+function parsePlotBoundary(value) {
+  if (Array.isArray(value)) return value
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch { return [] }
+}
+
+function plotCenter(boundary) {
+  const points = boundary.map(item => ({
+    latitude: Number(item.latitude ?? item.lat),
+    longitude: Number(item.longitude ?? item.lng)
+  })).filter(item => Number.isFinite(item.latitude) && Number.isFinite(item.longitude))
+  if (!points.length) return null
+  return {
+    latitude: Number((points.reduce((sum, item) => sum + item.latitude, 0) / points.length).toFixed(7)),
+    longitude: Number((points.reduce((sum, item) => sum + item.longitude, 0) / points.length).toFixed(7))
+  }
+}
+
+function plotGrowthStage(sowDate) {
+  if (!sowDate) return '未设置播期'
+  const sow = new Date(sowDate)
+  if (Number.isNaN(sow.getTime())) return '未设置播期'
+  const days = Math.floor((Date.now() - sow.getTime()) / 86400000)
+  if (days < 0) return '待播种'
+  if (days <= 15) return '出苗期'
+  if (days <= 35) return '苗期'
+  if (days <= 55) return '蕾期'
+  if (days <= 95) return '花铃期'
+  if (days <= 125) return '吐絮期'
+  return '采收期'
+}
+
+function dateOnly(value) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Public-service administrators receive a read-only, privacy-preserving view of
+// farmer and plot operations. Transaction, payment and identity-document data
+// are deliberately excluded from this response.
+router.get('/farmer-landscape', farmerAdminAuth, async (_req, res) => {
+  async function optionalRows(sql, params = []) {
+    try {
+      const [rows] = await db.query(sql, params)
+      return rows
+    } catch (error) {
+      if (['ER_NO_SUCH_TABLE', 'ER_BAD_FIELD_ERROR'].includes(error.code)) return []
+      throw error
+    }
+  }
+
+  try {
+    const [farmers, plots, records, recognitions, observations, verifications] = await Promise.all([
+      optionalRows(`
+        SELECT u.id,u.phone,u.real_name,u.is_verified,u.is_active,u.created_at,
+               f.location,f.land_size
+          FROM farmers f JOIN users u ON u.id=f.user_id
+         ORDER BY u.created_at DESC
+      `),
+      optionalRows(`
+        SELECT id,user_id,name,variety,area,coordinates,sow_date,planting_status,
+               health_score,health_issue,status,created_at,updated_at
+          FROM plots ORDER BY updated_at DESC,id DESC
+      `),
+      optionalRows(`
+        SELECT user_id,plot_id,
+               COUNT(*) AS record_count,
+               SUM(type='灌溉') AS irrigation_count,
+               SUM(type='施肥') AS fertilization_count,
+               MAX(CONCAT(DATE_FORMAT(work_date,'%Y-%m-%d'),' ',COALESCE(NULLIF(work_time,''),'00:00'))) AS last_record_at,
+               SUBSTRING_INDEX(GROUP_CONCAT(type ORDER BY work_date DESC,work_time DESC,id DESC SEPARATOR '||'),'||',1) AS last_record_type,
+               SUBSTRING_INDEX(GROUP_CONCAT(title ORDER BY work_date DESC,work_time DESC,id DESC SEPARATOR '||'),'||',1) AS last_record_title
+          FROM farm_records GROUP BY user_id,plot_id
+      `),
+      optionalRows(`
+        SELECT user_id,COUNT(*) AS recognition_count,MAX(created_at) AS last_recognition_at
+          FROM pest_recognition_records GROUP BY user_id
+      `),
+      optionalRows(`
+        SELECT plot_id,MAX(temperature) AS max_temperature,MIN(temperature) AS min_temperature,
+               SUM(precipitation) AS precipitation,MAX(observed_hour) AS last_observed_at
+          FROM weather_observations
+         WHERE observed_hour>=DATE_SUB(NOW(),INTERVAL 72 HOUR)
+         GROUP BY plot_id
+      `),
+      optionalRows(`
+        SELECT item.user_id,item.status
+          FROM farmer_verifications item
+          JOIN (SELECT user_id,MAX(id) AS max_id FROM farmer_verifications GROUP BY user_id) latest
+            ON latest.max_id=item.id
+      `)
+    ])
+
+    const farmerMap = new Map(farmers.map(item => [Number(item.id), item]))
+    const verificationMap = new Map(verifications.map(item => [Number(item.user_id), item.status]))
+    const recognitionMap = new Map(recognitions.map(item => [Number(item.user_id), item]))
+    const weatherMap = new Map(observations.map(item => [Number(item.plot_id), item]))
+    const recordMap = new Map()
+    const userRecordMap = new Map()
+    records.forEach(item => {
+      const userId = Number(item.user_id)
+      const plotId = item.plot_id == null ? null : Number(item.plot_id)
+      if (plotId) recordMap.set(`${userId}:${plotId}`, item)
+      else userRecordMap.set(userId, item)
+    })
+
+    const plotItems = plots.map(plot => {
+      const userId = Number(plot.user_id)
+      const farmer = farmerMap.get(userId) || {}
+      const location = farmerLocationParts(farmer.location)
+      const boundary = parsePlotBoundary(plot.coordinates)
+      const center = plotCenter(boundary)
+      const record = recordMap.get(`${userId}:${Number(plot.id)}`) || userRecordMap.get(userId) || {}
+      const recognition = recognitionMap.get(userId) || {}
+      const weather = weatherMap.get(Number(plot.id)) || {}
+      const risks = {
+        highTemperature: Number(weather.max_temperature) >= 35,
+        heavyRain: Number(weather.precipitation) >= 10,
+        frost: weather.min_temperature != null && Number(weather.min_temperature) <= 2,
+        highWind: false,
+        highWindAvailable: false
+      }
+      const riskCount = ['highTemperature', 'heavyRain', 'frost'].filter(key => risks[key]).length
+      const activityCandidates = [plot.updated_at, record.last_record_at, recognition.last_recognition_at]
+        .filter(Boolean).map(value => new Date(value)).filter(value => !Number.isNaN(value.getTime()))
+      const lastActivityAt = activityCandidates.length
+        ? new Date(Math.max(...activityCandidates.map(value => value.getTime())))
+        : null
+      return {
+        id: Number(plot.id),
+        farmerId: userId,
+        farmerName: farmer.real_name || `农户${userId}`,
+        phoneMasked: maskFarmerPhone(farmer.phone),
+        county: location.county,
+        township: location.township,
+        location: farmer.location || '',
+        verificationStatus: farmer.is_verified ? 'approved' : (verificationMap.get(userId) || 'unverified'),
+        accountStatus: farmer.is_active ? 'active' : 'disabled',
+        plotName: plot.name || `地块${plot.id}`,
+        area: Number(plot.area || 0),
+        crop: '棉花',
+        variety: plot.variety || '未填写',
+        sowDate: dateOnly(plot.sow_date),
+        growthStage: plotGrowthStage(plot.sow_date),
+        plantingStatus: plot.planting_status || '',
+        center,
+        boundary,
+        healthScore: Number(plot.health_score || 0),
+        healthIssue: plot.health_issue || '',
+        plotStatus: plot.status || 'normal',
+        production: {
+          lastRecordType: record.last_record_type || '',
+          lastRecordTitle: record.last_record_title || '',
+          lastRecordAt: record.last_record_at || null,
+          recordCount: Number(record.record_count || 0),
+          irrigationCount: Number(record.irrigation_count || 0),
+          fertilizationCount: Number(record.fertilization_count || 0),
+          pestRecognitionCount: Number(recognition.recognition_count || 0),
+          lastActivityAt
+        },
+        weather: {
+          maxTemperature: weather.max_temperature == null ? null : Number(weather.max_temperature),
+          minTemperature: weather.min_temperature == null ? null : Number(weather.min_temperature),
+          precipitation: weather.precipitation == null ? null : Number(weather.precipitation),
+          lastObservedAt: weather.last_observed_at || null,
+          risks,
+          riskCount
+        },
+        needsAttention: plot.status === 'attention' || riskCount > 0
+      }
+    })
+
+    const now = Date.now()
+    const activeFarmerIds = new Set(plotItems.filter(item => {
+      const time = item.production.lastActivityAt ? new Date(item.production.lastActivityAt).getTime() : 0
+      return time && now - time <= 30 * 86400000
+    }).map(item => item.farmerId))
+    const countyMap = new Map()
+    const varietyMap = new Map()
+    const stageMap = new Map()
+    plotItems.forEach(item => {
+      const county = countyMap.get(item.county) || { county: item.county, plotCount: 0, totalArea: 0, farmerIds: new Set() }
+      county.plotCount += 1
+      county.totalArea += item.area
+      county.farmerIds.add(item.farmerId)
+      countyMap.set(item.county, county)
+      varietyMap.set(item.variety, (varietyMap.get(item.variety) || 0) + 1)
+      stageMap.set(item.growthStage, (stageMap.get(item.growthStage) || 0) + 1)
+    })
+    const counties = [...countyMap.values()].map(item => ({
+      county: item.county,
+      plotCount: item.plotCount,
+      totalArea: Number(item.totalArea.toFixed(2)),
+      farmerCount: item.farmerIds.size,
+      activeFarmerCount: [...item.farmerIds].filter(id => activeFarmerIds.has(id)).length
+    })).sort((a, b) => b.totalArea - a.totalArea)
+    const distributions = map => [...map.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
+
+    return res.json({
+      code: 200,
+      data: {
+        summary: {
+          farmerCount: farmers.length,
+          activeFarmerCount: activeFarmerIds.size,
+          plotCount: plotItems.length,
+          totalArea: Number(plotItems.reduce((sum, item) => sum + item.area, 0).toFixed(2)),
+          attentionPlotCount: plotItems.filter(item => item.needsAttention).length,
+          verifiedFarmerCount: farmers.filter(item => item.is_verified).length
+        },
+        risks: {
+          highTemperature: plotItems.filter(item => item.weather.risks.highTemperature).length,
+          highWind: 0,
+          highWindAvailable: false,
+          heavyRain: plotItems.filter(item => item.weather.risks.heavyRain).length,
+          frost: plotItems.filter(item => item.weather.risks.frost).length
+        },
+        counties,
+        varieties: distributions(varietyMap),
+        growthStages: distributions(stageMap),
+        farmers: farmers.map(item => {
+          const location = farmerLocationParts(item.location)
+          return {
+            id: Number(item.id),
+            name: item.real_name || `农户${item.id}`,
+            phoneMasked: maskFarmerPhone(item.phone),
+            county: location.county,
+            township: location.township,
+            location: item.location || '',
+            verificationStatus: item.is_verified ? 'approved' : (verificationMap.get(Number(item.id)) || 'unverified'),
+            accountStatus: item.is_active ? 'active' : 'disabled',
+            registeredArea: Number(item.land_size || 0),
+            createdAt: item.created_at || null
+          }
+        }),
+        plots: plotItems
+      }
+    })
+  } catch (error) {
+    console.error('[admin-farmer-landscape]', error)
+    return res.status(500).json({ code: 500, msg: '农户与地块数据加载失败' })
+  }
+})
+
 // 公共服务管理员专用的农户状态接口，先验证目标确实是农户，避免越权停用其他角色。
 router.patch('/farmers/:id/status', farmerAdminAuth, async (req, res) => {
   try {
