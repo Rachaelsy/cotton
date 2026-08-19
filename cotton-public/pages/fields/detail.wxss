@@ -34,10 +34,7 @@
   box-sizing: border-box;
 }
 
-.header-edit {
-  color: #B9852F;
-  background: #FFFFFF;
-}
+.header-spacer { width: 76rpx; height: 56rpx; flex-shrink: 0; }
 
 .header-title {
   flex: 1;
@@ -170,6 +167,18 @@
 
 .section-title { color: #18231A; font-size: 27rpx; font-weight: 900; }
 .section-sub { color: #8A948B; font-size: 21rpx; }
+.section-head-copy { min-width: 0; display: flex; flex-direction: column; gap: 5rpx; }
+.base-info-head { align-items: center; }
+.base-edit-btn {
+  flex-shrink: 0;
+  padding: 12rpx 20rpx;
+  border-radius: 999rpx;
+  color: #24794A;
+  background: #EAF6EF;
+  border: 1rpx solid #CBE5D5;
+  font-size: 22rpx;
+  font-weight: 800;
+}
 
 .reference-detail-card {
   padding-bottom: 20rpx;
@@ -230,6 +239,8 @@
 .kv-key { flex-shrink: 0; color: #58655B; font-size: 25rpx; }
 .kv-value { color: #18231A; font-size: 25rpx; font-weight: 700; text-align: right; line-height: 1.5; }
 .kv-empty { color: #B7C0B8; font-weight: 400; }
+.kv-value-group { min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 10rpx; }
+.stage-source { flex-shrink: 0; padding: 5rpx 10rpx; border-radius: 999rpx; color: #6B786D; background: #F0F4EE; font-size: 19rpx; }
 
 .record-row {
   min-height: 86rpx;
@@ -351,6 +362,10 @@
 .req { color: #D6453D; }
 .field-input { flex: 1; color: #18231A; font-size: 25rpx; text-align: right; }
 .field-picker { min-width: 300rpx; display: flex; align-items: center; justify-content: flex-end; gap: 14rpx; }
+.field-stage { min-height: 112rpx; align-items: flex-start; padding: 18rpx 0; }
+.field-control { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch; }
+.field-stage .field-picker { min-width: 0; }
+.field-help { margin-top: 9rpx; color: #8A948B; font-size: 20rpx; line-height: 1.5; text-align: right; }
 .picker-value, .picker-empty, .picker-change { font-size: 24rpx; }
 .picker-value { color: #18231A; }
 .picker-empty { color: #B7C0B8; }

@@ -25,6 +25,7 @@ Page({
     todoDate: '',
     todos: [],
     todosLoading: true,
+    todosError: '',
     todoScrollable: false,
     todoSpeaking: false,
     news: [],
@@ -73,11 +74,12 @@ Page({
       this.setData({
         todoDate: date,
         todos,
+        todosError: '',
         todoScrollable: estimatedHeight > 310,
         todosLoading: false
       })
     } catch (error) {
-      this.setData({ todoDate: date, todos: [], todoScrollable: false, todosLoading: false })
+      this.setData({ todoDate: date, todos: [], todosError: '今日待办加载失败', todoScrollable: false, todosLoading: false })
     }
   },
 
@@ -86,7 +88,12 @@ Page({
       this.stopTodoSpeech()
       return
     }
-    if (!this.data.todos.length) return wx.showToast({ title: '今天暂时没有可播报的待办', icon: 'none' })
+    if (!this.data.todos.length) {
+      return wx.showToast({
+        title: this.data.todosError ? '待办加载失败，请稍后重试' : '今天暂时没有可播报的待办',
+        icon: 'none'
+      })
+    }
     if (!(WechatSI && typeof WechatSI.textToSpeech === 'function')) {
       return wx.showToast({ title: '语音播报插件暂不可用', icon: 'none' })
     }

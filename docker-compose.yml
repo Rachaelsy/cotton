@@ -135,7 +135,7 @@ services:
 
 volumes:
   mysql_data:
-    name: cotton_mysql_data
+    name: ${MYSQL_VOLUME_NAME:-cotton_mysql_data}
   uploads:
     name: cotton_uploads
   identity_uploads:

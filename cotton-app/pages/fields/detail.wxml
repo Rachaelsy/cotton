@@ -4,7 +4,7 @@
     <view class="topbar" style="padding-right: {{capsuleSafeRight}}px">
       <view class="header-action" bindtap="onBack"><text>{{common.back}}</text></view>
       <text class="header-title">{{plot.name || copy.fallbackTitle}}</text>
-      <view class="header-action header-edit" bindtap="onEdit"><text>{{common.edit}}</text></view>
+      <view class="header-spacer"></view>
     </view>
   </view>
 
@@ -83,12 +83,16 @@
       </view>
 
       <view class="section-card">
-        <view class="section-head"><text class="section-title">{{copy.baseInfo}}</text><text class="section-sub">{{copy.baseInfoSub}}</text></view>
+        <view class="section-head base-info-head">
+          <view class="section-head-copy"><text class="section-title">{{copy.baseInfo}}</text><text class="section-sub">{{copy.baseInfoSub}}</text></view>
+          <view class="base-edit-btn" bindtap="onEdit"><text>{{copy.editBaseInfo}}</text></view>
+        </view>
         <view class="kv-row"><text class="kv-key">{{copy.name}}</text><text class="kv-value">{{plot.name}}</text></view>
         <view class="kv-row"><text class="kv-key">{{copy.area}}</text><text class="kv-value">{{plot.areaText}} {{common.mu}}</text></view>
         <view class="kv-row"><text class="kv-key">{{copy.perimeter}}</text><text class="kv-value">{{plot.perimeterText}} {{copy.meter}}</text></view>
         <view class="kv-row"><text class="kv-key">{{copy.variety}}</text><text class="kv-value {{!plot.variety ? 'kv-empty' : ''}}">{{plot.variety || copy.notFilled}}</text></view>
         <view class="kv-row"><text class="kv-key">{{copy.sowDate}}</text><text class="kv-value {{!plot.sow_date ? 'kv-empty' : ''}}">{{plot.sowDateText}}</text></view>
+        <view class="kv-row"><text class="kv-key">{{copy.growthStage}}</text><view class="kv-value-group"><text class="kv-value">{{plot.growthStageText}}</text><text class="stage-source">{{plot.growthStageSourceText}}</text></view></view>
         <view class="kv-row"><text class="kv-key">{{copy.irrigation}}</text><text class="kv-value">{{plot.irrigationText || copy.notFilled}}</text></view>
         <view class="kv-row"><text class="kv-key">{{copy.soil}}</text><text class="kv-value {{!plot.soil_type ? 'kv-empty' : ''}}">{{plot.soilTypeText || copy.notFilled}}</text></view>
         <view class="kv-row"><text class="kv-key">{{copy.planting}}</text><text class="kv-value">{{plot.plantingStatusText}}</text></view>
@@ -125,6 +129,7 @@
       <view class="field-row"><text class="field-label">{{copy.name}} <text class="req">*</text></text><input class="field-input" value="{{form.name}}" bindinput="onNameInput" maxlength="20"/></view>
       <view class="field-row"><text class="field-label">{{copy.variety}} <text class="req">*</text></text><input class="field-input" value="{{form.variety}}" bindinput="onVarietyInput" maxlength="30"/></view>
       <view class="field-row"><text class="field-label">{{copy.sowDate}}</text><picker mode="date" value="{{form.sowDate}}" bindchange="onSowChange"><view class="field-picker"><text class="{{form.sowDate ? 'picker-value' : 'picker-empty'}}">{{form.sowDate || copy.chooseDate}}</text><text class="picker-change">{{copy.change}}</text></view></picker></view>
+      <view class="field-row field-stage"><text class="field-label">{{copy.growthStage}}</text><view class="field-control"><picker mode="selector" range="{{growthStageOptions}}" value="{{growthStageIndex}}" bindchange="onGrowthStageChange"><view class="field-picker"><text class="picker-value">{{growthStageLabel}}</text><text class="picker-change">{{copy.change}}</text></view></picker><text class="field-help">{{copy.growthStageHelp}}</text></view></view>
       <view class="field-row"><text class="field-label">{{copy.irrigation}}</text><picker mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange"><view class="field-picker"><text class="picker-value">{{irrigationLabel}}</text><text class="picker-change">{{copy.change}}</text></view></picker></view>
       <view class="field-row"><text class="field-label">{{copy.soil}}</text><picker mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange"><view class="field-picker"><text class="picker-value">{{soilLabel}}</text><text class="picker-change">{{copy.change}}</text></view></picker></view>
       <view class="field-row"><text class="field-label">{{copy.planting}}</text><picker mode="selector" range="{{plantingOptions}}" value="{{plantingIndex}}" bindchange="onPlantingChange"><view class="field-picker"><text class="picker-value">{{plantingLabel}}</text><text class="picker-change">{{copy.change}}</text></view></picker></view>

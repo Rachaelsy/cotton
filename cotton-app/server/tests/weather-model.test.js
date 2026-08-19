@@ -296,6 +296,7 @@ function run() {
     name: '花铃期棉田',
     area: 50,
     sow_date: '2026-04-25',
+    growth_stage: '花铃期',
     irrigation: '滴灌',
     soil_type: '壤土',
     planting_status: '已播种',

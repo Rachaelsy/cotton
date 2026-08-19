@@ -7,6 +7,11 @@ const {
   calculateAreaMu,
   calculatePerimeterMeters
 } = require('../utils/plot-geometry')
+const {
+  GROWTH_STAGES,
+  normalizeGrowthStage,
+  resolveGrowthStage
+} = require('../utils/cotton-growth-stage')
 
 const router = express.Router()
 const IRRIGATION_OPTIONS = ['滴灌', '漫灌', '喷灌', '无']
@@ -67,6 +72,8 @@ function parsePlotInput(body, { requireBoundary = false } = {}) {
   const name = cleanText(body.name, 64)
   const variety = cleanText(body.variety, 64)
   const sowDate = body.sow_date || null
+  const rawGrowthStage = cleanText(body.growth_stage, 24)
+  const growthStage = normalizeGrowthStage(rawGrowthStage)
   const irrigation = cleanText(body.irrigation, 16) || '滴灌'
   const soilType = cleanText(body.soil_type, 32) || '壤土'
   const plantingStatus = cleanText(body.planting_status, 16) || '已播种'
@@ -77,6 +84,7 @@ function parsePlotInput(body, { requireBoundary = false } = {}) {
   if (!name) return { error: '地块名称不能为空' }
   if (!variety) return { error: '棉花品种不能为空' }
   if (!validDate(sowDate)) return { error: '播种日期格式不正确' }
+  if (rawGrowthStage && !growthStage) return { error: `生育期仅支持：${GROWTH_STAGES.join('、')}` }
   if (!IRRIGATION_OPTIONS.includes(irrigation)) return { error: '灌溉方式不正确' }
   if (!SOIL_OPTIONS.includes(soilType)) return { error: '土壤类型不正确' }
   if (!PLANTING_OPTIONS.includes(plantingStatus)) return { error: '种植状态不正确' }
@@ -85,6 +93,7 @@ function parsePlotInput(body, { requireBoundary = false } = {}) {
     name,
     variety,
     sowDate,
+    growthStage,
     irrigation,
     soilType,
     plantingStatus,
@@ -161,8 +170,8 @@ router.post('/', farmerAuth, async (req, res) => {
   try {
     const [result] = await db.query(
       `INSERT INTO plots
-       (user_id,name,variety,area,perimeter,coordinates,sow_date,irrigation,soil_type,planting_status,note,reference_images)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+       (user_id,name,variety,area,perimeter,coordinates,sow_date,growth_stage,irrigation,soil_type,planting_status,note,reference_images)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.user.id,
         input.name,
@@ -171,6 +180,7 @@ router.post('/', farmerAuth, async (req, res) => {
         input.perimeter,
         JSON.stringify(input.coordinates),
         input.sowDate,
+        input.growthStage,
         input.irrigation,
         input.soilType,
         input.plantingStatus,
@@ -237,7 +247,17 @@ router.get('/:id', farmerAuth, async (req, res) => {
       console.warn('[plots-overview]', overviewError.message)
     }
 
-    return ok(res, { ...rows[0], overview })
+    const resolvedGrowthStage = resolveGrowthStage(
+      rows[0].growth_stage,
+      rows[0].sow_date,
+      rows[0].planting_status
+    )
+    return ok(res, {
+      ...rows[0],
+      resolved_growth_stage: resolvedGrowthStage.value,
+      growth_stage_source: resolvedGrowthStage.source,
+      overview
+    })
   } catch (error) {
     console.error('[plots-get]', error)
     return fail(res, '服务器错误', 500)
@@ -253,14 +273,15 @@ router.put('/:id', farmerAuth, async (req, res) => {
   try {
     const hasReferenceImages = Object.prototype.hasOwnProperty.call(input, 'referenceImages')
     const sql = hasReferenceImages
-      ? `UPDATE plots SET name=?,variety=?,sow_date=?,irrigation=?,soil_type=?,planting_status=?,note=?,reference_images=?
+      ? `UPDATE plots SET name=?,variety=?,sow_date=?,growth_stage=?,irrigation=?,soil_type=?,planting_status=?,note=?,reference_images=?
          WHERE id=? AND user_id=?`
-      : `UPDATE plots SET name=?,variety=?,sow_date=?,irrigation=?,soil_type=?,planting_status=?,note=?
+      : `UPDATE plots SET name=?,variety=?,sow_date=?,growth_stage=?,irrigation=?,soil_type=?,planting_status=?,note=?
          WHERE id=? AND user_id=?`
     const params = [
       input.name,
       input.variety,
       input.sowDate,
+      input.growthStage,
       input.irrigation,
       input.soilType,
       input.plantingStatus,

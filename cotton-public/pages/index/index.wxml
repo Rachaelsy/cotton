@@ -59,7 +59,7 @@
     <view wx:if="{{todos.length}}" class="todo-summary"><text>共 {{todos.length}} 项今日安排</text><small wx:if="{{todoScrollable}}">上下滑动查看更多</small></view>
   </view>
 
-  <view wx:if="{{todos.length}}" class="todo-voice-fab {{todoSpeaking?'playing':''}}" style="width:94rpx;min-width:94rpx;max-width:94rpx;height:94rpx;min-height:94rpx;max-height:94rpx;border-radius:999rpx" bindtap="toggleTodoSpeech" role="button" aria-label="{{todoSpeaking?'停止播报':'播报今日待办'}}">
+  <view class="todo-voice-fab {{todoSpeaking?'playing':''}}" style="width:94rpx;min-width:94rpx;max-width:94rpx;height:94rpx;min-height:94rpx;max-height:94rpx;border-radius:999rpx" bindtap="toggleTodoSpeech" role="button" aria-label="{{todoSpeaking?'停止播报':'播报今日待办'}}">
     <view class="todo-voice-inner" style="display:flex;width:70rpx;height:70rpx;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 2rpx rgba(255,255,255,.22)">
       <view wx:if="{{!todoSpeaking}}" class="todo-mic"><view class="todo-mic-head"></view><view class="todo-mic-arc"></view><view class="todo-mic-stem"></view></view>
       <view wx:else class="todo-stop"></view>

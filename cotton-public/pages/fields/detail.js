@@ -3,10 +3,12 @@ const auth = require('../../utils/auth')
 const i18n = require('../../utils/i18n')
 const layout = require('../../utils/layout')
 const { normalizeCoordinates, calculateCenter } = require('../../utils/plot-geometry')
+const { GROWTH_STAGES, resolveGrowthStage } = require('../../utils/cotton-growth-stage')
 
 const IRRIGATION_OPTIONS = ['滴灌', '漫灌', '喷灌', '无']
 const SOIL_OPTIONS = ['壤土', '沙壤土', '粘土', '沙土', '盐碱土']
 const PLANTING_OPTIONS = ['已播种', '计划播种', '未播种']
+const GROWTH_STAGE_OPTIONS = ['', ...GROWTH_STAGES]
 
 function optionIndex(options, value) {
   const index = options.indexOf(value)
@@ -47,6 +49,18 @@ function formatArea(value) {
   return number.toFixed(number % 1 === 0 ? 0 : 1)
 }
 
+function growthStageLabels(copy) {
+  return [copy.growthStageAuto, ...(copy.growthStageNames || GROWTH_STAGES)]
+}
+
+function growthStageText(value, copy) {
+  const index = GROWTH_STAGES.indexOf(value)
+  if (index >= 0) return (copy.growthStageNames || GROWTH_STAGES)[index]
+  if (value === '待播种') return copy.waitingToSow
+  if (value === '未设置播期') return copy.noSowDate
+  return value || copy.notFilled
+}
+
 Page({
   data: {
     statusBarHeight: 20,
@@ -66,7 +80,7 @@ Page({
     saving: false,
     form: {
       name: '', variety: '', sowDate: '', irrigation: '滴灌',
-      soilType: '壤土', plantingStatus: '已播种', note: ''
+      soilType: '壤土', plantingStatus: '已播种', growthStage: '', note: ''
     },
     irrigationOptions: i18n.getOptionLabels('irrigation'),
     irrigationIndex: 0,
@@ -74,9 +88,12 @@ Page({
     soilIndex: 0,
     plantingOptions: i18n.getOptionLabels('planting'),
     plantingIndex: 0,
+    growthStageOptions: growthStageLabels(i18n.getPageCopy('fieldDetail')),
+    growthStageIndex: 0,
     irrigationLabel: '',
     soilLabel: '',
     plantingLabel: '',
+    growthStageLabel: '',
     recordsSubText: '',
     totalRecordsText: ''
   },
@@ -104,7 +121,8 @@ Page({
       copy: i18n.getPageCopy('fieldDetail', lang),
       irrigationOptions: i18n.getOptionLabels('irrigation', lang),
       soilOptions: i18n.getOptionLabels('soil', lang),
-      plantingOptions: i18n.getOptionLabels('planting', lang)
+      plantingOptions: i18n.getOptionLabels('planting', lang),
+      growthStageOptions: growthStageLabels(this.textCopy)
     })
   },
 
@@ -135,6 +153,9 @@ Page({
     const center = calculateCenter(coordinates)
     const score = Number.isFinite(Number(raw.health_score)) ? Number(raw.health_score) : 100
     const referenceImages = parseReferenceImages(raw.reference_images)
+    const resolvedStage = raw.resolved_growth_stage
+      ? { value: raw.resolved_growth_stage, source: raw.growth_stage_source || (raw.growth_stage ? 'manual' : 'automatic') }
+      : resolveGrowthStage(raw.growth_stage, raw.sow_date, raw.planting_status)
     const plot = {
       ...raw,
       referenceImages,
@@ -147,6 +168,8 @@ Page({
       plantingStatusText: i18n.localizeText(raw.planting_status || '已播种', this.currentLang),
       irrigationText: i18n.localizeText(raw.irrigation || this.textCopy.notFilled, this.currentLang),
       soilTypeText: i18n.localizeText(raw.soil_type || this.textCopy.notFilled, this.currentLang),
+      growthStageText: growthStageText(resolvedStage.value, this.textCopy),
+      growthStageSourceText: resolvedStage.source === 'manual' ? this.textCopy.growthStageManual : this.textCopy.growthStageEstimated,
       growthLabel: raw.status === 'attention'
         ? (raw.health_issue ? i18n.localizeText(raw.health_issue, this.currentLang) : this.textCopy.needAttention)
         : (score >= 90 ? this.textCopy.growthExcellent : score >= 80 ? this.textCopy.growthGood : this.textCopy.growthNormal)
@@ -161,9 +184,11 @@ Page({
     const irrigationIndex = optionIndex(IRRIGATION_OPTIONS, raw.irrigation)
     const soilIndex = optionIndex(SOIL_OPTIONS, raw.soil_type || '壤土')
     const plantingIndex = optionIndex(PLANTING_OPTIONS, raw.planting_status || '已播种')
+    const growthStageIndex = optionIndex(GROWTH_STAGE_OPTIONS, raw.growth_stage || '')
     const irrigationOptions = i18n.getOptionLabels('irrigation', this.currentLang)
     const soilOptions = i18n.getOptionLabels('soil', this.currentLang)
     const plantingOptions = i18n.getOptionLabels('planting', this.currentLang)
+    const growthStageOptions = growthStageLabels(this.textCopy)
     this.setData({
       loading: false,
       loadError: '',
@@ -187,17 +212,21 @@ Page({
         irrigation: raw.irrigation || '滴灌',
         soilType: raw.soil_type || '壤土',
         plantingStatus: raw.planting_status || '已播种',
+        growthStage: raw.growth_stage || '',
         note: raw.note || ''
       },
       irrigationIndex,
       soilIndex,
       plantingIndex,
+      growthStageIndex,
       irrigationOptions,
       soilOptions,
       plantingOptions,
+      growthStageOptions,
       irrigationLabel: irrigationOptions[irrigationIndex],
       soilLabel: soilOptions[soilIndex],
-      plantingLabel: plantingOptions[plantingIndex]
+      plantingLabel: plantingOptions[plantingIndex],
+      growthStageLabel: growthStageOptions[growthStageIndex]
     })
   },
 
@@ -223,9 +252,17 @@ Page({
     const index = Number(event.detail.value)
     this.setData({ plantingIndex: index, plantingLabel: this.data.plantingOptions[index], 'form.plantingStatus': PLANTING_OPTIONS[index] })
   },
+  onGrowthStageChange(event) {
+    const index = Number(event.detail.value)
+    this.setData({
+      growthStageIndex: index,
+      growthStageLabel: this.data.growthStageOptions[index],
+      'form.growthStage': GROWTH_STAGE_OPTIONS[index]
+    })
+  },
 
   async onSave() {
-    const { name, variety, sowDate, irrigation, soilType, plantingStatus, note } = this.data.form
+    const { name, variety, sowDate, irrigation, soilType, plantingStatus, growthStage, note } = this.data.form
     if (!name.trim()) { wx.showToast({ title: this.textCopy.needName, icon: 'none' }); return }
     if (!variety.trim()) { wx.showToast({ title: this.textCopy.needVariety, icon: 'none' }); return }
     if (this.data.saving) return
@@ -238,6 +275,7 @@ Page({
         irrigation,
         soil_type: soilType,
         planting_status: plantingStatus,
+        growth_stage: growthStage,
         reference_images: this.data.plot.referenceImages || [],
         note: note.trim()
       })

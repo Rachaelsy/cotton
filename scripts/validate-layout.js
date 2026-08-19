@@ -27,7 +27,7 @@ const compose = read('docker-compose.yml')
 assert(compose.includes('context: ./cotton-app/server'), 'Compose app build context is incorrect')
 assert(compose.includes('context: ./cotton-community'), 'Compose community build context is incorrect')
 assert(compose.includes('./cotton-app/server/.env'), 'Compose must use the shared app environment file')
-assert(compose.includes('name: cotton_mysql_data'), 'Compose must preserve the existing MySQL volume name')
+assert(compose.includes('name: ${MYSQL_VOLUME_NAME:-cotton_mysql_data}'), 'Compose must keep the production MySQL volume default while allowing an explicit local volume')
 
 const nginx = read('deploy/nginx.conf')
 for (const route of [

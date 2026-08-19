@@ -22,6 +22,7 @@ const mockPlot = {
   irrigation: '滴灌',
   soil_type: '壤土',
   planting_status: '已播种',
+  growth_stage: '蕾期',
   reference_images: JSON.stringify(['/uploads/plots/demo-a.jpg']),
   health_score: 92,
   status: 'normal'
@@ -89,6 +90,7 @@ async function run() {
       irrigation: '滴灌',
       soil_type: '壤土',
       planting_status: '已播种'
+      ,growth_stage: '花铃期'
     })
     assert.strictEqual(created.status, 200)
     assert(created.json.data.area > 10 && created.json.data.area < 20)
@@ -99,7 +101,7 @@ async function run() {
     assert.notStrictEqual(insertQuery.params[3], 999999, 'server must recalculate area')
     assert.notStrictEqual(insertQuery.params[4], 999999, 'server must recalculate perimeter')
     assert.deepStrictEqual(
-      JSON.parse(insertQuery.params[11]),
+      JSON.parse(insertQuery.params[12]),
       ['/uploads/plots/demo-a.jpg', '/uploads/plots/demo-b.png'],
       'create should persist reference images for plot identification'
     )
@@ -112,6 +114,13 @@ async function run() {
     assert.strictEqual(detail.status, 200)
     assert.strictEqual(detail.json.data.overview.record_count, 1)
     assert.strictEqual(detail.json.data.overview.recent_records.length, 1)
+    assert.strictEqual(detail.json.data.resolved_growth_stage, '蕾期')
+    assert.strictEqual(detail.json.data.growth_stage_source, 'manual')
+
+    const invalidGrowthStage = await request(baseUrl, token, 'PUT', '/api/plots/7', {
+      name: '测试棉田', variety: '新陆早57号', growth_stage: '成熟期'
+    })
+    assert.strictEqual(invalidGrowthStage.status, 400)
 
     const invalidUpdate = await request(baseUrl, token, 'PUT', '/api/plots/7', {
       name: '测试棉田', variety: '新陆早57号', irrigation: '未知方式'
@@ -120,7 +129,7 @@ async function run() {
 
     const updated = await request(baseUrl, token, 'PUT', '/api/plots/7', {
       name: '测试棉田', variety: '新陆早57号', irrigation: '滴灌',
-      soil_type: '壤土', planting_status: '计划播种'
+      soil_type: '壤土', planting_status: '计划播种', growth_stage: ''
     })
     assert.strictEqual(updated.status, 200)
 

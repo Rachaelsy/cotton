@@ -13,6 +13,7 @@ async function migrate() {
       coordinates  TEXT         DEFAULT NULL               COMMENT 'JSON [{latitude,longitude},...]',
       reference_images TEXT     DEFAULT NULL               COMMENT '地块辅助识别图片 JSON',
       sow_date     DATE         DEFAULT NULL               COMMENT '播种日期',
+      growth_stage VARCHAR(24)  NOT NULL DEFAULT ''        COMMENT '人工确认的棉花生育期，留空时按播种日期推算',
       irrigation   VARCHAR(16)  NOT NULL DEFAULT '滴灌'   COMMENT '灌溉方式',
       soil_type    VARCHAR(32)  NOT NULL DEFAULT ''        COMMENT '土壤类型',
       planting_status VARCHAR(16) NOT NULL DEFAULT '已播种' COMMENT '已播种 / 计划播种 / 未播种',
@@ -41,6 +42,15 @@ async function migrate() {
       ADD COLUMN reference_images TEXT DEFAULT NULL
       COMMENT '地块辅助识别图片 JSON'
       AFTER coordinates
+    `)
+  }
+  const [growthStageColumns] = await db.query("SHOW COLUMNS FROM plots LIKE 'growth_stage'")
+  if (!growthStageColumns.length) {
+    await db.query(`
+      ALTER TABLE plots
+      ADD COLUMN growth_stage VARCHAR(24) NOT NULL DEFAULT ''
+      COMMENT '人工确认的棉花生育期，留空时按播种日期推算'
+      AFTER sow_date
     `)
   }
   console.log('✅ plots 表已创建')

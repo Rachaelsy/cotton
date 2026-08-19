@@ -1,6 +1,7 @@
 const { normalizeCoordinates, calculateCenter } = require('./plot-geometry')
 const { locateService } = require('./regions')
 const i18n = require('./i18n')
+const { resolveGrowthStage } = require('./cotton-growth-stage')
 
 function parseCoordinates(value) {
   if (Array.isArray(value)) return normalizeCoordinates(value)
@@ -70,11 +71,7 @@ function normalizeWindDirection(direction, degree) {
 function stageAdvice(plot, weather) {
   const area = Number(plot.area || 0)
   const baseIrrigation = Math.max(20, Math.round(area * 30))
-  const sowDate = plot.sow_date ? new Date(`${String(plot.sow_date).slice(0, 10)}T00:00:00`) : null
   const today = weather.today instanceof Date ? weather.today : new Date()
-  const daysSinceSow = sowDate && !Number.isNaN(sowDate.getTime())
-    ? Math.max(0, Math.floor((today.getTime() - sowDate.getTime()) / 86400000))
-    : null
   const temp = Number(weather.temp)
   const high = Number.isFinite(Number(weather.high)) ? Number(weather.high) : temp
   const humidity = Number(weather.humidity)
@@ -89,17 +86,15 @@ function stageAdvice(plot, weather) {
   const isStrongRain = rain >= 8 || /强降水|雷暴/.test(alertTitle)
   const isWindy = windLevel >= 4 || /大风/.test(alertTitle)
   const isDangerous = isStrongRain || windLevel >= 5 || /雷暴|强降水|大风/.test(alertTitle)
-  const growthStage = daysSinceSow === null
-    ? { key: 'unknown', title: '生育期巡查' }
-    : daysSinceSow < 20
-      ? { key: 'emergence', title: '播种出苗' }
-      : daysSinceSow < 45
-        ? { key: 'seedling', title: '苗期稳苗' }
-        : daysSinceSow < 65
-          ? { key: 'bud', title: '蕾期管理' }
-          : daysSinceSow < 105
-            ? { key: 'flowerboll', title: '花铃期管理' }
-            : { key: 'bollopen', title: '吐絮期管理' }
+  const resolvedStage = resolveGrowthStage(plot.growth_stage, plot.sow_date, plot.planting_status, today).value
+  const growthStageMap = {
+    '播种出苗期': { key: 'emergence', title: '播种出苗期' },
+    '苗期': { key: 'seedling', title: '苗期稳苗' },
+    '蕾期': { key: 'bud', title: '蕾期管理' },
+    '花铃期': { key: 'flowerboll', title: '花铃期管理' },
+    '吐絮收获期': { key: 'bollopen', title: '吐絮收获期管理' }
+  }
+  const growthStage = growthStageMap[resolvedStage] || { key: 'unknown', title: '生育期巡查' }
 
   const candidates = []
   let order = 0

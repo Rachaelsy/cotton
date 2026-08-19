@@ -17,6 +17,7 @@ const { broadcastAnnouncement } = require('../utils/notify')
 const supportMessages = require('../utils/support-messages')
 const supportRealtime = require('../utils/support-realtime')
 const points = require('../utils/points')
+const { resolveGrowthStage } = require('../utils/cotton-growth-stage')
 const { BLOCKED_PASSWORDS, validateStrongPassword } = require('../utils/password-policy')
 const {
   CURRENT_PRIVACY_CONSENT_VERSION,
@@ -1155,20 +1156,6 @@ function plotCenter(boundary) {
   }
 }
 
-function plotGrowthStage(sowDate) {
-  if (!sowDate) return '未设置播期'
-  const sow = new Date(sowDate)
-  if (Number.isNaN(sow.getTime())) return '未设置播期'
-  const days = Math.floor((Date.now() - sow.getTime()) / 86400000)
-  if (days < 0) return '待播种'
-  if (days <= 15) return '出苗期'
-  if (days <= 35) return '苗期'
-  if (days <= 55) return '蕾期'
-  if (days <= 95) return '花铃期'
-  if (days <= 125) return '吐絮期'
-  return '采收期'
-}
-
 function dateOnly(value) {
   if (!value) return null
   const date = new Date(value)
@@ -1202,7 +1189,7 @@ router.get('/farmer-landscape', farmerAdminAuth, async (_req, res) => {
          ORDER BY u.created_at DESC
       `),
       optionalRows(`
-        SELECT id,user_id,name,variety,area,coordinates,sow_date,planting_status,
+        SELECT id,user_id,name,variety,area,coordinates,sow_date,growth_stage,planting_status,
                health_score,health_issue,status,created_at,updated_at
           FROM plots ORDER BY updated_at DESC,id DESC
       `),
@@ -1285,7 +1272,8 @@ router.get('/farmer-landscape', farmerAdminAuth, async (_req, res) => {
         crop: '棉花',
         variety: plot.variety || '未填写',
         sowDate: dateOnly(plot.sow_date),
-        growthStage: plotGrowthStage(plot.sow_date),
+        growthStage: resolveGrowthStage(plot.growth_stage, plot.sow_date, plot.planting_status).value,
+        growthStageSource: plot.growth_stage ? 'manual' : 'automatic',
         plantingStatus: plot.planting_status || '',
         center,
         boundary,
