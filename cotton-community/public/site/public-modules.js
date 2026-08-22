@@ -4,8 +4,7 @@
     experts: '/api/expert-studio/public',
     products: '/api/service-products',
     processing: '/api/processing-factories',
-    varieties: '/api/cotton-varieties',
-    market: '/api/market/cotton-futures'
+    varieties: '/api/cotton-varieties'
   }
 
   const PRODUCT_META = {
@@ -184,10 +183,9 @@
     async function renderFinance() {
       loading('正在加载优棉金融')
       try {
-        const [articles, quote] = await Promise.all([request(`${API.policies}?type=finance`), request(API.market).catch(() => null)])
+        const articles = await request(`${API.policies}?type=finance`)
         const sections = [['loan', '种植贷'], ['insurance', '棉花保险'], ['futures', '期货基础'], ['policy', '金融政策解读']]
-        const price = quote?.available ? `${numberText(quote.price, 2)} ${quote.unit || '元/吨'}` : '行情暂不可用'
-        main.innerHTML = `${moduleHero('YOU MIAN FINANCE', '优棉金融', '提供棉花期货行情参考、金融知识和官方入口指引，不开展交易或销售。', 'finance')}<section class="finance-quote"><div class="shell"><div><span>棉花期货实时行情参考</span><strong>${escapeHtml(quote?.contract || '棉花主力连续')}</strong></div><b>${escapeHtml(price)}</b><div><span>开盘 ${numberText(quote?.open, 2)}</span><span>最高 ${numberText(quote?.high, 2)}</span><span>最低 ${numberText(quote?.low, 2)}</span></div></div></section><section class="module-page"><div class="shell"><div class="finance-web-grid">${sections.map(([key, label]) => { const items = articles.filter(item => item.section === key); return `<section><div class="module-section-title"><span>${label.slice(0, 1)}</span><div><h2>${label}</h2><p>${items.length} 篇已发布内容</p></div></div><div class="module-list compact">${items.map(item => `<article class="module-list-row"><div><h3><a href="${publicLink(`/finance/${item.id}`)}">${escapeHtml(item.title)}</a></h3><p>${escapeHtml(item.issuer || '公共服务平台')} · ${dateText(item.publishDate)}</p></div></article>`).join('') || empty(`暂无${label}内容`, '管理员发布后会同步展示。')}</div></section>` }).join('')}</div></div></section>`
+        main.innerHTML = `${moduleHero('YOU MIAN FINANCE', '优棉金融', '提供种植贷、棉花保险、期货基础和金融政策知识，不展示行情，不开展交易或销售。', 'finance')}<section class="module-page"><div class="shell"><div class="finance-web-grid">${sections.map(([key, label]) => { const items = articles.filter(item => item.section === key); return `<section><div class="module-section-title"><span>${label.slice(0, 1)}</span><div><h2>${label}</h2><p>${items.length} 篇已发布内容</p></div></div><div class="module-list compact">${items.map(item => `<article class="module-list-row"><div><h3><a href="${publicLink(`/finance/${item.id}`)}">${escapeHtml(item.title)}</a></h3><p>${escapeHtml(item.issuer || '公共服务平台')} · ${dateText(item.publishDate)}</p></div></article>`).join('') || empty(`暂无${label}内容`, '管理员发布后会同步展示。')}</div></section>` }).join('')}</div></div></section>`
       } catch (error) { errorPanel(error, '/') }
     }
 

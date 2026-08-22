@@ -1,23 +1,7 @@
 <view class="finance-page">
   <view class="finance-hero" style="padding-top:{{statusBarHeight + 14}}px">
     <view class="finance-nav"><button bindtap="back">‹</button><view><text>优棉金融</text><small>YOU MIAN FINANCE</small></view><button class="boundary-button" bindtap="showBoundary">说明</button></view>
-    <view class="hero-copy"><text>看行情 · 懂保障 · 知政策</text><small>面向棉花生产者的金融知识公共服务</small></view>
-
-    <view class="quote-card {{quote.trendClass}}" bindtap="refreshQuote">
-      <view class="quote-head"><view><text>棉花期货实时行情参考</text><small>{{quote.contract}} · CF · 郑州商品交易所</small></view><label>{{quoteLoading?'获取中':quote.stale?'缓存':'自动刷新'}}</label></view>
-      <view class="quote-main">
-        <view class="quote-price"><strong>{{quote.priceText}}</strong><small>{{quote.unit}}</small></view>
-        <view class="quote-change"><text>{{quote.changeText}}</text><small>{{quote.percentText}}</small></view>
-      </view>
-      <view class="quote-facts" style="display:flex;margin-top:18rpx;padding:15rpx 0;border-top:1rpx solid rgba(255,255,255,.11);border-bottom:1rpx solid rgba(255,255,255,.11)">
-        <view style="display:flex;width:33.333%;flex-direction:column;align-items:center"><small style="color:rgba(255,255,255,.5);font-size:17rpx">开盘</small><text style="margin-top:5rpx;font-size:22rpx;font-weight:750">{{quote.openText}}</text></view>
-        <view style="display:flex;width:33.333%;flex-direction:column;align-items:center;border-left:1rpx solid rgba(255,255,255,.1)"><small style="color:rgba(255,255,255,.5);font-size:17rpx">最高</small><text style="margin-top:5rpx;font-size:22rpx;font-weight:750">{{quote.highText}}</text></view>
-        <view style="display:flex;width:33.333%;flex-direction:column;align-items:center;border-left:1rpx solid rgba(255,255,255,.1)"><small style="color:rgba(255,255,255,.5);font-size:17rpx">最低</small><text style="margin-top:5rpx;font-size:22rpx;font-weight:750">{{quote.lowText}}</text></view>
-      </view>
-      <view class="quote-meta"><text>{{quote.updatedText}}</text><text>{{quote.source || '点击刷新'}}</text></view>
-      <view class="quote-error" wx:if="{{quoteError}}">{{quoteError}}</view>
-      <view class="quote-notice">{{quote.delayNotice}}</view>
-    </view>
+    <view class="hero-copy"><text>懂保障 · 学知识 · 知政策</text><small>面向棉花生产者的金融知识公共服务</small></view>
   </view>
 
   <view class="progress-card">
@@ -27,7 +11,7 @@
   </view>
 
   <view class="finance-section">
-    <view class="section-title"><view><text>金融服务导航</text></view></view>
+    <view class="section-title"><view><text>金融知识导航</text></view></view>
     <view class="module-list">
       <view class="module-card {{item.tone}}" wx:for="{{categories}}" wx:key="key" bindtap="openCategory" data-key="{{item.key}}">
         <view class="module-icon">{{item.icon}}</view><view class="module-copy"><text>{{item.title}}</text></view><text class="module-arrow">›</text>
@@ -36,5 +20,5 @@
   </view>
 
   <view class="policy-link" bindtap="openPolicyCenter"><view class="policy-icon">讯</view><view><text>政策资讯</text></view><text>›</text></view>
-  <view class="finance-disclaimer"><text>风险与行情提示</text><small>行情信息可能存在延迟或中断，不构成交易报价和投资建议。贷款、保险和期货业务请通过政府部门、持牌金融机构及监管机构公布的官方渠道核验办理。</small></view>
+  <view class="finance-disclaimer"><text>金融服务提示</text><small>本模块不展示期货行情，也不构成投资建议。贷款、保险和期货相关业务请通过政府部门、持牌金融机构及监管机构公布的官方渠道核验办理。</small></view>
 </view>

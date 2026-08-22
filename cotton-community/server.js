@@ -82,7 +82,6 @@ app.use('/api/service-products', require('./routes/service-products'))
 app.use('/api/cotton-varieties', require('./routes/cotton-varieties'))
 app.use('/api/processing-factories', require('./routes/processing-factories'))
 app.use('/api/expert-studio', require('./routes/expert-studio'))
-app.use('/api/market', require('./routes/market'))
 app.use('/api/plot-daily-work', require('./routes/plot-daily-work'))
 app.use('/api/voice-briefings', require('./routes/voice-briefings'))
 
