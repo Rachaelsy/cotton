@@ -24,6 +24,7 @@ assert(server.includes("'/admin/login.html'") && !server.includes("'/admin/dashb
 assert(server.includes('PLATFORM_DIRECT_PORT'), 'direct local community access should switch back to the cotton-app port')
 assert(auth.includes('SELECT * FROM users WHERE phone=?'), 'community login should read the shared users table')
 assert(auth.includes('INSERT INTO farmers'), 'new learning accounts should be created in the shared platform schema')
+assert(auth.includes("const DEFAULT_FARMER_LOCATION = '喀什地区莎车县'") && auth.includes('|| DEFAULT_FARMER_LOCATION'), 'new public-service farmers should default to Shache County when no region is supplied')
 assert(auth.includes('is_admin'), 'community should support shared administrator accounts')
 assert(auth.includes('community_admins'), 'community should support scoped public-platform administrators')
 assert(ai.includes('棉花种植学习助手'), 'AI prompt should be scoped to cotton learning')

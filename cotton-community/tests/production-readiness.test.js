@@ -97,8 +97,8 @@ async function run() {
     get(name) {
       return {
         origin: 'https://untrusted.example.com',
-        host: 'cyaia.cn',
-        'x-forwarded-host': 'cyaia.cn',
+        host: 'xjsmartcotton.cn',
+        'x-forwarded-host': 'xjsmartcotton.cn',
         'x-forwarded-proto': 'https'
       }[name]
     }

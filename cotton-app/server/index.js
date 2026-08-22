@@ -69,7 +69,7 @@ app.use('/operator', noCache, express.static(path.join(__dirname, 'public/operat
 app.use('/portal',   noCache, express.static(path.join(__dirname, 'public/portal')))
 app.use('/uploads',  express.static(path.join(__dirname, 'public/uploads')))
 
-// 访问 cyaia.cn 或首页文件时，进入统一身份登录页。
+// 访问 xjsmartcotton.cn 或首页文件时，进入统一身份登录页。
 app.get(['/', '/index.html'], (_req, res) => res.redirect('/admin/login.html'))
 const communityBaseUrl = String(process.env.COMMUNITY_BASE_URL || '').replace(/\/+$/, '')
 function communityUrl(req, pathname) {

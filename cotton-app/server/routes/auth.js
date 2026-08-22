@@ -9,6 +9,7 @@ const { isProductionDefaultCredential } = require('../utils/default-credentials'
 const { resolveMiniappClient } = require('../utils/miniapp-clients')
 
 const router = express.Router()
+const DEFAULT_FARMER_LOCATION = '喀什地区莎车县'
 
 // ─────────────────────────────────────────────
 // 工具函数
@@ -98,7 +99,8 @@ async function loadFarmerProfile(userId, executor = db) {
 }
 
 async function createFarmerProfile(userId, profile = {}, executor = db) {
-  const params = [userId, profile.location || '', parseFloat(profile.land_size) || 0]
+  const location = String(profile.location || '').trim().slice(0, 128) || DEFAULT_FARMER_LOCATION
+  const params = [userId, location, parseFloat(profile.land_size) || 0]
   try {
     await executor.query(
       'INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,?)',
@@ -123,6 +125,7 @@ function sessionUserResponse(user, role = user.role) {
     phone: user.phone,
     role,
     real_name: user.real_name || '',
+    nickname: user.nickname || '',
     is_verified: !!user.is_verified,
     avatar_url: user.avatar_url || null
   }
@@ -215,7 +218,7 @@ router.post('/register', async (req, res) => {
         token, role: 'farmer', phone: existing.phone,
         real_name: existing.real_name || real_name.trim(),
         is_verified: !!existing.is_verified, avatar_url: existing.avatar_url || null,
-        location: location || '', land_size: parseFloat(land_size) || 0, crop_type: crop_type || '棉花'
+        location: String(location || '').trim() || DEFAULT_FARMER_LOCATION, land_size: parseFloat(land_size) || 0, crop_type: crop_type || '棉花'
       }, '农户身份注册成功')
     }
 
@@ -246,7 +249,7 @@ router.post('/register', async (req, res) => {
       token, id: userId, role, phone, real_name: real_name.trim(),
       is_verified: false, avatar_url: null,
       ...(role === 'farmer' ? {
-        location: location || '', land_size: parseFloat(land_size) || 0, crop_type: crop_type || '棉花'
+        location: String(location || '').trim() || DEFAULT_FARMER_LOCATION, land_size: parseFloat(land_size) || 0, crop_type: crop_type || '棉花'
       } : {})
     }, '注册成功')
 
@@ -323,6 +326,7 @@ router.post('/login', async (req, res) => {
       phone:       user.phone,
       role:       sessionUser.role,
       real_name:  user.real_name,
+      nickname:   user.nickname || '',
       is_verified: !!user.is_verified,
       avatar_url: user.avatar_url || null,
       ...profile
@@ -509,14 +513,14 @@ router.post('/wx-login', async (req, res) => {
     let profile = await loadFarmerProfile(user.id)
     if (!profile) {
       await createFarmerProfile(user.id)
-      profile = { location: '', land_size: 0, crop_type: '棉花' }
+      profile = { location: DEFAULT_FARMER_LOCATION, land_size: 0, crop_type: '棉花' }
     }
 
     const sessionUser = farmerSessionUser(user)
     const token = signToken(sessionUser)
     await claimGuestOrders(guestToken, user.id, openid)
     return ok(res, {
-      token, id: user.id, role: 'farmer', real_name: user.real_name || '', phone: user.phone,
+      token, id: user.id, role: 'farmer', real_name: user.real_name || '', nickname: user.nickname || '', phone: user.phone,
       is_verified: !!user.is_verified, avatar_url: user.avatar_url || null,
       client_key: miniapp.clientKey, ...profile
     }, '登录成功')
@@ -528,6 +532,24 @@ router.post('/wx-login', async (req, res) => {
 })
 
 // ─────────────────────────────────────────────
+// PUT /api/auth/public-profile  更新用户主动设置的公开昵称。
+// 公开昵称与实名认证姓名分开保存，避免修改昵称影响实名业务资料。
+router.put('/public-profile', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'farmer') return fail(res, '仅农户账号可更新小程序资料', 403)
+  const nickname = String(req.body.nickname || '').trim()
+  if (!nickname) return fail(res, '请填写昵称')
+  if (Array.from(nickname).length > 24) return fail(res, '昵称不能超过24个字符')
+  if (/[<>\r\n]/.test(nickname)) return fail(res, '昵称包含不支持的字符')
+  try {
+    await db.query('UPDATE users SET nickname=? WHERE id=?', [nickname, req.user.id])
+    const [[user]] = await db.query('SELECT * FROM users WHERE id=? LIMIT 1', [req.user.id])
+    return ok(res, sessionUserResponse(user, req.user.role), '昵称已保存')
+  } catch (err) {
+    console.error('[public-profile]', err)
+    return fail(res, '昵称保存失败', 500)
+  }
+})
+
 // PUT /api/auth/profile  更新个人资料
 // ─────────────────────────────────────────────
 router.put('/profile', authMiddleware, async (req, res) => {

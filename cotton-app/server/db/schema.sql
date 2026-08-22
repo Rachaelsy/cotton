@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
   password    VARCHAR(64)  NOT NULL              COMMENT 'bcrypt 加密后的密码',
   role        ENUM('farmer','merchant') NOT NULL COMMENT '身份：农户/商户',
   real_name   VARCHAR(32)  DEFAULT NULL          COMMENT '真实姓名',
+  nickname    VARCHAR(32)  DEFAULT NULL          COMMENT '用户公开昵称',
+  avatar_url  VARCHAR(500) DEFAULT NULL          COMMENT '用户公开头像地址',
   is_verified TINYINT(1)   NOT NULL DEFAULT 0   COMMENT '是否实名认证',
   is_active   TINYINT(1)   NOT NULL DEFAULT 1   COMMENT '账号是否启用',
   is_admin    TINYINT(1)   NOT NULL DEFAULT 0   COMMENT '是否管理员',
@@ -30,7 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS farmers (
   id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id      INT UNSIGNED NOT NULL UNIQUE       COMMENT '关联 users.id',
-  location     VARCHAR(128) DEFAULT NULL          COMMENT '所在地区（如：喀什·疏附县）',
+  location     VARCHAR(128) NOT NULL DEFAULT '喀什地区莎车县' COMMENT '所在地区（新农户默认喀什地区莎车县）',
   land_size    DECIMAL(10,2) DEFAULT 0.00         COMMENT '承包面积（亩）',
   crop_type    VARCHAR(64)  DEFAULT '棉花'        COMMENT '主种作物',
   created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,

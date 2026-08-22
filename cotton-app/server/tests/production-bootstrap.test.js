@@ -38,6 +38,7 @@ async function run() {
   const expertMigration = read('db/migrate_experts.js')
   const productMigration = read('db/migrate_products.js')
   const adminRoute = read('routes/admin.js')
+  const authRoute = read('routes/auth.js')
   const marketingRoute = read('routes/marketing.js')
   const dashboard = read('public/admin/dashboard.html')
 
@@ -64,6 +65,8 @@ async function run() {
   assert.ok(dashboard.includes('data-panel="accountSecurity"'))
   assert.ok(dashboard.includes('changeAdminPassword(event)'))
   assert.ok(dashboard.includes('openRequiredPasswordChange()'))
+  assert.ok(authRoute.includes("const DEFAULT_FARMER_LOCATION = '喀什地区莎车县'"))
+  assert.ok(authRoute.includes("String(profile.location || '').trim().slice(0, 128) || DEFAULT_FARMER_LOCATION"))
 
   await testDefaultAccountAudit()
   console.log('production bootstrap tests passed')

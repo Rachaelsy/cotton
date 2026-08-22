@@ -47,13 +47,13 @@ async function run() {
   await db.query("UPDATE community_admins SET permission_key='public_admin' WHERE permission_key='policy_editor'")
 
   await db.query(`
-    CREATE TABLE IF NOT EXISTS community_daily_todos (
+    CREATE TABLE IF NOT EXISTS community_plot_daily_work (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      todo_date DATE NOT NULL,
+      plot_id INT UNSIGNED NOT NULL,
+      work_date DATE NOT NULL,
       time_label VARCHAR(40) NOT NULL DEFAULT '',
       title VARCHAR(120) NOT NULL,
       content VARCHAR(500) NOT NULL DEFAULT '',
-      voice_text VARCHAR(1000) NOT NULL DEFAULT '',
       priority ENUM('normal','important','urgent') NOT NULL DEFAULT 'normal',
       status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
       sort_order INT NOT NULL DEFAULT 0,
@@ -62,9 +62,35 @@ async function run() {
       updated_by INT UNSIGNED DEFAULT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_daily_todo_public (todo_date,status,sort_order,id),
-      INDEX idx_daily_todo_admin (todo_date,updated_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序首页今日待办'
+      INDEX idx_plot_work_public (work_date,status,plot_id,sort_order,id),
+      INDEX idx_plot_work_admin (plot_id,work_date,updated_at),
+      CONSTRAINT fk_plot_daily_work_plot FOREIGN KEY (plot_id) REFERENCES plots(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='按农户地块发布的今日农事'
+  `)
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS community_voice_briefings (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      user_id INT UNSIGNED NOT NULL,
+      briefing_date DATE NOT NULL,
+      content TEXT NOT NULL,
+      source_type ENUM('manual','ai','ai_edited') NOT NULL DEFAULT 'manual',
+      status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
+      context_snapshot LONGTEXT DEFAULT NULL,
+      context_hash CHAR(64) NOT NULL DEFAULT '',
+      generation_count SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+      ai_provider VARCHAR(32) NOT NULL DEFAULT '',
+      ai_model VARCHAR(100) NOT NULL DEFAULT '',
+      generated_at DATETIME DEFAULT NULL,
+      published_at DATETIME DEFAULT NULL,
+      created_by INT UNSIGNED DEFAULT NULL,
+      updated_by INT UNSIGNED DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_voice_briefing_user_date (user_id,briefing_date),
+      INDEX idx_voice_briefing_public (briefing_date,status,user_id),
+      CONSTRAINT fk_voice_briefing_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='农户每日智能语音播报'
   `)
 
   await db.query(`

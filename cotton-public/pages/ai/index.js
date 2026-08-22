@@ -45,9 +45,7 @@ Page({
     voiceAnswerEnabled: false,
     speakingMessageId: null,
     scrollToId: 'bottom',
-    messages: [],
-    quickList: i18n.getPageCopy('ai').quickList,
-    chips: i18n.getPageCopy('ai').chips
+    messages: []
   },
 
   _msgId: 0,
@@ -110,16 +108,8 @@ Page({
     this.textCopy = i18n.getCopy('ai', lang)
     this.setData({
       copy: i18n.getPageCopy('ai', lang),
-      tabCopy: i18n.getCopy('tab', lang),
-      quickList: this.textCopy.quickList,
-      chips: this.textCopy.chips
+      tabCopy: i18n.getCopy('tab', lang)
     })
-  },
-
-  onQuick(e) {
-    const q = e.currentTarget.dataset.q
-    this.setData({ inputText: q })
-    this._doSend(q)
   },
 
   onInput(e) {

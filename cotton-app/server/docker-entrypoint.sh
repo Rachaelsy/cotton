@@ -46,6 +46,7 @@ run_migration db/migrate_privacy_consent.js
 run_migration db/migrate_merchant_approval.js
 run_migration db/migrate_openid.js
 run_migration db/migrate_miniapp_identities.js
+run_migration db/migrate_user_public_profile.js
 run_migration db/migrate_product_image.js
 run_migration db/migrate_orders.js
 run_migration db/migrate_guest_checkout.js

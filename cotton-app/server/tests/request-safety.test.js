@@ -76,14 +76,14 @@ function runLimiter(limiter, statusCode = 401) {
     get(name) {
       const headers = {
         origin,
-        host: 'cyaia.cn',
-        'x-forwarded-host': 'cyaia.cn',
+        host: 'xjsmartcotton.cn',
+        'x-forwarded-host': 'xjsmartcotton.cn',
         'x-forwarded-proto': 'https'
       }
       return headers[name]
     }
   })
-  delegate(request('https://cyaia.cn'), (_error, options) => assert.equal(options.origin, true))
+  delegate(request('https://xjsmartcotton.cn'), (_error, options) => assert.equal(options.origin, true))
   delegate(request('https://admin.example.com'), (_error, options) => assert.equal(options.origin, true))
   delegate(request('https://untrusted.example.com'), (_error, options) => assert.equal(options.origin, false))
 }

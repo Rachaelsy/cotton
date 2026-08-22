@@ -22,12 +22,15 @@ Page({
       weather: { temp: '--', desc: '天气加载中', icon: '⛅', high: '--', low: '--', wind: '--' },
       tipText: '正在获取当前位置天气与农事建议'
     },
-    todoDate: '',
-    todos: [],
-    todosLoading: true,
-    todosError: '',
-    todoScrollable: false,
-    todoSpeaking: false,
+    plotWorkDate: '',
+    plotWorkGroups: [],
+    plotWorkLoading: true,
+    plotWorkError: '',
+    plotWorkNeedsLogin: false,
+    plotWorkScrollable: false,
+    plotWorkSpeaking: false,
+    plotWorkGenerating: false,
+    voiceBriefing: '',
     news: [],
     newsLoading: true
   },
@@ -47,92 +50,143 @@ Page({
   },
 
   onShow() {
-    const user = auth.getUser && auth.getUser()
-    if (user) this.setData({ userName: user.real_name || user.phone || '棉农朋友' })
+    this.setData({ userName: '棉农朋友' })
+    this.refreshGreeting()
     this.loadLocationWeather()
-    this.loadTodayTodos()
+    this.loadPlotDailyWork()
+    this.loadVoiceBriefing()
     this.loadHomeNews()
   },
 
-  async loadTodayTodos() {
+  async refreshGreeting() {
+    if (!(auth.getToken && auth.getToken())) return
+    const valid = await auth.verify()
+    if (!valid) return
+    const user = auth.getUser && auth.getUser()
+    if (!user) return
+    this.setData({ userName: user.nickname || user.real_name || '棉农朋友' })
+  },
+
+  async loadPlotDailyWork() {
     const date = localDate()
-    const priorityNames = { normal: '日常', important: '重要', urgent: '紧急' }
+    if (!(auth.getToken && auth.getToken())) {
+      this.setData({ plotWorkDate: date, plotWorkGroups: [], plotWorkLoading: false, plotWorkError: '', plotWorkNeedsLogin: true, plotWorkScrollable: false })
+      return
+    }
     try {
-      const res = await auth.request('GET', `/api/daily-todos?date=${encodeURIComponent(date)}`)
-      const rows = res.code === 200 && Array.isArray(res.data) ? res.data : []
-      const todos = rows.map((item, index) => ({
-        ...item,
-        order: index + 1,
-        priorityLabel: priorityNames[item.priority] || '日常',
-        displayText: item.voiceText || [item.timeLabel, item.title, item.content].filter(Boolean).join('，')
-      }))
-      const estimatedHeight = todos.reduce((total, item) => {
-        const titleLines = Math.max(1, Math.ceil(Array.from(String(item.title || '')).length / 17))
-        const textLines = Math.max(1, Math.ceil(Array.from(String(item.displayText || '')).length / 22))
-        return total + 38 + titleLines * 36 + textLines * 35 + (item.timeLabel ? 34 : 0)
-      }, 0)
+      const valid = await auth.verify()
+      if (!valid) {
+        this.setData({ plotWorkDate: date, plotWorkGroups: [], plotWorkLoading: false, plotWorkError: '', plotWorkNeedsLogin: true, plotWorkScrollable: false })
+        return
+      }
+      const res = await auth.request('GET', `/api/plot-daily-work?date=${encodeURIComponent(date)}`)
+      const priorityNames = { normal: '日常', important: '重要', urgent: '紧急' }
+      const groups = res.code === 200 && Array.isArray(res.data) ? res.data.map(group => ({
+        ...group,
+        meta: [group.area ? `${group.area}亩` : '', group.variety, group.growthStage].filter(Boolean).join(' · '),
+        items: (group.items || []).map(item => ({ ...item, priorityLabel: priorityNames[item.priority] || '日常' }))
+      })) : []
+      const itemCount = groups.reduce((sum, group) => sum + group.items.length, 0)
       this.setData({
-        todoDate: date,
-        todos,
-        todosError: '',
-        todoScrollable: estimatedHeight > 310,
-        todosLoading: false
+        plotWorkDate: date,
+        plotWorkGroups: groups,
+        plotWorkLoading: false,
+        plotWorkError: '',
+        plotWorkNeedsLogin: false,
+        plotWorkScrollable: groups.length > 2 || itemCount > 4
       })
     } catch (error) {
-      this.setData({ todoDate: date, todos: [], todosError: '今日待办加载失败', todoScrollable: false, todosLoading: false })
+      this.setData({ plotWorkDate: date, plotWorkGroups: [], plotWorkLoading: false, plotWorkError: '今日农事加载失败', plotWorkNeedsLogin: false, plotWorkScrollable: false })
     }
   },
 
-  toggleTodoSpeech() {
-    if (this.data.todoSpeaking) {
-      this.stopTodoSpeech()
+  async loadVoiceBriefing() {
+    if (!(auth.getToken && auth.getToken())) {
+      this.setData({ voiceBriefing: '' })
       return
     }
-    if (!this.data.todos.length) {
-      return wx.showToast({
-        title: this.data.todosError ? '待办加载失败，请稍后重试' : '今天暂时没有可播报的待办',
-        icon: 'none'
-      })
+    try {
+      const date = localDate()
+      const result = await auth.request('GET', `/api/voice-briefings/today?date=${encodeURIComponent(date)}`)
+      this.setData({ voiceBriefing: result.code === 200 && result.data ? String(result.data.content || '') : '' })
+    } catch (error) {
+      this.setData({ voiceBriefing: '' })
+    }
+  },
+
+  async togglePlotWorkSpeech() {
+    if (this.data.plotWorkSpeaking) {
+      this.stopPlotWorkSpeech()
+      return
+    }
+    if (this.data.plotWorkGenerating) return
+    if (!(auth.getToken && auth.getToken())) {
+      return wx.showToast({ title: '登录后使用智能播报', icon: 'none' })
     }
     if (!(WechatSI && typeof WechatSI.textToSpeech === 'function')) {
       return wx.showToast({ title: '语音播报插件暂不可用', icon: 'none' })
     }
-    const content = this.data.todos
-      .map((item, index) => `${index + 1}，${item.voiceText || [item.timeLabel, item.title, item.content].filter(Boolean).join('，')}`)
-      .join('。')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 500)
-    if (!content) return
-    this.setData({ todoSpeaking: true })
+    const groups = this.data.plotWorkGroups || []
+    let publishedBriefing = String(this.data.voiceBriefing || '').trim()
+    this.setData({ plotWorkGenerating: true })
+    wx.showLoading({ title: '生成智能播报', mask: true })
+    try {
+      const date = localDate()
+      let currentLocation = {}
+      try {
+        const position = await this.getCurrentLocation()
+        currentLocation = { latitude: position.latitude, longitude: position.longitude }
+      } catch (error) {
+        currentLocation = {}
+      }
+      const result = await auth.request('POST', '/api/voice-briefings/generate', { briefingDate: date, ...currentLocation })
+      if (!result || result.code !== 200) throw new Error(result && result.msg || '智能播报生成失败')
+      publishedBriefing = result.code === 200 && result.data ? String(result.data.content || '').trim() : ''
+      if (publishedBriefing) this.setData({ voiceBriefing: publishedBriefing })
+    } catch (error) {
+      if (!publishedBriefing) {
+        return wx.showToast({ title: error.message || '智能播报生成失败', icon: 'none' })
+      }
+      wx.showToast({ title: '已使用最近一次播报', icon: 'none' })
+    } finally {
+      wx.hideLoading()
+      this.setData({ plotWorkGenerating: false })
+    }
+    const content = (publishedBriefing || groups
+      .flatMap(group => (group.items || []).map(item => `${group.plotName}，${[item.timeLabel, item.title, item.content].filter(Boolean).join('，')}`))
+      .map((item, index) => `${index + 1}，${item}`)
+      .join('。'))
+      .replace(/\s+/g, ' ').trim().slice(0, 500)
+    if (!content) return wx.showToast({ title: '暂无可播报内容', icon: 'none' })
+    this.setData({ plotWorkSpeaking: true })
     WechatSI.textToSpeech({
-      lang: 'zh_CN', tts: true, content: `今日待办。${content}`,
+      lang: 'zh_CN', tts: true, content: publishedBriefing ? content : `今日农事。${content}`,
       success: res => {
         const src = res && (res.filename || res.fileName)
-        if (!src) { this.setData({ todoSpeaking: false }); return }
-        if (!this.todoAudio) {
-          this.todoAudio = wx.createInnerAudioContext()
-          this.todoAudio.onEnded(() => this.setData({ todoSpeaking: false }))
-          this.todoAudio.onError(() => {
-            this.setData({ todoSpeaking: false })
+        if (!src) { this.setData({ plotWorkSpeaking: false }); return }
+        if (!this.plotWorkAudio) {
+          this.plotWorkAudio = wx.createInnerAudioContext()
+          this.plotWorkAudio.onEnded(() => this.setData({ plotWorkSpeaking: false }))
+          this.plotWorkAudio.onError(() => {
+            this.setData({ plotWorkSpeaking: false })
             wx.showToast({ title: '语音播放失败，请稍后重试', icon: 'none' })
           })
         }
         if (typeof wx.setInnerAudioOption === 'function') wx.setInnerAudioOption({ obeyMuteSwitch: false, mixWithOther: false })
-        this.todoAudio.stop()
-        this.todoAudio.src = src
-        this.todoAudio.play()
+        this.plotWorkAudio.stop()
+        this.plotWorkAudio.src = src
+        this.plotWorkAudio.play()
       },
       fail: () => {
-        this.setData({ todoSpeaking: false })
+        this.setData({ plotWorkSpeaking: false })
         wx.showToast({ title: '语音生成失败，请稍后重试', icon: 'none' })
       }
     })
   },
 
-  stopTodoSpeech() {
-    if (this.todoAudio) this.todoAudio.stop()
-    this.setData({ todoSpeaking: false })
+  stopPlotWorkSpeech() {
+    if (this.plotWorkAudio) this.plotWorkAudio.stop()
+    this.setData({ plotWorkSpeaking: false })
   },
 
   async loadHomeNews() {
@@ -225,11 +279,14 @@ Page({
 
   openModule(e) {
     const key = e.currentTarget.dataset.key
+    if (key === 'academy') {
+      wx.showToast({ title: '正在开发中', icon: 'none' })
+      return
+    }
     const routes = {
       fields: '/pages/fields/index', pest: '/pages/pest/index', weather: '/pages/weather/index',
       expert: '/pages/expert/index', records: '/pages/records/index',
-      academy: '/pages/academy/index', policy: '/pages/policy/index',
-      finance: '/pages/finance/index'
+      policy: '/pages/policy/index', finance: '/pages/finance/index'
     }
     if (routes[key]) wx.navigateTo({ url: routes[key] })
   },
@@ -250,10 +307,11 @@ Page({
     const id = e.currentTarget.dataset.id
     wx.navigateTo({ url: url || (id ? `/pages/policy/detail?id=${id}` : '/pages/policy/index') })
   },
+  openAllPlotWork() { wx.navigateTo({ url: '/pages/daily-work/index' }) },
   openAi() { wx.switchTab({ url: '/pages/ai/index' }) },
-  onHide() { this.stopTodoSpeech() },
+  onHide() { this.stopPlotWorkSpeech() },
   onUnload() {
-    if (this.todoAudio) this.todoAudio.destroy()
-    this.todoAudio = null
+    if (this.plotWorkAudio) this.plotWorkAudio.destroy()
+    this.plotWorkAudio = null
   }
 })

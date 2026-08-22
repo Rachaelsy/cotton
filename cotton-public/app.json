@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/daily-work/index",
     "pages/news/index",
     "pages/policy/index",
     "pages/policy/channel",
@@ -18,6 +19,7 @@
     "pages/academy/course",
     "pages/academy/exam",
     "pages/my/index",
+    "pages/profile/index",
     "pages/verification/index",
     "pages/learning/index",
     "pages/collection/index",

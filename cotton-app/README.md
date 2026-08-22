@@ -2,6 +2,8 @@
 
 面向新疆棉农、农资商户和农业服务人员的智能农业管理平台，采用农户微信小程序 + 多角色网页后台 + Node.js 后端架构。
 
+统一登录页当前仅公开展示“公共服务平台”入口；商业平台入口已隐藏，既有业务账号及后端能力仍保留。
+
 公共服务平台管理员可通过统一后台令牌使用农户账号能力，并访问脱敏的“农户与地块”综合接口。该接口汇总地块轮廓、种植信息、农事记录、病虫害识别和已有气象观测，不返回身份证件、交易或支付数据；商户、订单、商品及其他核心管理接口仍只允许智能体管理员访问。
 
 地块生育期使用 `plots.growth_stage` 保存现场人工确认值，支持播种出苗期、苗期、蕾期、花铃期和吐絮收获期。留空时后端按播种日期推算，并通过 `resolved_growth_stage` / `growth_stage_source` 向小程序标识结果及来源；后台地块统计和气象建议使用同一口径。
@@ -362,7 +364,7 @@ npm run cleanup:test-payments -- --execute
 3. 在 `server/.env` 填写：
 
 ```env
-PUBLIC_BASE_URL=https://cyaia.cn
+PUBLIC_BASE_URL=https://xjsmartcotton.cn
 WECHAT_LOGISTICS_SENDER_NAME=默认发件人姓名
 WECHAT_LOGISTICS_SENDER_MOBILE=默认发件手机号
 WECHAT_LOGISTICS_SENDER_COMPANY=公司全称
@@ -376,7 +378,7 @@ WECHAT_LOGISTICS_TIMEOUT_MS=10000
 
 ```bash
 docker compose exec app sh -lc 'printenv WX_APPID WECHAT_LOGISTICS_SENDER_NAME'
-curl https://cyaia.cn/api/logistics/carriers
+curl https://xjsmartcotton.cn/api/logistics/carriers
 ```
 
 物流联调目前暂停；先在微信公众平台确认小程序已绑定的快递公司、月结账号和可用服务类型，再继续测试电子面单与轨迹查询。
@@ -454,7 +456,7 @@ netsh advfirewall firewall add rule name="Cotton 3000" dir=in action=allow proto
 统一登录页由后端返回账号对应的工作台地址；核心后台还会在页面渲染前进行一次公益管理员分流保护，避免公益账号看到核心平台菜单。
 | 专家 | `/` 或 `/admin/login.html?role=expert` | 使用已有专家账号 | `/expert/dashboard.html` |
 
-访问根路径（例如 `https://cyaia.cn/` 或本地 `http://localhost:3000/`）会进入统一身份选择登录页，页面提供管理员、商户、农机手、专家四个身份入口。网页后台登录目前只保留手机号 + 密码登录，不再提供手机号验证码登录。
+访问根路径（例如 `https://xjsmartcotton.cn/` 或本地 `http://localhost:3000/`）会进入统一身份选择登录页，页面提供管理员、商户、农机手、专家四个身份入口。网页后台登录目前只保留手机号 + 密码登录，不再提供手机号验证码登录。
 
 新农机手 / 商户在统一入驻页 `/portal/register.html` 一次性提交平台资料和微信支付进件材料 → 明确同意个人信息处理说明 → 管理员在后台「机主审批」/「商户审批」审核 → 通过后系统自动把本地证照上传微信换取 `media_id`，加密身份证、银行卡等敏感字段并提交微信支付进件。证件原图保存在不对外提供静态访问的 Docker 私有卷 `applyment_uploads`，进件草稿敏感字段在 MySQL 中使用 AES-256-GCM 加密。微信审核完成并返回 `sub_mchid` 后才具备真实收款条件；自动提交失败时后台会保存明确原因，可重新提交。
 

@@ -2,12 +2,7 @@ const auth = require('./utils/auth')
 
 App({
   async onLaunch() {
-    const user = auth.getUser()
     const token = auth.getToken()
-    if (user && token) {
-      this.globalData.userInfo = user
-      this.globalData.user = user
-    }
     if (token) {
       const valid = await auth.verify()
       if (!valid) {
@@ -17,6 +12,9 @@ App({
         this.globalData.userInfo = auth.getUser()
         this.globalData.user = auth.getUser()
       }
+    } else {
+      this.globalData.userInfo = null
+      this.globalData.user = null
     }
   },
 

@@ -1,0 +1,55 @@
+<view class="page">
+  <view class="header" style="padding-top:{{statusBarHeight}}px;padding-right:{{capsuleRight}}px">
+    <view class="header-row">
+      <view class="back" bindtap="goBack">‹</view>
+      <view class="header-copy"><text>全部任务</text><small>按地块查看每日农事安排</small></view>
+    </view>
+    <view class="date-card">
+      <view><small>当前查看</small><strong>{{dateLabel}}</strong></view>
+      <view class="date-actions">
+        <view class="today" bindtap="backToday">今天</view>
+        <picker mode="date" value="{{date}}" bindchange="onDateChange"><view class="calendar">选择日期</view></picker>
+      </view>
+    </view>
+    <view class="summary">
+      <view><strong>{{plotCount}}</strong><small>涉及地块</small></view>
+      <view><strong>{{taskCount}}</strong><small>全部农事</small></view>
+      <view><strong>{{urgentCount}}</strong><small>重点关注</small></view>
+    </view>
+  </view>
+
+  <scroll-view class="content-scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="content">
+      <view wx:if="{{loading}}" class="state"><view class="state-icon loading">农</view><strong>正在整理农事任务</strong><text>请稍候...</text></view>
+      <block wx:if="{{!loading}}">
+        <view wx:if="{{needsLogin}}" class="state"><view class="state-icon">田</view><strong>登录后查看全部任务</strong><text>农事内容只展示给对应地块的农户</text><view class="state-button" bindtap="goLogin">立即登录</view></view>
+        <block wx:if="{{!needsLogin}}">
+          <view wx:if="{{error}}" class="state"><view class="state-icon error">!</view><strong>暂时无法加载</strong><text>{{error}}</text><view class="state-button pale" bindtap="loadTasks">重新加载</view></view>
+          <block wx:if="{{!error}}">
+            <view wx:if="{{!groups.length}}" class="state"><view class="state-icon">✓</view><strong>当前日期暂无农事</strong><text>可以选择其他日期查看历史或后续安排</text></view>
+            <view class="group" wx:for="{{groups}}" wx:key="plotId">
+              <view class="group-head">
+                <view class="plot-symbol">田</view>
+                <view class="plot-copy"><strong>{{item.plotName}}</strong><text>{{item.meta || '棉花地块'}}</text></view>
+                <label>{{item.items.length}} 项</label>
+              </view>
+              <view class="task {{task.priority}}" wx:for="{{item.items}}" wx:for-item="task" wx:key="id">
+                <view class="task-line"><view class="task-number">{{task.number}}</view><view class="line"></view></view>
+                <view class="task-main">
+                  <view class="task-title"><strong>{{task.title}}</strong><label>{{task.priorityLabel}}</label></view>
+                  <text wx:if="{{task.content}}" class="task-content">{{task.content}}</text>
+                  <view class="task-time"><text>◷</text>{{task.timeLabel || '今日完成'}}</view>
+                </view>
+              </view>
+            </view>
+          </block>
+        </block>
+      </block>
+      <view class="bottom-space"></view>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{!needsLogin}}" class="speech {{speaking?'active':''}}" bindtap="toggleSpeech">
+    <view class="speech-icon">{{speaking?'■':'◉'}}</view><text>{{speaking?'停止播报':(generating?'生成中':'播报全部')}}</text>
+  </view>
+</view>

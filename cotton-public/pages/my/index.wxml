@@ -7,6 +7,7 @@
       <view class="profile-copy">
         <text class="name">{{loggedIn ? displayName : '你好，棉农朋友'}}</text>
         <text class="identity">{{loggedIn ? '公益学习用户 · 为每一块棉田服务' : '登录后同步地块与服务数据'}}</text>
+        <button wx:if="{{loggedIn}}" plain bindtap="openProfile" style="align-self:flex-start;margin:14rpx 0 0;padding:0 18rpx;border:1rpx solid rgba(255,255,255,.34);border-radius:999rpx;background:rgba(255,255,255,.12);color:#fff;font-size:21rpx;line-height:48rpx">{{profileComplete ? '修改昵称' : '设置昵称'}}</button>
       </view>
       <button wx:if="{{!loggedIn}}" class="login-button" bindtap="login">登录</button>
     </view>

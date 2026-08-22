@@ -104,10 +104,15 @@
     banner.className = 'network-status'
     banner.setAttribute('role', 'status')
     banner.textContent = '网络已断开，恢复连接后可继续操作'
+    // Keep the banner out of the document flow even when a page forgets to
+    // include the shared runtime stylesheet. The visible class remains in use
+    // for the normal animated presentation on styled pages.
+    banner.hidden = true
     document.body.appendChild(banner)
 
     const update = () => {
       const offline = navigator.onLine === false
+      banner.hidden = !offline
       banner.classList.toggle('visible', offline)
       document.body.classList.toggle('is-offline', offline)
       if (!offline && banner.dataset.wasOffline === 'true') notify('网络已恢复', 'success', 1800)

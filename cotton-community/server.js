@@ -83,7 +83,8 @@ app.use('/api/cotton-varieties', require('./routes/cotton-varieties'))
 app.use('/api/processing-factories', require('./routes/processing-factories'))
 app.use('/api/expert-studio', require('./routes/expert-studio'))
 app.use('/api/market', require('./routes/market'))
-app.use('/api/daily-todos', require('./routes/daily-todos'))
+app.use('/api/plot-daily-work', require('./routes/plot-daily-work'))
+app.use('/api/voice-briefings', require('./routes/voice-briefings'))
 
 app.get('/api/community-health', async (_req, res) => {
   try {

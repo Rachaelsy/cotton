@@ -6,6 +6,7 @@ const db = require('../db/database')
 const { isProductionDefaultCredential } = require('../utils/default-credentials')
 
 const router = express.Router()
+const DEFAULT_FARMER_LOCATION = '喀什地区莎车县'
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, status = 400) => res.status(status).json({ code: status, msg, data: null })
 
@@ -86,7 +87,7 @@ router.post('/register', async (req, res) => {
   const phone = String(req.body.phone || '').trim()
   const password = String(req.body.password || '')
   const realName = String(req.body.real_name || '').trim()
-  const location = String(req.body.location || '').trim().slice(0, 128)
+  const location = String(req.body.location || '').trim().slice(0, 128) || DEFAULT_FARMER_LOCATION
   const landSize = Math.max(0, Number(req.body.land_size) || 0)
 
   if (!/^1\d{10}$/.test(phone)) return fail(res, '手机号格式不正确')

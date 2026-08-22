@@ -15,7 +15,7 @@
         <text class="logo-emoji">🌾</text>
       </view>
       <text class="brand-name">{{copy.brand}}</text>
-      <text class="brand-sub">{{copy.brandSub}}</text>
+      <text wx:if="{{copy.brandSub}}" class="brand-sub">{{copy.brandSub}}</text>
     </view>
   </view>
 

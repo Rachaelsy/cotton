@@ -8,7 +8,7 @@
 // ENV = 'sim'    → 模拟器调试，使用 localhost
 const ENV = 'sim'
 
-const PROD_URL   = 'https://cyaia.cn'        // ← 上线后改为真实备案域名
+const PROD_URL   = 'https://xjsmartcotton.cn' // 正式备案域名
 const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP
 const LOCAL_IP   = '192.168.0.22'             // 本地开发局域网 IP（ipconfig 查询）
 const CLIENT_KEY = 'cotton-public'

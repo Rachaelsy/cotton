@@ -1,14 +1,3 @@
-<template name="todoItems">
-  <view class="todo-item {{item.priority}}" wx:for="{{todos}}" wx:key="id">
-    <view class="todo-order">{{item.order}}</view>
-    <view class="todo-copy">
-      <view class="todo-row"><strong>{{item.title}}</strong><label class="priority-label">{{item.priorityLabel}}</label></view>
-      <text class="todo-voice-text">{{item.displayText}}</text>
-      <text wx:if="{{item.timeLabel}}" class="todo-time">{{item.timeLabel}}</text>
-    </view>
-  </view>
-</template>
-
 <view class="page">
   <view class="hero" style="padding-top:{{heroTop}}px">
     <view class="hero-head">
@@ -40,29 +29,44 @@
       <text class="weather-icon">{{weatherPreview.weather.icon}}</text>
       <text class="weather-arrow">›</text>
     </view>
-    <view class="farm-tip"><text>今日农事</text><strong>{{weatherPreview.tipText}}</strong></view>
+    <view class="farm-tip"><text>气象建议</text><strong>{{weatherPreview.tipText}}</strong></view>
   </view>
 
-  <view class="todo-section {{todoScrollable?'scrollable':''}} {{!todos.length?'empty':''}}" style="height:{{todoScrollable?'492rpx':'auto'}}">
-    <view class="todo-accent"></view>
-    <view class="todo-head">
-      <view class="todo-title"><view class="todo-mark">今</view><view><text>今日待办</text><small>{{todoDate}} · 农事提醒</small></view></view>
+  <view class="plot-work-section {{plotWorkScrollable?'scrollable':''}}">
+    <view class="plot-work-accent"></view>
+    <view class="plot-work-head">
+      <view class="plot-work-title"><view class="plot-work-mark">农</view><view><text>今日农事</text><small>{{plotWorkDate}} · 按地块安排</small></view></view>
+      <view class="plot-work-head-actions">
+        <text class="plot-work-count" wx:if="{{plotWorkGroups.length}}">{{plotWorkGroups.length}} 个地块</text>
+        <view class="plot-work-all" bindtap="openAllPlotWork">全部任务 <text>›</text></view>
+      </view>
     </view>
-    <view wx:if="{{todosLoading}}" class="todo-empty">正在加载今日安排…</view>
-    <view wx:if="{{!todosLoading && !todos.length}}" class="todo-empty">今日暂无待办，管理员可在公共服务后台发布</view>
-    <view wx:if="{{!todosLoading && todos.length && !todoScrollable}}" class="todo-scroll todo-list" style="height:auto">
-      <template is="todoItems" data="{{todos: todos}}"></template>
+    <view wx:if="{{plotWorkLoading}}" class="plot-work-empty">正在加载您的地块农事...</view>
+    <view wx:elif="{{plotWorkNeedsLogin}}" class="plot-work-empty">登录后查看本人地块的今日农事安排</view>
+    <view wx:elif="{{plotWorkError}}" class="plot-work-empty">{{plotWorkError}}</view>
+    <view wx:elif="{{!plotWorkGroups.length}}" class="plot-work-empty">今天暂无地块农事安排</view>
+    <view wx:elif="{{!plotWorkScrollable}}" class="plot-work-groups">
+      <view class="plot-work-group" wx:for="{{plotWorkGroups}}" wx:key="plotId">
+        <view class="plot-work-group-head"><view><strong>{{item.plotName}}</strong><small>{{item.meta || '棉花地块'}}</small></view><text>地块</text></view>
+        <view class="plot-work-item {{work.priority}}" wx:for="{{item.items}}" wx:for-item="work" wx:key="id">
+          <view class="plot-work-dot"></view><view class="plot-work-copy"><view><strong>{{work.title}}</strong><label>{{work.priorityLabel}}</label></view><text wx:if="{{work.content}}">{{work.content}}</text><small>{{work.timeLabel || '今日完成'}}</small></view>
+        </view>
+      </view>
     </view>
-    <scroll-view wx:if="{{!todosLoading && todos.length && todoScrollable}}" class="todo-scroll" scroll-y="true" enhanced="true" show-scrollbar="false">
-      <template is="todoItems" data="{{todos: todos}}"></template>
+    <scroll-view wx:else class="plot-work-groups plot-work-scroll" scroll-y="true" enhanced="true" show-scrollbar="false">
+      <view class="plot-work-group" wx:for="{{plotWorkGroups}}" wx:key="plotId">
+        <view class="plot-work-group-head"><view><strong>{{item.plotName}}</strong><small>{{item.meta || '棉花地块'}}</small></view><text>地块</text></view>
+        <view class="plot-work-item {{work.priority}}" wx:for="{{item.items}}" wx:for-item="work" wx:key="id">
+          <view class="plot-work-dot"></view><view class="plot-work-copy"><view><strong>{{work.title}}</strong><label>{{work.priorityLabel}}</label></view><text wx:if="{{work.content}}">{{work.content}}</text><small>{{work.timeLabel || '今日完成'}}</small></view>
+        </view>
+      </view>
     </scroll-view>
-    <view wx:if="{{todos.length}}" class="todo-summary"><text>共 {{todos.length}} 项今日安排</text><small wx:if="{{todoScrollable}}">上下滑动查看更多</small></view>
   </view>
 
-  <view class="todo-voice-fab {{todoSpeaking?'playing':''}}" style="width:94rpx;min-width:94rpx;max-width:94rpx;height:94rpx;min-height:94rpx;max-height:94rpx;border-radius:999rpx" bindtap="toggleTodoSpeech" role="button" aria-label="{{todoSpeaking?'停止播报':'播报今日待办'}}">
-    <view class="todo-voice-inner" style="display:flex;width:70rpx;height:70rpx;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 2rpx rgba(255,255,255,.22)">
-      <view wx:if="{{!todoSpeaking}}" class="todo-mic"><view class="todo-mic-head"></view><view class="todo-mic-arc"></view><view class="todo-mic-stem"></view></view>
-      <view wx:else class="todo-stop"></view>
+  <view class="plot-work-voice-fab {{plotWorkSpeaking?'playing':''}}" style="width:94rpx;min-width:94rpx;max-width:94rpx;height:94rpx;min-height:94rpx;max-height:94rpx;border-radius:999rpx" bindtap="togglePlotWorkSpeech" role="button" aria-label="{{plotWorkSpeaking?'停止播报':'播报今日农事'}}">
+    <view class="plot-work-voice-inner" style="display:flex;width:70rpx;height:70rpx;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 2rpx rgba(255,255,255,.22)">
+      <view wx:if="{{!plotWorkSpeaking}}" class="plot-work-mic"><view class="plot-work-mic-head"></view><view class="plot-work-mic-arc"></view><view class="plot-work-mic-stem"></view></view>
+      <view wx:else class="plot-work-stop"></view>
     </view>
   </view>
 

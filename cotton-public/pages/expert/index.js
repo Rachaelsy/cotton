@@ -6,7 +6,7 @@ const DEFAULT_EXPERT = {
   id: 'platform',
   name: '平台专家',
   titleName: '棉花平台答疑',
-  org: 'Cotton 棉花平台',
+  org: '喀什优棉公共服务平台',
   avatar: '👨‍🌾',
   tags: ['平台答疑', '种植培训', '农事指导'],
   online: true

@@ -3,7 +3,7 @@
   const runtime = window.CottonRuntime
   const byId = id => document.getElementById(id)
   const escapeHtml = value => String(value == null ? '' : value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]))
-  const state = { data: null, plots: [], farmers: [] }
+  const state = { data: null, plots: [], farmers: [], workPlotId: 0, workItems: [] }
 
   function logout() {
     localStorage.removeItem('admin_token')
@@ -163,10 +163,118 @@
         <td><div class="production-cell"><strong>${escapeHtml(production.lastRecordTitle || production.lastRecordType || '暂无农事记录')}</strong><span>灌溉 ${number(production.irrigationCount)} · 施肥 ${number(production.fertilizationCount)} · 识别 ${number(production.pestRecognitionCount)}</span></div></td>
         <td><div class="risk-tags">${riskHtml(item)}</div></td>
         <td><span class="last-activity">${escapeHtml(dateTime(production.lastActivityAt))}</span></td>
-        <td>${item.hasPlot ? `<button class="small-btn primary" data-plot-detail="${Number(item.id)}">查看地块</button>` : '<span style="color:#9aa29e;font-size:11px">暂无地块</span>'}</td>
+        <td>${item.hasPlot ? `<div class="farmer-actions"><button class="small-btn primary" data-plot-work="${Number(item.id)}">今日农事</button><button class="small-btn" data-plot-detail="${Number(item.id)}">查看地块</button></div>` : '<span style="color:#9aa29e;font-size:11px">暂无地块</span>'}</td>
       </tr>`
     }).join('') : '<tr><td colspan="8">没有符合筛选条件的农户或地块</td></tr>'
     document.querySelectorAll('[data-plot-detail]').forEach(button => { button.onclick = () => openPlot(Number(button.dataset.plotDetail)) })
+    document.querySelectorAll('[data-plot-work]').forEach(button => { button.onclick = () => openPlotWork(Number(button.dataset.plotWork)) })
+  }
+
+  function today() {
+    const date = new Date(); const pad = value => String(value).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+  }
+
+  async function workRequest(path, options = {}) {
+    return runtime.requestJson(`/api/plot-daily-work${path}`, options, { token, onUnauthorized: logout })
+  }
+
+  function resetPlotWorkForm() {
+    byId('plotWorkId').value = ''
+    byId('plotWorkPlotId').value = String(state.workPlotId || '')
+    byId('plotWorkDate').value = byId('plotWorkFilterDate').value || today()
+    byId('plotWorkTime').value = ''
+    byId('plotWorkItemTitle').value = ''
+    byId('plotWorkContent').value = ''
+    byId('plotWorkPriority').value = 'normal'
+    byId('plotWorkStatus').value = 'published'
+    byId('plotWorkSort').value = '0'
+    byId('plotWorkFormTitle').textContent = '新增地块农事'
+    byId('plotWorkMessage').textContent = ''
+  }
+
+  function renderPlotWork() {
+    const priority = { normal: '普通', important: '重要', urgent: '紧急' }
+    const status = { draft: '草稿', published: '已发布', offline: '已下线' }
+    byId('plotWorkTable').innerHTML = state.workItems.length ? state.workItems.map(item => `<tr>
+      <td>${escapeHtml(item.timeLabel || '全天')}</td>
+      <td><div class="production-cell"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.content || '无补充说明')}</span></div></td>
+      <td><span class="work-priority ${escapeHtml(item.priority)}">${priority[item.priority] || '普通'}</span></td>
+      <td>${status[item.status] || escapeHtml(item.status)}</td>
+      <td><div class="farmer-actions"><button class="small-btn primary" data-work-edit="${item.id}">编辑</button><button class="small-btn danger" data-work-delete="${item.id}">删除</button></div></td>
+    </tr>`).join('') : '<tr><td colspan="5">该地块在所选日期暂无农事安排</td></tr>'
+    document.querySelectorAll('[data-work-edit]').forEach(button => { button.onclick = () => editPlotWork(Number(button.dataset.workEdit)) })
+    document.querySelectorAll('[data-work-delete]').forEach(button => { button.onclick = () => deletePlotWork(Number(button.dataset.workDelete)) })
+  }
+
+  async function loadPlotWork() {
+    if (!state.workPlotId) return
+    byId('plotWorkTable').innerHTML = '<tr><td colspan="5">正在加载...</td></tr>'
+    try {
+      const date = byId('plotWorkFilterDate').value || today()
+      const result = await workRequest(`/admin/list?plotId=${state.workPlotId}&date=${encodeURIComponent(date)}`)
+      state.workItems = Array.isArray(result.data) ? result.data : []
+      renderPlotWork()
+    } catch (error) {
+      byId('plotWorkTable').innerHTML = `<tr><td colspan="5">${escapeHtml(error.message || '加载失败')}</td></tr>`
+    }
+  }
+
+  function openPlotWork(id) {
+    const plot = state.plots.find(item => Number(item.id) === Number(id))
+    if (!plot) return
+    state.workPlotId = Number(id)
+    byId('plotWorkTitle').textContent = `${plot.plotName} · 今日农事`
+    byId('plotWorkFarmer').textContent = `${plot.farmerName} · ${plot.phoneMasked} · ${plot.county} ${plot.township}`
+    byId('plotWorkFilterDate').value = today()
+    resetPlotWorkForm()
+    byId('plotWorkModal').classList.remove('hidden')
+    loadPlotWork()
+  }
+
+  function editPlotWork(id) {
+    const item = state.workItems.find(row => Number(row.id) === Number(id))
+    if (!item) return
+    byId('plotWorkId').value = String(item.id)
+    byId('plotWorkPlotId').value = String(item.plotId)
+    byId('plotWorkDate').value = item.workDate
+    byId('plotWorkTime').value = item.timeLabel || ''
+    byId('plotWorkItemTitle').value = item.title || ''
+    byId('plotWorkContent').value = item.content || ''
+    byId('plotWorkPriority').value = item.priority || 'normal'
+    byId('plotWorkStatus').value = item.status || 'draft'
+    byId('plotWorkSort').value = String(item.sortOrder || 0)
+    byId('plotWorkFormTitle').textContent = '编辑地块农事'
+    byId('plotWorkItemTitle').focus()
+  }
+
+  async function savePlotWork(event) {
+    event.preventDefault()
+    const id = Number(byId('plotWorkId').value || 0)
+    const body = {
+      plotId: state.workPlotId, workDate: byId('plotWorkDate').value, timeLabel: byId('plotWorkTime').value,
+      title: byId('plotWorkItemTitle').value, content: byId('plotWorkContent').value,
+      priority: byId('plotWorkPriority').value, status: byId('plotWorkStatus').value, sortOrder: Number(byId('plotWorkSort').value || 0)
+    }
+    byId('plotWorkMessage').textContent = '正在保存...'
+    try {
+      const result = await workRequest(id ? `/admin/${id}` : '/admin', { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) })
+      byId('plotWorkFilterDate').value = body.workDate
+      resetPlotWorkForm()
+      await loadPlotWork()
+      runtime.notify(result.msg || '今日农事已保存', 'success')
+    } catch (error) {
+      byId('plotWorkMessage').textContent = error.message || '保存失败'
+    }
+  }
+
+  async function deletePlotWork(id) {
+    if (!window.confirm('确定删除这条地块农事吗？')) return
+    try {
+      const result = await workRequest(`/admin/${id}`, { method: 'DELETE' })
+      await loadPlotWork()
+      runtime.notify(result.msg || '已删除', 'success')
+    } catch (error) { runtime.notify(error.message || '删除失败', 'error') }
   }
 
   function fact(label, value) {
@@ -238,7 +346,7 @@
   }
 
   function show(view = 'farmers') {
-    ['listPanel', 'editorPanel', 'financePanel', 'homepagePanel', 'todoPanel', 'productPanel', 'varietyPanel', 'factoryPanel', 'expertPanel', 'securityPanel', 'farmerPanel', 'plotPanel'].forEach(id => { const node = byId(id); if (node) node.classList.add('hidden') })
+    ['listPanel', 'editorPanel', 'financePanel', 'homepagePanel', 'productPanel', 'varietyPanel', 'factoryPanel', 'expertPanel', 'securityPanel', 'farmerPanel', 'plotPanel'].forEach(id => { const node = byId(id); if (node) node.classList.add('hidden') })
     const target = view === 'plots' ? 'plotPanel' : 'farmerPanel'
     byId(target).classList.remove('hidden')
     document.querySelectorAll('[data-view]').forEach(item => item.classList.toggle('active', item.dataset.view === view))
@@ -251,6 +359,12 @@
   byId('refreshFarmerAccountBtn').onclick = load
   byId('closePlotDetailModal').onclick = () => byId('plotDetailModal').classList.add('hidden')
   byId('plotDetailModal').addEventListener('click', event => { if (event.target === byId('plotDetailModal')) byId('plotDetailModal').classList.add('hidden') })
+  byId('closePlotWorkModal').onclick = () => byId('plotWorkModal').classList.add('hidden')
+  byId('plotWorkModal').addEventListener('click', event => { if (event.target === byId('plotWorkModal')) byId('plotWorkModal').classList.add('hidden') })
+  byId('plotWorkFilterDate').onchange = () => { resetPlotWorkForm(); loadPlotWork() }
+  byId('refreshPlotWorkBtn').onclick = loadPlotWork
+  byId('resetPlotWorkBtn').onclick = resetPlotWorkForm
+  byId('plotWorkForm').onsubmit = savePlotWork
   ;['farmerLandKeyword', 'farmerLandCounty', 'farmerLandStage', 'farmerLandRisk'].forEach(id => byId(id).addEventListener(id === 'farmerLandKeyword' ? 'input' : 'change', renderTable))
   ;['farmerAccountKeyword', 'farmerAccountCounty', 'farmerAccountVerification', 'farmerAccountStatus'].forEach(id => byId(id).addEventListener(id === 'farmerAccountKeyword' ? 'input' : 'change', renderFarmerTable))
 })()

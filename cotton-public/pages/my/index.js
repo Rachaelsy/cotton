@@ -21,6 +21,7 @@ Page({
     user: null,
     initial: '棉',
     displayName: '棉农朋友',
+    profileComplete: false,
     verificationText: '未登录',
     plotCount: '--',
     courseCount: 0,
@@ -38,14 +39,15 @@ Page({
   },
 
   async refreshPage() {
-    const loggedIn = auth.isLoggedIn()
-    const user = auth.getUser()
-    const displayName = user && (user.real_name || user.nickname || user.phone) || '棉农朋友'
+    const loggedIn = auth.isLoggedIn() ? await auth.verify() : false
+    const user = loggedIn ? auth.getUser() : null
+    const displayName = user && (user.nickname || user.real_name) || '棉农朋友'
     const learning = learningSummary()
     this.setData({
       loggedIn,
       user,
       displayName,
+      profileComplete: !!(user && user.nickname),
       initial: String(displayName).charAt(0) || '棉',
       verificationText: !loggedIn ? '登录后查看' : (user && (user.is_verified || user.verification_status === 'approved') ? '已认证' : '未认证'),
       courseCount: learning.completed,
@@ -67,6 +69,10 @@ Page({
 
   login() {
     wx.navigateTo({ url: '/pages/login/index' })
+  },
+
+  openProfile() {
+    wx.navigateTo({ url: '/pages/profile/index' })
   },
 
   openPage(event) {

@@ -14,11 +14,11 @@ async function run() {
   assert.strictEqual(refunds.isSuccessRefundStatus('SUCCESS'), true)
 
   assert.strictEqual(
-    refunds.getRefundNotifyUrl({ notifyUrl: 'https://cyaia.cn/api/pay/wechat/notify' }, {}),
-    'https://cyaia.cn/api/pay/wechat/refund-notify'
+    refunds.getRefundNotifyUrl({ notifyUrl: 'https://xjsmartcotton.cn/api/pay/wechat/notify' }, {}),
+    'https://xjsmartcotton.cn/api/pay/wechat/refund-notify'
   )
   assert.strictEqual(
-    refunds.getRefundNotifyUrl({ notifyUrl: 'https://cyaia.cn/api/pay/wechat/notify' }, {
+    refunds.getRefundNotifyUrl({ notifyUrl: 'https://xjsmartcotton.cn/api/pay/wechat/notify' }, {
       WECHAT_PAY_REFUND_NOTIFY_URL: 'https://pay.example.com/refund'
     }),
     'https://pay.example.com/refund'
@@ -35,7 +35,7 @@ async function run() {
       outTradeNo: 'SUPPLY_MG202607130001_9',
       outRefundNo: 'RF_SUPPLY_9_12345',
       reason: '售后退款',
-      notifyUrl: 'https://cyaia.cn/api/pay/wechat/refund-notify',
+      notifyUrl: 'https://xjsmartcotton.cn/api/pay/wechat/refund-notify',
       refundFen: 1001,
       totalFen: 1001
     }
@@ -45,7 +45,7 @@ async function run() {
     out_trade_no: 'SUPPLY_MG202607130001_9',
     out_refund_no: 'RF_SUPPLY_9_12345',
     reason: '售后退款',
-    notify_url: 'https://cyaia.cn/api/pay/wechat/refund-notify',
+    notify_url: 'https://xjsmartcotton.cn/api/pay/wechat/refund-notify',
     amount: { refund: 1001, total: 1001, currency: 'CNY' }
   })
 
@@ -85,7 +85,7 @@ async function run() {
     }
   }
   const mockWxpay = {
-    getServiceProviderConfig: () => ({ notifyUrl: 'https://cyaia.cn/api/pay/wechat/notify' }),
+    getServiceProviderConfig: () => ({ notifyUrl: 'https://xjsmartcotton.cn/api/pay/wechat/notify' }),
     buildPartnerRefundBody: ({ refund }) => ({ sub_mchid: refund.subMchid, amount: { refund: refund.refundFen, total: refund.totalFen } }),
     async partnerRefund({ refund }) {
       refundRequest = refund

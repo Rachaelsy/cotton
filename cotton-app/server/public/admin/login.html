@@ -617,9 +617,9 @@
     }
 
     .knowledge-gateways {
-      width: min(700px, 100%);
+      width: min(340px, 100%);
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       gap: 12px;
       margin-top: 30px;
     }
@@ -647,14 +647,6 @@
     .knowledge-gateway:hover {
       transform: translateY(-3px);
       background: rgba(13, 58, 43, .9);
-    }
-
-    .knowledge-gateway.business {
-      background: rgba(94, 60, 21, .76);
-    }
-
-    .knowledge-gateway.business:hover {
-      background: rgba(108, 68, 20, .92);
     }
 
     .gateway-kicker {
@@ -824,16 +816,11 @@
       </div>
 
       <h1>从一块棉田，连接整个服务体系</h1>
-      <p class="lead">登录工作台管理业务，也可以直接进入公共服务平台或农业商业服务，两端共用账号和数据关系。</p>
+      <p class="lead">登录工作台管理业务，也可以直接进入公共服务平台，统一获取棉花生产知识与公共服务信息。</p>
       <div class="knowledge-gateways">
         <a class="knowledge-gateway" href="/community/public">
           <span class="gateway-kicker">PUBLIC SERVICE · 免费开放</span>
           <span><strong>公共服务平台</strong></span>
-          <span class="gateway-arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="knowledge-gateway business" href="/community/business">
-          <span class="gateway-kicker">AGRI BUSINESS · 商业服务</span>
-          <span><strong>商业平台</strong></span>
           <span class="gateway-arrow" aria-hidden="true">→</span>
         </a>
       </div>
