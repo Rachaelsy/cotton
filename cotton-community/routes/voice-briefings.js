@@ -128,8 +128,8 @@ async function resolveBroadcastWeather(registeredRegion, options = {}) {
 async function buildContext(userId, date, options = {}) {
   const [[farmer]] = await db.query(
     `SELECT u.id,u.phone,u.nickname,u.real_name,f.location
-       FROM users u LEFT JOIN farmers f ON f.user_id=u.id
-      WHERE u.id=? AND u.role='farmer' AND u.is_active=1 LIMIT 1`,
+       FROM farmers f INNER JOIN users u ON u.id=f.user_id
+      WHERE u.id=? AND u.is_active=1 LIMIT 1`,
     [userId]
   )
   if (!farmer) return null
@@ -355,10 +355,10 @@ router.get('/admin/farmers', adminAuth, asyncRoute(async (req, res) => {
   const [rows] = await db.query(
     `SELECT u.id,u.phone,u.nickname,u.real_name,f.location,COUNT(DISTINCT p.id) AS plot_count,
             COUNT(DISTINCT w.id) AS work_count,b.status,b.source_type,b.updated_at,b.generation_count
-       FROM users u LEFT JOIN farmers f ON f.user_id=u.id LEFT JOIN plots p ON p.user_id=u.id
+       FROM farmers f INNER JOIN users u ON u.id=f.user_id LEFT JOIN plots p ON p.user_id=u.id
        LEFT JOIN community_plot_daily_work w ON w.plot_id=p.id AND w.work_date=? AND w.status='published'
        LEFT JOIN community_voice_briefings b ON b.user_id=u.id AND b.briefing_date=?
-      WHERE u.role='farmer' AND u.is_active=1
+      WHERE u.is_active=1
       GROUP BY u.id,u.phone,u.nickname,u.real_name,f.location,b.status,b.source_type,b.updated_at,b.generation_count
       ORDER BY b.updated_at DESC,u.id DESC`, [date, date]
   )

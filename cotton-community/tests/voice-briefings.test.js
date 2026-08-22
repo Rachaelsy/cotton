@@ -18,6 +18,7 @@ assert(server.includes("app.use('/api/voice-briefings'"), 'voice briefing route 
 assert(nginx.includes('location ^~ /api/voice-briefings/') && nginx.includes('location = /api/voice-briefings'), 'Nginx should route briefing requests to community service')
 assert(route.includes('const DAILY_GENERATION_LIMIT = 100') && route.includes('const FARMER_CACHE_TTL_MS = 2 * 60 * 60 * 1000') && route.includes("router.post('/generate', farmerAuth") && route.includes('farmerGenerationJobs'), 'farmers should generate on demand with a two-hour cache and duplicate-request lock')
 assert(route.includes('INNER JOIN farmers f ON f.user_id=u.id') && !route.includes("WHERE id=? AND role=? LIMIT 1"), 'farmer authorization must use the farmer profile instead of the legacy primary role')
+assert(route.includes('FROM farmers f INNER JOIN users u ON u.id=f.user_id') && !route.includes("u.role='farmer'"), 'briefing context and admin lists must include multi-role farmer profiles')
 assert(adminJs.includes('const DAILY_GENERATION_LIMIT = 100') && adminHtml.includes('每天每位农户最多生成 100 次'), 'admin UI should display the same daily generation limit as the API')
 assert(!route.includes("router.post('/admin/generate-all'") && !adminHtml.includes('id="batchGenerateVoiceBtn"') && !adminJs.includes("request('/admin/generate-all'"), 'the retired admin batch generation entry should be removed')
 assert(route.includes("router.put('/admin/:userId', adminAuth") && route.includes("router.get('/today', farmerAuth"), 'briefings should support manual review, publish and farmer retrieval')
