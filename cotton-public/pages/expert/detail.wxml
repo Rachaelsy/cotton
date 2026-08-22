@@ -31,8 +31,6 @@
       <view class="play-btn {{course.isPaid ? 'paid' : ''}}" bindtap="onPlay"><text>{{course.tag || copy.play}}</text></view>
     </view>
 
-    <video wx:if="{{!isExpertOnly && !isQa && course.videoUrl && !course.isPaid}}" class="course-video" src="{{course.videoUrl}}" controls></video>
-
     <view wx:if="{{!isExpertOnly && isQa}}" class="faq-detail-card">
       <view class="faq-question">
         <text class="faq-label question">问</text>
@@ -93,13 +91,6 @@
           <text>{{item.correct ? '回答正确' : '再想一想'}}{{item.explanation ? '：' + item.explanation : ''}}</text>
         </view>
       </view>
-    </view>
-
-    <view class="card qa-card">
-      <text class="card-title">{{isQa ? '继续追问' : 'AI 陪练'}}</text>
-      <text wx:if="{{isQa}}" class="card-text">如需更有针对性的建议，请补充地块位置、生育期、田间症状和近期操作。</text>
-      <text wx:if="{{!isQa}}" class="card-text">围绕这节课和 AI 一问一答训练，适合边学边巩固。</text>
-      <view class="ask-btn" bindtap="onAsk"><text>{{isQa ? '向 AI 农技助手追问' : copy.askAction}}</text></view>
     </view>
 
     <view class="bottom-gap"></view>

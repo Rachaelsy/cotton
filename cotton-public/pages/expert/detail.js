@@ -165,15 +165,6 @@ Page({
     this.setData({ quizItems })
   },
 
-  onAsk() {
-    const course = this.data.course || {}
-    const prompt = course.aiPrompt || (course.type === 'qa'
-      ? `我正在查看棉花生产问题“${course.title || ''}”的专家解答。请作为棉花农技顾问，先询问我的地块位置、棉花生育期、田间症状和近期操作，再结合这些信息给出进一步的排查与处置建议。`
-      : `我正在学习专家讲堂课程《${course.title || ''}》。请作为棉花种植培训教练，围绕这节课用简单问答训练我，先问我一个问题，再根据我的回答继续讲解。`)
-    wx.setStorageSync('ai_training_prompt', prompt)
-    wx.navigateTo({ url: '/pages/ai/index?from=expert' })
-  },
-
   onPlay() {
     const course = this.data.course || {}
     if (course.isPaid) {

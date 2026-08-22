@@ -183,7 +183,7 @@ router.get('/', async (req, res) => {
       e.specialties AS expert_specialties
       FROM expert_contents ec
       LEFT JOIN experts e ON ec.expert_id = e.id
-      WHERE ec.is_published=1`
+      WHERE ec.is_published=1 AND ec.type='qa'`
     if (req.query.type) {
       sql += ' AND ec.type=?'
       params.push(req.query.type)
@@ -278,7 +278,7 @@ router.get('/:id', async (req, res) => {
         e.specialties AS expert_specialties
        FROM expert_contents ec
        LEFT JOIN experts e ON ec.expert_id = e.id
-       WHERE ec.id=? AND ec.is_published=1 LIMIT 1`,
+       WHERE ec.id=? AND ec.is_published=1 AND ec.type='qa' LIMIT 1`,
       [req.params.id]
     )
     if (!rows.length) return res.status(404).json({ code: 404, msg: '内容不存在或未上架', data: null })

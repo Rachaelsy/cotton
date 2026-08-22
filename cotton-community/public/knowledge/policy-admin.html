@@ -74,8 +74,8 @@
         <div class="data-table-wrap"><table class="data-table"><thead><tr><th>ID</th><th>加工厂</th><th>县市/地址</th><th>坐标</th><th>负责人/电话</th><th>年产能</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead><tbody id="factoryTable"><tr><td colspan="9">加载中...</td></tr></tbody></table></div>
       </section>
       <section id="expertPanel" class="panel-card hidden">
-        <div class="toolbar"><div><h2>专家讲堂内容管理</h2><p>统一维护精选问答、在线专家和精选视频；发布内容同步显示到小程序和公共服务网页端。</p></div><button class="btn" id="addExpertStudioBtn">＋ 新增内容</button></div>
-        <div class="studio-tabs"><button class="studio-tab active" data-studio-tab="qa">精选问答</button><button class="studio-tab" data-studio-tab="experts">在线专家</button><button class="studio-tab" data-studio-tab="video">精选视频</button></div>
+        <div class="toolbar"><div><h2>专家讲堂内容管理</h2><p>统一维护精选问答和在线专家；发布内容同步显示到小程序和公共服务网页端。</p></div><button class="btn" id="addExpertStudioBtn">＋ 新增内容</button></div>
+        <div class="studio-tabs"><button class="studio-tab active" data-studio-tab="qa">精选问答</button><button class="studio-tab" data-studio-tab="experts">在线专家</button></div>
         <div class="data-table-wrap"><table class="data-table"><thead id="expertStudioHead"></thead><tbody id="expertStudioTable"><tr><td>加载中...</td></tr></tbody></table></div>
       </section>
       <section id="securityPanel" class="panel-card hidden">
@@ -300,8 +300,7 @@
         <div><label>讲解专家</label><select id="studioContentExpert"><option value="">平台专家</option></select></div><div><label>内容分类</label><select id="studioContentCategory"><option value="planting|种植技术">种植技术</option><option value="pest|病虫害防治">病虫害防治</option><option value="water|水肥管理">水肥管理</option><option value="machine|农机作业">农机作业</option><option value="policy|政策咨询">政策咨询</option></select></div>
         <div class="full"><label id="studioContentSubtitleLabel">补充说明（可选）</label><input id="studioContentSubtitle" maxlength="255"></div>
         <div class="full"><label>封面图片</label><div class="upload-row"><input id="studioContentCover" maxlength="500" placeholder="上传图片后自动填写，也可输入 HTTPS 地址"><input id="studioContentCoverFile" class="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="small-btn primary" id="uploadStudioCoverBtn" type="button">上传封面</button><span class="upload-status" id="studioCoverUploadStatus"></span></div></div>
-        <div class="full" id="studioVideoRow"><label>视频文件 *</label><div class="upload-row"><input id="studioContentVideo" maxlength="500" placeholder="上传视频后自动填写，也可输入 HTTPS 地址"><input id="studioContentVideoFile" class="hidden" type="file" accept="video/mp4,video/webm,video/quicktime"><button class="small-btn primary" id="uploadStudioVideoBtn" type="button">上传视频</button><span class="upload-status" id="studioVideoUploadStatus"></span></div></div>
-        <div id="studioDurationRow"><label>视频时长</label><input id="studioContentDuration" maxlength="32" placeholder="如：18分钟"></div><div><label>排序</label><input id="studioContentSort" type="number" value="0"></div>
+        <div><label>排序</label><input id="studioContentSort" type="number" value="0"></div>
         <div class="full"><label id="studioContentIntroLabel">答案摘要</label><textarea id="studioContentIntro" maxlength="4000" placeholder="在问答列表中显示的简短答案"></textarea></div>
         <div class="full"><label id="studioContentBodyLabel">完整答案 *</label><textarea id="studioContentBody" class="features-input" maxlength="200000" required placeholder="直接填写问题的完整解答，可分段列出判断要点和处理建议"></textarea></div>
         <div class="full"><label>内容标签（每行一项）</label><textarea id="studioContentTags" placeholder="高产栽培&#10;田间管理"></textarea></div>

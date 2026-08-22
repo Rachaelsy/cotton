@@ -390,14 +390,6 @@
   margin: 0 0 6px;
 }
 
-.expert-web-video {
-  width: 100%;
-  max-height: 560px;
-  margin-bottom: 30px;
-  border-radius: 14px;
-  background: #07150f;
-}
-
 .web-faq-page {
   min-height: 70vh;
   padding: 54px 0 90px;

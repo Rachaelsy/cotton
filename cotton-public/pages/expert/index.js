@@ -89,7 +89,6 @@ Page({
     filteredCourses: [],
     quickQuestions: QUICK_QUESTIONS,
     qaContents: [],
-    videoContents: [],
     myQuestions: [],
     showQuestionModal: false,
     questionSubmitting: false,
@@ -155,7 +154,6 @@ Page({
         loading: false,
         allCourses: courses,
         qaContents: courses.filter(item => item.type === 'qa'),
-        videoContents: courses.filter(item => item.type === 'video'),
         featured: courses.filter(item => item.isFeatured),
         filteredCourses: filterCourses(courses, this.data.activeCategoryKey),
         categories: this._remoteCategories,
@@ -204,7 +202,7 @@ Page({
 
   onLectureTab(e) {
     const tab = e.currentTarget.dataset.tab
-    if (['qa', 'experts', 'video'].includes(tab)) this.setData({ activeLectureTab: tab })
+    if (['qa', 'experts'].includes(tab)) this.setData({ activeLectureTab: tab })
   },
 
   onCourseTap(e) {

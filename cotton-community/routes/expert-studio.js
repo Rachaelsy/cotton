@@ -14,15 +14,14 @@ fs.mkdirSync(uploadDir, { recursive: true })
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, status = 400) => res.status(status).json({ code: status, msg, data: null })
 const imageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
-const videoTypes = new Set(['video/mp4', 'video/webm', 'video/quicktime'])
-const extensions = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif', 'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov' }
+const extensions = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' }
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${extensions[file.mimetype] || ''}`)
   }),
   limits: { fileSize: Math.max(10, Number(process.env.KNOWLEDGE_LOCAL_UPLOAD_MAX_MB || 250)) * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => (imageTypes.has(file.mimetype) || videoTypes.has(file.mimetype)) ? cb(null, true) : cb(new Error('仅支持 JPG、PNG、WebP、GIF、MP4、WebM 或 MOV 文件'))
+  fileFilter: (_req, file, cb) => imageTypes.has(file.mimetype) ? cb(null, true) : cb(new Error('仅支持 JPG、PNG、WebP 或 GIF 图片'))
 })
 
 function tokenPayload(req) {
@@ -77,8 +76,7 @@ function normalizeContent(row) {
 }
 
 function contentBody(body = {}) {
-  const type = body.type === 'qa' ? 'qa' : 'video'
-  return { type, title: String(body.title || '').trim().slice(0, 160), subtitle: String(body.subtitle || '').trim().slice(0, 255), categoryKey: String(body.category_key || 'planting').trim().slice(0, 40), categoryName: String(body.category_name || '种植技术').trim().slice(0, 64), expertId: Number(body.expert_id) > 0 ? Number(body.expert_id) : null, intro: String(body.intro || '').trim().slice(0, 4000), content: String(body.content || '').trim().slice(0, 200000), coverUrl: safeUrl(body.cover_url), videoUrl: safeUrl(body.video_url), duration: String(body.duration || '').trim().slice(0, 32), tags: stringList(body.tags), published: body.is_published === true || body.is_published === 1 || body.is_published === '1' ? 1 : 0, featured: body.is_featured === true || body.is_featured === 1 || body.is_featured === '1' ? 1 : 0, sortOrder: Math.max(-9999, Math.min(9999, Number.parseInt(body.sort_order, 10) || 0)) }
+  return { type: 'qa', title: String(body.title || '').trim().slice(0, 160), subtitle: String(body.subtitle || '').trim().slice(0, 255), categoryKey: String(body.category_key || 'planting').trim().slice(0, 40), categoryName: String(body.category_name || '种植技术').trim().slice(0, 64), expertId: Number(body.expert_id) > 0 ? Number(body.expert_id) : null, intro: String(body.intro || '').trim().slice(0, 4000), content: String(body.content || '').trim().slice(0, 200000), coverUrl: safeUrl(body.cover_url), videoUrl: '', duration: '', tags: stringList(body.tags), published: body.is_published === true || body.is_published === 1 || body.is_published === '1' ? 1 : 0, featured: body.is_featured === true || body.is_featured === 1 || body.is_featured === '1' ? 1 : 0, sortOrder: Math.max(-9999, Math.min(9999, Number.parseInt(body.sort_order, 10) || 0)) }
 }
 
 function normalizePublicContent(row) {
@@ -101,7 +99,7 @@ router.get('/public', async (_req, res) => {
     const [contents] = await db.query(`SELECT ec.*,e.name AS expert_name,e.title AS expert_title,e.org AS expert_org,
       e.avatar AS profile_avatar,e.avatar_url AS profile_avatar_url
       FROM expert_contents ec LEFT JOIN experts e ON e.id=ec.expert_id
-      WHERE ec.type IN ('qa','video') AND ec.is_published=1
+      WHERE ec.type='qa' AND ec.is_published=1
       ORDER BY ec.is_featured DESC,ec.sort_order ASC,ec.id DESC LIMIT 500`)
     return ok(res, { experts: experts.map(normalizeExpert), contents: contents.map(normalizePublicContent) })
   } catch (error) {
@@ -115,7 +113,7 @@ router.get('/public/:id', async (req, res) => {
     const [[row]] = await db.query(`SELECT ec.*,e.name AS expert_name,e.title AS expert_title,e.org AS expert_org,
       e.avatar AS profile_avatar,e.avatar_url AS profile_avatar_url
       FROM expert_contents ec LEFT JOIN experts e ON e.id=ec.expert_id
-      WHERE ec.id=? AND ec.type IN ('qa','video') AND ec.is_published=1 LIMIT 1`, [req.params.id])
+      WHERE ec.id=? AND ec.type='qa' AND ec.is_published=1 LIMIT 1`, [req.params.id])
     if (!row) return fail(res, '专家讲堂内容不存在或尚未发布', 404)
     return ok(res, normalizePublicContent(row))
   } catch (error) {
@@ -127,14 +125,14 @@ router.get('/public/:id', async (req, res) => {
 router.get('/admin/overview', adminAuth, async (_req, res) => {
   try {
     const [experts] = await db.query('SELECT * FROM experts ORDER BY sort_order ASC,id DESC LIMIT 500')
-    const [contents] = await db.query(`SELECT ec.*,e.name AS expert_name FROM expert_contents ec LEFT JOIN experts e ON e.id=ec.expert_id WHERE ec.type IN ('qa','video') ORDER BY ec.type,ec.is_featured DESC,ec.sort_order ASC,ec.id DESC LIMIT 1000`)
+    const [contents] = await db.query(`SELECT ec.*,e.name AS expert_name FROM expert_contents ec LEFT JOIN experts e ON e.id=ec.expert_id WHERE ec.type='qa' ORDER BY ec.is_featured DESC,ec.sort_order ASC,ec.id DESC LIMIT 1000`)
     return ok(res, { experts: experts.map(normalizeExpert), contents: contents.map(normalizeContent) })
   } catch (error) { console.error('[expert-studio-overview]', error); return fail(res, '专家讲堂管理数据加载失败', 500) }
 })
 
 router.post('/admin/upload', adminAuth, upload.single('file'), (req, res) => {
-  if (!req.file) return fail(res, '请选择图片或视频文件')
-  return ok(res, { url: `/uploads/knowledge/expert/${req.file.filename}`, mediaType: imageTypes.has(req.file.mimetype) ? 'image' : 'video' }, '文件上传成功')
+  if (!req.file) return fail(res, '请选择图片文件')
+  return ok(res, { url: `/uploads/knowledge/expert/${req.file.filename}`, mediaType: 'image' }, '图片上传成功')
 })
 
 router.post('/admin/experts', adminAuth, async (req, res) => {
@@ -164,7 +162,7 @@ router.delete('/admin/experts/:id', adminAuth, async (req, res) => {
     if (!expert) return fail(res, '专家不存在', 404)
     if (!expert.profile_only) return fail(res, '专家登录账号不能在此删除，请改为停用')
     const [[linked]] = await db.query('SELECT COUNT(*) AS total FROM expert_contents WHERE expert_id=?', [req.params.id])
-    if (Number(linked.total) > 0) return fail(res, '该专家仍有关联问答或视频，请先调整关联内容')
+    if (Number(linked.total) > 0) return fail(res, '该专家仍有关联问答，请先调整关联内容')
     await db.query('DELETE FROM experts WHERE id=?', [req.params.id])
     return ok(res, null, '在线专家已删除')
   } catch (error) { console.error('[expert-studio-expert-delete]', error); return fail(res, '在线专家删除失败', 500) }
@@ -172,7 +170,7 @@ router.delete('/admin/experts/:id', adminAuth, async (req, res) => {
 
 router.post('/admin/contents', adminAuth, async (req, res) => {
   const item = contentBody(req.body)
-  if (!item.title || !item.content || (item.type === 'video' && !item.videoUrl)) return fail(res, item.type === 'video' ? '视频标题、正文说明和视频文件不能为空' : '问题标题和答案正文不能为空')
+  if (!item.title || !item.content) return fail(res, '问题标题和答案正文不能为空')
   try {
     const [[expert]] = item.expertId ? await db.query('SELECT name,title,org,avatar,specialties FROM experts WHERE id=? LIMIT 1', [item.expertId]) : [[]]
     const [result] = await db.query(`INSERT INTO expert_contents (type,title,subtitle,category_key,category_name,teacher,teacher_title,org,expert_avatar,expert_tags,intro,content,cover_url,video_url,duration,price_type,price,sort_order,is_published,expert_id,is_featured) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?,?)`, [item.type,item.title,item.subtitle,item.categoryKey,item.categoryName,expert?.name||'',expert?.title||'',expert?.org||'',expert?.avatar||'专',expert?.specialties||JSON.stringify(item.tags),item.intro,item.content,item.coverUrl,item.videoUrl,item.duration,'free',item.sortOrder,item.published,item.expertId,item.featured])
@@ -182,7 +180,7 @@ router.post('/admin/contents', adminAuth, async (req, res) => {
 
 router.put('/admin/contents/:id', adminAuth, async (req, res) => {
   const item = contentBody(req.body)
-  if (!item.title || !item.content || (item.type === 'video' && !item.videoUrl)) return fail(res, item.type === 'video' ? '视频标题、正文说明和视频文件不能为空' : '问题标题和答案正文不能为空')
+  if (!item.title || !item.content) return fail(res, '问题标题和答案正文不能为空')
   try {
     const [[expert]] = item.expertId ? await db.query('SELECT name,title,org,avatar,specialties FROM experts WHERE id=? LIMIT 1', [item.expertId]) : [[]]
     const [result] = await db.query(`UPDATE expert_contents SET type=?,title=?,subtitle=?,category_key=?,category_name=?,teacher=?,teacher_title=?,org=?,expert_avatar=?,expert_tags=?,intro=?,content=?,cover_url=?,video_url=?,duration=?,price_type='free',price=0,sort_order=?,is_published=?,expert_id=?,is_featured=? WHERE id=?`, [item.type,item.title,item.subtitle,item.categoryKey,item.categoryName,expert?.name||'',expert?.title||'',expert?.org||'',expert?.avatar||'专',expert?.specialties||JSON.stringify(item.tags),item.intro,item.content,item.coverUrl,item.videoUrl,item.duration,item.sortOrder,item.published,item.expertId,item.featured,req.params.id])
@@ -192,7 +190,7 @@ router.put('/admin/contents/:id', adminAuth, async (req, res) => {
 })
 
 router.delete('/admin/contents/:id', adminAuth, async (req, res) => {
-  try { const [result] = await db.query("DELETE FROM expert_contents WHERE id=? AND type IN ('qa','video')", [req.params.id]); if (!result.affectedRows) return fail(res, '内容不存在', 404); return ok(res, null, '内容已删除') } catch (error) { console.error('[expert-studio-content-delete]', error); return fail(res, '内容删除失败', 500) }
+  try { const [result] = await db.query("DELETE FROM expert_contents WHERE id=? AND type='qa'", [req.params.id]); if (!result.affectedRows) return fail(res, '内容不存在', 404); return ok(res, null, '内容已删除') } catch (error) { console.error('[expert-studio-content-delete]', error); return fail(res, '内容删除失败', 500) }
 })
 
 module.exports = router
