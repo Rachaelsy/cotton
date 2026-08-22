@@ -23,7 +23,12 @@ async function farmerAuth(req, res, next) {
   const token = payload(req)
   if (!token || token.role !== 'farmer' || !token.id) return fail(res, '请先登录农户账号', 401)
   try {
-    const [[user]] = await db.query('SELECT id,is_active FROM users WHERE id=? AND role=? LIMIT 1', [token.id, 'farmer'])
+    // users.role 是兼容旧系统的主角色，同一个账号还可能同时拥有商户等身份。
+    // 农户资格应以 farmers 档案为准，不能要求 users.role 永远等于 farmer。
+    const [[user]] = await db.query(
+      'SELECT u.id,u.is_active FROM users u INNER JOIN farmers f ON f.user_id=u.id WHERE u.id=? LIMIT 1',
+      [token.id]
+    )
     if (!user || !user.is_active) return fail(res, '农户账号不存在或已停用', 401)
     req.farmerId = Number(user.id)
     next()

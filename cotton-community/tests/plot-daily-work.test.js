@@ -18,6 +18,7 @@ const allTasksWxml = fs.readFileSync(path.resolve(root, '..', 'cotton-public', '
 
 assert(migrate.includes('CREATE TABLE IF NOT EXISTS community_plot_daily_work') && migrate.includes('FOREIGN KEY (plot_id) REFERENCES plots(id) ON DELETE CASCADE'), 'migration should create plot-scoped work with cascade cleanup')
 assert(route.includes('router.get(\'/\', farmerAuth') && route.includes("payload.role !== 'farmer'"), 'public plot work must require a farmer token')
+assert(route.includes('INNER JOIN farmers f ON f.user_id=u.id') && !route.includes("WHERE id=? AND role=? LIMIT 1"), 'multi-role farmers must be authorized through the farmer profile')
 assert(route.includes('INNER JOIN plots p ON p.id=w.plot_id') && route.includes('p.user_id=?'), 'farmer query must enforce plot ownership in SQL')
 assert(route.includes("w.status='published'") && route.includes('w.work_date=?'), 'farmer endpoint should return only published work for the requested date')
 assert(route.includes("router.get('/admin/list', adminAuth") && route.includes("router.post('/admin', adminAuth") && route.includes("router.put('/admin/:id', adminAuth") && route.includes("router.delete('/admin/:id', adminAuth"), 'admin API should support complete maintenance')

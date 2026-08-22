@@ -16,7 +16,11 @@ async function farmerAuth(req, res, next) {
   const payload = tokenPayload(req)
   if (!payload || payload.role !== 'farmer' || !payload.id) return fail(res, '请先登录农户账号', 401)
   try {
-    const [[account]] = await db.query('SELECT id,is_active FROM users WHERE id=? AND role=? LIMIT 1', [payload.id, 'farmer'])
+    // 共享账号可以同时拥有多个业务身份，农户资格以 farmers 档案为准。
+    const [[account]] = await db.query(
+      'SELECT u.id,u.is_active FROM users u INNER JOIN farmers f ON f.user_id=u.id WHERE u.id=? LIMIT 1',
+      [payload.id]
+    )
     if (!account || !account.is_active) return fail(res, '农户账号不存在或已停用', 401)
     req.farmerId = Number(account.id)
     next()

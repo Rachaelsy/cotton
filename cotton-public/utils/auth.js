@@ -6,7 +6,7 @@
 // ENV = 'server' → 连接云服务器（走 Nginx 80 端口）
 // ENV = 'real'   → 真机调试，使用电脑局域网 IP + 端口 3000
 // ENV = 'sim'    → 模拟器调试，使用 localhost
-const ENV = 'sim'
+const ENV = 'prod'
 
 const PROD_URL   = 'https://xjsmartcotton.cn' // 正式备案域名
 const SERVER_IP  = '101.34.207.252'            // 云服务器公网 IP
@@ -93,11 +93,19 @@ function requestWithToken(method, path, data, token, tokenType = 'user') {
         if (res.statusCode === 401) {
           if (tokenType === 'guest') {
             clearGuestToken()
-          } else {
+          } else if (path === '/api/auth/verify') {
+            // 只有统一会话校验接口明确返回 401，才判定整段登录会话失效。
+            // 普通业务接口可能因为独立服务配置、权限或短暂故障返回 401，
+            // 不能因此删除全局 Token，否则访问一个页面就会让整个小程序退出登录。
             clearToken()
             const app = typeof getApp === 'function' ? getApp() : null
             if (app && app.globalData) app.globalData.user = null
           }
+          console.warn('[api-unauthorized]', {
+            method,
+            path,
+            message: res.data && res.data.msg || 'unauthorized'
+          })
           const error = new Error(res.data && res.data.msg || '身份已过期')
           error.statusCode = 401
           reject(error)
@@ -251,7 +259,13 @@ async function verify() {
       if (app && app.globalData) app.globalData.user = res.data
       return true
     }
-    clearToken()
+    // 只有服务端明确判定会话无效时才清除本地登录状态。
+    // 服务器故障、限流等临时错误不应让用户看起来被强制退出。
+    if ([401, 403, 404].includes(Number(res.code))) {
+      clearToken()
+      const app = typeof getApp === 'function' ? getApp() : null
+      if (app && app.globalData) app.globalData.user = null
+    }
     return false
   } catch {
     return false

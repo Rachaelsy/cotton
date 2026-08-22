@@ -32,6 +32,7 @@ Page({
   onLoad() {
     const info = wx.getSystemInfoSync()
     this.setData({ statusBarHeight: info.statusBarHeight || 20 })
+    this.renderSession(auth.isLoggedIn(), auth.getUser())
   },
 
   onShow() {
@@ -39,8 +40,21 @@ Page({
   },
 
   async refreshPage() {
-    const loggedIn = auth.isLoggedIn() ? await auth.verify() : false
-    const user = loggedIn ? auth.getUser() : null
+    const refreshId = (this._refreshId || 0) + 1
+    this._refreshId = refreshId
+    const hasLocalSession = auth.isLoggedIn()
+    this.renderSession(hasLocalSession, hasLocalSession ? auth.getUser() : null)
+    if (!hasLocalSession) return
+
+    const verified = await auth.verify()
+    if (refreshId !== this._refreshId) return
+
+    // 网络暂时异常时 verify 会保留 Token；只有服务端明确拒绝后 Token 才会被清除。
+    const loggedIn = verified || auth.isLoggedIn()
+    this.renderSession(loggedIn, loggedIn ? auth.getUser() : null)
+  },
+
+  renderSession(loggedIn, user) {
     const displayName = user && (user.nickname || user.real_name) || '棉农朋友'
     const learning = learningSummary()
     this.setData({
