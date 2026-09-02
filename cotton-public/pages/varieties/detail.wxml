@@ -22,13 +22,13 @@
     </view>
 
     <view class="section" wx:if="{{item.strengths.length || item.suitableConditions}}">
-      <view class="section-head"><view><text>品种补充资料</text><small>由后台持续维护</small></view></view>
+      <view class="section-head"><view><text>品种补充资料</text></view></view>
       <view wx:if="{{item.strengths.length}}" class="tag-list"><text wx:for="{{item.strengths}}" wx:key="*this">{{item}}</text></view>
       <view wx:if="{{item.suitableConditions}}" class="copy-block"><strong>适宜条件</strong><text>{{item.suitableConditions}}</text></view>
     </view>
 
     <view class="section county-section">
-      <view class="section-head"><view><text>县域主推与棉田匹配</text><small>为后续专项分析预留</small></view></view>
+      <view class="section-head"><view><text>县域主推与棉田匹配</text></view></view>
       <view wx:if="{{item.recommendedCounties.length}}" class="county-list"><text wx:for="{{item.recommendedCounties}}" wx:key="*this">{{item}}</text></view>
       <view wx:if="{{!item.recommendedCounties.length}}" class="pending"><strong>尚未形成县域推荐结论</strong><text>需要结合品种审定范围、当地积温、无霜期、土壤、水源、机采条件和多年试验数据后再发布。</text></view>
     </view>

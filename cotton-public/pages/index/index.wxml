@@ -123,7 +123,6 @@
     <view class="news" wx:for="{{news}}" wx:key="id" bindtap="openPolicy" data-id="{{item.id}}" data-url="{{item.targetUrl}}">
       <view><label>{{item.tag}}</label><strong>{{item.title}}</strong><small>{{item.source}}{{item.date ? ' · ' + item.date : ''}}</small></view><image src="{{item.image}}" mode="aspectFill"/>
     </view>
-    <view class="news-empty" wx:if="{{!newsLoading && !news.length}}" bindtap="openNews"><text>暂时没有首页推送</text><small>管理员可在“首页推送”后台管理最多 5 篇内容</small></view>
+    <view class="news-empty" wx:if="{{!newsLoading && !news.length}}" bindtap="openNews"><text>暂时没有首页推送</text></view>
   </view>
-  <view class="notice"><view class="notice-icon">!</view><view><text>重要提醒</text><small>未来三天持续高温，请及时关注地块墒情变化。</small></view></view>
 </view>

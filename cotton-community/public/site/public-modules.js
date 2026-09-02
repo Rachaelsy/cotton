@@ -4,7 +4,8 @@
     experts: '/api/expert-studio/public',
     products: '/api/service-products',
     processing: '/api/processing-factories',
-    varieties: '/api/cotton-varieties'
+    varieties: '/api/cotton-varieties',
+    pests: '/api/pest-knowledge'
   }
 
   const PRODUCT_META = {
@@ -181,6 +182,31 @@
       } catch (error) { errorPanel(error, '/') }
     }
 
+    async function renderPests() {
+      loading('正在加载病虫害知识')
+      try {
+        const rows = await request(API.pests)
+        const filters = ['全部', '虫害', '病害', '生理性']
+        const renderRows = (list, filter) => {
+          const visible = filter === '全部' ? list : list.filter(item => item.categoryName === filter)
+          return visible.length ? visible.map(item => `<article class="module-card">${imageBlock(item.coverUrl, item.name)}<div><span class="module-badge">${escapeHtml(item.categoryName)}</span><h2><a href="${publicLink(`/pests/${item.id}`)}">${escapeHtml(item.icon || '🌿')} ${escapeHtml(item.name)}</a></h2><p>${escapeHtml(item.summary)}</p></div></article>`).join('') : empty('当前分类暂无内容', '管理员发布病虫害知识后会同步显示。')
+        }
+        main.innerHTML = `${moduleHero('FIELD DIAGNOSIS', '病虫害知识', '查看管理员发布的棉花病害、虫害和生理性问题识别与防治知识。', 'pests')}<section class="module-page"><div class="shell">${filterBar(filters)}<div id="moduleRows" class="module-card-grid">${renderRows(rows, '全部')}</div></div></section>`
+        bindFilters(rows, renderRows)
+      } catch (error) { errorPanel(error, '/') }
+    }
+
+    async function renderPestDetail(id) {
+      loading('正在加载病虫害知识详情')
+      try {
+        const item = await request(`${API.pests}/${encodeURIComponent(id)}`)
+        setMeta(item.name, item.summary)
+        setActiveNav('pests')
+        const symptoms = (item.symptoms || []).map(text => `<li>${escapeHtml(text)}</li>`).join('')
+        main.innerHTML = `<section class="product-detail-page"><div class="shell"><a class="article-back" href="${publicLink('/pests')}">← 返回病虫害知识</a><div class="product-detail-layout">${imageBlock(item.coverUrl, item.name, 'product-detail-image')}<div><span class="module-badge">${escapeHtml(item.categoryName)}</span><h1>${escapeHtml(item.icon || '🌿')} ${escapeHtml(item.name)}</h1><p class="product-lead">${escapeHtml(item.summary)}</p>${symptoms ? `<section class="product-copy"><h2>典型症状</h2><ul>${symptoms}</ul></section>` : ''}<section class="product-copy"><h2>防治建议</h2><p>${escapeHtml(item.treatmentAdvice)}</p></section>${item.medicationWarning ? `<section class="product-copy"><h2>用药提醒</h2><p>${escapeHtml(item.medicationWarning)}</p></section>` : ''}${item.sourceName || item.sourceUrl ? `<section class="product-copy"><h2>资料来源</h2><p>${escapeHtml(item.sourceName || '')}</p>${item.sourceUrl ? `<a href="${escapeHtml(safeUrl(item.sourceUrl))}" target="_blank" rel="noopener noreferrer">查看来源 →</a>` : ''}</section>` : ''}</div></div></div></section>`
+      } catch (error) { errorPanel(error, '/pests') }
+    }
+
     function productCards(rows, type, filter = '全部') {
       const visible = filter === '全部' ? rows : rows.filter(item => item.category === filter)
       return visible.length ? visible.map(item => `<article class="module-card">${imageBlock(item.coverUrl, item.name)}<div><span class="module-badge">${escapeHtml(item.category)}</span><h2><a href="${publicLink(`/${type}/${item.id}`)}">${escapeHtml(item.name)}</a></h2><p>${escapeHtml([item.brand, item.modelName].filter(Boolean).join(' · ') || item.intro)}</p><div class="module-tags">${(item.features || []).slice(0, 3).map(feature => `<span>${escapeHtml(feature)}</span>`).join('')}</div></div></article>`).join('') : empty('当前分类暂无产品', '管理员上架后会同时显示在小程序和网页端。')
@@ -265,7 +291,7 @@
       } catch (error) { errorPanel(error, '/varieties') }
     }
 
-    return { homeSection, renderPolicies, renderArticleDetail, renderExperts, renderExpertDetail, renderFinance, renderProducts, renderProductDetail, renderProcessing, renderProcessingDetail, renderVarieties, renderVarietyDetail }
+    return { homeSection, renderPolicies, renderArticleDetail, renderExperts, renderExpertDetail, renderFinance, renderPests, renderPestDetail, renderProducts, renderProductDetail, renderProcessing, renderProcessingDetail, renderVarieties, renderVarietyDetail }
   }
 
   window.COTTON_PUBLIC_MODULES = { create }

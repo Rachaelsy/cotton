@@ -68,7 +68,7 @@
         <text class="point-num">{{index + 1}}</text>
         <text class="point-text">{{item}}</text>
       </view>
-      <view wx:if="{{!course.points || course.points.length === 0}}" class="empty-hint">暂无要点，管理员可在后台补充图文正文。</view>
+      <view wx:if="{{!course.points || course.points.length === 0}}" class="empty-hint">暂无课程要点</view>
     </view>
 
     <view wx:if="{{!isExpertOnly && !isQa && quizItems.length}}" class="card">

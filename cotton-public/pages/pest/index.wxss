@@ -491,3 +491,16 @@
 .bottom-gap {
   height: 60rpx;
 }
+
+.knowledge-state {
+  margin: 24rpx 30rpx 12rpx;
+  padding: 46rpx 28rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  color: #8b9590;
+  font-size: 28rpx;
+  text-align: center;
+  box-shadow: 0 12rpx 30rpx rgba(12, 76, 55, 0.06);
+}
+
+.knowledge-state-error { color: #b64d43; }

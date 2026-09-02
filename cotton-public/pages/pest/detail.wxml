@@ -1,85 +1,47 @@
 <view class="page">
   <view class="header" style="padding-top:{{statusBarHeight}}px;">
     <view class="nav-inner" style="padding-right: {{capsuleSafeRight}}px">
-      <view class="back-btn" bindtap="onBack">
-        <text class="back-icon">&lt;</text>
-      </view>
-      <view class="nav-right" bindtap="onShare">
-        <text class="share-icon">...</text>
-      </view>
+      <view class="back-btn" bindtap="onBack"><text class="back-icon">&lt;</text></view>
+      <view class="nav-right"></view>
     </view>
 
-    <view class="pest-hero">
-      <view class="pest-icon-wrap">
-        <text class="pest-icon">{{pest.icon}}</text>
-      </view>
+    <view wx:if="{{pest.name}}" class="pest-hero">
+      <view class="pest-icon-wrap"><text class="pest-icon">{{pest.icon || '🌿'}}</text></view>
       <view class="pest-info">
         <text class="pest-name">{{pest.name}}</text>
-        <view class="pest-badges">
-          <view class="pest-type-badge">
-            <text class="pest-type-text">{{pest.type}}</text>
-          </view>
-        </view>
-      </view>
-      <view class="treat-days-wrap">
-        <text class="treat-days-num">{{pest.treatDays}}</text>
-        <text class="treat-days-label">{{copy.cycle}}</text>
+        <view class="pest-badges"><view class="pest-type-badge"><text class="pest-type-text">{{pest.type}}</text></view></view>
       </view>
     </view>
   </view>
 
   <scroll-view class="scroll-body" scroll-y>
-    <view class="card severity-card">
-      <text class="card-title">{{copy.severity}}</text>
-      <view class="severity-row">
-        <view wx:for="{{severityLevels}}" wx:key="value" class="severity-item">
-          <view class="severity-dot {{pest.severityKey === item.value ? 'dot-active' : 'dot-inactive'}}">
-            <view wx:if="{{pest.severityKey === item.value}}" class="dot-inner"></view>
-          </view>
-          <text class="severity-label {{pest.severityKey === item.value ? 'label-active' : ''}}">{{item.label}}</text>
-        </view>
-        <view class="severity-line"></view>
+    <view wx:if="{{loading}}" class="detail-state">正在加载...</view>
+    <view wx:elif="{{errorText}}" class="detail-state detail-state-error" bindtap="onRetry">{{errorText}}，点击重试</view>
+    <block wx:else>
+      <image wx:if="{{pest.coverUrl}}" class="pest-cover" src="{{pest.coverUrl}}" mode="aspectFill"></image>
+      <view class="card">
+        <text class="card-title">{{copy.descTitle}}</text>
+        <text class="desc-text">{{pest.summary}}</text>
       </view>
-      <view class="severity-tip">
-        <text class="severity-tip-icon">!</text>
-        <text class="severity-tip-text" style="color:{{pest.severityColor}};">{{severityTipText}}</text>
-      </view>
-    </view>
 
-    <view class="card">
-      <text class="card-title">{{copy.descTitle}}</text>
-      <text class="desc-text">{{pest.desc}}</text>
-    </view>
-
-    <view class="card">
-      <text class="card-title">{{copy.treatmentTitle}}</text>
-      <view wx:for="{{pest.treatments}}" wx:key="n" class="treatment-item">
-        <view class="treatment-num-wrap">
-          <text class="treatment-num">{{index + 1}}</text>
-        </view>
-        <view class="treatment-content">
-          <text class="treatment-name">{{item.n}}</text>
-          <text class="treatment-desc">{{item.d}}</text>
+      <view wx:if="{{pest.symptoms.length}}" class="card">
+        <text class="card-title">{{copy.symptomTitle}}</text>
+        <view wx:for="{{pest.symptoms}}" wx:key="*this" class="treatment-item">
+          <view class="treatment-num-wrap"><text class="treatment-num">{{index + 1}}</text></view>
+          <view class="treatment-content"><text class="treatment-desc">{{item}}</text></view>
         </view>
       </view>
-    </view>
 
-    <view class="card">
-      <text class="card-title">{{copy.productTitle}}</text>
-      <view wx:for="{{pest.products}}" wx:key="name" class="product-item">
-        <view class="product-icon-wrap">
-          <text class="product-icon">{{item.icon}}</text>
-        </view>
-        <view class="product-info">
-          <text class="product-name">{{item.name}}</text>
-          <text class="product-price">¥{{item.price}}</text>
-        </view>
-        <view class="buy-btn" bindtap="onBuyProduct" data-name="{{item.name}}">
-          <text class="buy-btn-text">{{copy.buy}}</text>
-        </view>
+      <view class="card"><text class="card-title">{{copy.treatmentTitle}}</text><text class="desc-text">{{pest.treatmentAdvice}}</text></view>
+
+      <view wx:if="{{pest.medicationWarning}}" class="card warning-card">
+        <text class="card-title">{{copy.warningTitle}}</text><text class="desc-text">{{pest.medicationWarning}}</text>
       </view>
-    </view>
 
+      <view wx:if="{{pest.sourceName || pest.sourceUrl}}" class="card source-card">
+        <text class="card-title">{{copy.sourceTitle}}</text><text class="desc-text">{{pest.sourceName || pest.sourceUrl}}</text>
+      </view>
+    </block>
     <view class="bottom-gap"></view>
   </scroll-view>
 </view>

@@ -437,3 +437,26 @@
 .bottom-gap {
   height: 60rpx;
 }
+
+.detail-state {
+  margin: 40rpx 30rpx;
+  padding: 70rpx 30rpx;
+  border-radius: 26rpx;
+  background: #fff;
+  color: #7d8983;
+  font-size: 29rpx;
+  text-align: center;
+}
+
+.detail-state-error { color: #b64d43; }
+
+.pest-cover {
+  display: block;
+  width: calc(100% - 60rpx);
+  height: 330rpx;
+  margin: 28rpx 30rpx 0;
+  border-radius: 28rpx;
+}
+
+.warning-card { border-left: 8rpx solid #e3a62f; }
+.source-card { margin-bottom: 20rpx; }

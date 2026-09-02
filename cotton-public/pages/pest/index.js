@@ -16,6 +16,8 @@ Page({
     historyCountText: '',
 
     pests: [],
+    knowledgeLoading: true,
+    knowledgeError: '',
     filters: [],
     filter: '',
     filteredPests: [],
@@ -32,7 +34,6 @@ Page({
       capsuleSafeRight: layout.getCapsuleSafeRight()
     })
 
-    this._applyFilter(this.data.filter || this.data.filters[0])
     this._loadHistory()
   },
 
@@ -43,7 +44,7 @@ Page({
       scrollTop: 0
     })
 
-    this._applyFilter(this.data.filter || this.data.filters[0])
+    this._loadKnowledge()
     this._loadHistory()
   },
 
@@ -51,7 +52,6 @@ Page({
     const lang = i18n.getLanguage()
     const copy = getPestCopy('index', lang)
 
-    const pests = copy.pests || []
     const filters = copy.filters || []
     const currentFilter = this.data.filter || filters[0]
 
@@ -63,14 +63,40 @@ Page({
 
     this.setData({
       copy,
-      pests,
       filters,
       filter: validFilter,
-      commonCountText: copy.commonCount
-        ? copy.commonCount(pests.length)
-        : `${pests.length}`,
       historyCountText: ''
     })
+  },
+
+  async _loadKnowledge() {
+    this.setData({ knowledgeLoading: true, knowledgeError: '' })
+    try {
+      const payload = await auth.request('GET', '/api/pest-knowledge')
+      const rows = payload && payload.code === 200 && Array.isArray(payload.data) ? payload.data : []
+      const copy = this.textCopy || this.data.copy
+      const backgrounds = { pest: 'c2', disease: 'c4', physiological: 'c6' }
+      const pests = rows.map(item => ({
+        ...item,
+        n: item.name,
+        type: (copy.categoryLabels && copy.categoryLabels[item.category]) || item.categoryName,
+        icon: item.icon || '🌿',
+        bg: backgrounds[item.category] || 'c2'
+      }))
+      this.setData({
+        pests,
+        knowledgeLoading: false,
+        commonCountText: copy.commonCount ? copy.commonCount(pests.length) : `${pests.length}`
+      })
+      this._applyFilter(this.data.filter || this.data.filters[0])
+    } catch (error) {
+      console.error('[pest-knowledge-load]', error)
+      this.setData({ pests: [], filteredPests: [], knowledgeLoading: false, knowledgeError: error.message || '病虫害知识加载失败', commonCountText: '0' })
+    }
+  },
+
+  onRetryKnowledge() {
+    this._loadKnowledge()
   },
 
   _applyFilter(filter) {

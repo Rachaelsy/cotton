@@ -29,16 +29,6 @@ const PEST_COPY = {
         severe: '重度',
         unknown: '待确认'
       },
-      pests: [
-        { id: 1, n: '棉蚜', icon: '🐛', bg: 'c2', type: '虫害', hot: true },
-        { id: 2, n: '棉铃虫', icon: '🦋', bg: 'c3', type: '虫害', hot: false },
-        { id: 3, n: '红蜘蛛', icon: '🕷', bg: 'c1', type: '虫害', hot: false },
-        { id: 4, n: '枯萎病', icon: '🍂', bg: 'c4', type: '病害', hot: true },
-        { id: 5, n: '黄萎病', icon: '🌿', bg: 'c5', type: '病害', hot: false },
-        { id: 6, n: '蕾铃脱落', icon: '🌾', bg: 'c6', type: '生理性', hot: false },
-        { id: 7, n: '缺素症', icon: '🧪', bg: 'c2', type: '生理性', hot: false },
-        { id: 8, n: '日灼病', icon: '☀', bg: 'c3', type: '病害', hot: false }
-      ],
       viewGuide: '查看防治要点',
       pendingTitle: '待进一步确认',
       pendingCategory: '待确认',
@@ -64,6 +54,7 @@ const PEST_COPY = {
       symptomTitle: '可见症状',
       evidenceTitle: '判断依据',
       warningTitle: '用药提醒',
+      sourceTitle: '资料来源',
       confidenceLabel: '可信度：',
       actionPrefix: '建议',
       treatmentTitle: '处理建议',
@@ -103,26 +94,7 @@ const PEST_COPY = {
         { label: '轻度', value: 'light' },
         { label: '中度', value: 'medium' },
         { label: '重度', value: 'severe' }
-      ],
-      pest: {
-        name: '棉蚜',
-        icon: '🐛',
-        type: '虫害',
-        severity: '中度',
-        severityKey: 'medium',
-        severityColor: '#FF9800',
-        treatDays: 3,
-        desc: '棉蚜会聚集在棉株叶背、嫩梢和花蕾附近吸食汁液，容易造成叶片卷曲、发黄和长势变弱。',
-        treatments: [
-          { n: '化学防治', d: '可在虫量明显上升时，选择对口药剂重点喷施叶背和嫩梢。' },
-          { n: '物理防治', d: '田间悬挂黄板，结合人工巡查，尽量在虫口初期控制。' },
-          { n: '农业防治', d: '避免偏施氮肥，保持通风透光，及时清理杂草和重病残株。' }
-        ],
-        products: [
-          { name: '10%吡虫啉可湿性粉剂 500g', price: 45, icon: '🧴' },
-          { name: '3%啶虫脒乳油 500ml', price: 38, icon: '🧴' }
-        ]
-      }
+      ]
     },
     result: {
       scanningTitle: 'AI 正在扫描病虫害图片',
@@ -170,16 +142,6 @@ const PEST_COPY = {
         severe: 'ئېغىر',
         unknown: 'تېخى جەزملەشمەيدۇ'
       },
-      pests: [
-        { id: 1, n: 'پاختا شىرىسى', icon: '🐛', bg: 'c2', type: 'زىيانداش', hot: true },
-        { id: 2, n: 'پاختا قۇرتى', icon: '🦋', bg: 'c3', type: 'زىيانداش', hot: false },
-        { id: 3, n: 'قىزىل ئۆمۈچۈك', icon: '🕷', bg: 'c1', type: 'زىيانداش', hot: false },
-        { id: 4, n: 'سۆلىش كېسىلى', icon: '🍂', bg: 'c4', type: 'كېسەل', hot: true },
-        { id: 5, n: 'سېرىق سۆلىش', icon: '🌿', bg: 'c5', type: 'كېسەل', hot: false },
-        { id: 6, n: 'غۇنچە-كۆسەك چۈشۈش', icon: '🌾', bg: 'c6', type: 'فىزىئولوگىيىلىك', hot: false },
-        { id: 7, n: 'ئوزۇقلۇق كەمچىلىك', icon: '🧪', bg: 'c2', type: 'فىزىئولوگىيىلىك', hot: false },
-        { id: 8, n: 'كۈن كۆيۈك كېسىلى', icon: '☀', bg: 'c3', type: 'كېسەل', hot: false }
-      ],
       viewGuide: 'ئالدىنى ئېلىش نۇقتىسىنى كۆرۈش',
       pendingTitle: 'يەنىمۇ بىر قېتىم جەزملەش كېرەك',
       pendingCategory: 'تېخى جەزملەشمەيدۇ',
@@ -205,6 +167,7 @@ const PEST_COPY = {
       symptomTitle: 'كۆرۈنگەن ئالامەتلەر',
       evidenceTitle: 'ھۆكۈم ئاساسى',
       warningTitle: 'دورا ئىشلىتىش ئەسكەرتىشى',
+      sourceTitle: 'مەلۇمات مەنبەسى',
       confidenceLabel: 'ئىشەنچ دەرىجىسى: ',
       actionPrefix: 'تەۋسىيە',
       treatmentTitle: 'بىر تەرەپ قىلىش تەكلىپى',
@@ -244,26 +207,7 @@ const PEST_COPY = {
         { label: 'يېنىك', value: 'light' },
         { label: 'ئوتتۇرا', value: 'medium' },
         { label: 'ئېغىر', value: 'severe' }
-      ],
-      pest: {
-        name: 'پاختا شىرىسى',
-        icon: '🐛',
-        type: 'زىيانداش',
-        severity: 'ئوتتۇرا',
-        severityKey: 'medium',
-        severityColor: '#FF9800',
-        treatDays: 3,
-        desc: 'پاختا شىرىسى يوپۇرماقنىڭ ئارقا يۈزى، يېڭى شاخ ۋە غۇنچە ئەتراپىدا توپلىنىپ شىرە سۈمۈرۈپ، يوپۇرماقنى بۈكۈپ سارغايتىدۇ.',
-        treatments: [
-          { n: 'خىمىيەۋى ئالدىنى ئېلىش', d: 'زىيانداش سانى ئاشقاندا، يەرلىك لايىھە بويىچە ماس دورىنى يوپۇرماق ئارقىسىغا قارىتىپ پۈركۈڭ.' },
-          { n: 'فىزىكىلىق ئالدىنى ئېلىش', d: 'سېرىق تاختا ئورنىتىپ، قاناتلىق شىرەنى تۇتۇڭ، دەسلەپكى باسقۇچتا قولدا كۆزىتىڭ.' },
-          { n: 'دېھقانچىلىق ئالدىنى ئېلىش', d: 'ئازوتنى ھەددىدىن زىيادە بەرمەڭ، شامال ئۆتۈش ۋە يورۇقلۇقنى ياخشىلاڭ، ئوت-چۆپنى تازىلاڭ.' }
-        ],
-        products: [
-          { name: '10%吡虫啉可湿性粉剂 500g', price: 45, icon: '🧴' },
-          { name: '3%啶虫脒乳油 500ml', price: 38, icon: '🧴' }
-        ]
-      }
+      ]
     },
     result: {
       scanningTitle: 'AI كېسەل-زىيانداش رەسىمىنى سىكاننېرلاۋاتىدۇ',

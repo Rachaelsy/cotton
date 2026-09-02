@@ -81,7 +81,7 @@ assert(!app.includes('function renderHub()') && !shell.includes('棉知双平台
 assert(app.includes('function renderPublicHome()') && app.includes('function renderBusinessHome()'), 'public and business platforms need separate home views')
 assert(app.includes('function renderMachinery()') && app.includes('function renderMachineryDetail('), 'business machinery should have list and detail views')
 assert(app.includes('function renderExperts()'), 'expert consultation should live in the public platform')
-assert(app.includes('function renderPolicies()') && app.includes('function renderPests()') && app.includes('function renderActivities()'), 'public service areas should have independent views')
+assert(app.includes('function renderPolicies()') && publicModules.includes('async function renderPests()') && app.includes('function renderActivities()'), 'public service areas should have independent views')
 assert(app.includes("pageGroup === 'courses'") && app.includes("pageGroup === 'forum'") && app.includes("pageGroup === 'login'"), 'integrated public learning routes should be rendered by the shared shell')
 assert(app.includes('相关农技培训') && app.includes('相关商业资料'), 'the two platforms should cross-link related content')
 assert(app.includes("platform === 'public'") && app.includes("platform === 'business'"), 'routing should enforce platform-specific views')
@@ -97,10 +97,10 @@ assert(businessHome.includes('农资供应') && businessHome.includes('农机服
 assert(shell.includes('/knowledge/site/learning.js'), 'shared site should load integrated course and forum behavior')
 assert(shell.includes('/knowledge/site/public-modules.js'), 'shared site should load database-backed public service modules')
 assert(learning.includes('renderCourses') && learning.includes('renderCourseDetail') && learning.includes('renderForum') && learning.includes('renderForumDetail') && learning.includes('renderLogin'), 'public learning views should be feature complete')
-for (const renderer of ['renderPolicies', 'renderExperts', 'renderFinance', 'renderProducts', 'renderProcessing', 'renderVarieties']) {
+for (const renderer of ['renderPolicies', 'renderExperts', 'renderFinance', 'renderPests', 'renderProducts', 'renderProcessing', 'renderVarieties']) {
   assert(publicModules.includes(renderer), `database-backed website module is missing ${renderer}`)
 }
-for (const endpoint of ['/api/policies', '/api/expert-studio/public', '/api/service-products', '/api/processing-factories', '/api/cotton-varieties']) {
+for (const endpoint of ['/api/policies', '/api/expert-studio/public', '/api/service-products', '/api/processing-factories', '/api/cotton-varieties', '/api/pest-knowledge']) {
   assert(publicModules.includes(endpoint), `public website should read shared endpoint ${endpoint}`)
 }
 assert(expertStudio.includes("router.get('/public'") && expertStudio.includes("router.get('/public/:id'"), 'expert studio should expose published content to the website')
@@ -112,7 +112,6 @@ assert(data.products.length >= 8, 'first version should include a useful product
 assert(data.machinery.length >= 6, 'business platform should include the main cotton machinery services')
 assert(data.training.length >= 6, 'training should cover the cotton growth cycle')
 assert(data.news.length >= 6, 'news should include enough sourced content for all categories')
-assert(data.pests.length >= 6, 'public platform should include a useful pest knowledge library')
 assert(data.activities.length >= 4, 'public platform should include first-version public activities')
 assert(data.news.filter(item => item.category === 'policy').length >= 3, 'public policy area should include enough first-version content')
 
@@ -136,16 +135,12 @@ for (const article of data.training) {
   assert(article.source && /^https:\/\//.test(article.sourceUrl), `training article ${article.id} should retain its source`)
 }
 
-for (const item of data.pests) {
-  assert(item.source && /^https:\/\//.test(item.sourceUrl), `pest article ${item.id} should retain its source`)
-}
-
 for (const item of data.news) {
   assert(item.source && /^https:\/\//.test(item.sourceUrl), `news item ${item.id} should retain its source`)
 }
 
 assert(app.includes('renderProductDetail') && app.includes('renderMachineryDetail') && app.includes('renderTrainingDetail') && app.includes('renderNewsDetail'), 'list pages should have working detail views')
-assert(app.includes('function sourceReference(') && app.includes('查看政策原文') && app.includes('查看植保技术资料'), 'sourced content should expose original links')
+assert(app.includes('function sourceReference(') && app.includes('查看政策原文') && publicModules.includes('查看来源 →'), 'sourced content should expose original links')
 assert(app.includes("publicServiceRequest('/business-inquiries'"), 'business contact form should submit a real service request')
 assert(app.includes("publicServiceRequest('/activity-interests'"), 'public activity detail should submit a real interest request')
 assert(publicService.includes("router.post('/business-inquiries'") && publicService.includes("router.post('/activity-interests'"), 'public service API should persist both request types')

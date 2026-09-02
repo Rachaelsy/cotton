@@ -20,7 +20,6 @@
   <view wx:if="{{loading}}" class="empty">正在加载政策资讯…</view>
   <view wx:if="{{!loading && !visible.length}}" class="empty">
     <text>“{{activeSection}}”栏目暂无文章</text>
-    <small>请切换其他分类，或等待管理员发布内容</small>
   </view>
 
   <view wx:if="{{!loading && visible.length}}" class="feed">

@@ -10,7 +10,7 @@
 
   <view class="section-head"><view><text>{{activeCategory}}</text><small>已上架 {{products.length}} 个产品</small></view></view>
   <view wx:if="{{loading}}" class="empty">正在加载农资产品…</view>
-  <view wx:if="{{!loading && !products.length}}" class="empty"><text>当前分类暂无上架产品</text><small>{{errorText || '管理员上架产品后将在这里展示'}}</small></view>
+  <view wx:if="{{!loading && !products.length}}" class="empty"><text>{{errorText || '当前分类暂无上架产品'}}</text></view>
 
   <view wx:if="{{!loading && products.length}}" class="product-list">
     <view class="product-card" wx:for="{{products}}" wx:key="id">

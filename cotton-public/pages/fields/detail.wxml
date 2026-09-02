@@ -74,8 +74,6 @@
       <view class="section-card">
         <view class="section-head"><text class="section-title">{{copy.dataCenter}}</text><text class="section-sub">{{copy.dataCenterSub}}</text></view>
         <view class="module-grid">
-          <view class="module-item" data-module="water" bindtap="onOpenModule"><text class="module-name">{{copy.water}}</text></view>
-          <view class="module-item" data-module="fert" bindtap="onOpenModule"><text class="module-name">{{copy.fert}}</text></view>
           <view class="module-item" data-module="weather" bindtap="onOpenModule"><text class="module-name">{{copy.weather}}</text></view>
           <view class="module-item" data-module="records" bindtap="onOpenModule"><text class="module-name">{{copy.records}}</text></view>
           <view class="module-item" data-module="pest" bindtap="onOpenModule"><text class="module-name">{{copy.pest}}</text></view>

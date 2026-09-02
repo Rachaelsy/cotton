@@ -30,7 +30,6 @@
   const machineryById = id => data.machinery.find(item => item.id === id)
   const trainingById = id => data.training.find(item => item.id === id)
   const newsById = id => data.news.find(item => item.id === id)
-  const pestById = id => data.pests.find(item => item.id === id)
   const activityById = id => data.activities.find(item => item.id === id)
 
   async function publicServiceRequest(path, payload) {
@@ -894,62 +893,6 @@
       </section>`
   }
 
-  function renderPests() {
-    setMeta('病虫害知识', '棉花常见病虫害与非生物胁迫的识别、调查和处理边界')
-    setActiveNav('pests')
-    main.innerHTML = `
-      ${pageHero('FIELD DIAGNOSIS', '病虫害知识', '先看田间分布和发生阶段，再查局部症状与管理记录，建立可复核的调查过程。', 'pests-hero')}
-      <section class="section-block">
-        <div class="shell">
-          ${sectionHeading('PEST KNOWLEDGE', '常见问题识别库', '内容侧重调查顺序和风险提示，不依据单张照片直接给出用药结论。')}
-          <div class="knowledge-grid">${data.pests.map(pestCard).join('')}</div>
-        </div>
-      </section>
-      <section class="diagnosis-flow-band">
-        <div class="shell diagnosis-flow">
-          <div><span>第一步</span><strong>看分布</strong><p>零星、成片、沿滴灌带、地边还是整田发生。</p></div>
-          <div><span>第二步</span><strong>看阶段</strong><p>结合苗期、蕾期、花铃期与近期天气变化。</p></div>
-          <div><span>第三步</span><strong>查记录</strong><p>还原水肥、用药、作业和相邻地块管理情况。</p></div>
-          <div><span>第四步</span><strong>再处置</strong><p>达到防治指标并确认病因后，遵循标签和属地意见。</p></div>
-        </div>
-      </section>`
-  }
-
-  function renderPestDetail(item) {
-    if (!item) return renderNotFound()
-    setMeta(item.name, item.summary)
-    setActiveNav('pests')
-    const related = data.pests.filter(pest => pest.id !== item.id).slice(0, 3)
-
-    main.innerHTML = `
-      <article class="reading-page pest-reading">
-        <header class="reading-header">
-          <div class="shell reading-header-inner">
-            <nav class="breadcrumbs" aria-label="面包屑"><a href="${publicLink('/')}">首页</a><span>/</span><a href="${publicLink('/pests')}">病虫害知识</a><span>/</span><span>${escapeHtml(item.type)}</span></nav>
-            <span class="eyebrow">${escapeHtml(item.type)} · ${escapeHtml(item.riskStage)}</span>
-            <h1>${escapeHtml(item.name)}</h1>
-            <p>${escapeHtml(item.summary)}</p>
-          </div>
-        </header>
-        <div class="reading-cover"><img src="${item.image}" alt="${escapeHtml(item.name)}识别参考"></div>
-        <div class="shell reading-layout">
-          <div class="rich-article reading-body">
-            <section><h2>常见信号</h2><ul>${item.signals.map(point => `<li>${escapeHtml(point)}</li>`).join('')}</ul></section>
-            <section><h2>田间调查</h2><ul>${item.inspection.map(point => `<li>${escapeHtml(point)}</li>`).join('')}</ul></section>
-            <section><h2>处理原则</h2><ul>${item.actions.map(point => `<li>${escapeHtml(point)}</li>`).join('')}</ul></section>
-            ${sourceReference(item, '查看植保技术资料')}
-            <aside class="safety-note"><strong>植保安全边界</strong><p>页面内容只用于建立识别与调查思路。涉及具体药剂、浓度、混配和施药时间时，请核对农药登记范围、产品标签、安全间隔期与属地植保意见。</p></aside>
-          </div>
-          <aside class="reading-aside">
-            <span class="eyebrow">FIELD SUPPORT</span>
-            <h2>继续排查</h2>
-            ${related.map(pest => `<a href="${publicLink(`/pests/${pest.id}`)}"><span>${escapeHtml(pest.type)}</span><strong>${escapeHtml(pest.name)}</strong></a>`).join('')}
-            <a class="button outline full" href="${publicLink('/experts')}">向专家咨询</a>
-          </aside>
-        </div>
-      </article>`
-  }
-
   function renderActivities() {
     setMeta('公益活动', '棉花田间开放日、公益工作坊、公开课和志愿服务活动')
     setActiveNav('activities')
@@ -1439,8 +1382,8 @@
   else if (platform === 'public' && pageGroup === 'processing') publicModulesViews?.renderProcessingDetail(pathParts[1])
   else if (platform === 'public' && pageGroup === 'varieties' && pathParts.length === 1) publicModulesViews?.renderVarieties()
   else if (platform === 'public' && pageGroup === 'varieties') publicModulesViews?.renderVarietyDetail(pathParts[1])
-  else if (platform === 'public' && pageGroup === 'pests' && pathParts.length === 1) renderPests()
-  else if (platform === 'public' && pageGroup === 'pests') renderPestDetail(pestById(pathParts[1]))
+  else if (platform === 'public' && pageGroup === 'pests' && pathParts.length === 1) publicModulesViews?.renderPests()
+  else if (platform === 'public' && pageGroup === 'pests') publicModulesViews?.renderPestDetail(pathParts[1])
   else if (platform === 'public' && pageGroup === 'activities' && pathParts.length === 1) renderActivities()
   else if (platform === 'public' && pageGroup === 'activities') renderActivityDetail(activityById(pathParts[1]))
   else if (platform === 'business' && pageGroup === 'home') renderBusinessHome()

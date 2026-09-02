@@ -16,7 +16,7 @@ Page({
     scanStepIndex: 0,
     scanStepText: '',
     recognition: null,
-    pest: getPestCopy('detail', i18n.getLanguage()).pest,
+    pest: {},
     severityLevels: getPestCopy('detail', i18n.getLanguage()).severityLevels,
     severityTipText: '',
     symptomList: [],

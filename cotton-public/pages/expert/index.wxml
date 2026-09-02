@@ -31,7 +31,7 @@
         <view class="qa-item" wx:for="{{qaContents}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
           <view class="qa-mark">问</view><view class="qa-main"><text class="qa-title">{{item.title}}</text><text class="qa-answer">{{item.intro || item.content}}</text><view class="qa-meta"><text>{{item.teacher}}</text><text>{{item.category}}</text><text>查看解答 ›</text></view></view>
         </view>
-        <view wx:if="{{!loading && !qaContents.length}}" class="empty-state"><text class="empty-icon">问</text><text class="empty-title">暂无精选问答</text><text class="empty-desc">管理员发布后会显示在这里</text></view>
+        <view wx:if="{{!loading && !qaContents.length}}" class="empty-state"><text class="empty-icon">问</text><text class="empty-title">暂无精选问答</text></view>
       </view>
       <view class="my-question-wrap" wx:if="{{myQuestions.length}}">
         <view class="section-head"><text class="section-title">我的提问</text><text class="section-more" bindtap="loadMyQuestions">刷新</text></view>
@@ -46,7 +46,7 @@
         <view class="expert-info"><view class="expert-name-row"><text class="expert-name">{{item.name}}</text><text class="expert-title-name">{{item.titleName}}</text></view><text class="expert-org">{{item.org}}</text><view class="expert-tags"><text wx:for="{{item.tags}}" wx:key="*this" class="expert-tag">{{item}}</text></view><text class="expert-bio">{{item.bio}}</text></view>
         <text class="expert-online {{item.online ? 'on' : ''}}">{{item.online ? '在线' : '离线'}}</text>
       </view>
-      <view wx:if="{{!loading && !experts.length}}" class="empty-state"><text class="empty-icon">专</text><text class="empty-title">暂无在线专家</text><text class="empty-desc">管理员完善专家资料后会显示在这里</text></view>
+      <view wx:if="{{!loading && !experts.length}}" class="empty-state"><text class="empty-icon">专</text><text class="empty-title">暂无在线专家</text></view>
     </view>
 
     <view class="bottom-gap"></view>

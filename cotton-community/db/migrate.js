@@ -413,6 +413,32 @@ async function run() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='喀什棉花品种试验指标与优选资料'
   `)
 
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS community_pest_knowledge (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL,
+      category ENUM('pest','disease','physiological') NOT NULL,
+      icon VARCHAR(16) NOT NULL DEFAULT '🌿',
+      cover_url VARCHAR(500) NOT NULL DEFAULT '',
+      summary TEXT NOT NULL,
+      symptoms_json TEXT,
+      treatment_advice TEXT NOT NULL,
+      medication_warning TEXT,
+      source_name VARCHAR(200) NOT NULL DEFAULT '',
+      source_url VARCHAR(500) NOT NULL DEFAULT '',
+      status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
+      is_featured TINYINT(1) NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      published_at DATETIME DEFAULT NULL,
+      created_by INT UNSIGNED DEFAULT NULL,
+      updated_by INT UNSIGNED DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_pest_knowledge_public (status,category,is_featured,sort_order,published_at),
+      INDEX idx_pest_knowledge_admin (status,updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='病虫害知识库'
+  `)
+
   const varietyTrial2025 = [
     ['中棉9001',46.2,3,0.45,28.9,15,3,31.6,11,2.2,5,8,0.8,82.1,16,3.2,394.1,19,2.85,12.5,20],
     ['中棉698',43.5,15,2.25,29.9,8,1.6,30.1,16,3.2,4.7,7,0.7,84.4,7,1.4,481.8,3,0.45,9.6,11],

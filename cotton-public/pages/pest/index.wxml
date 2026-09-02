@@ -99,7 +99,11 @@
       </view>
     </scroll-view>
 
-    <view class="grid">
+    <view wx:if="{{knowledgeLoading}}" class="knowledge-state">正在加载病虫害知识...</view>
+    <view wx:elif="{{knowledgeError}}" class="knowledge-state knowledge-state-error" bindtap="onRetryKnowledge">{{knowledgeError}}，点击重试</view>
+    <view wx:elif="{{!filteredPests.length}}" class="knowledge-state">暂无已发布病虫害知识，请等待管理员发布</view>
+
+    <view wx:else class="grid">
       <view
         wx:for="{{filteredPests}}"
         wx:key="id"
