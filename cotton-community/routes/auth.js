@@ -7,8 +7,61 @@ const { isProductionDefaultCredential } = require('../utils/default-credentials'
 
 const router = express.Router()
 const DEFAULT_FARMER_LOCATION = '喀什地区莎车县'
+const PRIVACY_CONSENT_VERSION = '2026-09-04'
+const CAPTCHA_TTL_MS = 5 * 60 * 1000
+const captchaChallenges = new Map()
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, status = 400) => res.status(status).json({ code: status, msg, data: null })
+
+const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(value || '').trim())
+
+function createCaptcha() {
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const code = Array.from({ length: 4 }, () => alphabet[crypto.randomInt(0, alphabet.length)]).join('')
+  const id = crypto.randomBytes(24).toString('hex')
+  const lines = Array.from({ length: 7 }, () => {
+    const x1 = crypto.randomInt(0, 180)
+    const y1 = crypto.randomInt(0, 58)
+    const x2 = crypto.randomInt(0, 180)
+    const y2 = crypto.randomInt(0, 58)
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`
+  }).join('')
+  const letters = code.split('').map((letter, index) => {
+    const x = 29 + index * 39
+    const y = 39 + crypto.randomInt(-3, 4)
+    const rotate = crypto.randomInt(-14, 15)
+    return `<text x="${x}" y="${y}" transform="rotate(${rotate} ${x} ${y})">${letter}</text>`
+  }).join('')
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="58" viewBox="0 0 180 58"><rect width="180" height="58" rx="7" fill="#edf4ef"/><g stroke="#9cb6a7" stroke-width="1" opacity=".65">${lines}</g><g fill="#154f3b" font-family="Arial,sans-serif" font-size="28" font-weight="700">${letters}</g></svg>`
+  captchaChallenges.set(id, { code, expiresAt: Date.now() + CAPTCHA_TTL_MS, attempts: 0 })
+  return { id, image: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}` }
+}
+
+function verifyCaptcha(id, value) {
+  const key = String(id || '')
+  const challenge = captchaChallenges.get(key)
+  if (!challenge || challenge.expiresAt < Date.now()) {
+    captchaChallenges.delete(key)
+    return false
+  }
+  challenge.attempts += 1
+  const matched = challenge.code === String(value || '').trim().toUpperCase()
+  if (matched || challenge.attempts >= 5) captchaChallenges.delete(key)
+  return matched
+}
+
+const cleanupCaptchaTimer = setInterval(() => {
+  const now = Date.now()
+  for (const [id, challenge] of captchaChallenges) {
+    if (challenge.expiresAt < now) captchaChallenges.delete(id)
+  }
+}, CAPTCHA_TTL_MS)
+cleanupCaptchaTimer.unref()
+
+router.get('/captcha', (_req, res) => {
+  res.set('Cache-Control', 'no-store')
+  return ok(res, createCaptcha(), '验证码已生成')
+})
 
 function signUser(user, role = user.role) {
   return jwt.sign(
@@ -85,30 +138,34 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
   const phone = String(req.body.phone || '').trim()
+  const email = String(req.body.email || '').trim().toLowerCase()
   const password = String(req.body.password || '')
   const realName = String(req.body.real_name || '').trim()
   const location = String(req.body.location || '').trim().slice(0, 128) || DEFAULT_FARMER_LOCATION
   const landSize = Math.max(0, Number(req.body.land_size) || 0)
 
   if (!/^1\d{10}$/.test(phone)) return fail(res, '手机号格式不正确')
+  if (!validEmail(email)) return fail(res, '邮箱格式不正确')
   if (password.length < 6 || password.length > 20) return fail(res, '密码需为6-20位')
   if (!realName) return fail(res, '请填写姓名或称呼')
+  if (req.body.privacy_consent !== true) return fail(res, '请先阅读并同意隐私政策与服务条款')
+  if (!verifyCaptcha(req.body.captcha_id, req.body.captcha_code)) return fail(res, '验证码错误或已过期，请刷新后重试')
 
   let conn
   try {
     conn = await db.getConnection()
     await conn.beginTransaction()
-    const [[existing]] = await conn.query('SELECT * FROM users WHERE phone=? FOR UPDATE', [phone])
+    const [[existing]] = await conn.query('SELECT * FROM users WHERE phone=? OR email=? FOR UPDATE', [phone, email])
     if (existing) {
       await conn.rollback()
       if (!existing.is_active) return fail(res, '账号已被禁用，请联系客服', 403)
-      return fail(res, '该手机号已有平台账号，请直接登录', 409)
+      return fail(res, existing.phone === phone ? '该手机号已有平台账号，请直接登录' : '该邮箱已被注册', 409)
     }
 
     const hash = await bcrypt.hash(password, 10)
     const [userResult] = await conn.query(
-      "INSERT INTO users (phone,password,role,real_name) VALUES (?,?,'farmer',?)",
-      [phone, hash, realName]
+      "INSERT INTO users (phone,email,password,role,real_name,privacy_consent_version,privacy_consent_at) VALUES (?,?,?,'farmer',?,?,NOW())",
+      [phone, email, hash, realName, PRIVACY_CONSENT_VERSION]
     )
     await conn.query(
       "INSERT INTO farmers (user_id,location,land_size,crop_type) VALUES (?,?,?,'棉花')",
@@ -126,6 +183,63 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     if (conn) await conn.rollback().catch(() => {})
     console.error('[community-register]', error)
+    return fail(res, '服务器错误，请稍后重试', 500)
+  } finally {
+    if (conn) conn.release()
+  }
+})
+
+router.post('/register/merchant', async (req, res) => {
+  const phone = String(req.body.phone || '').trim()
+  const email = String(req.body.email || '').trim().toLowerCase()
+  const password = String(req.body.password || '')
+  const realName = String(req.body.real_name || '').trim()
+  const companyName = String(req.body.company_name || '').trim()
+  const companyType = ['individual', 'enterprise', 'cooperative'].includes(req.body.company_type)
+    ? req.body.company_type
+    : 'enterprise'
+  const businessLicense = String(req.body.business_license || '').trim().toUpperCase()
+  const productCategory = String(req.body.product_category || '').trim().slice(0, 64)
+  const registeredAddress = String(req.body.registered_address || '').trim().slice(0, 255)
+
+  if (!/^1\d{10}$/.test(phone)) return fail(res, '手机号格式不正确')
+  if (!validEmail(email)) return fail(res, '邮箱格式不正确')
+  if (password.length < 6 || password.length > 20) return fail(res, '密码需为6-20位')
+  if (!realName) return fail(res, '请填写联系人姓名')
+  if (!companyName) return fail(res, '请填写店铺或企业名称')
+  if (!/^[0-9A-Z]{15,18}$/.test(businessLicense)) return fail(res, '请填写正确的营业执照号或统一社会信用代码')
+  if (!productCategory) return fail(res, '请填写经营品类')
+  if (!registeredAddress) return fail(res, '请填写经营或注册地址')
+  if (req.body.privacy_consent !== true) return fail(res, '请先阅读并同意隐私政策与服务条款')
+  if (!verifyCaptcha(req.body.captcha_id, req.body.captcha_code)) return fail(res, '验证码错误或已过期，请刷新后重试')
+
+  let conn
+  try {
+    conn = await db.getConnection()
+    await conn.beginTransaction()
+    const [[existing]] = await conn.query('SELECT id,phone,email FROM users WHERE phone=? OR email=? FOR UPDATE', [phone, email])
+    if (existing) {
+      await conn.rollback()
+      return fail(res, existing.phone === phone ? '该手机号已有平台账号' : '该邮箱已被注册', 409)
+    }
+    const hash = await bcrypt.hash(password, 10)
+    const [userResult] = await conn.query(
+      `INSERT INTO users
+       (phone,email,password,role,real_name,is_active,privacy_consent_version,privacy_consent_at)
+       VALUES (?,?,?,'merchant',?,0,?,NOW())`,
+      [phone, email, hash, realName, PRIVACY_CONSENT_VERSION]
+    )
+    await conn.query(
+      `INSERT INTO merchants
+       (user_id,company_name,business_license,product_category,company_type,contact_email,registered_address,apply_status)
+       VALUES (?,?,?,?,?,?,?,'pending')`,
+      [userResult.insertId, companyName, businessLicense, productCategory, companyType, email, registeredAddress]
+    )
+    await conn.commit()
+    return ok(res, { status: 'pending' }, '商家注册申请已提交，请等待管理员审核')
+  } catch (error) {
+    if (conn) await conn.rollback().catch(() => {})
+    console.error('[community-merchant-register]', error)
     return fail(res, '服务器错误，请稍后重试', 500)
   } finally {
     if (conn) conn.release()

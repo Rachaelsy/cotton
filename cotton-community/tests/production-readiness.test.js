@@ -57,8 +57,9 @@ async function run() {
   const serverSource = read('server.js')
   const compose = read('../docker-compose.yml')
 
-  assert(shell.indexOf('/knowledge/site/runtime.js') < shell.indexOf('/knowledge/site/learning.js'))
   assert(shell.indexOf('/knowledge/site/runtime.js') < shell.indexOf('/knowledge/site/app.js'))
+  assert(!shell.includes('/knowledge/site/learning.js'))
+  assert(!shell.includes('/knowledge/site/public-modules.js'))
   assert(adminPage.includes('/knowledge/site/runtime.js'))
   assert(runtime.includes('AbortController') && runtime.includes('请求超时'))
   assert(runtime.includes("addEventListener('offline'") && runtime.includes("addEventListener('online'"))
@@ -148,18 +149,15 @@ async function run() {
 
     const communityRoot = await fetch(`${baseUrl}/knowledge/`, { redirect: 'manual' })
     assert.equal(communityRoot.status, 302)
-    assert.equal(communityRoot.headers.get('location'), '/public/')
+    assert.equal(communityRoot.headers.get('location'), '/business/')
 
     const legacyAdminLogin = await fetch(`${baseUrl}/knowledge/admin-login.html`, { redirect: 'manual' })
     assert.equal(legacyAdminLogin.status, 302)
     assert.equal(legacyAdminLogin.headers.get('location'), '/admin/login.html?role=admin')
 
-    const html404 = await fetch(`${baseUrl}/public/not-a-real-page`, {
-      headers: { Accept: 'text/html' }
-    })
-    assert.equal(html404.status, 404)
-    assert((await html404.text()).includes('id="mainContent"'))
-    assert.equal(html404.headers.get('x-content-type-options'), 'nosniff')
+    const retiredPublicPage = await fetch(`${baseUrl}/public/not-a-real-page`, { redirect: 'manual' })
+    assert.equal(retiredPublicPage.status, 302)
+    assert.equal(retiredPublicPage.headers.get('location'), '/business/')
 
     const api404 = await fetch(`${baseUrl}/api/not-a-real-endpoint`, {
       headers: { Accept: 'application/json' }

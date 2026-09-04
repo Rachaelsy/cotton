@@ -10,71 +10,41 @@ const redirectWithQuery = target => (req, res) => {
   res.redirect(302, `${target}${query}`)
 }
 
-const redirectLegacyCourse = (req, res) => {
-  const id = Number.parseInt(req.query.id, 10)
-  res.redirect(301, id > 0 ? `/public/courses/${id}` : '/public/courses')
-}
-
-const redirectLegacyQuestion = (req, res) => {
-  const id = Number.parseInt(req.query.id, 10)
-  res.redirect(301, id > 0 ? `/public/forum/${id}` : '/public/forum')
-}
-
-router.get(['/', '/index.html'], redirectWithQuery('/public/'))
+router.get(['/', '/index.html'], redirectWithQuery('/business/'))
 
 for (const route of [
-  '/public',
-  '/public/',
-  '/public/training',
-  '/public/training/:id',
-  '/public/courses',
-  '/public/courses/:id',
-  '/public/forum',
-  '/public/forum/:id',
-  '/public/login',
-  '/public/privacy',
-  '/public/consult',
-  '/public/experts',
-  '/public/experts/:id',
-  '/public/policies',
-  '/public/policies/:id',
-  '/public/finance',
-  '/public/finance/:id',
-  '/public/machinery',
-  '/public/machinery/:id',
-  '/public/supplies',
-  '/public/supplies/:id',
-  '/public/processing',
-  '/public/processing/:id',
-  '/public/varieties',
-  '/public/varieties/:id',
-  '/public/pests',
-  '/public/pests/:id',
-  '/public/activities',
-  '/public/activities/:id',
   '/business',
   '/business/',
+  '/business/login',
+  '/business/privacy',
   '/business/products',
   '/business/products/:id',
   '/business/machinery',
   '/business/machinery/:id',
   '/business/news',
   '/business/news/:id',
+  '/business/merchants',
+  '/business/local',
+  '/business/activities',
+  '/business/cart',
+  '/business/favorites',
+  '/business/account',
+  '/business/orders',
+  '/business/help',
+  '/business/help/:id',
   '/business/about',
   '/business/contact'
 ]) {
   router.get(route, (_req, res) => res.sendFile(siteShell))
 }
 
-router.get('/public/academy', (_req, res) => res.redirect(301, '/public/courses'))
-router.get('/public/detail.html', redirectLegacyCourse)
-router.get('/public/forum.html', redirectLegacyQuestion)
+router.get(['/public', '/public/'], redirectWithQuery('/business/'))
+router.get('/public/login', redirectWithQuery('/business/login'))
+router.get('/public/privacy', redirectWithQuery('/business/privacy'))
+router.get('/public/*', redirectWithQuery('/business/'))
 
-router.get('/academy', (_req, res) => res.redirect(301, '/public/courses'))
-router.get('/detail.html', redirectLegacyCourse)
-router.get('/forum.html', redirectLegacyQuestion)
-router.get('/training', redirectWithQuery('/public/training'))
-router.get('/training/:id', (req, res) => res.redirect(302, `/public/training/${encodeURIComponent(req.params.id)}`))
+router.get(['/academy', '/detail.html', '/forum.html', '/training'], redirectWithQuery('/business/'))
+router.get('/training/:id', redirectWithQuery('/business/'))
 router.get('/products', redirectWithQuery('/business/products'))
 router.get('/products/:id', (req, res) => res.redirect(302, `/business/products/${encodeURIComponent(req.params.id)}`))
 router.get('/machinery', redirectWithQuery('/business/machinery'))

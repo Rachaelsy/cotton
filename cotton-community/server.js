@@ -85,6 +85,7 @@ app.use('/api/processing-factories', require('./routes/processing-factories'))
 app.use('/api/expert-studio', require('./routes/expert-studio'))
 app.use('/api/plot-daily-work', require('./routes/plot-daily-work'))
 app.use('/api/voice-briefings', require('./routes/voice-briefings'))
+app.use('/api/commerce', require('./routes/commerce'))
 
 app.get('/api/community-health', async (_req, res) => {
   try {

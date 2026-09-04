@@ -22,9 +22,38 @@ async function hasColumn(table, column) {
   return Number(row.total || 0) > 0
 }
 
+async function hasIndex(table, index) {
+  const [[row]] = await db.query(
+    `SELECT COUNT(*) AS total
+       FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND INDEX_NAME=?`,
+    [table, index]
+  )
+  return Number(row.total || 0) > 0
+}
+
 async function run() {
   if (!await hasTable('users') || !await hasTable('farmers')) {
     throw new Error('共享数据库尚未初始化，请先运行 cotton-app 的数据库迁移')
+  }
+
+  if (!await hasColumn('users', 'email')) {
+    await db.query("ALTER TABLE users ADD COLUMN email VARCHAR(254) DEFAULT NULL COMMENT '注册邮箱' AFTER phone")
+  }
+  if (!await hasIndex('users', 'uniq_users_email')) {
+    await db.query('ALTER TABLE users ADD UNIQUE INDEX uniq_users_email (email)')
+  }
+  if (!await hasColumn('merchants', 'company_type')) {
+    await db.query("ALTER TABLE merchants ADD COLUMN company_type VARCHAR(32) NOT NULL DEFAULT 'enterprise' COMMENT '商家主体类型'")
+  }
+  if (!await hasColumn('merchants', 'contact_email')) {
+    await db.query("ALTER TABLE merchants ADD COLUMN contact_email VARCHAR(254) NOT NULL DEFAULT '' COMMENT '联系人邮箱'")
+  }
+  if (!await hasColumn('merchants', 'registered_address')) {
+    await db.query("ALTER TABLE merchants ADD COLUMN registered_address VARCHAR(255) NOT NULL DEFAULT '' COMMENT '经营或注册地址'")
+  }
+  if (!await hasColumn('merchants', 'apply_status')) {
+    await db.query("ALTER TABLE merchants ADD COLUMN apply_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'approved' COMMENT '入驻审批状态'")
   }
 
   await db.query(`
@@ -45,6 +74,29 @@ async function run() {
   await db.query("ALTER TABLE community_admins MODIFY display_name VARCHAR(64) NOT NULL DEFAULT '公共服务平台管理员'")
   await db.query("UPDATE community_admins SET display_name='公共服务平台管理员' WHERE display_name IN ('公益平台管理员','公益小程序管理员')")
   await db.query("UPDATE community_admins SET permission_key='public_admin' WHERE permission_key='policy_editor'")
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS community_market_listings (
+      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      user_id INT UNSIGNED NOT NULL,
+      listing_type ENUM('供应','求购','农机服务','运输服务','加工服务') NOT NULL,
+      title VARCHAR(120) NOT NULL,
+      content VARCHAR(1500) NOT NULL,
+      contact_name VARCHAR(64) NOT NULL DEFAULT '',
+      contact_phone VARCHAR(24) NOT NULL,
+      region VARCHAR(120) NOT NULL DEFAULT '',
+      status ENUM('pending','published','rejected','offline') NOT NULL DEFAULT 'pending',
+      is_featured TINYINT(1) NOT NULL DEFAULT 0,
+      expires_at DATETIME DEFAULT NULL,
+      reviewed_by INT UNSIGNED DEFAULT NULL,
+      reviewed_at DATETIME DEFAULT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_market_public (status,is_featured,created_at),
+      INDEX idx_market_user (user_id,status,created_at),
+      CONSTRAINT fk_market_listing_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='网站本地商圈供需信息'
+  `)
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS community_plot_daily_work (

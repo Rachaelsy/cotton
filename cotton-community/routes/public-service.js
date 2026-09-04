@@ -6,7 +6,7 @@ const router = express.Router()
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
 const fail = (res, msg, status = 400) => res.status(status).json({ code: status, msg, data: null })
 const submissionWindows = new Map()
-const businessCategories = new Set(['产品资料', '供货服务', '农机服务', '渠道合作', '公司合作', '其他商务需求'])
+const businessCategories = new Set(['产品资料', '供货服务', '农机服务', '渠道合作', '公司合作', '售后服务', '其他商务需求'])
 const privacyCategories = new Set(['查阅个人信息', '更正个人信息', '删除账号与数据', '撤回服务申请', '其他个人信息问题'])
 const requestMessages = {
   business: {

@@ -12,159 +12,106 @@ const shell = read('public/site/index.html')
 const app = read('public/site/app.js')
 const styles = read('public/site/styles.css')
 const dataSource = read('public/site/data.js')
-const learning = read('public/site/learning.js')
-const publicModules = read('public/site/public-modules.js')
-const publicService = read('routes/public-service.js')
-const expertStudio = read('routes/expert-studio.js')
+const commerce = read('routes/commerce.js')
 
 const context = { window: {} }
 vm.runInNewContext(dataSource, context)
 const data = context.window.COTTON_SITE_DATA
 
-assert(server.includes("require('./routes/site')"), 'community should mount the public service website router')
-assert(server.includes("app.use('/knowledge/site'"), 'community should serve shared website assets')
-assert(server.includes("app.use('/', noCache, siteRouter)"), 'community should serve same-domain public and business subsites')
+assert(server.includes("require('./routes/site')"), 'server should mount the website router')
+assert(server.includes("app.use('/knowledge/site'"), 'server should expose shared website assets')
+assert(route.includes("router.get(['/', '/index.html'], redirectWithQuery('/business/'))"), 'root should open the ecommerce website')
 
 for (const routePath of [
-  "'/'",
-  "'/public'",
-  "'/public/training'",
-  "'/public/training/:id'",
-  "'/public/courses'",
-  "'/public/courses/:id'",
-  "'/public/forum'",
-  "'/public/forum/:id'",
-  "'/public/login'",
-  "'/public/privacy'",
-  "'/public/consult'",
-  "'/public/experts'",
-  "'/public/experts/:id'",
-  "'/public/policies'",
-  "'/public/policies/:id'",
-  "'/public/finance'",
-  "'/public/finance/:id'",
-  "'/public/machinery'",
-  "'/public/machinery/:id'",
-  "'/public/supplies'",
-  "'/public/supplies/:id'",
-  "'/public/processing'",
-  "'/public/processing/:id'",
-  "'/public/varieties'",
-  "'/public/varieties/:id'",
-  "'/public/pests'",
-  "'/public/pests/:id'",
-  "'/public/activities'",
-  "'/public/activities/:id'",
-  "'/business'",
-  "'/business/products'",
-  "'/business/products/:id'",
-  "'/business/machinery'",
-  "'/business/machinery/:id'",
-  "'/business/news'",
-  "'/business/news/:id'",
-  "'/business/about'",
-  "'/business/contact'"
-]) {
-  assert(route.includes(routePath), `site router should include ${routePath}`)
+  "'/business'", "'/business/'", "'/business/login'", "'/business/privacy'",
+  "'/business/products'", "'/business/products/:id'", "'/business/machinery'",
+  "'/business/machinery/:id'", "'/business/merchants'", "'/business/local'",
+  "'/business/activities'", "'/business/cart'", "'/business/favorites'",
+  "'/business/account'", "'/business/orders'", "'/business/help'",
+  "'/business/about'", "'/business/contact'"
+]) assert(route.includes(routePath), `missing ecommerce route ${routePath}`)
+
+assert(route.includes("router.get('/public/login', redirectWithQuery('/business/login'))"), 'old login URL should redirect to ecommerce login')
+assert(route.includes("router.get('/public/*', redirectWithQuery('/business/'))"), 'retired public-service URLs should redirect to ecommerce')
+assert(!shell.includes('喀什优棉公共服务平台') && !shell.includes('/public/'), 'the website shell must not expose public-service content')
+assert(!shell.includes('/knowledge/site/learning.js') && !shell.includes('/knowledge/site/public-modules.js'), 'public-service bundles must not load on the ecommerce site')
+assert(shell.includes('川月智能') && shell.includes('/business/login'), 'the ecommerce brand and login must be visible')
+
+assert(app.includes('function renderCommerceHome()'), 'ecommerce home is missing')
+for (const block of ['simple-about-company', 'simple-about-contact', 'simple-about-message']) {
+  assert(app.includes(block) && styles.includes(`.${block}`), `about page block is incomplete: ${block}`)
 }
-
-assert(route.includes("router.get('/public/academy'") && route.includes("res.redirect(301, '/public/courses')"), 'legacy academy should redirect into public courses')
-assert(route.includes("router.get('/products', redirectWithQuery('/business/products'))"), 'legacy product routes should redirect to business')
-assert(route.includes("router.get('/machinery', redirectWithQuery('/business/machinery'))"), 'legacy machinery routes should redirect to business')
-assert(route.includes("router.get('/training', redirectWithQuery('/public/training'))"), 'legacy training routes should redirect to public service')
-assert(route.includes("router.get('/academy'") && route.includes("res.redirect(301, '/public/courses')"), 'legacy academy route should stay compatible without serving the old page')
-
-assert(shell.includes('/public/') && shell.includes('/business/'), 'shared shell should expose same-domain platform entrances')
-assert(shell.includes('href="/platform/admin"') && shell.includes('业务平台登录'), 'both subsites should expose the unified business login')
-assert(route.includes("router.get(['/', '/index.html'], redirectWithQuery('/public/'))"), 'community root should redirect directly to the public platform')
-assert(!app.includes('function renderHub()') && !shell.includes('棉知双平台'), 'the removed dual-platform landing page must not return')
-assert(app.includes('function renderPublicHome()') && app.includes('function renderBusinessHome()'), 'public and business platforms need separate home views')
-assert(app.includes('function renderMachinery()') && app.includes('function renderMachineryDetail('), 'business machinery should have list and detail views')
-assert(app.includes('function renderExperts()'), 'expert consultation should live in the public platform')
-assert(app.includes('function renderPolicies()') && publicModules.includes('async function renderPests()') && app.includes('function renderActivities()'), 'public service areas should have independent views')
-assert(app.includes("pageGroup === 'courses'") && app.includes("pageGroup === 'forum'") && app.includes("pageGroup === 'login'"), 'integrated public learning routes should be rendered by the shared shell')
-assert(app.includes('相关农技培训') && app.includes('相关商业资料'), 'the two platforms should cross-link related content')
-assert(app.includes("platform === 'public'") && app.includes("platform === 'business'"), 'routing should enforce platform-specific views')
-assert(app.includes('/api/public-service') && app.includes("localStorage.getItem('knowledge_token')"), 'expert consultation should reuse shared login and API data')
-assert(publicService.includes('FROM experts') && publicService.includes('INSERT INTO expert_questions'), 'expert consultation should reuse shared expert tables')
-
-const businessHome = app.slice(app.indexOf('function renderBusinessHome()'), app.indexOf('function renderProducts()'))
-assert(!businessHome.includes('棉花全生育期培训'), 'business homepage must not include training')
-assert(!businessHome.includes('带着田间问题继续交流'), 'business homepage must not include technical consultation')
-assert(businessHome.includes("item.category !== 'policy'"), 'business homepage must filter policy content into the public platform')
-assert(businessHome.includes('农资供应') && businessHome.includes('农机服务') && businessHome.includes('数字履约'), 'business homepage should explain the core business chain')
-
-assert(shell.includes('/knowledge/site/learning.js'), 'shared site should load integrated course and forum behavior')
-assert(shell.includes('/knowledge/site/public-modules.js'), 'shared site should load database-backed public service modules')
-assert(learning.includes('renderCourses') && learning.includes('renderCourseDetail') && learning.includes('renderForum') && learning.includes('renderForumDetail') && learning.includes('renderLogin'), 'public learning views should be feature complete')
-for (const renderer of ['renderPolicies', 'renderExperts', 'renderFinance', 'renderPests', 'renderProducts', 'renderProcessing', 'renderVarieties']) {
-  assert(publicModules.includes(renderer), `database-backed website module is missing ${renderer}`)
+assert(app.includes('公司简介') && app.includes('联系我们') && app.includes('在线留言'), 'about page should stay focused on company, contact and message content')
+assert(app.includes('陆家嘴环路958号') && app.includes('021-66286003') && app.includes('lijiale@cyaia.cn'), 'about page contact details are incomplete')
+assert(data.company.registeredAddress.includes('陆家嘴环路958号'), 'company registration/contact address should remain available')
+assert(data.company.serviceCoverage === '新疆喀什地区', 'business service coverage should target Kashgar')
+assert(app.includes('data.company.serviceCoverage') && !app.includes('<dt>覆盖范围</dt><dd>${escapeHtml(data.company.address)}'), 'contact and footer should use service coverage instead of the Shanghai address')
+assert(app.includes('aboutMessageForm') && app.includes("referenceType: 'online_message'"), 'about page message form should submit to the backend')
+assert(app.includes('function renderCommerceLogin()'), 'ecommerce login and registration page is missing')
+assert(app.includes("'/api/community-auth/login'") && app.includes("'/api/community-auth/register'"), 'ecommerce account forms should use the real auth API')
+assert(app.includes('commercePersonalRegisterForm') && app.includes('commerceMerchantRegisterForm'), 'registration should separate personal and merchant accounts')
+for (const field of ['name="email"', 'name="captcha_code"', 'name="company_name"', 'name="business_license"', 'name="product_category"', 'name="registered_address"']) {
+  assert(app.includes(field), `registration field is missing: ${field}`)
 }
-for (const endpoint of ['/api/policies', '/api/expert-studio/public', '/api/service-products', '/api/processing-factories', '/api/cotton-varieties', '/api/pest-knowledge']) {
-  assert(publicModules.includes(endpoint), `public website should read shared endpoint ${endpoint}`)
+assert(app.includes("'/api/community-auth/captcha'") && app.includes("'/api/community-auth/register/merchant'"), 'captcha and merchant registration APIs should be connected')
+assert(styles.includes('.register-kind-tabs') && styles.includes('.auth-captcha-control'), 'registration type and captcha controls should be styled')
+assert(app.includes('consent auth-consent') && app.includes('我已阅读并同意'), 'registration agreement should use the compact consent layout')
+assert(styles.includes('.public-auth-card input:not([type="checkbox"])') && styles.includes('label.auth-consent'), 'registration checkbox must not inherit full-width text-input styles')
+assert(app.includes("pageGroup === 'login'") && app.includes("pageGroup === 'privacy'"), 'ecommerce account routes should render')
+assert(app.includes("businessLink('/login')"), 'protected ecommerce pages should use ecommerce login')
+const businessAccountSource = app.slice(app.indexOf('function renderAccount()'), app.indexOf('async function renderOrders()'))
+for (const entry of ['我的订单', '我的收藏', '购物车', '退出登录']) {
+  assert(businessAccountSource.includes(entry), `business account should include ${entry}`)
 }
-assert(expertStudio.includes("router.get('/public'") && expertStudio.includes("router.get('/public/:id'"), 'expert studio should expose published content to the website')
-assert(app.includes("pageGroup === 'finance'") && app.includes("pageGroup === 'processing'") && app.includes("pageGroup === 'varieties'"), 'public module routes should be rendered inside the website shell')
-assert(learning.includes('/public/courses') || learning.includes("publicLink('/courses"), 'course links should stay inside the public platform')
-assert(!app.includes('图文课程 / 登录'), 'courses and login must not share one header action')
+for (const removedEntry of ['<b>单</b>', '<b>购</b>', '<b>藏</b>', '<b>发</b>', '发布信息']) {
+  assert(!businessAccountSource.includes(removedEntry), `business account should remove ${removedEntry}`)
+}
+assert(businessAccountSource.includes("localStorage.removeItem('knowledge_token')") && businessAccountSource.includes("localStorage.removeItem('knowledge_user')"), 'business logout should clear the local session')
+assert(styles.includes('.business-account-card') && styles.includes('.business-account-links') && styles.includes('.business-account-logout'), 'business account redesign styles are incomplete')
+for (const section of ['隐私政策', '服务条款', '常见问题', '售后服务']) {
+  assert(shell.includes(section) && app.includes(section), `help center should include ${section}`)
+}
+assert(app.includes('faq-item') && app.includes('afterSalesForm'), 'help center should provide expandable questions and an after-sales form')
+assert(!app.slice(app.indexOf('function renderProductDetail'), app.indexOf('function renderMachinery')).includes('相关农技培训'), 'product details should not expose public learning content')
+assert(!app.slice(app.indexOf('function renderMachineryDetail'), app.indexOf('function renderTraining')).includes('相关农技培训'), 'machinery details should not expose public learning content')
 
-assert(data.products.length >= 8, 'first version should include a useful product catalog')
-assert(data.machinery.length >= 6, 'business platform should include the main cotton machinery services')
-assert(data.training.length >= 6, 'training should cover the cotton growth cycle')
-assert(data.news.length >= 6, 'news should include enough sourced content for all categories')
-assert(data.activities.length >= 4, 'public platform should include first-version public activities')
-assert(data.news.filter(item => item.category === 'policy').length >= 3, 'public policy area should include enough first-version content')
-
+assert(data.products.length >= 15, 'product catalog should include the expanded Kashgar cotton-production range')
+assert(data.machinery.length >= 6, 'machinery services should remain available')
 for (const category of ['seed', 'fertilizer', 'pesticide', 'film', 'irrigation']) {
   assert(data.products.some(product => product.category === category), `missing product category ${category}`)
 }
-
+for (const product of data.products) {
+  assert(product.name && Number(product.price) > 0 && product.unit, `catalog product should include name, price and unit: ${product.id}`)
+}
+for (const name of ['塔河2号包衣棉种', '18-18-18', '70%吡虫啉', '0.010mm', '16mm×1000m']) {
+  assert(dataSource.includes(name), `catalog should include common cotton production product: ${name}`)
+}
+for (const name of ['新陆中61号包衣棉种', '农业用尿素 46%', '磷酸二铵 64%', '棉田诱虫黄板', 'PE滴灌主管', '滴灌旁通阀']) {
+  assert(dataSource.includes(name), `expanded catalog should include Kashgar cotton-production product: ${name}`)
+}
+const productCardSource = app.slice(app.indexOf('function productCard'), app.indexOf('function machineryCard'))
+assert(productCardSource.includes('product-card-cart') && productCardSource.includes('data-cart-product'), 'product card should place the cart action over the image')
+for (const removedCardContent of ['item-category', 'summary', 'tag-row', 'data-favorite-product', 'commerce-card-actions']) {
+  assert(!productCardSource.includes(removedCardContent), `product card should not display ${removedCardContent}`)
+}
+assert(styles.includes('.product-card-cart') && styles.includes('.product-card-media'), 'product card cart overlay styles are missing')
+assert(app.includes('<button class="button primary full" type="submit">登录</button>') && !app.includes('type="submit">登录川月智能</button>'), 'commerce login submit button should read 登录')
+assert(app.includes('id="productQuantity"') && app.includes('data-quantity-change'), 'product detail should provide quantity selection')
+assert(app.includes('data-buy-product') && app.includes('立即购买'), 'product detail should provide buy-now action')
+assert(app.includes("if (!localStorage.getItem('knowledge_token'))") && app.includes('请先登录后再加入购物车'), 'adding to cart should require login')
+assert(styles.includes('.quantity-stepper') && styles.includes('.product-purchase-actions'), 'product purchase controls should be styled')
+assert(!dataSource.includes('不提供线上交易') && !app.includes('不提供线上交易'), 'ecommerce pages must not claim that online transactions are unavailable')
+for (const text of ['在线下单', '订单确认页', '商品价']) {
+  assert(app.includes(text) || dataSource.includes(text), `ecommerce transaction wording should include ${text}`)
+}
 for (const category of ['land', 'planting', 'protection', 'harvest', 'transport']) {
   assert(data.machinery.some(item => item.category === category), `missing machinery category ${category}`)
 }
 
-for (const category of ['planting', 'seedling', 'water', 'pest', 'boll', 'harvest']) {
-  assert(data.training.some(article => article.category === category), `missing training category ${category}`)
-}
+assert(app.includes('/api/products') && app.includes('/api/commerce/merchants') && app.includes('/api/commerce/listings'), 'ecommerce pages should read database-backed data')
+assert(commerce.includes("router.get('/merchants'") && commerce.includes("router.get('/listings'") && commerce.includes("router.post('/listings'"), 'commerce API should support merchant and local-market pages')
+assert(shell.includes('/portal/register.html?role=merchant') && shell.includes('商户入驻'), 'merchant registration should remain available')
+assert(shell.includes('沪ICP备2026040489号-1'), 'ICP filing number should remain in the footer')
+assert(styles.includes('@media (max-width: 820px)') && styles.includes('@media (max-width: 560px)'), 'responsive layouts are missing')
 
-for (const category of ['policy', 'industry', 'quality']) {
-  assert(data.news.some(article => article.category === category), `missing news category ${category}`)
-}
-
-for (const article of data.training) {
-  assert(article.source && /^https:\/\//.test(article.sourceUrl), `training article ${article.id} should retain its source`)
-}
-
-for (const item of data.news) {
-  assert(item.source && /^https:\/\//.test(item.sourceUrl), `news item ${item.id} should retain its source`)
-}
-
-assert(app.includes('renderProductDetail') && app.includes('renderMachineryDetail') && app.includes('renderTrainingDetail') && app.includes('renderNewsDetail'), 'list pages should have working detail views')
-assert(app.includes('function sourceReference(') && app.includes('查看政策原文') && publicModules.includes('查看来源 →'), 'sourced content should expose original links')
-assert(app.includes("publicServiceRequest('/business-inquiries'"), 'business contact form should submit a real service request')
-assert(app.includes("publicServiceRequest('/activity-interests'"), 'public activity detail should submit a real interest request')
-assert(publicService.includes("router.post('/business-inquiries'") && publicService.includes("router.post('/activity-interests'"), 'public service API should persist both request types')
-assert(publicService.includes("router.post('/privacy-requests'") && publicService.includes("'privacy'"), 'logged-in users should be able to submit personal data requests')
-assert(publicService.includes('INSERT INTO community_service_requests'), 'service requests should be saved in the shared database')
-assert(publicService.includes("'农机服务'") && app.includes('referenceType'), 'machinery inquiries should use the real business request flow')
-assert(!app.includes('保存需求到本机') && !app.includes('保存参与意向到本机') && !app.includes('仅保存在当前设备'), 'production forms should not behave like local-only demos')
-assert(!learning.includes('课程直接归入公益平台') && !app.includes('已归入公益平台'), 'visitor-facing copy should not expose internal platform migration wording')
-assert(!app.includes('公益平台') && !learning.includes('公益平台') && !shell.includes('公益平台'), 'visitor-facing platform name should consistently use public service platform')
-assert(!shell.includes('购物车') && !app.includes('购物车') && !app.includes('/pay'), 'public website should not expose cart or payment flows')
-assert(!shell.includes('0991-0000000') && !shell.includes('演示地址') && !app.includes('第一版模拟'), 'website should not publish placeholder contact or mock-content claims')
-assert(!data.news.some(item => item.category === 'company'), 'business news should not invent company updates')
-assert(styles.includes('@media (max-width: 820px)') && styles.includes('@media (max-width: 560px)'), 'website should include tablet and mobile layouts')
-assert(!styles.includes('.platform-hub') && !styles.includes('.platform-gateways'), 'removed dual-platform landing styles should not remain')
-assert(styles.includes('.consultation-layout') && styles.includes('.cross-platform-band'), 'public consultation or shared content styles are missing')
-assert(styles.includes('.public-sector-grid') && styles.includes('.expert-grid') && styles.includes('.activity-grid'), 'public service area styles are missing')
-assert(styles.includes('.machinery-grid') && styles.includes('.machinery-flow') && styles.includes('.business-pillar-grid'), 'business machinery or core business styles are missing')
-assert(styles.includes('.learning-course-grid') && styles.includes('.public-auth-layout') && styles.includes('.forum-page-layout'), 'integrated course, login and forum styles are missing')
-assert(styles.includes('/assets/product-catalog-v1.png'), 'product catalog should use the generated product photography')
-assert(!styles.includes('linear-gradient'), 'website should not use gradient-based hero artwork')
-assert(fs.existsSync(path.join(root, 'public/assets/product-catalog-v1.png')), 'generated product catalog image is missing')
-for (const asset of ['business-machinery-v1.jpg', 'business-drone-service-v1.jpg']) {
-  const assetPath = path.join(root, 'public/assets', asset)
-  assert(fs.existsSync(assetPath) && fs.statSync(assetPath).size > 100000, `business asset ${asset} is missing or too small`)
-}
-
-console.log('public service website tests passed')
+console.log('ecommerce website tests passed')

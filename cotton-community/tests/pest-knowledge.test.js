@@ -9,6 +9,7 @@ const readWorkspace = file => fs.readFileSync(path.join(workspace, file), 'utf8'
 
 const route = read('routes/pest-knowledge.js')
 const migration = read('db/migrate.js')
+const seed = read('db/seed_pest_knowledge.js')
 const server = read('server.js')
 const adminHtml = read('public/knowledge/policy-admin.html')
 const adminJs = read('public/knowledge/pest-admin.js')
@@ -22,6 +23,10 @@ const my = readWorkspace('cotton-public/pages/my/index.js')
 const nginx = readWorkspace('deploy/nginx.conf')
 
 assert(migration.includes('CREATE TABLE IF NOT EXISTS community_pest_knowledge'), 'pest knowledge table migration is missing')
+for (const name of ['棉蚜', '棉叶螨（红蜘蛛）', '棉蓟马', '棉盲蝽', '棉铃虫', '棉花黄萎病', '棉花苗期病害', '棉花铃病']) {
+  assert(seed.includes(name), `official pest knowledge seed is missing ${name}`)
+}
+assert(seed.includes('WHERE NOT EXISTS'), 'pest knowledge seed should be safe to run repeatedly')
 assert(server.includes("app.use('/api/pest-knowledge'"), 'pest knowledge route is not mounted')
 assert(route.includes("router.get('/admin/list'") && route.includes("router.post('/admin'") && route.includes("router.put('/admin/:id'"), 'pest admin CRUD routes are incomplete')
 assert(route.includes("status='published'") && route.includes("router.get('/:id'"), 'published pest list/detail routes are incomplete')

@@ -24,6 +24,9 @@ assert(server.includes("'/admin/login.html'") && !server.includes("'/admin/dashb
 assert(server.includes('PLATFORM_DIRECT_PORT'), 'direct local community access should switch back to the cotton-app port')
 assert(auth.includes('SELECT * FROM users WHERE phone=?'), 'community login should read the shared users table')
 assert(auth.includes('INSERT INTO farmers'), 'new learning accounts should be created in the shared platform schema')
+assert(auth.includes("router.get('/captcha'") && auth.includes('verifyCaptcha'), 'registration should use a server-generated one-time captcha')
+assert(auth.includes("router.post('/register/merchant'") && auth.includes("'pending'"), 'merchant registration should create an application awaiting review')
+assert(auth.includes('validEmail') && auth.includes('contact_email'), 'personal and merchant registration should validate and retain email addresses')
 assert(auth.includes("const DEFAULT_FARMER_LOCATION = '喀什地区莎车县'") && auth.includes('|| DEFAULT_FARMER_LOCATION'), 'new public-service farmers should default to Shache County when no region is supplied')
 assert(auth.includes('is_admin'), 'community should support shared administrator accounts')
 assert(auth.includes('community_admins'), 'community should support scoped public-platform administrators')
@@ -31,6 +34,7 @@ assert(ai.includes('棉花种植学习助手'), 'AI prompt should be scoped to c
 assert(publicService.includes('SELECT id,name,title,org,avatar,specialties,bio'), 'public expert list should hide account credentials')
 assert(publicService.includes('WHERE user_id=?'), 'users should only read their own expert consultations')
 assert(migrate.includes('CREATE TABLE IF NOT EXISTS experts') && migrate.includes('CREATE TABLE IF NOT EXISTS expert_questions'), 'standalone community migration should prepare shared expert tables')
+assert(migrate.includes("hasColumn('users', 'email')") && migrate.includes("hasColumn('merchants', 'company_type')"), 'registration contact and merchant profile fields should migrate safely')
 assert(compose.includes('cotton-shared') && compose.includes('cotton-db'), 'Docker should join the shared database network')
 assert(env.includes('JWT_SECRET=') && env.includes('PLATFORM_BASE_URL='), 'shared identity and platform URL should be configurable')
 

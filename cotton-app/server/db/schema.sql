@@ -9,6 +9,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT '用户ID',
   phone       VARCHAR(11)  NOT NULL UNIQUE       COMMENT '手机号（登录账号）',
+  email       VARCHAR(254) DEFAULT NULL UNIQUE   COMMENT '注册邮箱',
   password    VARCHAR(64)  NOT NULL              COMMENT 'bcrypt 加密后的密码',
   role        ENUM('farmer','merchant') NOT NULL COMMENT '身份：农户/商户',
   real_name   VARCHAR(32)  DEFAULT NULL          COMMENT '真实姓名',
@@ -48,6 +49,10 @@ CREATE TABLE IF NOT EXISTS merchants (
   company_name     VARCHAR(128) DEFAULT NULL          COMMENT '企业/店铺名称',
   business_license VARCHAR(32)  DEFAULT NULL          COMMENT '营业执照号',
   product_category VARCHAR(64)  DEFAULT NULL          COMMENT '经营品类（如：化肥、农药）',
+  company_type     VARCHAR(32)  NOT NULL DEFAULT 'enterprise' COMMENT '商家主体类型',
+  contact_email    VARCHAR(254) NOT NULL DEFAULT ''   COMMENT '联系人邮箱',
+  registered_address VARCHAR(255) NOT NULL DEFAULT '' COMMENT '经营或注册地址',
+  apply_status     ENUM('pending','approved','rejected') NOT NULL DEFAULT 'approved' COMMENT '入驻审批状态',
   sub_mchid        VARCHAR(32)  DEFAULT NULL          COMMENT '微信支付子商户号',
   wechat_applyment_id VARCHAR(64) DEFAULT NULL        COMMENT '微信支付进件申请单号',
   wechat_business_code VARCHAR(64) DEFAULT NULL       COMMENT '平台侧微信进件业务申请编号',

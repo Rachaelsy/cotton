@@ -31,9 +31,9 @@ for (const endpoint of [
   assert(route.includes(endpoint), `knowledge route should include ${endpoint}`)
 }
 
-assert(siteRoute.includes("'/public/courses'") && siteRoute.includes("'/public/forum'") && siteRoute.includes("'/public/login'"), 'public platform should own courses, forum and login routes')
-assert(siteApp.includes('data-nav="courses"') && siteApp.includes("action.textContent = account"), 'courses and login should be separate header actions')
-assert(siteHtml.includes('/knowledge/site/learning.js'), 'shared public shell should load integrated learning views')
+assert(siteRoute.includes("router.get('/public/*', redirectWithQuery('/business/'))"), 'retired public learning URLs should redirect to ecommerce')
+assert(siteApp.includes('function renderCommerceLogin()') && siteApp.includes("action.textContent = account"), 'the website should use the ecommerce account page')
+assert(!siteHtml.includes('/knowledge/site/learning.js'), 'retired public learning views should not load on the ecommerce website')
 assert(learningJs.includes('/api/community-auth/register') && learningJs.includes('publicRegisterForm'), 'public platform should provide independent registration')
 assert(learningJs.includes('/api/community-auth/login') && learningJs.includes('publicLoginForm'), 'course login should use community authentication')
 assert(learningJs.includes('/api/community-auth/ticket-login'), 'miniapp users should exchange a one-time ticket on the public platform')
@@ -47,10 +47,9 @@ assert(learningJs.includes('/forum/${id}/answers') && learningJs.includes('/foru
 assert(adminJs.includes('/admin/login.html?role=admin'), 'expired admin sessions should return to unified login')
 assert(!exists('public/knowledge/admin-login.html'), 'obsolete standalone community admin login should be removed')
 assert(adminHtml.includes('/platform/admin'), 'community admin should link back to cotton-app')
-assert(adminJs.includes('/public/courses/'), 'admin comment links should open the integrated public course page')
 assert(adminHtml.includes('data-view="requests"') && adminJs.includes("api(`/service-requests"), 'community admin should manage business and activity requests')
 assert(route.includes("router.get('/admin/service-requests'") && route.includes("router.patch('/admin/service-requests/:id'"), 'admin API should manage service request status')
-assert(siteRoute.includes("router.get('/public/academy'") && siteRoute.includes("res.redirect(301, '/public/courses')"), 'old academy links should permanently redirect to public courses')
+assert(siteRoute.includes("router.get('/public/*', redirectWithQuery('/business/'))"), 'old academy links should no longer expose a public-service website')
 for (const removedPage of [
   'public/knowledge/index.html', 'public/knowledge/index.js',
   'public/knowledge/detail.html', 'public/knowledge/detail.js',
