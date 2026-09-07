@@ -17,6 +17,7 @@ for (const route of [
   '/business/',
   '/business/login',
   '/business/privacy',
+  '/business/search',
   '/business/products',
   '/business/products/:id',
   '/business/machinery',

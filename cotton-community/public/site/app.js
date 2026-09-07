@@ -41,6 +41,7 @@
   const writeLocalList = (key, value) => localStorage.setItem(key, JSON.stringify(value))
   const cartKey = 'cotton_web_cart'
   const favoriteKey = 'cotton_web_favorites'
+  let commerceMerchantsCache = null
   const categoryMap = value => {
     const text = String(value || '')
     if (/种子/.test(text)) return 'seed'
@@ -84,6 +85,29 @@
     }
   }
 
+  const catalogVisualByName = value => {
+    const name = String(value || '')
+    const rules = [
+      [/塔河2号/, 'catalog-a-1'],
+      [/18-18-18/, 'catalog-a-2'],
+      [/20-20-20/, 'catalog-a-3'],
+      [/吡虫啉/, 'catalog-a-4'],
+      [/地膜/, 'catalog-b-1'],
+      [/单翼迷宫|滴灌带/, 'catalog-b-2'],
+      [/叠片过滤器/, 'catalog-b-3'],
+      [/15-5-30/, 'catalog-b-4'],
+      [/新陆中61/, 'catalog-c-1'],
+      [/尿素/, 'catalog-c-2'],
+      [/磷酸二铵/, 'catalog-c-3'],
+      [/腐植酸/, 'catalog-c-4'],
+      [/诱虫黄板|黄板/, 'catalog-d-1'],
+      [/PE滴灌主管|主管/, 'catalog-d-2'],
+      [/旁通阀/, 'catalog-d-3']
+    ]
+    const matched = rules.find(([pattern]) => pattern.test(name))
+    return matched ? matched[1] : ''
+  }
+
   async function loadCommerceProducts() {
     try {
       const result = await runtime.requestJson('/api/products')
@@ -97,17 +121,23 @@
           name: row.name || '棉田生产资料',
           category,
           categoryName: row.category || '生产资料',
-          visual: category,
+          visual: catalogVisualByName(row.name) || category,
           image: row.image_url || '',
           badge: Number(row.stock) > 0 ? '现货供应' : '到货咨询',
           summary: row.description || row.detail || '具体规格、批次和供货范围请查看详情。',
           highlights: [row.company_name || '平台商户', row.unit ? `按${row.unit}计价` : profile.highlights[0], profile.highlights[1]],
           service: `由${row.company_name || '平台入驻商户'}提供，库存、配送和售后以订单确认为准。`,
-          price: Number(row.final_price ?? row.price ?? 0),
+          price: Number(row.display_price ?? row.final_price ?? row.price ?? 0),
           originalPrice: Number(row.original_price ?? row.price ?? 0),
           unit: row.unit || '件',
           stock: Number(row.stock || 0),
           sold: Number(row.sold || 0),
+          hasPromotion: Boolean(row.has_promotion),
+          promotionLabel: row.promotion_label || '',
+          promotionName: row.promotion_name || '',
+          promotionEndsAt: row.promotion_ends_at || '',
+          isFlashSale: Boolean(row.is_flash_sale),
+          couponCount: Number(row.coupon_count || 0),
           merchantName: row.company_name || '平台入驻商户',
           merchantId: String(row.merchant_id || ''),
           specs: [
@@ -127,6 +157,17 @@
     } catch (error) {
       console.warn('[commerce-products]', error.message)
     }
+  }
+
+  async function loadCommerceMerchants() {
+    if (commerceMerchantsCache) return commerceMerchantsCache
+    try {
+      const result = await runtime.requestJson('/api/commerce/merchants')
+      commerceMerchantsCache = Array.isArray(result.data) ? result.data : []
+    } catch {
+      commerceMerchantsCache = []
+    }
+    return commerceMerchantsCache
   }
 
   async function publicServiceRequest(path, payload) {
@@ -464,25 +505,75 @@
   async function renderCommerceHome() {
     setMeta('首页', '川月智能，提供棉花生产资料、农机作业、商户入驻和本地供需信息服务')
     setActiveNav('home')
-    const featured = data.products.slice(0, 4)
+    const promotedProducts = data.products
+      .filter(item => item.hasPromotion && item.price > 0)
+      .sort((left, right) => Number(Boolean(right.isFlashSale)) - Number(Boolean(left.isFlashSale)))
+    const campaignProducts = (promotedProducts.length ? promotedProducts : data.products).slice(0, 4)
+    const campaignEndsAt = promotedProducts
+      .map(item => new Date(item.promotionEndsAt).getTime())
+      .filter(value => Number.isFinite(value) && value > Date.now())
+      .sort((left, right) => left - right)[0]
+    const campaignSlides = promotedProducts.slice(0, 2).map((item, index) => ({
+      theme: index % 2 ? 'inputs' : 'promotion',
+      kicker: item.isFlashSale ? '限时秒杀' : (item.promotionLabel || '限时优惠'),
+      title: item.promotionName || item.name,
+      description: `${item.name}，活动价 ¥${Number(item.price).toFixed(2)}${item.originalPrice > item.price ? `，较原价优惠 ¥${(item.originalPrice - item.price).toFixed(2)}` : ''}。活动规则及库存以商品详情和订单确认页为准。`,
+      href: businessLink(`/products/${item.id}`),
+      action: '查看活动商品'
+    }))
+    const heroSlides = [
+      {
+        theme: 'cotton',
+        kicker: '川月智能 · 新疆棉区',
+        title: '服务棉花生产，连接本地供需',
+        description: '棉花种子、肥料、农药、农膜和滴灌材料在线选购，连接农机作业与本地商户。',
+        href: businessLink('/products'),
+        action: '进入商品中心'
+      },
+      ...campaignSlides,
+      {
+        theme: 'machinery',
+        kicker: '棉花生产服务',
+        title: '从整地播种到采收转运',
+        description: '按作业阶段查找农机服务，提交地块、面积和农时需求，与服务方确认档期和价格。',
+        href: businessLink('/machinery'),
+        action: '查看生产服务'
+      },
+      ...(campaignSlides.length ? [] : [{
+        theme: 'merchant',
+        kicker: '商户入驻',
+        title: '让本地优质农资更容易被找到',
+        description: '提交经营主体和商品资料，审核通过后即可管理商品、订单与促销活动。',
+        href: '/portal/register.html?role=merchant',
+        action: '申请商户入驻'
+      }])
+    ]
     let merchants = []
     try {
       const result = await runtime.requestJson('/api/commerce/merchants')
       merchants = (Array.isArray(result.data) ? result.data : []).slice(0, 3)
     } catch {}
     main.innerHTML = `
-      <section class="commerce-hero simple-commerce-hero">
-        <div class="commerce-hero-shade"></div>
-        <div class="shell commerce-hero-inner">
-          <div class="commerce-hero-copy">
-            <span class="hero-kicker">川月智能</span>
-            <h1>服务棉花生产<br>连接本地供需</h1>
-            <p>为新疆棉农、商户和农机手提供农资线上选购、购物车、订单服务、农机服务与本地供需信息。</p>
-            <form class="global-search" id="globalSearchForm">
-              <label><span class="sr-only">搜索商品</span><input id="globalSearchInput" type="search" placeholder="搜索棉花种子、肥料、农膜等商品" autocomplete="off"></label>
-              <button type="submit">搜索</button>
-            </form>
-            <div class="hero-actions"><a class="button primary" href="${businessLink('/products')}">进入商品中心</a><a class="button light" href="/portal/register.html?role=merchant">商户入驻</a></div>
+      <section class="commerce-hero commerce-carousel-hero" id="commerceHero" aria-roledescription="轮播图" aria-label="首页活动">
+        <div class="commerce-carousel-track">
+          ${heroSlides.map((slide, index) => `
+            <article class="commerce-carousel-slide theme-${slide.theme}${index === 0 ? ' active' : ''}" data-carousel-slide aria-hidden="${index === 0 ? 'false' : 'true'}"${index === 0 ? '' : ' inert'}>
+              <div class="commerce-hero-shade"></div>
+              <div class="shell commerce-hero-inner">
+                <div class="commerce-hero-copy">
+                  <span class="hero-kicker">${escapeHtml(slide.kicker)}</span>
+                  <h1>${escapeHtml(slide.title)}</h1>
+                  <p>${escapeHtml(slide.description)}</p>
+                  <div class="hero-actions"><a class="button primary" href="${escapeHtml(slide.href)}">${escapeHtml(slide.action)}</a></div>
+                </div>
+              </div>
+            </article>`).join('')}
+        </div>
+        <div class="shell commerce-carousel-footer">
+          <div class="commerce-carousel-controls">
+            <button type="button" data-carousel-previous aria-label="上一张">‹</button>
+            <div class="commerce-carousel-dots" aria-label="选择活动">${heroSlides.map((_, index) => `<button type="button" class="${index === 0 ? 'active' : ''}" data-carousel-dot="${index}" aria-label="第${index + 1}张" aria-current="${index === 0 ? 'true' : 'false'}"></button>`).join('')}</div>
+            <button type="button" data-carousel-next aria-label="下一张">›</button>
           </div>
         </div>
       </section>
@@ -491,16 +582,17 @@
         <div class="shell">
           ${sectionHeading('CORE BUSINESS', '核心业务', '两大业务板块，服务棉花生产中的商品采购与田间作业。')}
           <div class="simple-core-grid">
-            <article><span>01</span><h2>川月商品中心</h2><p>提供棉花种子、肥料、农药、地膜和滴灌材料等生产资料的线上选购服务，商品信息由入驻商户维护。</p><ul><li>分类查找商品</li><li>查看价格与库存</li><li>购物车与在线下单</li></ul><a href="${businessLink('/products')}">进入商品中心 →</a></article>
-            <article><span>02</span><h2>棉花生产服务</h2><p>连接农机作业、本地运输、加工服务和供需信息，帮助用户快速找到对应经营主体。</p><ul><li>农机作业服务</li><li>本地商户名录</li><li>供应与求购信息</li></ul><a href="${businessLink('/machinery')}">查看生产服务 →</a></article>
+            <article><span>01</span><h2>川月商品中心</h2><p>提供棉花种子、肥料、农药、地膜和滴灌材料等生产资料的线上选购服务，商品信息由入驻商户维护。</p><ul><li>分类查找商品</li><li>查看价格与库存</li><li>购物车与在线下单</li></ul><a href="${businessLink('/products')}"><strong>进入商品中心</strong><b aria-hidden="true">→</b></a></article>
+            <article><span>02</span><h2>棉花生产服务</h2><p>连接农机作业、本地运输、加工服务和供需信息，帮助用户快速找到对应经营主体。</p><ul><li>农机作业服务</li><li>本地商户名录</li><li>供应与求购信息</li></ul><a href="${businessLink('/machinery')}"><strong>查看生产服务</strong><b aria-hidden="true">→</b></a></article>
           </div>
         </div>
       </section>
 
-      <section class="section-block commerce-products-section">
+      <section class="section-block home-campaign-section">
         <div class="shell">
-          ${sectionHeading('SELECTED PRODUCTS', '优选商品', '选购平台商户当前发布的在售商品，加入购物车后可在线提交订单。', `<a class="section-action" href="${businessLink('/products')}">查看更多商品</a>`)}
-          <div class="product-grid">${featured.map(productCard).join('')}</div>
+          ${sectionHeading(promotedProducts.length ? 'LIMITED OFFERS' : 'SELECTED PRODUCTS', promotedProducts.length ? '限时优惠' : '优选商品', promotedProducts.length ? '展示当前生效的真实促销商品。' : '查看平台商户发布的在售商品。', `<a class="section-action" href="${businessLink('/products')}">查看全部商品</a>`)}
+          ${campaignEndsAt ? `<div class="campaign-countdown" data-campaign-countdown="${campaignEndsAt}"><span>距离活动结束</span><strong data-countdown-days>00</strong><em>天</em><strong data-countdown-hours>00</strong><em>时</em><strong data-countdown-minutes>00</strong><em>分</em><strong data-countdown-seconds>00</strong><em>秒</em></div>` : ''}
+          <div class="product-grid home-campaign-grid">${campaignProducts.map(productCard).join('')}</div>
         </div>
       </section>
 
@@ -512,11 +604,94 @@
         </div>
       </section>`
 
-    document.getElementById('globalSearchForm').addEventListener('submit', event => {
-      event.preventDefault()
-      const query = document.getElementById('globalSearchInput').value.trim()
-      location.href = `${businessLink('/products')}${query ? `?q=${encodeURIComponent(query)}` : ''}`
+    const hero = document.getElementById('commerceHero')
+    const slides = Array.from(hero.querySelectorAll('[data-carousel-slide]'))
+    const dots = Array.from(hero.querySelectorAll('[data-carousel-dot]'))
+    let activeSlide = 0
+    let carouselTimer = null
+    const showSlide = value => {
+      activeSlide = (value + slides.length) % slides.length
+      slides.forEach((slide, index) => {
+        const active = index === activeSlide
+        slide.classList.toggle('active', active)
+        slide.setAttribute('aria-hidden', String(!active))
+        slide.inert = !active
+      })
+      dots.forEach((dot, index) => {
+        const active = index === activeSlide
+        dot.classList.toggle('active', active)
+        dot.setAttribute('aria-current', String(active))
+      })
+    }
+    const stopCarousel = () => {
+      clearInterval(carouselTimer)
+      carouselTimer = null
+    }
+    const startCarousel = () => {
+      stopCarousel()
+      if (slides.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        carouselTimer = setInterval(() => showSlide(activeSlide + 1), 6000)
+      }
+    }
+    hero.querySelector('[data-carousel-previous]').addEventListener('click', () => {
+      showSlide(activeSlide - 1)
+      startCarousel()
     })
+    hero.querySelector('[data-carousel-next]').addEventListener('click', () => {
+      showSlide(activeSlide + 1)
+      startCarousel()
+    })
+    dots.forEach(dot => dot.addEventListener('click', () => {
+      showSlide(Number(dot.dataset.carouselDot))
+      startCarousel()
+    }))
+    hero.addEventListener('mouseenter', stopCarousel)
+    hero.addEventListener('mouseleave', startCarousel)
+    hero.addEventListener('focusin', stopCarousel)
+    hero.addEventListener('focusout', startCarousel)
+    document.addEventListener('visibilitychange', () => document.hidden ? stopCarousel() : startCarousel())
+    startCarousel()
+
+    const countdown = document.querySelector('[data-campaign-countdown]')
+    if (countdown) {
+      const updateCountdown = () => {
+        const remaining = Math.max(0, Number(countdown.dataset.campaignCountdown) - Date.now())
+        const seconds = Math.floor(remaining / 1000)
+        countdown.querySelector('[data-countdown-days]').textContent = String(Math.floor(seconds / 86400)).padStart(2, '0')
+        countdown.querySelector('[data-countdown-hours]').textContent = String(Math.floor(seconds % 86400 / 3600)).padStart(2, '0')
+        countdown.querySelector('[data-countdown-minutes]').textContent = String(Math.floor(seconds % 3600 / 60)).padStart(2, '0')
+        countdown.querySelector('[data-countdown-seconds]').textContent = String(seconds % 60).padStart(2, '0')
+        if (!remaining) countdown.classList.add('ended')
+      }
+      updateCountdown()
+      const countdownTimer = setInterval(updateCountdown, 1000)
+      window.addEventListener('pagehide', () => clearInterval(countdownTimer), { once: true })
+    }
+  }
+
+  async function renderGlobalSearch() {
+    const query = (new URLSearchParams(location.search).get('q') || '').trim()
+    setMeta(query ? `搜索：${query}` : '全站搜索', '同时查找川月智能平台的商品与入驻商家')
+    setActiveNav('')
+    const merchants = await loadCommerceMerchants()
+    const needle = query.toLowerCase()
+    const products = query ? data.products.filter(item => `${item.name} ${item.categoryName} ${item.summary} ${item.merchantName} ${item.highlights.join(' ')}`.toLowerCase().includes(needle)) : []
+    const matchedMerchants = query ? merchants.filter(item => `${item.name} ${item.category} ${item.location} ${item.intro}`.toLowerCase().includes(needle)) : []
+    main.innerHTML = `
+      ${pageHero('SITE SEARCH', '全站搜索', query ? `“${query}”的商品与商家搜索结果` : '输入关键词查找商品和入驻商家。', 'search-results-hero')}
+      <section class="section-block global-search-results"><div class="shell">
+        ${query ? `
+          <div class="search-result-summary"><strong>共找到 ${products.length + matchedMerchants.length} 条结果</strong><span>${products.length} 件商品 · ${matchedMerchants.length} 家商户</span></div>
+          <section class="search-result-group">
+            ${sectionHeading('PRODUCTS', '商品', '', `<a class="section-action" href="${businessLink('/products')}?q=${encodeURIComponent(query)}">在商品中心查看</a>`)}
+            ${products.length ? `<div class="product-grid">${products.slice(0, 8).map(productCard).join('')}</div>` : '<div class="empty-state compact"><h2>没有找到相关商品</h2><p>可以尝试搜索品类、用途或商家名称。</p></div>'}
+          </section>
+          <section class="search-result-group">
+            ${sectionHeading('MERCHANTS', '商家')}
+            ${matchedMerchants.length ? `<div class="merchant-directory">${matchedMerchants.map(item => `<article><span class="merchant-avatar">${escapeHtml(item.name.slice(0, 1))}</span><div><small>${escapeHtml(item.category)}</small><h2>${escapeHtml(item.name)}</h2><p>${escapeHtml(item.intro)}</p><dl><div><dt>所在地区</dt><dd>${escapeHtml(item.location)}</dd></div><div><dt>在售商品</dt><dd>${item.productCount} 项</dd></div></dl><div class="merchant-contact"><span>${item.phone ? `电话：${escapeHtml(item.phone)}` : '联系方式由商家补充'}</span><a href="${businessLink('/products')}?merchant=${item.id}">查看商品 →</a></div></div></article>`).join('')}</div>` : '<div class="empty-state compact"><h2>没有找到相关商家</h2><p>可以尝试搜索主营品类或所在地区。</p></div>'}
+          </section>` : `
+          <div class="search-start-panel"><span>搜索范围</span><h2>商品与商家</h2><p>可输入商品名称、品类、用途、商家名称或所在地区。</p><div class="search-start-hot">${['棉花种子', '滴灌带', '复合肥', '地膜', '植保无人机'].map(item => `<a href="${businessLink('/search')}?q=${encodeURIComponent(item)}">${item}</a>`).join('')}</div></div>`}
+      </div></section>`
   }
 
   function renderProducts() {
@@ -1881,6 +2056,8 @@
         if (existing) existing.qty = Number(existing.qty || 1) + quantity
         else cart.push({ id, qty: quantity })
         writeLocalList(cartKey, cart)
+        const cartCount = document.getElementById('headerCartCount')
+        if (cartCount) cartCount.textContent = String(cart.reduce((sum, item) => sum + Number(item.qty || 1), 0))
         runtime.notify(`已将 ${quantity} 件商品加入购物车`, 'success')
         return
       }
@@ -1943,6 +2120,7 @@
     const brandSub = document.getElementById('brandSub')
     const serviceLabel = document.getElementById('serviceLabel')
     const action = document.getElementById('headerAction')
+    const commerceTools = document.getElementById('businessCommerceTools')
     const button = document.getElementById('menuButton')
     const nav = document.getElementById('mainNav')
 
@@ -1984,6 +2162,59 @@
       try { account = JSON.parse(localStorage.getItem('knowledge_user') || 'null') } catch {}
       action.href = account ? businessLink('/account') : `${businessLink('/login')}?next=${encodeURIComponent(location.pathname)}`
       action.textContent = account ? (account.real_name || '个人中心') : '登录 / 注册'
+      const loggedIn = Boolean(localStorage.getItem('knowledge_token'))
+      const protectedLink = path => loggedIn ? businessLink(path) : `${businessLink('/login')}?next=${encodeURIComponent(businessLink(path))}`
+      const icon = name => ({
+        cart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 10h11l2-7H6M9 20h.01M18 20h.01"/></svg>',
+        user: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>',
+        order: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l2 3v15H5V6l2-3Z"/><path d="M8 10h8M8 14h8"/></svg>',
+        favorite: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 20-1.4-1.3C5.4 14 2 10.9 2 7.1A4.6 4.6 0 0 1 6.7 2.5c2.1 0 4.1 1 5.3 2.6a6.7 6.7 0 0 1 5.3-2.6A4.6 4.6 0 0 1 22 7.1c0 3.8-3.4 6.9-8.6 11.6L12 20Z"/></svg>'
+      })[name]
+      commerceTools.hidden = false
+      commerceTools.innerHTML = `
+        <div class="header-search-area">
+          <div class="header-search-combo">
+            <details class="all-category-menu">
+              <summary>全部分类 <span class="category-chevron" aria-hidden="true"></span></summary>
+              <div class="all-category-panel">
+                <a href="${businessLink('/products')}"><b>农</b><span><strong>农资</strong><small>种子、肥料、农药</small></span></a>
+                <a href="${businessLink('/machinery')}"><b>机</b><span><strong>农机</strong><small>田间作业服务</small></span></a>
+                <a href="${businessLink('/products')}?category=pesticide"><b>防</b><span><strong>病虫害</strong><small>植保防治用品</small></span></a>
+                <a href="${businessLink('/products')}?category=film"><b>耗</b><span><strong>耗材</strong><small>农膜、滴灌材料</small></span></a>
+                <span class="category-coming" aria-disabled="true"><b>课</b><span><strong>课程</strong><small>正在建设</small></span></span>
+              </div>
+            </details>
+            <form class="header-global-search" id="headerGlobalSearchForm" role="search">
+              <label><span class="sr-only">搜索商品和商家</span><input id="headerGlobalSearchInput" type="search" value="${escapeHtml(pageGroup === 'search' ? (new URLSearchParams(location.search).get('q') || '') : '')}" placeholder="搜索商品、商家" autocomplete="off"></label>
+              <button type="submit" aria-label="搜索"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg><span class="sr-only">搜索</span></button>
+            </form>
+          </div>
+          <div class="header-hot-searches"><span>热门：</span>${['棉花种子', '滴灌带', '复合肥', '地膜'].map(item => `<a href="${businessLink('/search')}?q=${encodeURIComponent(item)}">${item}</a>`).join('')}</div>
+        </div>
+        <nav class="header-quick-links" aria-label="快捷导航">
+          <a href="${businessLink('/')}">首页</a>
+          <a href="${businessLink('/products')}">商品中心</a>
+          <a href="${businessLink('/machinery')}">生产服务</a>
+          <a href="${businessLink('/merchants')}">入驻商户</a>
+          <a href="${businessLink('/about')}">关于我们</a>
+        </nav>
+        <nav class="header-account-links" aria-label="购物与账户">
+          <a class="header-icon-link" href="${businessLink('/cart')}" aria-label="购物车" title="购物车">${icon('cart')}<em id="headerCartCount">${readLocalList(cartKey).reduce((sum, item) => sum + Number(item.qty || 1), 0)}</em></a>
+          <details class="header-account-menu">
+            <summary aria-label="我的账户" title="我的账户">${icon('user')}</summary>
+            <div>
+              <a href="${protectedLink('/account')}">${icon('user')}<span>个人中心</span></a>
+              <a href="${protectedLink('/orders')}">${icon('order')}<span>我的订单</span></a>
+              <a href="${businessLink('/favorites')}">${icon('favorite')}<span>我的收藏</span></a>
+              <a href="${loggedIn ? businessLink('/account') : `${businessLink('/login')}?next=${encodeURIComponent(location.pathname)}`}"><span>${loggedIn ? '账户设置' : '登录 / 注册'}</span></a>
+            </div>
+          </details>
+        </nav>`
+      document.getElementById('headerGlobalSearchForm').addEventListener('submit', event => {
+        event.preventDefault()
+        const query = document.getElementById('headerGlobalSearchInput').value.trim()
+        location.href = `${businessLink('/search')}${query ? `?q=${encodeURIComponent(query)}` : ''}`
+      })
     } else {
       document.body.dataset.platform = 'public'
       brand.href = publicLink('/')
@@ -2065,6 +2296,7 @@
   else if (platform === 'public' && pageGroup === 'activities' && pathParts.length === 1) renderActivities()
   else if (platform === 'public' && pageGroup === 'activities') renderActivityDetail(activityById(pathParts[1]))
   else if (platform === 'business' && pageGroup === 'home') renderCommerceHome()
+  else if (platform === 'business' && pageGroup === 'search') renderGlobalSearch()
   else if (platform === 'business' && pageGroup === 'products' && pathParts.length === 1) renderProducts()
   else if (platform === 'business' && pageGroup === 'products') renderProductDetail(productById(pathParts[1]))
   else if (platform === 'business' && pageGroup === 'machinery' && pathParts.length === 1) renderMachinery()

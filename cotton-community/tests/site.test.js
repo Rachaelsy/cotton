@@ -25,6 +25,7 @@ assert(route.includes("router.get(['/', '/index.html'], redirectWithQuery('/busi
 for (const routePath of [
   "'/business'", "'/business/'", "'/business/login'", "'/business/privacy'",
   "'/business/products'", "'/business/products/:id'", "'/business/machinery'",
+  "'/business/search'",
   "'/business/machinery/:id'", "'/business/merchants'", "'/business/local'",
   "'/business/activities'", "'/business/cart'", "'/business/favorites'",
   "'/business/account'", "'/business/orders'", "'/business/help'",
@@ -38,9 +39,32 @@ assert(!shell.includes('/knowledge/site/learning.js') && !shell.includes('/knowl
 assert(shell.includes('川月智能') && shell.includes('/business/login'), 'the ecommerce brand and login must be visible')
 
 assert(app.includes('function renderCommerceHome()'), 'ecommerce home is missing')
+for (const feature of ['commerce-carousel-slide', 'simple-core-section', 'home-campaign-section', 'campaign-countdown']) {
+  assert(app.includes(feature) && styles.includes(`.${feature}`), `homepage campaign feature is missing: ${feature}`)
+}
+for (const control of ['data-carousel-dot', 'data-carousel-previous', 'data-carousel-next', 'data-campaign-countdown']) {
+  assert(app.includes(control), `homepage campaign control is missing: ${control}`)
+}
+assert(app.includes('setInterval(() => showSlide(activeSlide + 1), 6000)'), 'homepage carousel should rotate automatically')
+assert(app.includes('promotionEndsAt: row.promotion_ends_at') && app.includes('item.hasPromotion'), 'homepage campaigns should use approved active product promotions')
+assert(app.includes('row.display_price ?? row.final_price ?? row.price'), 'active promotion price should be used on the website')
+assert(!app.includes('<nav class="commerce-category-strip"'), 'homepage should not repeat the header category navigation')
+assert(app.indexOf('<section class="section-block simple-core-section">') < app.indexOf('<section class="section-block home-campaign-section">'), 'core business should follow the homepage banner before product promotions')
+assert(!app.includes('<section class="section-block commerce-products-section">'), 'homepage should not repeat a second product section')
+for (const headerFeature of ['businessCommerceTools', 'headerGlobalSearchForm', 'all-category-menu', 'header-account-links', 'header-hot-searches']) {
+  assert(shell.includes(headerFeature) || app.includes(headerFeature), `commerce header feature is missing: ${headerFeature}`)
+}
+assert(app.includes('category-chevron') && styles.includes('.category-chevron'), 'category menu should use a stable CSS chevron')
+for (const headerLabel of ['全部分类', '农资', '农机', '病虫害', '耗材', '课程', '购物车', '个人中心', '订单', '收藏']) {
+  assert(app.includes(headerLabel), `commerce header entry is missing: ${headerLabel}`)
+}
+assert(app.includes('function renderGlobalSearch()') && app.includes('loadCommerceMerchants()'), 'global search should combine products and merchants')
+assert(app.includes("businessLink('/search')") && app.includes("pageGroup === 'search'"), 'global search route is incomplete')
 for (const block of ['simple-about-company', 'simple-about-contact', 'simple-about-message']) {
   assert(app.includes(block) && styles.includes(`.${block}`), `about page block is incomplete: ${block}`)
 }
+assert(app.includes('<strong>进入商品中心</strong>') && app.includes('<strong>查看生产服务</strong>'), 'core business links should use a separated action layout')
+assert(styles.includes('.simple-core-grid article > a') && styles.includes('margin: 30px -42px 0'), 'core business actions should have deliberate spacing from the feature list')
 assert(app.includes('公司简介') && app.includes('联系我们') && app.includes('在线留言'), 'about page should stay focused on company, contact and message content')
 assert(app.includes('陆家嘴环路958号') && app.includes('021-66286003') && app.includes('lijiale@cyaia.cn'), 'about page contact details are incomplete')
 assert(data.company.registeredAddress.includes('陆家嘴环路958号'), 'company registration/contact address should remain available')
@@ -77,11 +101,27 @@ assert(!app.slice(app.indexOf('function renderMachineryDetail'), app.indexOf('fu
 
 assert(data.products.length >= 15, 'product catalog should include the expanded Kashgar cotton-production range')
 assert(data.machinery.length >= 6, 'machinery services should remain available')
+assert(new Set(data.machinery.map(item => item.image)).size === data.machinery.length, 'each cotton production service should use a distinct image')
+for (const asset of [
+  'service-land-preparation-v2.jpg',
+  'service-seeding-mulching-v2.jpg',
+  'service-drone-protection-v2.jpg',
+  'service-interrow-management-v2.jpg',
+  'service-cotton-harvest-v2.jpg',
+  'service-cotton-transport-v2.jpg'
+]) {
+  assert(fs.existsSync(path.join(root, 'public', 'assets', asset)), `generated service image is missing: ${asset}`)
+}
 for (const category of ['seed', 'fertilizer', 'pesticide', 'film', 'irrigation']) {
   assert(data.products.some(product => product.category === category), `missing product category ${category}`)
 }
 for (const product of data.products) {
   assert(product.name && Number(product.price) > 0 && product.unit, `catalog product should include name, price and unit: ${product.id}`)
+}
+assert(new Set(data.products.map(product => product.visual)).size === data.products.length, 'each catalog product should use a distinct generated visual')
+for (const asset of ['product-catalog-a-v2.jpg', 'product-catalog-b-v2.jpg', 'product-catalog-c-v2.jpg', 'product-catalog-d-v2.jpg']) {
+  assert(styles.includes(`/assets/${asset}`), `generated product catalog asset is not connected: ${asset}`)
+  assert(fs.existsSync(path.join(root, 'public', 'assets', asset)), `generated product catalog asset is missing: ${asset}`)
 }
 for (const name of ['塔河2号包衣棉种', '18-18-18', '70%吡虫啉', '0.010mm', '16mm×1000m']) {
   assert(dataSource.includes(name), `catalog should include common cotton production product: ${name}`)
@@ -112,6 +152,8 @@ assert(app.includes('/api/products') && app.includes('/api/commerce/merchants') 
 assert(commerce.includes("router.get('/merchants'") && commerce.includes("router.get('/listings'") && commerce.includes("router.post('/listings'"), 'commerce API should support merchant and local-market pages')
 assert(shell.includes('/portal/register.html?role=merchant') && shell.includes('商户入驻'), 'merchant registration should remain available')
 assert(shell.includes('沪ICP备2026040489号-1'), 'ICP filing number should remain in the footer')
+assert(shell.includes('© 2026 上海川月信息科技有限公司 版权所有'), 'footer should show the legal company copyright owner')
+assert(shell.includes('footer-copyright') && styles.includes('.footer-copyright'), 'footer copyright strip should use the centered dark layout')
 assert(styles.includes('@media (max-width: 820px)') && styles.includes('@media (max-width: 560px)'), 'responsive layouts are missing')
 
 console.log('ecommerce website tests passed')
