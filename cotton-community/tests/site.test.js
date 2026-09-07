@@ -154,8 +154,11 @@ for (const category of ['land', 'planting', 'protection', 'harvest', 'transport'
 assert(app.includes('/api/products') && app.includes('/api/commerce/merchants') && app.includes('/api/commerce/listings'), 'ecommerce pages should read database-backed data')
 assert(commerce.includes("router.get('/merchants'") && commerce.includes("router.get('/listings'") && commerce.includes("router.post('/listings'"), 'commerce API should support merchant and local-market pages')
 assert(shell.includes('/portal/register.html?role=merchant') && shell.includes('商户入驻'), 'merchant registration should remain available')
+assert(app.includes('merchant-recruit-panel') && app.includes('申请商户入驻') && app.includes('填写资料') && app.includes('平台审核') && app.includes('发布商品'), 'home merchant recruitment should provide a clear application action and process')
 assert(shell.includes('沪ICP备2026040489号-1'), 'ICP filing number should remain in the footer')
 assert(shell.includes('© 2026 上海川月信息科技有限公司 版权所有'), 'footer should show the legal company copyright owner')
+assert(['公司简介', '业务范围', '帮助中心', '联系方式'].every((item) => shell.includes(item)), 'footer should provide the four requested information columns')
+assert(shell.includes('lijiale@cyaia.cn') && shell.includes('021-66286003') && shell.includes('华能联合大厦3403A'), 'footer should show the configured company contact details')
 assert(shell.includes('footer-copyright') && styles.includes('.footer-copyright'), 'footer copyright strip should use the centered dark layout')
 assert(styles.includes('@media (max-width: 820px)') && styles.includes('@media (max-width: 560px)'), 'responsive layouts are missing')
 

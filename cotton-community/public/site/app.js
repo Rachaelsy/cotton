@@ -598,9 +598,18 @@
 
       <section class="section-block simple-merchants-section">
         <div class="shell">
-          ${sectionHeading('MERCHANTS', '入驻商户', '审核通过的商户及其主营业务。', `<a class="section-action" href="${businessLink('/merchants')}">查看全部商户</a>`)}
-          ${merchants.length ? `<div class="simple-merchant-grid">${merchants.map(item => `<article><span>${escapeHtml(item.name.slice(0, 1))}</span><h2>${escapeHtml(item.name)}</h2><p>${escapeHtml(item.category)}</p>${item.phone ? `<a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>` : item.wechat ? `<strong>客服微信：${escapeHtml(item.wechat)}</strong>` : '<strong>联系方式由商户补充</strong>'}</article>`).join('')}</div>` : '<div class="simple-empty-copy">商户完成入驻审核后将在这里展示。</div>'}
-          <div class="simple-join-row"><div><h2>欢迎棉花产业相关商户入驻</h2><p>提交企业与经营资料，审核通过后即可展示商户和商品信息。</p></div><a class="button primary" href="/portal/register.html?role=merchant">申请商户入驻</a></div>
+          ${sectionHeading('MERCHANT NETWORK', '本地优质商户', '汇集审核通过的农资经营主体与棉花生产服务商。', `<a class="section-action" href="${businessLink('/merchants')}">查看全部商户 <span aria-hidden="true">→</span></a>`)}
+          ${merchants.length ? `<div class="simple-merchant-grid">${merchants.map(item => `<article><span>${escapeHtml(item.name.slice(0, 1))}</span><h2>${escapeHtml(item.name)}</h2><p>${escapeHtml(item.category)}</p>${item.phone ? `<a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>` : item.wechat ? `<strong>客服微信：${escapeHtml(item.wechat)}</strong>` : '<strong>联系方式由商户补充</strong>'}</article>`).join('')}</div>` : ''}
+          <div class="merchant-recruit-panel${merchants.length ? '' : ' merchant-recruit-panel-empty'}">
+            <div class="merchant-recruit-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 20h32v21H8zM5 10h38l-4 10H9zm9 17h8v14h-8zm14 0h7v7h-7z"/></svg></div>
+            <div class="merchant-recruit-copy">
+              <span>商户招募</span>
+              <h2>欢迎棉花产业相关商户入驻</h2>
+              <p>提交经营主体、经营品类和服务资料，审核通过后即可发布商品、管理订单并展示企业信息。</p>
+              <div class="merchant-recruit-steps" aria-label="入驻流程"><span><b>01</b>填写资料</span><i aria-hidden="true"></i><span><b>02</b>平台审核</span><i aria-hidden="true"></i><span><b>03</b>发布商品</span></div>
+            </div>
+            <a class="button primary merchant-recruit-action" href="/portal/register.html?role=merchant">申请商户入驻 <span aria-hidden="true">→</span></a>
+          </div>
         </div>
       </section>`
 
@@ -2111,9 +2120,14 @@
     document.getElementById('serviceContact').textContent = data.company.phone
       ? `服务热线：${data.company.phone}`
       : '商务咨询：查看商业平台联系说明'
-    document.getElementById('footerPhone').textContent = data.company.phone || '在线商务联系'
-    document.getElementById('footerHours').textContent = data.company.hours
-    document.getElementById('footerAddress').textContent = `服务覆盖：${data.company.serviceCoverage}`
+    const footerPhone = document.getElementById('footerPhone')
+    const footerEmail = document.getElementById('footerEmail')
+    const footerRegisteredAddress = document.getElementById('footerRegisteredAddress')
+    const footerAddress = document.getElementById('footerAddress')
+    if (footerPhone) footerPhone.textContent = data.company.phone || '在线商务联系'
+    if (footerEmail) footerEmail.textContent = data.company.email || ''
+    if (footerRegisteredAddress) footerRegisteredAddress.textContent = data.company.registeredAddress || ''
+    if (footerAddress) footerAddress.textContent = `服务区域：${data.company.serviceCoverage}`
 
     const brand = document.getElementById('siteBrand')
     const brandName = document.getElementById('brandName')
