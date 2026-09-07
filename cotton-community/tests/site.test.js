@@ -46,6 +46,7 @@ for (const control of ['data-carousel-dot', 'data-carousel-previous', 'data-caro
   assert(app.includes(control), `homepage campaign control is missing: ${control}`)
 }
 assert(app.includes('setInterval(() => showSlide(activeSlide + 1), 6000)'), 'homepage carousel should rotate automatically')
+assert(styles.includes('.commerce-carousel-footer.shell') && styles.includes('left: 22px') && styles.includes('right: 22px'), 'homepage carousel arrows should align to the banner edges')
 assert(app.includes('promotionEndsAt: row.promotion_ends_at') && app.includes('item.hasPromotion'), 'homepage campaigns should use approved active product promotions')
 assert(app.includes('row.display_price ?? row.final_price ?? row.price'), 'active promotion price should be used on the website')
 assert(!app.includes('<nav class="commerce-category-strip"'), 'homepage should not repeat the header category navigation')
@@ -55,9 +56,11 @@ for (const headerFeature of ['businessCommerceTools', 'headerGlobalSearchForm', 
   assert(shell.includes(headerFeature) || app.includes(headerFeature), `commerce header feature is missing: ${headerFeature}`)
 }
 assert(app.includes('category-chevron') && styles.includes('.category-chevron'), 'category menu should use a stable CSS chevron')
-for (const headerLabel of ['全部分类', '农资', '农机', '病虫害', '耗材', '课程', '购物车', '个人中心', '订单', '收藏']) {
+for (const headerLabel of ['全部分类', '农资', '农机', '病虫害', '耗材', '购物车', '个人中心', '订单', '收藏']) {
   assert(app.includes(headerLabel), `commerce header entry is missing: ${headerLabel}`)
 }
+const headerCategorySource = app.slice(app.indexOf('<div class="all-category-panel">'), app.indexOf('</div>', app.indexOf('<div class="all-category-panel">')))
+assert(!headerCategorySource.includes('课程') && !headerCategorySource.includes('正在建设'), 'commerce categories should not show unfinished course content')
 assert(app.includes('function renderGlobalSearch()') && app.includes('loadCommerceMerchants()'), 'global search should combine products and merchants')
 assert(app.includes("businessLink('/search')") && app.includes("pageGroup === 'search'"), 'global search route is incomplete')
 for (const block of ['simple-about-company', 'simple-about-contact', 'simple-about-message']) {

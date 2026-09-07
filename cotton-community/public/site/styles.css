@@ -7723,12 +7723,6 @@ body[data-platform="business"] .header-action {
   font-size: 12px;
 }
 
-.all-category-panel .category-coming {
-  color: #85928c;
-  background: #f6f8f7;
-  cursor: not-allowed;
-}
-
 .header-search-area {
   min-width: 0;
 }
@@ -7929,6 +7923,61 @@ body[data-platform="business"] .main-nav {
 
   .header-account-menu > div a span {
     display: inline;
+  }
+}
+
+/* 轮播切换按钮贴近整幅 Banner 两端。 */
+.commerce-carousel-footer.shell {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  padding-right: 22px;
+  padding-left: 22px;
+  pointer-events: none;
+}
+
+.commerce-carousel-footer .commerce-carousel-controls {
+  position: static;
+  pointer-events: none;
+}
+
+.commerce-carousel-footer .commerce-carousel-controls > button {
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  pointer-events: auto;
+}
+
+.commerce-carousel-footer .commerce-carousel-dots {
+  bottom: 26px;
+  pointer-events: auto;
+}
+
+.commerce-carousel-controls > button:first-child {
+  left: 22px;
+}
+
+.commerce-carousel-controls > button:last-child {
+  right: 22px;
+}
+
+@media (max-width: 560px) {
+  .commerce-carousel-footer.shell {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .commerce-carousel-controls > button:first-child {
+    left: 12px;
+  }
+
+  .commerce-carousel-controls > button:last-child {
+    right: 12px;
   }
 }
 

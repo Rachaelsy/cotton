@@ -440,7 +440,7 @@
 
       <section class="section-block business-chain-section">
         <div class="shell">
-          ${sectionHeading('CORE BUSINESS', '一条围绕棉田生产的服务链', '从投入品到田间作业，再到订单与服务记录，展示平台正在建设的核心业务。')}
+          ${sectionHeading('CORE BUSINESS', '一条围绕棉田生产的服务链', '从投入品到田间作业，再到订单与服务记录，展示平台提供的核心业务。')}
           <div class="business-pillar-grid">
             <article><span>01 · INPUTS</span><h3>农资供应</h3><p>围绕棉花生产周期展示适配的种子、肥料、植保、农膜和滴灌材料，并提供规格、使用边界与商务咨询入口。</p><a href="${link('/products')}">查看农资业务 <b aria-hidden="true">→</b></a></article>
             <article><span>02 · OPERATIONS</span><h3>农机服务</h3><p>覆盖耕整地、播种铺膜、植保飞防、田间管理、机采棉和棉包转运，按地块、农时和作业条件组织服务。</p><a href="${link('/machinery')}">查看农机业务 <b aria-hidden="true">→</b></a></article>
@@ -2181,7 +2181,6 @@
                 <a href="${businessLink('/machinery')}"><b>机</b><span><strong>农机</strong><small>田间作业服务</small></span></a>
                 <a href="${businessLink('/products')}?category=pesticide"><b>防</b><span><strong>病虫害</strong><small>植保防治用品</small></span></a>
                 <a href="${businessLink('/products')}?category=film"><b>耗</b><span><strong>耗材</strong><small>农膜、滴灌材料</small></span></a>
-                <span class="category-coming" aria-disabled="true"><b>课</b><span><strong>课程</strong><small>正在建设</small></span></span>
               </div>
             </details>
             <form class="header-global-search" id="headerGlobalSearchForm" role="search">
