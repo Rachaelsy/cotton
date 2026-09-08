@@ -3487,10 +3487,6 @@ a {
   line-height: 1.65;
 }
 
-.footer-contact a.footer-contact-item:hover {
-  color: #fff;
-}
-
 .footer-contact-item svg {
   width: 17px;
   min-width: 17px;

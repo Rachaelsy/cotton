@@ -160,6 +160,7 @@ assert(shell.includes('沪ICP备2026040489号-1'), 'ICP filing number should rem
 assert(shell.includes('© 2026 上海川月信息科技有限公司 版权所有'), 'footer should show the legal company copyright owner')
 assert(['公司简介', '业务范围', '帮助中心', '联系方式'].every((item) => shell.includes(item)), 'footer should provide the four requested information columns')
 assert(shell.includes('lijiale@cyaia.cn') && shell.includes('021-66286003') && shell.includes('华能联合大厦3403A'), 'footer should show the configured company contact details')
+assert(!shell.includes('href="tel:021-66286003"') && !shell.includes('href="mailto:lijiale@cyaia.cn"'), 'footer phone and email should be plain text instead of clickable links')
 assert(shell.includes('footer-copyright') && styles.includes('.footer-copyright'), 'footer copyright strip should use the centered dark layout')
 assert(styles.includes('@media (max-width: 820px)') && styles.includes('@media (max-width: 560px)'), 'responsive layouts are missing')
 
