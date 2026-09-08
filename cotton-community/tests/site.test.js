@@ -154,6 +154,7 @@ for (const category of ['land', 'planting', 'protection', 'harvest', 'transport'
 assert(app.includes('/api/products') && app.includes('/api/commerce/merchants') && app.includes('/api/commerce/listings'), 'ecommerce pages should read database-backed data')
 assert(commerce.includes("router.get('/merchants'") && commerce.includes("router.get('/listings'") && commerce.includes("router.post('/listings'"), 'commerce API should support merchant and local-market pages')
 assert(shell.includes('/portal/register.html?role=merchant') && shell.includes('商户入驻'), 'merchant registration should remain available')
+assert(shell.includes('/assets/chuanyue-logo.png') && !shell.includes('<span class="brand-mark">棉</span>'), 'header should use the ChuanYue logo instead of the text mark')
 assert(app.includes('merchant-recruit-panel') && app.includes('申请商户入驻') && app.includes('填写资料') && app.includes('平台审核') && app.includes('发布商品'), 'home merchant recruitment should provide a clear application action and process')
 assert(shell.includes('沪ICP备2026040489号-1'), 'ICP filing number should remain in the footer')
 assert(shell.includes('© 2026 上海川月信息科技有限公司 版权所有'), 'footer should show the legal company copyright owner')

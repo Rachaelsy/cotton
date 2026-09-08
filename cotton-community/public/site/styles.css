@@ -8179,6 +8179,27 @@ body[data-platform="business"] .main-nav {
   }
 }
 
+/* 川月智能品牌 Logo：图片本身留白较多，适度放大图形以保持导航栏辨识度。 */
+.brand-mark {
+  overflow: hidden;
+  border-radius: 4px;
+  background: #fff !important;
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  transform: scale(1.24);
+  transform-origin: center;
+}
+
+body[data-platform="business"] .brand-mark {
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(16, 70, 48, 0.08);
+}
+
 /* 轮播切换按钮贴近整幅 Banner 两端。 */
 .commerce-carousel-footer.shell {
   top: 0;
