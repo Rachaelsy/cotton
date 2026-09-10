@@ -16,10 +16,11 @@ function run() {
   const merchantDashboard = readServerFile('public', 'merchant', 'dashboard.html')
   const expertDashboard = readServerFile('public', 'expert', 'dashboard.html')
   const runtime = readServerFile('public', 'admin', 'assets', 'runtime.js')
+  const knowledgeManagement = readServerFile('public', 'admin', 'assets', 'knowledge-management.js')
   const adminRoute = readServerFile('routes', 'admin.js')
 
   assert.ok(login.includes('Cotton'), 'unified login should keep Cotton branding')
-  assert.ok(login.includes('<strong>公共服务平台</strong>'), 'unified login should use the public service platform name')
+  assert.ok(!login.includes('<strong>公共服务平台</strong>'), 'retired public service platform entry should stay hidden')
   assert.ok(!login.includes('<strong>公益平台</strong>'), 'legacy public platform name should not remain on the unified login')
   assert.ok(!login.includes('class="points"') && !login.includes('<em>培训') && !login.includes('<em>农资'), 'decorative subtitles and small gateway tags should be removed')
   assert.ok(login.includes('data-role="admin"'), 'admin role card should exist')
@@ -73,6 +74,11 @@ function run() {
   assert.ok(adminDashboard.includes("window.location.replace('/knowledge/policy-admin.html')"), 'public administrators should be redirected to their scoped dashboard')
   assert.ok(!operatorDashboard.includes('localStorage.clear()'), 'operator logout should preserve other role sessions')
   assert.ok(adminDashboard.includes('function jsArg('), 'admin dashboard should encode values used by inline actions')
+  for (const [panel, label] of [['knowledgeContents', '网站内容'], ['knowledgeComments', '课程评论'], ['knowledgeForum', '问答社区'], ['serviceRequests', '服务需求']]) {
+    assert.ok(adminDashboard.includes(`data-panel="${panel}"`) && adminDashboard.includes(`id="panel-${panel}"`), `admin dashboard should integrate ${label}`)
+  }
+  assert.ok(adminDashboard.includes('/admin/assets/knowledge-management.js'), 'main dashboard should load the integrated website management client')
+  assert.ok(knowledgeManagement.includes('/api/knowledge/admin') && knowledgeManagement.includes('/service-requests'), 'integrated management client should use the existing knowledge and request APIs')
   assert.ok(merchantDashboard.includes('function jsArg('), 'merchant dashboard should encode values used by inline actions')
   assert.ok(expertDashboard.includes('function jsArg('), 'expert dashboard should encode media action values')
   assert.ok(!operatorDashboard.includes('editMachine(${JSON.stringify(m)})'), 'machine rows should not inject serialized records into inline handlers')

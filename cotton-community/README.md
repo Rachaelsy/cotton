@@ -183,7 +183,7 @@ docker compose logs --tail=100 community
 | 资讯详情 | `/business/news/:id` |
 | 关于我们 | `/business/about` |
 | 商务联系 | `/business/contact` |
-| 网站运营管理 | `/knowledge/admin.html` |
+| 网站运营管理 | `/admin/dashboard.html?panel=knowledgeContents` |
 
 旧的 `/knowledge/public/*`、`/knowledge/business/*`、`/knowledge/products`、
 `/knowledge/training`、`/knowledge/news` 和 `/knowledge/academy` 地址继续兼容；

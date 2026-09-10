@@ -50,6 +50,14 @@ function userAuth(req, res, next) {
   next()
 }
 
+function consultationAuth(req, res, next) {
+  const referenceType = cleanText(req.body.referenceType, 32)
+  const sourcePath = cleanText(req.body.sourcePath, 255)
+  const isConsultation = referenceType === 'product' || referenceType === 'machine' || sourcePath === '/business/contact'
+  if (!isConsultation) return next()
+  return userAuth(req, res, next)
+}
+
 function cleanText(value, max) {
   return String(value || '').trim().slice(0, max)
 }
@@ -146,7 +154,7 @@ function normalizeQuestion(row) {
   }
 }
 
-router.post('/business-inquiries', async (req, res) => {
+router.post('/business-inquiries', consultationAuth, async (req, res) => {
   const category = cleanText(req.body.type, 64)
   const message = cleanText(req.body.message, 1200)
   if (!businessCategories.has(category)) return fail(res, '请选择有效的需求类型')

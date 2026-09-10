@@ -26,6 +26,9 @@
   const link = path => joinLink(platformBase, path)
   const publicLink = path => joinLink(publicBase, path)
   const businessLink = path => joinLink(businessBase, path)
+  const protectedBusinessLink = target => localStorage.getItem('knowledge_token')
+    ? target
+    : `${businessLink('/login')}?next=${encodeURIComponent(target)}`
   const productById = id => data.products.find(item => item.id === id)
   const machineryById = id => data.machinery.find(item => item.id === id)
   const trainingById = id => data.training.find(item => item.id === id)
@@ -174,7 +177,7 @@
     return runtime.requestJson(`/api/public-service${path}`, {
       method: 'POST',
       body: JSON.stringify(payload)
-    })
+    }, { token: localStorage.getItem('knowledge_token') || '' })
   }
 
   function setMeta(title, description) {
@@ -210,6 +213,23 @@
           <h3><a href="${businessLink(`/products/${item.id}`)}">${escapeHtml(item.name)}</a></h3>
           ${item.price ? `<div class="commerce-price"><strong>¥${Number(item.price).toFixed(2)}</strong><span>/${escapeHtml(item.unit || '件')}</span>${item.originalPrice > item.price ? `<del>¥${Number(item.originalPrice).toFixed(2)}</del>` : ''}</div>` : ''}
         </div>
+      </article>`
+  }
+
+  function merchantProfileCard(item) {
+    const contact = item.phone || item.email || item.wechat || ''
+    return `
+      <article class="settled-merchant-card">
+        <div class="merchant-card-heading">
+          <span class="merchant-card-mark" aria-hidden="true">${escapeHtml(item.name.slice(0, 1))}</span>
+          <div><small>${escapeHtml(item.category)}</small><h3>${escapeHtml(item.name)}</h3></div>
+        </div>
+        <p>${escapeHtml(item.intro)}</p>
+        <dl class="merchant-card-details">
+          <div><dt>联系人员</dt><dd>${escapeHtml(item.contactName || '暂未公开')}</dd></div>
+          <div><dt>联系方式</dt><dd>${escapeHtml(contact || '暂未公开')}</dd></div>
+        </dl>
+        <a class="merchant-profile-link" href="${businessLink(`/merchants/${item.id}`)}">进入商家主页 <span aria-hidden="true">→</span></a>
       </article>`
   }
 
@@ -528,7 +548,7 @@
         title: '服务棉花生产，连接本地供需',
         description: '棉花种子、肥料、农药、农膜和滴灌材料在线选购，连接农机作业与本地商户。',
         href: businessLink('/products'),
-        action: '进入商品中心'
+        action: '进入官方商城'
       },
       ...campaignSlides,
       {
@@ -564,7 +584,10 @@
                   <span class="hero-kicker">${escapeHtml(slide.kicker)}</span>
                   <h1>${escapeHtml(slide.title)}</h1>
                   <p>${escapeHtml(slide.description)}</p>
-                  <div class="hero-actions"><a class="button primary" href="${escapeHtml(slide.href)}">${escapeHtml(slide.action)}</a></div>
+                  <div class="hero-actions">
+                    <a class="button primary" href="${escapeHtml(slide.href)}">${escapeHtml(slide.action)}</a>
+                    ${index === 0 ? `<a class="button hero-merchant-button" href="${businessLink('/merchants')}">入驻商家专区</a>` : ''}
+                  </div>
                 </div>
               </div>
             </article>`).join('')}
@@ -582,7 +605,7 @@
         <div class="shell">
           ${sectionHeading('CORE BUSINESS', '核心业务', '两大业务板块，服务棉花生产中的商品采购与田间作业。')}
           <div class="simple-core-grid">
-            <article><span>01</span><h2>川月商品中心</h2><p>提供棉花种子、肥料、农药、地膜和滴灌材料等生产资料的线上选购服务，商品信息由入驻商户维护。</p><ul><li>分类查找商品</li><li>查看价格与库存</li><li>购物车与在线下单</li></ul><a href="${businessLink('/products')}"><strong>进入商品中心</strong><b aria-hidden="true">→</b></a></article>
+            <article><span>01</span><h2>川月官方商城</h2><p>提供棉花种子、肥料、农药、地膜和滴灌材料等生产资料的线上选购服务，商品信息由入驻商户维护。</p><ul><li>分类查找商品</li><li>查看价格与库存</li><li>购物车与在线下单</li></ul><a href="${businessLink('/products')}"><strong>进入官方商城</strong><b aria-hidden="true">→</b></a></article>
             <article><span>02</span><h2>棉花生产服务</h2><p>连接农机作业、本地运输、加工服务和供需信息，帮助用户快速找到对应经营主体。</p><ul><li>农机作业服务</li><li>本地商户名录</li><li>供应与求购信息</li></ul><a href="${businessLink('/machinery')}"><strong>查看生产服务</strong><b aria-hidden="true">→</b></a></article>
           </div>
         </div>
@@ -590,25 +613,19 @@
 
       <section class="section-block home-campaign-section">
         <div class="shell">
-          ${sectionHeading(promotedProducts.length ? 'LIMITED OFFERS' : 'SELECTED PRODUCTS', promotedProducts.length ? '限时优惠' : '优选商品', promotedProducts.length ? '展示当前生效的真实促销商品。' : '查看平台商户发布的在售商品。', `<a class="section-action" href="${businessLink('/products')}">查看全部商品</a>`)}
+          ${sectionHeading(promotedProducts.length ? 'LIMITED OFFERS' : 'SELECTED PRODUCTS', promotedProducts.length ? '限时优惠' : '优选商品', promotedProducts.length ? '展示当前生效的真实促销商品。' : '查看平台商户发布的在售商品。', `<a class="section-action" href="${businessLink('/products')}">进入官方商城</a>`)}
           ${campaignEndsAt ? `<div class="campaign-countdown" data-campaign-countdown="${campaignEndsAt}"><span>距离活动结束</span><strong data-countdown-days>00</strong><em>天</em><strong data-countdown-hours>00</strong><em>时</em><strong data-countdown-minutes>00</strong><em>分</em><strong data-countdown-seconds>00</strong><em>秒</em></div>` : ''}
           <div class="product-grid home-campaign-grid">${campaignProducts.map(productCard).join('')}</div>
         </div>
       </section>
 
-      <section class="section-block simple-merchants-section">
+      <section class="section-block settled-merchants-section">
         <div class="shell">
-          ${sectionHeading('MERCHANT NETWORK', '本地优质商户', '汇集审核通过的农资经营主体与棉花生产服务商。', `<a class="section-action" href="${businessLink('/merchants')}">查看全部商户 <span aria-hidden="true">→</span></a>`)}
-          ${merchants.length ? `<div class="simple-merchant-grid">${merchants.map(item => `<article><span>${escapeHtml(item.name.slice(0, 1))}</span><h2>${escapeHtml(item.name)}</h2><p>${escapeHtml(item.category)}</p>${item.phone ? `<a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a>` : item.wechat ? `<strong>客服微信：${escapeHtml(item.wechat)}</strong>` : '<strong>联系方式由商户补充</strong>'}</article>`).join('')}</div>` : ''}
-          <div class="merchant-recruit-panel${merchants.length ? '' : ' merchant-recruit-panel-empty'}">
-            <div class="merchant-recruit-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 20h32v21H8zM5 10h38l-4 10H9zm9 17h8v14h-8zm14 0h7v7h-7z"/></svg></div>
-            <div class="merchant-recruit-copy">
-              <span>商户招募</span>
-              <h2>欢迎棉花产业相关商户入驻</h2>
-              <p>提交经营主体、经营品类和服务资料，审核通过后即可发布商品、管理订单并展示企业信息。</p>
-              <div class="merchant-recruit-steps" aria-label="入驻流程"><span><b>01</b>填写资料</span><i aria-hidden="true"></i><span><b>02</b>平台审核</span><i aria-hidden="true"></i><span><b>03</b>发布商品</span></div>
-            </div>
-            <a class="button primary merchant-recruit-action" href="/portal/register.html?role=merchant">申请商户入驻 <span aria-hidden="true">→</span></a>
+          ${sectionHeading('SETTLED MERCHANTS', '入驻商家', '展示已完成平台注册的经营主体及其公开联系信息。', `<a class="section-action" href="${businessLink('/merchants')}">查看全部商家 <span aria-hidden="true">→</span></a>`)}
+          ${merchants.length ? `<div class="settled-merchant-grid">${merchants.map(merchantProfileCard).join('')}</div>` : '<div class="simple-empty-copy">商家资料正在整理中。</div>'}
+          <div class="settled-merchant-join">
+            <div><span>MERCHANT APPLICATION</span><h2>成为平台入驻商家</h2><p>提交企业与经营资料，审核通过后可展示企业信息、发布商品并管理订单。</p></div>
+            <a class="button primary" href="/portal/register.html?role=merchant">商家入驻 <span aria-hidden="true">→</span></a>
           </div>
         </div>
       </section>`
@@ -692,7 +709,7 @@
         ${query ? `
           <div class="search-result-summary"><strong>共找到 ${products.length + matchedMerchants.length} 条结果</strong><span>${products.length} 件商品 · ${matchedMerchants.length} 家商户</span></div>
           <section class="search-result-group">
-            ${sectionHeading('PRODUCTS', '商品', '', `<a class="section-action" href="${businessLink('/products')}?q=${encodeURIComponent(query)}">在商品中心查看</a>`)}
+            ${sectionHeading('PRODUCTS', '商品', '', `<a class="section-action" href="${businessLink('/products')}?q=${encodeURIComponent(query)}">在官方商城查看</a>`)}
             ${products.length ? `<div class="product-grid">${products.slice(0, 8).map(productCard).join('')}</div>` : '<div class="empty-state compact"><h2>没有找到相关商品</h2><p>可以尝试搜索品类、用途或商家名称。</p></div>'}
           </section>
           <section class="search-result-group">
@@ -704,7 +721,7 @@
   }
 
   function renderProducts() {
-    setMeta('商品中心', '浏览平台商户发布的棉花种子、肥料、植保、农膜和滴灌材料')
+    setMeta('官方商城', '浏览平台商户发布的棉花种子、肥料、植保、农膜和滴灌材料')
     setActiveNav('products')
 
     const params = new URLSearchParams(location.search)
@@ -713,7 +730,7 @@
     const initialMerchant = params.get('merchant') || ''
 
     main.innerHTML = `
-      ${pageHero('PRODUCT CENTER', '商品中心', '在售商品由平台商户发布，支持按品类和关键词查找。购买前请核对规格、库存、配送和售后信息。', 'products-hero')}
+      ${pageHero('OFFICIAL STORE', '官方商城', '在售商品由平台商户发布，支持按品类和关键词查找。购买前请核对规格、库存、配送和售后信息。', 'products-hero')}
       <section class="section-block">
         <div class="shell">
           <div class="catalog-toolbar">
@@ -793,7 +810,7 @@
             </div>
             ${item.price ? `<div class="purchase-quantity"><span>购买数量</span><div class="quantity-stepper"><button type="button" data-quantity-change="-1" aria-label="减少数量">−</button><input id="productQuantity" type="number" min="1" max="${Math.max(1, Number(item.stock || 999))}" value="1" inputmode="numeric" aria-label="购买数量"><button type="button" data-quantity-change="1" aria-label="增加数量">＋</button></div><small>${Number(item.stock || 0) > 0 ? `库存 ${Number(item.stock)} ${escapeHtml(item.unit || '件')}` : '库存请向商户确认'}</small></div>` : ''}
             <div class="detail-actions product-purchase-actions">
-              ${item.price ? `<button class="button outline" type="button" data-favorite-product="${escapeHtml(item.id)}">收藏商品</button><button class="button cart-button" type="button" data-cart-product="${escapeHtml(item.id)}" data-quantity-source="productQuantity">加入购物车</button><button class="button primary" type="button" data-buy-product="${escapeHtml(item.id)}" data-quantity-source="productQuantity">立即购买</button>` : `<a class="button primary" href="${link(`/contact?product=${item.id}`)}">咨询此品类</a>`}
+              ${item.price ? `<button class="button outline" type="button" data-favorite-product="${escapeHtml(item.id)}">收藏商品</button><button class="button cart-button" type="button" data-cart-product="${escapeHtml(item.id)}" data-quantity-source="productQuantity">加入购物车</button><button class="button primary" type="button" data-buy-product="${escapeHtml(item.id)}" data-quantity-source="productQuantity">立即购买</button>` : `<a class="button primary" href="${protectedBusinessLink(link(`/contact?product=${item.id}`))}">咨询此品类</a>`}
               <a class="button outline" href="${link('/products')}">返回产品列表</a>
             </div>
           </div>
@@ -903,7 +920,7 @@
               <p>${escapeHtml(item.service)}</p>
             </div>
             <div class="detail-actions">
-              <a class="button primary" href="${link(`/contact?machine=${item.id}`)}">咨询此项服务</a>
+              <a class="button primary" href="${protectedBusinessLink(link(`/contact?machine=${item.id}`))}">咨询此项服务</a>
               <a class="button outline" href="${link('/machinery')}">返回服务列表</a>
             </div>
           </div>
@@ -1448,12 +1465,18 @@
   }
 
   function renderContact() {
-    setMeta('商务联系', '联系川月智能商务团队，提交农资、农机、渠道或合作需求')
-    setActiveNav('contact')
-
     const params = new URLSearchParams(window.location.search)
     const productId = params.get('product') || ''
     const machineryId = params.get('machine') || ''
+    if (!localStorage.getItem('knowledge_token')) {
+      const next = `${location.pathname}${location.search}`
+      location.replace(`${businessLink('/login')}?next=${encodeURIComponent(next)}`)
+      return
+    }
+
+    setMeta('商务联系', '联系川月智能商务团队，提交农资、农机、渠道或合作需求')
+    setActiveNav('contact')
+
     const selectedProduct = productById(productId)
     const selectedMachinery = machineryById(machineryId)
     const selectedReference = selectedProduct
@@ -1586,21 +1609,61 @@
   }
 
   async function renderMerchants() {
-    setMeta('入驻商户', '查看平台审核通过的入驻商户、经营品类和联系方式')
+    setMeta('入驻商家', '查看平台已入驻商家的公司简介、经营品类和公开联系方式')
     setActiveNav('merchants')
-    main.innerHTML = `${pageHero('VERIFIED MERCHANTS', '入驻商户', '集中展示审核通过的经营主体、主营品类、服务区域和公开联系方式。', 'merchant-hero')}<section class="section-block"><div class="shell"><div class="loading-panel">正在加载商户信息...</div></div></section>`
+    main.innerHTML = `${pageHero('SETTLED MERCHANTS', '入驻商家', '集中展示已入驻经营主体的公司简介、主营品类和公开联系方式。', 'merchant-hero')}<section class="section-block"><div class="shell"><div class="loading-panel">正在加载商家信息...</div></div></section>`
     try {
       const result = await runtime.requestJson('/api/commerce/merchants')
       const rows = Array.isArray(result.data) ? result.data : []
       main.innerHTML = `
-        ${pageHero('VERIFIED MERCHANTS', '入驻商户', '集中展示审核通过的经营主体、主营品类、服务区域和公开联系方式。', 'merchant-hero')}
+        ${pageHero('SETTLED MERCHANTS', '入驻商家', '集中展示已入驻经营主体的公司简介、主营品类和公开联系方式。', 'merchant-hero')}
         <section class="section-block"><div class="shell">
-          <div class="merchant-page-head"><p>共 ${rows.length} 家审核通过的商户</p><a class="button primary" href="/portal/register.html?role=merchant">申请商户入驻</a></div>
-          ${rows.length ? `<div class="merchant-directory">${rows.map(item => `<article><span class="merchant-avatar">${escapeHtml(item.name.slice(0, 1))}</span><div><small>${escapeHtml(item.category)}</small><h2>${escapeHtml(item.name)}</h2><p>${escapeHtml(item.intro)}</p><dl><div><dt>所在地区</dt><dd>${escapeHtml(item.location)}</dd></div><div><dt>在售商品</dt><dd>${item.productCount} 项</dd></div></dl><div class="merchant-contact">${item.phone ? `<a href="tel:${escapeHtml(item.phone)}">电话：${escapeHtml(item.phone)}</a>` : item.wechat ? `<span>客服微信：${escapeHtml(item.wechat)}</span>` : '<span>联系方式由商户补充</span>'}<a href="${businessLink('/products')}?merchant=${item.id}">查看商品 →</a></div></div></article>`).join('')}</div>` : '<div class="empty-state"><h2>暂无公开商户</h2><p>商户审核通过后将在这里展示。</p></div>'}
+          <div class="merchant-page-head"><p>共 ${rows.length} 家入驻商家</p></div>
+          ${rows.length ? `<div class="settled-merchant-grid merchant-directory-page">${rows.map(merchantProfileCard).join('')}</div>` : '<div class="empty-state"><h2>暂无公开商家</h2><p>商家审核通过后将在这里展示。</p></div>'}
+          <div class="settled-merchant-join compact"><div><span>MERCHANT APPLICATION</span><h2>申请加入官方商城</h2><p>提交经营主体和商品资料，审核通过后即可开设商家主页。</p></div><a class="button primary" href="/portal/register.html?role=merchant">商家入驻 <span aria-hidden="true">→</span></a></div>
         </div></section>`
     } catch (error) {
       main.querySelector('.loading-panel').textContent = error.message
     }
+  }
+
+  async function renderMerchantDetail(id) {
+    setActiveNav('merchants')
+    const merchants = await loadCommerceMerchants()
+    const item = merchants.find(merchant => String(merchant.id) === String(id))
+    if (!item) return renderNotFound()
+    setMeta(item.name, `${item.name}的商家简介、联系方式和在售商品`)
+    const merchantProducts = data.products.filter(product => String(product.merchantId || '') === String(item.id))
+    main.innerHTML = `
+      <section class="merchant-profile-hero">
+        <div class="shell">
+          <nav class="breadcrumbs" aria-label="面包屑"><a href="${businessLink('/')}">首页</a><span>/</span><a href="${businessLink('/merchants')}">入驻商家</a><span>/</span><span>${escapeHtml(item.name)}</span></nav>
+          <div class="merchant-profile-heading">
+            <span class="merchant-profile-mark" aria-hidden="true">${escapeHtml(item.name.slice(0, 1))}</span>
+            <div><span class="merchant-verified">平台入驻商家</span><h1>${escapeHtml(item.name)}</h1><p>${escapeHtml(item.intro)}</p></div>
+          </div>
+        </div>
+      </section>
+      <section class="section-block merchant-profile-section"><div class="shell merchant-profile-layout">
+        <article class="merchant-profile-about">
+          <span class="eyebrow">COMPANY PROFILE</span><h2>商家信息</h2>
+          <p>${escapeHtml(item.intro)}</p>
+          <dl>
+            <div><dt>主营业务</dt><dd>${escapeHtml(item.category)}</dd></div>
+            <div><dt>联系人员</dt><dd>${escapeHtml(item.contactName || '暂未公开')}</dd></div>
+            <div><dt>联系电话</dt><dd>${escapeHtml(item.phone || '暂未公开')}</dd></div>
+            <div><dt>联系邮箱</dt><dd>${escapeHtml(item.email || '暂未公开')}</dd></div>
+            ${item.wechat ? `<div><dt>客服微信</dt><dd>${escapeHtml(item.wechat)}</dd></div>` : ''}
+            <div><dt>服务地区</dt><dd>${escapeHtml(item.location || '由商家确认')}</dd></div>
+            ${item.registeredAddress ? `<div><dt>经营地址</dt><dd>${escapeHtml(item.registeredAddress)}</dd></div>` : ''}
+          </dl>
+        </article>
+        <aside class="merchant-profile-aside"><span>在售商品</span><strong>${Number(item.productCount || merchantProducts.length)}<small> 项</small></strong><p>商品价格、库存、配送及售后信息以商品详情和订单确认页为准。</p><a class="button primary full" href="${businessLink('/products')}?merchant=${encodeURIComponent(item.id)}">查看该商家商品</a></aside>
+      </div></section>
+      <section class="section-block merchant-profile-products"><div class="shell">
+        ${sectionHeading('PRODUCTS', '商家商品', merchantProducts.length ? '查看该商家当前展示的商品。' : '该商家暂未发布公开商品。')}
+        ${merchantProducts.length ? `<div class="product-grid">${merchantProducts.slice(0, 8).map(productCard).join('')}</div>` : '<div class="empty-state compact"><h2>暂无公开商品</h2><p>商品发布后会在这里展示。</p></div>'}
+      </div></section>`
   }
 
   async function renderLocalMarket() {
@@ -1690,7 +1753,7 @@
             <span class="eyebrow">ONE ACCOUNT</span>
             <h2>连接商品与生产服务</h2>
             <p>个人用户与商家使用同一注册入口。个人账号注册后即可使用；商家提交主体资料后，由管理员审核开通。</p>
-            <div><strong>无需登录</strong><span>浏览商品、农机服务、入驻商户和公开供需信息</span></div>
+            <div><strong>无需登录</strong><span>浏览商品、农机服务、官方商城和公开供需信息</span></div>
             <div><strong>注册后</strong><span>个人可管理订单与购物车，审核通过的商家可发布和管理商品</span></div>
           </div>
           <div class="public-auth-card">
@@ -1973,7 +2036,7 @@
       </div>`
 
     const faqItems = [
-      ['商品与订单', '如何查找需要的农资商品？', '进入商品中心后，可按种子、肥料、农药、地膜和滴灌材料筛选，也可以输入商品名称、用途或商户名称搜索。'],
+      ['商品与订单', '如何查找需要的农资商品？', '进入官方商城后，可按种子、肥料、农药、地膜和滴灌材料筛选，也可以输入商品名称、用途或商户名称搜索。'],
       ['商品与订单', '页面价格和库存是否一定有效？', '商品信息由入驻商户维护。农忙期库存、配送和价格可能变化，提交订单前请再次核对确认页和商户反馈。'],
       ['商品与订单', '如何查看订单进度？', '登录后进入“个人中心—我的订单”，可查看订单状态。需要修改收货或处理异常时，请尽早联系订单商户或平台。'],
       ['账号相关', '不登录可以浏览吗？', '可以。公开商品、农机服务、商户和供需信息无需登录；下单、查看个人订单或发布供需信息时需要登录。'],
@@ -2167,9 +2230,9 @@
       serviceLabel.textContent = '服务新疆棉农、商户和农机手'
       nav.innerHTML = `
         <a href="${businessLink('/')}" data-nav="home">首页</a>
-        <a href="${businessLink('/products')}" data-nav="products">商品中心</a>
+        <a href="${businessLink('/products')}" data-nav="products">官方商城</a>
         <a href="${businessLink('/machinery')}" data-nav="machinery">生产服务</a>
-        <a href="${businessLink('/merchants')}" data-nav="merchants">入驻商户</a>
+        <a href="${businessLink('/merchants')}" data-nav="merchants">入驻商家</a>
         <a href="${businessLink('/local')}" data-nav="local">本地商圈</a>
         <a href="${businessLink('/about')}" data-nav="about">关于我们</a>`
       let account = null
@@ -2206,9 +2269,9 @@
         </div>
         <nav class="header-quick-links" aria-label="快捷导航">
           <a href="${businessLink('/')}">首页</a>
-          <a href="${businessLink('/products')}">商品中心</a>
+          <a href="${businessLink('/products')}">官方商城</a>
           <a href="${businessLink('/machinery')}">生产服务</a>
-          <a href="${businessLink('/merchants')}">入驻商户</a>
+          <a href="${businessLink('/merchants')}">入驻商家</a>
           <a href="${businessLink('/about')}">关于我们</a>
         </nav>
         <nav class="header-account-links" aria-label="购物与账户">
@@ -2316,7 +2379,8 @@
   else if (platform === 'business' && pageGroup === 'machinery') renderMachineryDetail(machineryById(pathParts[1]))
   else if (platform === 'business' && pageGroup === 'news' && pathParts.length === 1) renderNews()
   else if (platform === 'business' && pageGroup === 'news') renderNewsDetail(newsById(pathParts[1]))
-  else if (platform === 'business' && pageGroup === 'merchants') renderMerchants()
+  else if (platform === 'business' && pageGroup === 'merchants' && pathParts.length === 1) renderMerchants()
+  else if (platform === 'business' && pageGroup === 'merchants') renderMerchantDetail(pathParts[1])
   else if (platform === 'business' && pageGroup === 'local') renderLocalMarket()
   else if (platform === 'business' && pageGroup === 'activities') renderCommerceActivities()
   else if (platform === 'business' && pageGroup === 'cart') renderCart()

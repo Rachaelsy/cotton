@@ -70,6 +70,7 @@ function platformUrl(req, pathname) {
   }
   return pathname
 }
+app.get('/knowledge/admin.html', (req, res) => res.redirect(302, platformUrl(req, '/admin/dashboard.html?panel=knowledgeContents')))
 app.get('/platform', (req, res) => res.redirect(platformUrl(req, '/admin/login.html')))
 app.get('/platform/admin', (req, res) => res.redirect(platformUrl(req, '/admin/login.html')))
 

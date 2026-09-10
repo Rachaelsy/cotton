@@ -324,7 +324,7 @@ router.post('/admin/login', async (req, res) => {
       token: signAdmin(user),
       real_name: user.real_name || '管理员',
       permission: 'platform_admin',
-      redirect: '/knowledge/admin.html'
+      redirect: '/admin/dashboard.html?panel=knowledgeContents'
     }, '登录成功')
   } catch (error) {
     console.error('[community-admin-login]', error)

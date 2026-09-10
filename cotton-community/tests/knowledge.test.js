@@ -12,9 +12,8 @@ const migration = read('db/migrate.js')
 const siteHtml = read('public/site/index.html')
 const siteApp = read('public/site/app.js')
 const learningJs = read('public/site/learning.js')
-const adminHtml = read('public/knowledge/admin.html')
-const adminJs = read('public/knowledge/admin.js')
 const styles = read('public/knowledge/styles.css')
+const server = read('server.js')
 
 for (const table of [
   'knowledge_contents', 'knowledge_comments', 'knowledge_progress', 'knowledge_favorites',
@@ -44,10 +43,9 @@ assert(learningJs.includes('/api/community-ai/chat'), 'course detail should reta
 assert(route.includes('parent_nickname') && learningJs.includes('parent_id'), 'comments should support replies')
 assert(learningJs.includes('/contents/${id}/progress') && learningJs.includes('/contents/${id}/favorite'), 'learning progress and favorites should survive the integration')
 assert(learningJs.includes('/forum/${id}/answers') && learningJs.includes('/forum/answers/${button.dataset.voteAnswer}/vote'), 'forum answers and voting should survive the integration')
-assert(adminJs.includes('/admin/login.html?role=admin'), 'expired admin sessions should return to unified login')
 assert(!exists('public/knowledge/admin-login.html'), 'obsolete standalone community admin login should be removed')
-assert(adminHtml.includes('/platform/admin'), 'community admin should link back to cotton-app')
-assert(adminHtml.includes('data-view="requests"') && adminJs.includes("api(`/service-requests"), 'community admin should manage business and activity requests')
+assert(!exists('public/knowledge/admin.html') && !exists('public/knowledge/admin.js'), 'standalone website operations console should be removed')
+assert(server.includes("app.get('/knowledge/admin.html'") && server.includes("/admin/dashboard.html?panel=knowledgeContents"), 'old operations URL should redirect to the main admin dashboard')
 assert(route.includes("router.get('/admin/service-requests'") && route.includes("router.patch('/admin/service-requests/:id'"), 'admin API should manage service request status')
 assert(siteRoute.includes("router.get('/public/*', redirectWithQuery('/business/'))"), 'old academy links should no longer expose a public-service website')
 for (const removedPage of [

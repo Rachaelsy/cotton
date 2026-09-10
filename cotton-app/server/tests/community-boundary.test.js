@@ -21,7 +21,7 @@ assert(index.includes("redirectCommunity('/public/')") && index.includes("redire
 assert(index.includes('COMMUNITY_DIRECT_PORT'), 'direct local admin access should redirect from port 3000 to the community port')
 assert(!index.includes("app.use('/knowledge'"), 'cotton-app must not serve community pages')
 assert(!index.includes("app.use('/api/knowledge'"), 'cotton-app must not mount community APIs')
-assert(login.includes('href="/community/public"'), 'platform login should link to public service')
+assert(!login.includes('href="/community/public"'), 'platform login should keep the retired public service entry hidden')
 assert(!login.includes('href="/community/business"'), 'platform login should hide the business-service entrance')
 assert(!login.includes('>商业平台<'), 'platform login should not render a visible business-platform card')
 assert(!dashboard.includes("window.open('/community/public'"), 'admin dashboard should not expose the public platform')

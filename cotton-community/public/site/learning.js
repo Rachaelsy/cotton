@@ -176,7 +176,7 @@
               <h3><a href="${publicLink(`/courses/${item.id}`)}">${escapeHtml(item.title)}</a></h3>
               <p>${escapeHtml(item.subtitle || String(item.content || '').slice(0, 80))}</p>
               <div class="learning-course-foot"><span>${Number(item.viewCount || 0)} 次学习</span><span>${Number(item.commentCount || 0)} 条评论</span><strong>${item.completed ? '已完成' : `完成 +${difficultyRewards[item.difficulty] || 20}积分`}</strong></div>
-              ${state.isAdmin ? `<div class="inline-admin-actions"><a href="/knowledge/admin.html?edit=${item.id}">编辑</a><button type="button" data-course-status="${item.id}" data-status="${escapeHtml(item.status)}">${item.status === 'published' ? '下架' : '上架'}</button></div>` : ''}
+              ${state.isAdmin ? `<div class="inline-admin-actions"><a href="/admin/dashboard.html?panel=knowledgeContents&edit=${item.id}">编辑</a><button type="button" data-course-status="${item.id}" data-status="${escapeHtml(item.status)}">${item.status === 'published' ? '下架' : '上架'}</button></div>` : ''}
             </div>
           </article>`
       }
@@ -210,7 +210,7 @@
                 <div>
                   <a href="${publicLink('/forum')}">棉友问答</a>
                   ${state.token ? `<a href="${publicLink('/login')}">${escapeHtml(state.user?.real_name || '我的账号')}</a>` : `<a href="${loginLink(publicLink('/courses'))}">登录</a><a href="${loginLink(publicLink('/courses'), 'register')}">注册</a>`}
-                  ${state.adminToken ? '<a href="/knowledge/admin.html">内容管理</a>' : ''}
+                  ${state.adminToken ? '<a href="/admin/dashboard.html?panel=knowledgeContents">内容管理</a>' : ''}
                 </div>
               </div>
               <div class="learning-course-grid" id="learningCourseGrid"><div class="loading-panel">正在加载课程...</div></div>
@@ -401,7 +401,7 @@
           setMeta(item.title, item.subtitle || item.content.slice(0, 100))
 
           main.innerHTML = `
-            ${state.isAdmin ? `<div class="public-admin-bar"><div class="shell"><span>管理员预览</span><a href="/knowledge/admin.html?edit=${item.id}">编辑课程</a><a href="/knowledge/admin.html?view=comments&content=${item.id}">管理本课评论</a><button id="toggleCourseStatus" type="button">下架课程</button></div></div>` : ''}
+            ${state.isAdmin ? `<div class="public-admin-bar"><div class="shell"><span>管理员预览</span><a href="/admin/dashboard.html?panel=knowledgeContents&edit=${item.id}">编辑课程</a><a href="/admin/dashboard.html?panel=knowledgeComments&content=${item.id}">管理本课评论</a><button id="toggleCourseStatus" type="button">下架课程</button></div></div>` : ''}
             <article class="integrated-course-page">
               <header class="reading-header course-reading-header">
                 <div class="shell reading-header-inner">
@@ -758,7 +758,7 @@
                   <p>登录后可以发布问题，并在自己的问题下采纳最有帮助的回答。</p>
                   <a class="button primary full" href="${loginLink(publicLink('/forum'))}">登录</a>
                   <a class="button outline full" href="${loginLink(publicLink('/forum'), 'register')}">注册</a>`}
-                ${state.adminToken ? '<a class="forum-admin-link" href="/knowledge/admin.html?view=forum">进入问答管理</a>' : ''}
+                ${state.adminToken ? '<a class="forum-admin-link" href="/admin/dashboard.html?panel=knowledgeForum">进入问答管理</a>' : ''}
                 <div class="forum-guidance"><strong>提问建议</strong><p>写清地区、生育期、分布范围和近期水肥或用药记录，不根据单张照片直接下结论。</p></div>
               </aside>
             </div>
@@ -840,7 +840,7 @@
             const answers = result.answers || []
             setMeta(question.title, question.body.slice(0, 100))
             main.innerHTML = `
-              ${state.isAdmin ? `<div class="public-admin-bar"><div class="shell"><span>管理员预览</span><a href="/knowledge/admin.html?view=forum">问答管理</a><button id="hideForumQuestion" type="button">隐藏问题</button></div></div>` : ''}
+              ${state.isAdmin ? `<div class="public-admin-bar"><div class="shell"><span>管理员预览</span><a href="/admin/dashboard.html?panel=knowledgeForum">问答管理</a><button id="hideForumQuestion" type="button">隐藏问题</button></div></div>` : ''}
               <section class="forum-detail-header">
                 <div class="shell">
                   <nav class="breadcrumbs" aria-label="面包屑"><a href="${publicLink('/')}">公共服务首页</a><span>/</span><a href="${publicLink('/forum')}">棉友问答</a><span>/</span><span>${escapeHtml(question.categoryName)}</span></nav>

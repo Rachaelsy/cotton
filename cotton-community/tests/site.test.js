@@ -13,6 +13,7 @@ const app = read('public/site/app.js')
 const styles = read('public/site/styles.css')
 const dataSource = read('public/site/data.js')
 const commerce = read('routes/commerce.js')
+const publicService = read('routes/public-service.js')
 
 const context = { window: {} }
 vm.runInNewContext(dataSource, context)
@@ -26,7 +27,7 @@ for (const routePath of [
   "'/business'", "'/business/'", "'/business/login'", "'/business/privacy'",
   "'/business/products'", "'/business/products/:id'", "'/business/machinery'",
   "'/business/search'",
-  "'/business/machinery/:id'", "'/business/merchants'", "'/business/local'",
+  "'/business/machinery/:id'", "'/business/merchants'", "'/business/merchants/:id'", "'/business/local'",
   "'/business/activities'", "'/business/cart'", "'/business/favorites'",
   "'/business/account'", "'/business/orders'", "'/business/help'",
   "'/business/about'", "'/business/contact'"
@@ -45,6 +46,11 @@ for (const feature of ['commerce-carousel-slide', 'simple-core-section', 'home-c
 for (const control of ['data-carousel-dot', 'data-carousel-previous', 'data-carousel-next', 'data-campaign-countdown']) {
   assert(app.includes(control), `homepage campaign control is missing: ${control}`)
 }
+assert(app.includes('hero-merchant-button') && app.includes('入驻商家专区') && app.includes("businessLink('/merchants')"), 'homepage banner should link to the settled merchant area')
+assert(app.includes("index === 0 ? `<a class=\"button hero-merchant-button\""), 'merchant-area button should only appear on the first homepage slide')
+assert(styles.includes('.hero-merchant-button'), 'homepage merchant-area button should be styled')
+const merchantButtonStyles = styles.slice(styles.indexOf('.commerce-carousel-slide .hero-actions .hero-merchant-button'), styles.indexOf('.commerce-carousel-slide .hero-actions .hero-merchant-button:hover'))
+assert(merchantButtonStyles.includes('border-color: transparent') && !merchantButtonStyles.includes('rgba(255, 255, 255'), 'merchant-area button should not use a white outline')
 assert(app.includes('setInterval(() => showSlide(activeSlide + 1), 6000)'), 'homepage carousel should rotate automatically')
 assert(styles.includes('.commerce-carousel-footer.shell') && styles.includes('left: 22px') && styles.includes('right: 22px'), 'homepage carousel arrows should align to the banner edges')
 assert(app.includes('promotionEndsAt: row.promotion_ends_at') && app.includes('item.hasPromotion'), 'homepage campaigns should use approved active product promotions')
@@ -66,7 +72,7 @@ assert(app.includes("businessLink('/search')") && app.includes("pageGroup === 's
 for (const block of ['simple-about-company', 'simple-about-contact', 'simple-about-message']) {
   assert(app.includes(block) && styles.includes(`.${block}`), `about page block is incomplete: ${block}`)
 }
-assert(app.includes('<strong>进入商品中心</strong>') && app.includes('<strong>查看生产服务</strong>'), 'core business links should use a separated action layout')
+assert(app.includes('<strong>进入官方商城</strong>') && app.includes('<strong>查看生产服务</strong>'), 'core business links should use a separated action layout')
 assert(styles.includes('.simple-core-grid article > a') && styles.includes('margin: 30px -42px 0'), 'core business actions should have deliberate spacing from the feature list')
 assert(app.includes('公司简介') && app.includes('联系我们') && app.includes('在线留言'), 'about page should stay focused on company, contact and message content')
 assert(app.includes('陆家嘴环路958号') && app.includes('021-66286003') && app.includes('lijiale@cyaia.cn'), 'about page contact details are incomplete')
@@ -142,6 +148,9 @@ assert(app.includes('<button class="button primary full" type="submit">登录</b
 assert(app.includes('id="productQuantity"') && app.includes('data-quantity-change'), 'product detail should provide quantity selection')
 assert(app.includes('data-buy-product') && app.includes('立即购买'), 'product detail should provide buy-now action')
 assert(app.includes("if (!localStorage.getItem('knowledge_token'))") && app.includes('请先登录后再加入购物车'), 'adding to cart should require login')
+assert(app.includes('protectedBusinessLink(link(`/contact?machine=${item.id}`))'), 'service consultation should redirect guests to login')
+assert(app.includes('protectedBusinessLink(link(`/contact?product=${item.id}`))'), 'product consultation should redirect guests to login')
+assert(publicService.includes("router.post('/business-inquiries', consultationAuth"), 'consultation API should enforce authentication')
 assert(styles.includes('.quantity-stepper') && styles.includes('.product-purchase-actions'), 'product purchase controls should be styled')
 assert(!dataSource.includes('不提供线上交易') && !app.includes('不提供线上交易'), 'ecommerce pages must not claim that online transactions are unavailable')
 for (const text of ['在线下单', '订单确认页', '商品价']) {
@@ -153,9 +162,23 @@ for (const category of ['land', 'planting', 'protection', 'harvest', 'transport'
 
 assert(app.includes('/api/products') && app.includes('/api/commerce/merchants') && app.includes('/api/commerce/listings'), 'ecommerce pages should read database-backed data')
 assert(commerce.includes("router.get('/merchants'") && commerce.includes("router.get('/listings'") && commerce.includes("router.post('/listings'"), 'commerce API should support merchant and local-market pages')
+assert(app.includes('data-nav="products">官方商城</a>') && app.includes('data-nav="merchants">入驻商家</a>'), 'header should separate the official store and settled merchant directory')
+assert(!app.includes('data-nav="store">官方商城</a>'), 'header should not repeat the official store link')
+assert(app.includes("setMeta('入驻商家'") && app.includes("pageHero('SETTLED MERCHANTS', '入驻商家'"), 'merchant directory should be presented as the settled merchant page')
 assert(shell.includes('/portal/register.html?role=merchant') && shell.includes('商户入驻'), 'merchant registration should remain available')
 assert(shell.includes('/assets/chuanyue-logo.png') && !shell.includes('<span class="brand-mark">棉</span>'), 'header should use the ChuanYue logo instead of the text mark')
-assert(app.includes('merchant-recruit-panel') && app.includes('申请商户入驻') && app.includes('填写资料') && app.includes('平台审核') && app.includes('发布商品'), 'home merchant recruitment should provide a clear application action and process')
+for (const merchantFeature of ['settled-merchants-section', 'settled-merchant-grid', 'merchantProfileCard', '进入商家主页', '商家入驻']) {
+  assert(app.includes(merchantFeature), `home settled merchant section is missing: ${merchantFeature}`)
+}
+assert(!app.includes('<section class="section-block official-store-section">'), 'homepage should not repeat a standalone official store banner')
+assert(app.includes('>进入官方商城</a>`)}'), 'selected products should link to the official store')
+assert(app.includes('async function renderMerchantDetail') && styles.includes('.merchant-profile-hero'), 'merchant profile page should be available')
+for (const merchantName of ['苏州川月', '川月农业', '美国杜邦']) {
+  assert(commerce.includes(merchantName), `featured merchant is missing: ${merchantName}`)
+}
+for (const field of ['contactName', 'phone', 'email', 'intro']) {
+  assert(commerce.includes(field), `merchant public profile field is missing: ${field}`)
+}
 assert(shell.includes('沪ICP备2026040489号-1'), 'ICP filing number should remain in the footer')
 assert(shell.includes('© 2026 上海川月信息科技有限公司 版权所有'), 'footer should show the legal company copyright owner')
 assert(['公司简介', '业务范围', '帮助中心', '联系方式'].every((item) => shell.includes(item)), 'footer should provide the four requested information columns')
