@@ -27,7 +27,7 @@ for (const routePath of [
   "'/business'", "'/business/'", "'/business/login'", "'/business/privacy'",
   "'/business/products'", "'/business/products/:id'", "'/business/machinery'",
   "'/business/search'",
-  "'/business/machinery/:id'", "'/business/merchants'", "'/business/merchants/:id'", "'/business/local'",
+  "'/business/machinery/:id'", "'/business/merchants'", "'/business/merchants/:id'", "'/business/academy'", "'/business/academy/:id'", "'/business/local'",
   "'/business/activities'", "'/business/cart'", "'/business/favorites'",
   "'/business/account'", "'/business/orders'", "'/business/help'",
   "'/business/about'", "'/business/contact'"
@@ -125,25 +125,64 @@ for (const category of ['seed', 'fertilizer', 'pesticide', 'film', 'irrigation']
   assert(data.products.some(product => product.category === category), `missing product category ${category}`)
 }
 for (const product of data.products) {
-  assert(product.name && Number(product.price) > 0 && product.unit, `catalog product should include name, price and unit: ${product.id}`)
+  assert(product.name && (Number(product.price) > 0 || product.pricePending) && product.unit, `catalog product should include name, price status and unit: ${product.id}`)
+  assert(product.merchantId && product.merchantName, `catalog product should be assigned to a merchant: ${product.id}`)
+}
+const featuredMerchantIds = [
+  'demo-xinjiang-chuanyue',
+  'demo-guizhou-guolin-tianhua',
+  'demo-xinjiang-wanxiangle',
+  'dupont-shandong-agriculture'
+]
+for (const merchantId of featuredMerchantIds) {
+  const expectedCount = merchantId === 'demo-guizhou-guolin-tianhua' ? 7 : merchantId === 'dupont-shandong-agriculture' ? 6 : merchantId === 'demo-xinjiang-chuanyue' ? 5 : 3
+  assert(data.products.filter(product => product.merchantId === merchantId).length === expectedCount, `merchant catalog product count is incorrect: ${merchantId}`)
 }
 assert(new Set(data.products.map(product => product.visual)).size === data.products.length, 'each catalog product should use a distinct generated visual')
 for (const asset of ['product-catalog-a-v2.jpg', 'product-catalog-b-v2.jpg', 'product-catalog-c-v2.jpg', 'product-catalog-d-v2.jpg']) {
   assert(styles.includes(`/assets/${asset}`), `generated product catalog asset is not connected: ${asset}`)
   assert(fs.existsSync(path.join(root, 'public', 'assets', asset)), `generated product catalog asset is missing: ${asset}`)
 }
-for (const name of ['塔河2号包衣棉种', '18-18-18', '70%吡虫啉', '0.010mm', '16mm×1000m']) {
+for (const asset of ['guolin-zi-qi-dong-lai-clean.png', 'guolin-zi-qi-dong-lai-5-9-38-clean.png', 'guolin-mei-dang-jia-clean.png', 'guolin-mei-dang-jia-8-35-12-clean.png', 'guolin-lei-bo-shi-clean.png', 'guolin-youmian-shiliujin-clean.png', 'guolin-medium-elements-clean.png']) {
+  assert(fs.existsSync(path.join(root, 'public', 'assets', asset)), `brochure product image is missing: ${asset}`)
+  assert(data.products.some(product => product.image === `/assets/${asset}`), `brochure product image is not connected: ${asset}`)
+}
+for (const asset of ['dupont-leaf-vitality-1kg.jpg', 'dupont-water-soluble-11-9-36.jpg', 'dupont-microalgae-amino-acids.jpg', 'dupont-polypeptide-fish-protein.jpg', 'dupont-water-soluble-10-40-10.jpg', 'dupont-nengduojian-20kg.jpg']) {
+  assert(fs.existsSync(path.join(root, 'public', 'assets', asset)), `Dupont product image is missing: ${asset}`)
+  assert(data.products.some(product => product.image === `/assets/${asset}`), `Dupont product image is not connected: ${asset}`)
+}
+for (const asset of ['chuanyue-tahe-2-seed-v2.png', 'chuanyue-xinluzhong-61-seed.png', 'chuanyue-yuanmian-8-seed.png', 'chuanyue-xinluzhong-66-seed.png', 'chuanyue-yellow-sticky-trap.png', 'wanxiangle-mulch-film-v2.png', 'wanxiangle-drip-tape-v2.png', 'wanxiangle-pe-main-pipe-v2.png']) {
+  assert(fs.existsSync(path.join(root, 'public', 'assets', asset)), `merchant product image is missing: ${asset}`)
+  assert(data.products.some(product => product.image === `/assets/${asset}`), `merchant product image is not connected: ${asset}`)
+}
+for (const name of ['塔河2号包衣棉种', '紫气东来', '美当家', '蕾博士', '优棉十六金', '中量元素水溶肥料', '叶面生命素', '0.010mm', '16mm×1000m']) {
   assert(dataSource.includes(name), `catalog should include common cotton production product: ${name}`)
 }
-for (const name of ['新陆中61号包衣棉种', '农业用尿素 46%', '磷酸二铵 64%', '棉田诱虫黄板', 'PE滴灌主管', '滴灌旁通阀']) {
+for (const name of ['新陆中61号包衣棉种', '源棉8号包衣棉种', '新陆中66号包衣棉种', '棉田诱虫黄板', 'PE滴灌主管', '微藻氨基酸', '多肽鱼蛋白', '能多健']) {
   assert(dataSource.includes(name), `expanded catalog should include Kashgar cotton-production product: ${name}`)
 }
+for (const brochureProduct of ['10-33-13+TE', '5-9-38+TE', '8-35-12+TE', '5-10-36+TE', '微量元素总量']) {
+  assert(dataSource.includes(brochureProduct), `Guolin Tianhua brochure product details are missing: ${brochureProduct}`)
+}
+for (const [productId, expectedPrice] of [['balanced-cotton-fertilizer', 150], ['ziqi-high-potassium-5-9-38', 115], ['meidangjia-high-phosphorus-8-35-12', 142.5], ['seedling-water-soluble-fertilizer', 102.5], ['leiboshi-youmian-shiliujin', 45], ['diammonium-phosphate-64', 40], ['leiboshi-medium-element-fertilizer', 72]]) {
+  assert(data.products.find(product => product.id === productId)?.price === expectedPrice, `converted brochure price is incorrect: ${productId}`)
+}
+for (const [productId, expectedPrice] of [['dupont-leaf-vitality-1kg', 50], ['dupont-water-soluble-11-9-36', 140], ['dupont-microalgae-amino-acids-500ml', 40], ['dupont-polypeptide-fish-protein-10kg', 260], ['dupont-water-soluble-10-40-10', 140], ['dupont-nengduojian-20kg', 220]]) {
+  const product = data.products.find(item => item.id === productId)
+  assert(product?.price === expectedPrice && !product.priceEstimated, `Dupont confirmed product price is incorrect: ${productId}`)
+}
+for (const [productId, expectedPrice] of [['yuanmian-8-cotton-seed', 640], ['xinluzhong-66-cotton-seed', 600]]) {
+  const product = data.products.find(item => item.id === productId)
+  assert(product?.price === expectedPrice && product.priceEstimated && !product.pricePending, `estimated cotton seed price is incorrect: ${productId}`)
+}
+assert(!data.products.some(product => product.pricePending), 'official mall should not contain products with pending prices')
 const productCardSource = app.slice(app.indexOf('function productCard'), app.indexOf('function machineryCard'))
 assert(productCardSource.includes('product-card-cart') && productCardSource.includes('data-cart-product'), 'product card should place the cart action over the image')
 for (const removedCardContent of ['item-category', 'summary', 'tag-row', 'data-favorite-product', 'commerce-card-actions']) {
   assert(!productCardSource.includes(removedCardContent), `product card should not display ${removedCardContent}`)
 }
 assert(styles.includes('.product-card-cart') && styles.includes('.product-card-media'), 'product card cart overlay styles are missing')
+assert(app.includes('价格待商家确认') && styles.includes('.commerce-price.pending'), 'products without confirmed prices should show a clear pending-price state')
 assert(app.includes('<button class="button primary full" type="submit">登录</button>') && !app.includes('type="submit">登录川月智能</button>'), 'commerce login submit button should read 登录')
 assert(app.includes('id="productQuantity"') && app.includes('data-quantity-change'), 'product detail should provide quantity selection')
 assert(app.includes('data-buy-product') && app.includes('立即购买'), 'product detail should provide buy-now action')
@@ -164,7 +203,17 @@ assert(app.includes('/api/products') && app.includes('/api/commerce/merchants') 
 assert(commerce.includes("router.get('/merchants'") && commerce.includes("router.get('/listings'") && commerce.includes("router.post('/listings'"), 'commerce API should support merchant and local-market pages')
 assert(app.includes('data-nav="products">官方商城</a>') && app.includes('data-nav="merchants">入驻商家</a>'), 'header should separate the official store and settled merchant directory')
 assert(!app.includes('data-nav="store">官方商城</a>'), 'header should not repeat the official store link')
-assert(app.includes("setMeta('入驻商家'") && app.includes("pageHero('SETTLED MERCHANTS', '入驻商家'"), 'merchant directory should be presented as the settled merchant page')
+assert(app.includes(`<a href="${'${link(\'/products\')}'}">官方商城</a>`) && app.includes('返回官方商城'), 'product detail breadcrumb and return action should use official store naming')
+assert(!app.includes('>农资产品</a>') && !app.includes('浏览农资产品') && !app.includes('返回产品列表'), 'store entry labels should not use stale product-center naming')
+assert(app.includes("setMeta('入驻商家'") && app.includes("pageHero('MERCHANT DIRECTORY', '入驻商家'"), 'merchant directory should be presented as the merchant directory page')
+assert(app.includes('data-nav="academy">优棉学堂</a>') && app.includes("pageGroup === 'academy'"), 'header should link to Youmian Academy')
+for (const academyFeature of ['academy-path-section', 'academy-tutorial-section', 'academy-guidance-band']) {
+  assert(app.includes(academyFeature) && styles.includes(`.${academyFeature}`), `Youmian Academy feature is missing: ${academyFeature}`)
+}
+assert(app.includes('棉花种植图文教程'), 'Youmian Academy should present its illustrated tutorial section')
+assert(data.training.length >= 6 && new Set(data.training.map(item => item.image)).size === data.training.length, 'Youmian Academy should provide distinct illustrated cotton tutorials')
+assert(data.training.every(item => item.source && item.sourceUrl && item.sections.length && item.checklist.length), 'each tutorial should include sources, illustrated content and a field checklist')
+assert(!app.includes('相关商业资料') && !app.includes('CONNECTED PRODUCTS'), 'Youmian Academy should not contain commercial product recommendations')
 assert(shell.includes('/portal/register.html?role=merchant') && shell.includes('商户入驻'), 'merchant registration should remain available')
 assert(shell.includes('/assets/chuanyue-logo.png') && !shell.includes('<span class="brand-mark">棉</span>'), 'header should use the ChuanYue logo instead of the text mark')
 for (const merchantFeature of ['settled-merchants-section', 'settled-merchant-grid', 'merchantProfileCard', '进入商家主页', '商家入驻']) {
@@ -172,9 +221,39 @@ for (const merchantFeature of ['settled-merchants-section', 'settled-merchant-gr
 }
 assert(!app.includes('<section class="section-block official-store-section">'), 'homepage should not repeat a standalone official store banner')
 assert(app.includes('>进入官方商城</a>`)}'), 'selected products should link to the official store')
-assert(app.includes('async function renderMerchantDetail') && styles.includes('.merchant-profile-hero'), 'merchant profile page should be available')
-for (const merchantName of ['苏州川月', '川月农业', '美国杜邦']) {
+const merchantDetailSource = app.slice(app.indexOf('async function renderMerchantDetail'), app.indexOf('async function renderLocalMarket'))
+assert(merchantDetailSource.includes('merchant-store-hero') && merchantDetailSource.includes('merchant-store-grid'), 'merchant storefront page should be available')
+assert(merchantDetailSource.includes('merchantProducts.map(productCard)') && !merchantDetailSource.includes('merchant-profile-about'), 'merchant storefront should focus on the assigned product catalog instead of the company profile')
+assert(styles.includes('.merchant-store-hero') && styles.includes('.merchant-store-products'), 'merchant storefront layout styles are missing')
+for (const merchantName of ['新疆川月农业科技有限公司', '贵州国磷天化化工（集团）有限公司', '新疆万祥乐农资有限公司', '杜邦(山东)农业科技有限公司']) {
   assert(commerce.includes(merchantName), `featured merchant is missing: ${merchantName}`)
+}
+for (const removedMerchantName of ['喀什爱洋农资有限公司', '喀什众友农资销售有限公司']) {
+  assert(!commerce.includes(removedMerchantName) && !dataSource.includes(removedMerchantName), `removed merchant should not remain: ${removedMerchantName}`)
+}
+assert(!commerce.includes('演示字段（不可联系）'), 'confirmed merchant contacts should remain public')
+for (const merchantContact of ['奴尔艾力', '13899188660', '梁枫', '18999702088', '唐继军', '18701971977', '周建防', '15305382000']) {
+  assert(commerce.includes(merchantContact), `merchant authorized contact is missing: ${merchantContact}`)
+}
+assert(commerce.includes("name: '新疆川月农业科技有限公司'") && commerce.includes("contactName: '唐继军'\n    phone: '18701971977'".replace("'\n", "',\n")), 'Xinjiang ChuanYue contact mapping is incorrect')
+assert(commerce.includes("name: '新疆万祥乐农资有限公司'") && commerce.includes("contactName: '奴尔艾力'\n    phone: '13899188660'".replace("'\n", "',\n")), 'Xinjiang Wanxiangle contact mapping is incorrect')
+assert(commerce.includes("name: '贵州国磷天化化工（集团）有限公司'") && commerce.includes("contactName: '梁枫'\n    phone: '18999702088'".replace("'\n", "',\n")), 'Guizhou Guolin Tianhua contact mapping is incorrect')
+assert(commerce.includes("name: '杜邦(山东)农业科技有限公司'") && commerce.includes("contactName: '周建防'\n    phone: '15305382000'".replace("'\n", "',\n")), 'Dupont Shandong contact mapping is incorrect')
+assert(app.includes('浏览已确认合作商家和经营品类资料'), 'merchant directory should describe the confirmed partner list')
+for (const realMerchantId of ['demo-xinjiang-chuanyue', 'demo-guizhou-guolin-tianhua', 'demo-xinjiang-wanxiangle', 'dupont-shandong-agriculture']) {
+  const start = commerce.indexOf(`id: '${realMerchantId}'`)
+  const record = commerce.slice(start, commerce.indexOf('\n  },', start))
+  assert(record.includes('demo: false'), `confirmed merchant should not be marked as demonstration data: ${realMerchantId}`)
+}
+for (const merchantIntro of ['专注于智慧棉花生产管理', '围绕农业肥料和生产投入品开展业务', '面向莎车县及周边农业生产经营者', '围绕农业种植中的养分补充与土壤管理需求']) {
+  assert(commerce.includes(merchantIntro), `merchant company profile is missing: ${merchantIntro}`)
+}
+assert(!commerce.includes('本条用于演示') && !commerce.includes('本页面仅演示商家资料展示能力'), 'company profiles should not contain interface demonstration filler copy')
+assert(styles.includes('.settled-merchant-card .merchant-card-heading{min-height:76px') && styles.includes('.settled-merchant-card>p{min-height:120px'), 'merchant card headings and profile separators should align')
+assert(styles.includes('grid-template-rows:52px 52px 94px') && styles.includes('.merchant-card-details>div:last-child{align-items:start'), 'merchant contact, phone and address divider rows should align')
+assert(!app.includes('<div><small>${escapeHtml(item.category)}</small><h3>'), 'merchant cards should not show the small category label above the company name')
+for (const merchantAddress of ['绿地八方城B-3-2013号商铺', '贵阳世纪城X组团1-5栋', '米卡姆北路426号', '山东省菏泽市北部经济开发区衡山路7号']) {
+  assert(commerce.includes(merchantAddress), `merchant supplied address is missing: ${merchantAddress}`)
 }
 for (const field of ['contactName', 'phone', 'email', 'intro']) {
   assert(commerce.includes(field), `merchant public profile field is missing: ${field}`)

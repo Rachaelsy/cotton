@@ -273,6 +273,156 @@
   }
 }
 
+/* 商家主页：以店铺商品为核心，保留演示数据的清晰边界。 */
+.merchant-store-hero {
+  padding: 0;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, .12), transparent 28%),
+    linear-gradient(118deg, #0b3b2a 0%, #126047 62%, #1b7557 100%);
+}
+
+.merchant-store-hero-inner {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  min-height: 250px;
+  padding-top: 48px;
+  padding-bottom: 48px;
+}
+
+.merchant-store-mark {
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  flex: 0 0 104px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+
+.merchant-store-mark svg {
+  width: 46px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.merchant-store-copy {
+  min-width: 0;
+}
+
+.merchant-store-status {
+  display: inline-flex;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #e7fff4;
+  background: rgba(255, 255, 255, .12);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.merchant-store-status.demo {
+  color: #573600;
+  background: #ffdfa0;
+}
+
+.merchant-store-copy h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(30px, 3.2vw, 43px);
+  line-height: 1.25;
+}
+
+.merchant-store-copy > p {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, .78);
+  font-size: 16px;
+}
+
+.merchant-store-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 20px;
+  color: rgba(255, 255, 255, .92);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.merchant-store-benefits span::before {
+  content: '✓';
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 7px;
+  border-radius: 50%;
+  color: #15543e;
+  background: #fff;
+  font-size: 12px;
+}
+
+.merchant-store-products {
+  min-height: 430px;
+  padding-top: 62px;
+  background: #f5f7f6;
+}
+
+.merchant-store-products .section-heading {
+  justify-content: center;
+  margin-bottom: 26px;
+  text-align: center;
+}
+
+.merchant-store-products .section-heading p {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.merchant-store-products .merchant-demo-notice {
+  max-width: 940px;
+  margin-right: auto;
+  margin-bottom: 30px;
+  margin-left: auto;
+}
+
+.merchant-store-grid {
+  align-items: stretch;
+}
+
+@media (max-width: 680px) {
+  .merchant-store-hero-inner {
+    align-items: flex-start;
+    gap: 20px;
+    min-height: 0;
+    padding-top: 38px;
+    padding-bottom: 40px;
+  }
+
+  .merchant-store-mark {
+    width: 70px;
+    height: 70px;
+    flex-basis: 70px;
+  }
+
+  .merchant-store-mark svg {
+    width: 32px;
+  }
+
+  .merchant-store-benefits {
+    gap: 9px 14px;
+  }
+
+  .merchant-store-products {
+    padding-top: 46px;
+  }
+}
+
 /* 2026 ICP commerce website refresh */
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 .service-utilities>a{color:inherit;text-decoration:none}
@@ -308,6 +458,12 @@
 
 @media (max-width:1020px){.settled-merchant-grid,.merchant-directory-page{grid-template-columns:repeat(2,minmax(0,1fr))}.merchant-profile-layout{grid-template-columns:1fr}.merchant-profile-aside{position:static}}
 @media (max-width:680px){.official-store-entry,.settled-merchant-join{align-items:flex-start;flex-direction:column;padding:27px 24px}.official-store-entry .button,.settled-merchant-join .button{width:100%}.settled-merchants-section{padding-top:44px}.settled-merchant-grid,.merchant-directory-page{grid-template-columns:1fr}.settled-merchant-card{min-height:0;padding:24px}.settled-merchant-card>p{min-height:0}.merchant-profile-hero{padding:42px 0 48px}.merchant-profile-heading{align-items:flex-start;flex-direction:column}.merchant-profile-mark{width:70px;height:70px;flex-basis:70px;font-size:30px}.merchant-profile-heading h1{font-size:34px}.merchant-profile-about,.merchant-profile-aside{padding:25px}.merchant-profile-about dl>div{grid-template-columns:1fr;gap:5px}}
+
+.merchant-demo-notice{display:flex;align-items:flex-start;gap:16px;margin:0 0 26px;padding:17px 20px;border:1px solid #e7bd73;border-left:4px solid #c47b16;border-radius:10px;color:#70470f;background:#fff8e9;line-height:1.65}.merchant-demo-notice strong{flex:0 0 auto;color:#9a5e0b}.merchant-demo-notice.prominent{margin-bottom:18px}.merchant-demo-notice.compact{display:grid;gap:5px;margin:18px 0 22px}.merchant-demo-badge{align-self:flex-start;margin-top:18px;padding:6px 10px;border-radius:999px;color:#945a0b;background:#fff3d8;font-size:12px;font-weight:800}.merchant-verified.demo{padding:5px 9px;border-radius:999px;color:#754405;background:#fff0cd}.merchant-profile-aside .merchant-demo-status{margin:14px 0 18px;color:#b26e10;font-size:42px}.settled-merchant-card:has(.merchant-demo-badge){border-color:#ead4ae}
+
+.settled-merchant-card{padding:28px}.settled-merchant-card .merchant-card-heading{min-height:76px;align-items:center}.settled-merchant-card .merchant-card-heading h3{margin:0;font-size:20px;line-height:1.45}.settled-merchant-card .merchant-card-mark{width:52px;height:52px;flex-basis:52px;margin:0;border-radius:12px;font-size:22px}.settled-merchant-card .merchant-demo-badge{margin-top:8px}.settled-merchant-card>p{min-height:120px;margin:18px 0;color:#526a60;line-height:1.8}.settled-merchant-card .merchant-card-details{width:100%;grid-template-rows:52px 52px 94px}.settled-merchant-card .merchant-card-details>div{min-height:0;align-items:center;padding-top:8px;padding-bottom:8px}.settled-merchant-card .merchant-card-details>div:last-child{align-items:start;padding-top:13px}.settled-merchant-card .merchant-profile-link{padding-top:2px}
+
+@media (max-width:680px){.merchant-demo-notice{display:grid;gap:5px}.settled-merchant-card .merchant-card-heading{min-height:0}.settled-merchant-card>p{min-height:0}.settled-merchant-card .merchant-card-details{grid-template-rows:auto}.settled-merchant-card .merchant-card-details>div{min-height:52px}.settled-merchant-card .merchant-card-details>div:last-child{min-height:0}}
 
 /* 旧版商户招募样式保留给历史页面。 */
 .simple-merchants-section {
@@ -3141,6 +3297,121 @@ a {
   margin-bottom: 30px;
 }
 
+.page-hero.youmian-academy-hero::before {
+  background: linear-gradient(90deg, rgba(5, 38, 27, .88) 0%, rgba(5, 38, 27, .61) 52%, rgba(5, 38, 27, .2) 100%);
+}
+
+.academy-path-section {
+  padding: 46px 0;
+  color: #fff;
+  background: var(--green-950);
+}
+
+.academy-path-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, .7fr) minmax(0, 1.5fr);
+  align-items: center;
+  gap: 56px;
+}
+
+.academy-path-layout .eyebrow {
+  color: #efbd61;
+}
+
+.academy-path-layout h2 {
+  margin: 8px 0 9px;
+  color: #fff;
+  font-size: 28px;
+}
+
+.academy-path-layout p {
+  margin: 0;
+  color: rgba(255, 255, 255, .7);
+  line-height: 1.75;
+}
+
+.academy-path-layout ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.academy-path-layout li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 13px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .055);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.academy-path-layout li span {
+  color: #efbd61;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.academy-tutorial-section {
+  background: #f4f7f5;
+}
+
+.academy-tutorial-section .article-card {
+  border: 1px solid #dce6e0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(18, 63, 44, .055);
+}
+
+.academy-guidance-band {
+  padding: 32px 0;
+  border-top: 1px solid #d7e2dc;
+  color: #fff;
+  background: #15583f;
+}
+
+.academy-guidance-band .shell {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.academy-guidance-band strong {
+  color: #efbd61;
+}
+
+.academy-guidance-band p {
+  margin: 0;
+  color: rgba(255, 255, 255, .78);
+  line-height: 1.75;
+}
+
+@media (max-width: 900px) {
+  .academy-path-layout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+@media (max-width: 620px) {
+  .academy-path-layout ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .academy-guidance-band .shell {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+}
+
 .reading-header {
   padding: 65px 0 120px;
   color: #fff;
@@ -3642,10 +3913,6 @@ body[data-platform="business"] .main-nav .platform-switch-link {
 .cross-platform-inner p {
   margin: 0;
   color: rgba(255, 255, 255, 0.8);
-}
-
-.connected-content-section {
-  background: #f3f7f4;
 }
 
 .consultation-layout {
@@ -8182,6 +8449,27 @@ body[data-platform="business"] .main-nav {
   .header-account-menu > div a span {
     display: inline;
   }
+}
+
+.merchant-profile-hero.merchant-store-hero {
+  padding: 0;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, .12), transparent 28%),
+    linear-gradient(118deg, #0b3b2a 0%, #126047 62%, #1b7557 100%);
+}
+
+.commerce-price.pending strong {
+  color: #536b61;
+  font-size: 16px;
+}
+
+.commerce-detail-price.pending strong {
+  color: #385448;
+  font-size: 24px;
+}
+
+.product-photo.contain img {
+  object-fit: contain;
 }
 
 /* 川月智能品牌 Logo：图片本身留白较多，适度放大图形以保持导航栏辨识度。 */

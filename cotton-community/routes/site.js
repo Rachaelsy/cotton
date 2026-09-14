@@ -26,6 +26,8 @@ for (const route of [
   '/business/news/:id',
   '/business/merchants',
   '/business/merchants/:id',
+  '/business/academy',
+  '/business/academy/:id',
   '/business/local',
   '/business/activities',
   '/business/cart',

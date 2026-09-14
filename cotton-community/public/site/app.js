@@ -166,7 +166,11 @@
     if (commerceMerchantsCache) return commerceMerchantsCache
     try {
       const result = await runtime.requestJson('/api/commerce/merchants')
-      commerceMerchantsCache = Array.isArray(result.data) ? result.data : []
+      const rows = Array.isArray(result.data) ? result.data : []
+      commerceMerchantsCache = rows.map(item => {
+        const assignedCount = data.products.filter(product => String(product.merchantId || '') === String(item.id)).length
+        return { ...item, productCount: assignedCount || Number(item.productCount || 0) }
+      })
     } catch {
       commerceMerchantsCache = []
     }
@@ -196,7 +200,7 @@
   }
 
   function productVisual(item, extraClass = '') {
-    if (item.image) return `<div class="product-photo ${extraClass}"><img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" loading="lazy"></div>`
+    if (item.image) return `<div class="product-photo ${item.imageFit === 'contain' ? 'contain' : ''} ${extraClass}"><img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" loading="lazy"></div>`
     return `<div class="product-visual visual-${escapeHtml(item.visual)} ${extraClass}" role="img" aria-label="${escapeHtml(item.name)}产品示意图"></div>`
   }
 
@@ -211,7 +215,7 @@
         </div>
         <div class="product-card-body">
           <h3><a href="${businessLink(`/products/${item.id}`)}">${escapeHtml(item.name)}</a></h3>
-          ${item.price ? `<div class="commerce-price"><strong>¥${Number(item.price).toFixed(2)}</strong><span>/${escapeHtml(item.unit || '件')}</span>${item.originalPrice > item.price ? `<del>¥${Number(item.originalPrice).toFixed(2)}</del>` : ''}</div>` : ''}
+          ${item.price ? `<div class="commerce-price"><strong>¥${Number(item.price).toFixed(2)}</strong><span>${item.priceEstimated ? '参考价 · ' : ''}/${escapeHtml(item.unit || '件')}</span>${item.originalPrice > item.price ? `<del>¥${Number(item.originalPrice).toFixed(2)}</del>` : ''}</div>` : item.pricePending ? '<div class="commerce-price pending"><strong>价格待商家确认</strong></div>' : ''}
         </div>
       </article>`
   }
@@ -222,12 +226,14 @@
       <article class="settled-merchant-card">
         <div class="merchant-card-heading">
           <span class="merchant-card-mark" aria-hidden="true">${escapeHtml(item.name.slice(0, 1))}</span>
-          <div><small>${escapeHtml(item.category)}</small><h3>${escapeHtml(item.name)}</h3></div>
+          <h3>${escapeHtml(item.name)}</h3>
         </div>
+        ${item.demo ? '<div class="merchant-demo-badge">演示数据 · 非真实入驻</div>' : ''}
         <p>${escapeHtml(item.intro)}</p>
         <dl class="merchant-card-details">
           <div><dt>联系人员</dt><dd>${escapeHtml(item.contactName || '暂未公开')}</dd></div>
           <div><dt>联系方式</dt><dd>${escapeHtml(contact || '暂未公开')}</dd></div>
+          <div><dt>企业地址</dt><dd>${escapeHtml(item.registeredAddress || item.location || '暂未公开')}</dd></div>
         </dl>
         <a class="merchant-profile-link" href="${businessLink(`/merchants/${item.id}`)}">进入商家主页 <span aria-hidden="true">→</span></a>
       </article>`
@@ -255,17 +261,20 @@
   }
 
   function trainingCard(item) {
+    const trainingHref = platform === 'business'
+      ? businessLink(`/academy/${item.id}`)
+      : publicLink(`/training/${item.id}`)
     return `
       <article class="article-card">
-        <a class="article-image" href="${publicLink(`/training/${item.id}`)}">
+        <a class="article-image" href="${trainingHref}">
           <img src="${item.image}" alt="${escapeHtml(item.title)}" loading="lazy">
           <span>${escapeHtml(item.categoryName)}</span>
         </a>
         <div class="article-card-body">
           <div class="article-meta"><span>${escapeHtml(item.categoryName)}</span><span>${escapeHtml(item.readTime)}</span></div>
-          <h3><a href="${publicLink(`/training/${item.id}`)}">${escapeHtml(item.title)}</a></h3>
+          <h3><a href="${trainingHref}">${escapeHtml(item.title)}</a></h3>
           <p>${escapeHtml(item.summary)}</p>
-          <a class="text-link" href="${publicLink(`/training/${item.id}`)}">阅读全文 <span aria-hidden="true">→</span></a>
+          <a class="text-link" href="${trainingHref}">阅读全文 <span aria-hidden="true">→</span></a>
         </div>
       </article>`
   }
@@ -437,7 +446,7 @@
             <h1>棉知商业平台</h1>
             <p>以棉花生产为主线，连接农资供应、农机作业、数字履约和公益农技服务，让生产需求从信息查询走向可执行的田间服务。</p>
             <div class="hero-actions">
-              <a class="button primary" href="${link('/products')}">浏览农资产品</a>
+              <a class="button primary" href="${link('/products')}">进入官方商城</a>
               <a class="button light" href="${link('/machinery')}">查看农机服务</a>
             </div>
           </div>
@@ -462,7 +471,7 @@
         <div class="shell">
           ${sectionHeading('CORE BUSINESS', '一条围绕棉田生产的服务链', '从投入品到田间作业，再到订单与服务记录，展示平台提供的核心业务。')}
           <div class="business-pillar-grid">
-            <article><span>01 · INPUTS</span><h3>农资供应</h3><p>围绕棉花生产周期展示适配的种子、肥料、植保、农膜和滴灌材料，并提供规格、使用边界与商务咨询入口。</p><a href="${link('/products')}">查看农资业务 <b aria-hidden="true">→</b></a></article>
+            <article><span>01 · INPUTS</span><h3>农资供应</h3><p>围绕棉花生产周期展示适配的种子、肥料、植保、农膜和滴灌材料，并提供规格、使用边界与商务咨询入口。</p><a href="${link('/products')}">进入官方商城 <b aria-hidden="true">→</b></a></article>
             <article><span>02 · OPERATIONS</span><h3>农机服务</h3><p>覆盖耕整地、播种铺膜、植保飞防、田间管理、机采棉和棉包转运，按地块、农时和作业条件组织服务。</p><a href="${link('/machinery')}">查看农机业务 <b aria-hidden="true">→</b></a></article>
             <article><span>03 · DIGITAL DELIVERY</span><h3>数字履约</h3><p>小程序端承接商品订单、农机预约、微信支付、物流与进度、客服沟通和评价记录，形成可追踪的服务过程。</p><a href="${link('/contact')}">洽谈业务合作 <b aria-hidden="true">→</b></a></article>
           </div>
@@ -471,7 +480,7 @@
 
       <section class="section-block">
         <div class="shell">
-          ${sectionHeading('PRODUCTS', '棉田生产资料', '查看产品信息、适用场景与配套服务。', `<a class="section-action" href="${link('/products')}">查看全部产品</a>`)}
+          ${sectionHeading('PRODUCTS', '棉田生产资料', '查看产品信息、适用场景与配套服务。', `<a class="section-action" href="${link('/products')}">进入官方商城</a>`)}
           <div class="product-grid">${data.products.slice(0, 4).map(productCard).join('')}</div>
         </div>
       </section>
@@ -568,11 +577,7 @@
         action: '申请商户入驻'
       }])
     ]
-    let merchants = []
-    try {
-      const result = await runtime.requestJson('/api/commerce/merchants')
-      merchants = (Array.isArray(result.data) ? result.data : []).slice(0, 3)
-    } catch {}
+    const merchants = (await loadCommerceMerchants()).slice(0, 3)
     main.innerHTML = `
       <section class="commerce-hero commerce-carousel-hero" id="commerceHero" aria-roledescription="轮播图" aria-label="首页活动">
         <div class="commerce-carousel-track">
@@ -621,7 +626,8 @@
 
       <section class="section-block settled-merchants-section">
         <div class="shell">
-          ${sectionHeading('SETTLED MERCHANTS', '入驻商家', '展示已完成平台注册的经营主体及其公开联系信息。', `<a class="section-action" href="${businessLink('/merchants')}">查看全部商家 <span aria-hidden="true">→</span></a>`)}
+          ${sectionHeading('MERCHANT DIRECTORY', '商家展示', '浏览已确认合作商家和经营品类资料。', `<a class="section-action" href="${businessLink('/merchants')}">查看全部商家 <span aria-hidden="true">→</span></a>`)}
+          ${merchants.some(item => item.demo) ? '<div class="merchant-demo-notice"><strong>演示数据说明</strong><span>带“演示数据”标识的企业资料仅用于页面功能展示，不代表真实入驻或合作关系。</span></div>' : ''}
           ${merchants.length ? `<div class="settled-merchant-grid">${merchants.map(merchantProfileCard).join('')}</div>` : '<div class="simple-empty-copy">商家资料正在整理中。</div>'}
           <div class="settled-merchant-join">
             <div><span>MERCHANT APPLICATION</span><h2>成为平台入驻商家</h2><p>提交企业与经营资料，审核通过后可展示企业信息、发布商品并管理订单。</p></div>
@@ -792,7 +798,7 @@
       .slice(0, 3)
     main.innerHTML = `
       <section class="detail-breadcrumb">
-        <div class="shell"><nav class="breadcrumbs" aria-label="面包屑"><a href="${link('/')}">首页</a><span>/</span><a href="${link('/products')}">农资产品</a><span>/</span><span>${escapeHtml(item.name)}</span></nav></div>
+        <div class="shell"><nav class="breadcrumbs" aria-label="面包屑"><a href="${link('/')}">首页</a><span>/</span><a href="${link('/products')}">官方商城</a><span>/</span><span>${escapeHtml(item.name)}</span></nav></div>
       </section>
       <section class="product-detail section-block compact-top">
         <div class="shell product-detail-grid">
@@ -802,16 +808,16 @@
             <h1>${escapeHtml(item.name)}</h1>
             <p class="detail-lead">${escapeHtml(item.summary)}</p>
             <div class="tag-row large">${item.highlights.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
-            ${item.price ? `<div class="commerce-detail-price"><span class="price-label">商品价</span><strong>¥${Number(item.price).toFixed(2)}</strong><span>/${escapeHtml(item.unit || '件')}</span><small>已售 ${Number(item.sold || 0)}</small></div>` : ''}
+            ${item.price ? `<div class="commerce-detail-price"><span class="price-label">${item.priceEstimated ? '市场参考价' : '商品价'}</span><strong>¥${Number(item.price).toFixed(2)}</strong><span>/${escapeHtml(item.unit || '件')}</span><small>已售 ${Number(item.sold || 0)}</small></div>` : item.pricePending ? '<div class="commerce-detail-price pending"><span class="price-label">商品价</span><strong>价格待商家确认</strong></div>' : ''}
             <div class="consult-box">
               <span>商品与交易</span>
-              <strong>选择数量后可加入购物车或立即购买</strong>
+              <strong>${item.price ? '选择数量后可加入购物车或立即购买' : '价格与库存确认后开放在线下单'}</strong>
               <p>${escapeHtml(item.service)}</p>
             </div>
             ${item.price ? `<div class="purchase-quantity"><span>购买数量</span><div class="quantity-stepper"><button type="button" data-quantity-change="-1" aria-label="减少数量">−</button><input id="productQuantity" type="number" min="1" max="${Math.max(1, Number(item.stock || 999))}" value="1" inputmode="numeric" aria-label="购买数量"><button type="button" data-quantity-change="1" aria-label="增加数量">＋</button></div><small>${Number(item.stock || 0) > 0 ? `库存 ${Number(item.stock)} ${escapeHtml(item.unit || '件')}` : '库存请向商户确认'}</small></div>` : ''}
             <div class="detail-actions product-purchase-actions">
               ${item.price ? `<button class="button outline" type="button" data-favorite-product="${escapeHtml(item.id)}">收藏商品</button><button class="button cart-button" type="button" data-cart-product="${escapeHtml(item.id)}" data-quantity-source="productQuantity">加入购物车</button><button class="button primary" type="button" data-buy-product="${escapeHtml(item.id)}" data-quantity-source="productQuantity">立即购买</button>` : `<a class="button primary" href="${protectedBusinessLink(link(`/contact?product=${item.id}`))}">咨询此品类</a>`}
-              <a class="button outline" href="${link('/products')}">返回产品列表</a>
+              <a class="button outline" href="${link('/products')}">返回官方商城</a>
             </div>
           </div>
         </div>
@@ -958,22 +964,24 @@
   }
 
   function renderTraining() {
-    setMeta('棉花培训', '覆盖播种、苗期、水肥、病虫害、花铃期和采收管理的图文培训')
-    setActiveNav('training')
+    const isAcademy = platform === 'business'
+    const pageTitle = isAcademy ? '优棉学堂' : '棉花培训'
+    setMeta(pageTitle, '覆盖播种、苗期、水肥、病虫害、花铃期和采收管理的棉花种植图文教程')
+    setActiveNav(isAcademy ? 'academy' : 'training')
 
     main.innerHTML = `
-      ${pageHero('COTTON TRAINING', '棉花培训', '按照棉花生育进程组织图文文章，把观察方法、判断顺序和田间检查清单放在一起。', 'training-hero')}
-      <section class="section-block">
+      ${pageHero('YOUMIAN ACADEMY', pageTitle, '按照棉花生育进程整理图文教程，把观察方法、判断顺序和田间检查清单放在一起。', 'training-hero youmian-academy-hero')}
+      ${isAcademy ? `<section class="academy-path-section"><div class="shell academy-path-layout"><div><span class="eyebrow">GROWING PATH</span><h2>跟着生育期逐步学习</h2><p>从播前核验到采收准备，每篇教程都提供可以带到田间使用的检查清单。</p></div><ol>${data.trainingCategories.slice(1).map((item, index) => `<li><span>${String(index + 1).padStart(2, '0')}</span>${escapeHtml(item.name)}</li>`).join('')}</ol></div></section>` : ''}
+      <section class="section-block academy-tutorial-section">
         <div class="shell">
+          ${isAcademy ? sectionHeading('FIELD GUIDES', '棉花种植图文教程', '按生产阶段筛选，阅读时重点查看判断步骤和田间检查清单。') : ''}
           <div class="filter-tabs training-filters" id="trainingFilters">
             ${data.trainingCategories.map((item, index) => `<button type="button" class="${index === 0 ? 'active' : ''}" data-category="${item.id}">${escapeHtml(item.name)}</button>`).join('')}
           </div>
           <div class="article-grid" id="trainingGrid">${data.training.map(trainingCard).join('')}</div>
         </div>
       </section>
-      <section class="academy-band">
-        <div class="shell academy-band-inner"><div><span class="eyebrow">QUESTIONS & DISCUSSION</span><h2>需要针对具体问题继续交流？</h2><p>公共服务平台提供课程评论、回复、公开提问、学习记录和 AI 助学功能。</p></div><a class="button light" href="${publicLink('/forum')}">进入棉友问答</a></div>
-      </section>`
+      ${isAcademy ? `<section class="academy-guidance-band"><div class="shell"><strong>使用说明</strong><p>教程用于帮助整理观察和记录方法，不替代属地农技方案。涉及品种、水肥、农药、脱叶催熟等具体操作时，请以当地技术指导、产品正式标签和实际田情为准。</p></div></section>` : `<section class="academy-band"><div class="shell academy-band-inner"><div><span class="eyebrow">QUESTIONS & DISCUSSION</span><h2>需要针对具体问题继续交流？</h2><p>公共服务平台提供课程评论、回复、公开提问、学习记录和 AI 助学功能。</p></div><a class="button light" href="${publicLink('/forum')}">进入棉友问答</a></div></section>`}`
 
     document.getElementById('trainingFilters').addEventListener('click', event => {
       const button = event.target.closest('[data-category]')
@@ -1143,28 +1151,18 @@
 
   function renderTrainingDetail(item) {
     if (!item) return renderNotFound()
+    const isAcademy = platform === 'business'
+    const academyPath = isAcademy ? '/academy' : '/training'
+    const academyTitle = isAcademy ? '优棉学堂' : '棉花培训'
     setMeta(item.title, item.summary)
-    setActiveNav('training')
+    setActiveNav(isAcademy ? 'academy' : 'training')
 
     const related = data.training.filter(article => article.id !== item.id).slice(0, 3)
-    const productCategoryByTraining = {
-      planting: ['seed', 'film'],
-      seedling: ['fertilizer', 'film'],
-      water: ['irrigation', 'fertilizer'],
-      pest: ['pesticide'],
-      boll: ['fertilizer', 'irrigation'],
-      harvest: ['film']
-    }
-    const preferredProductCategories = productCategoryByTraining[item.category] || []
-    const relatedProducts = data.products
-      .filter(product => preferredProductCategories.includes(product.category))
-      .concat(data.products.filter(product => !preferredProductCategories.includes(product.category)))
-      .slice(0, 3)
     main.innerHTML = `
       <article class="reading-page">
         <header class="reading-header">
           <div class="shell reading-header-inner">
-            <nav class="breadcrumbs" aria-label="面包屑"><a href="${link('/')}">首页</a><span>/</span><a href="${link('/training')}">棉花培训</a><span>/</span><span>${escapeHtml(item.categoryName)}</span></nav>
+            <nav class="breadcrumbs" aria-label="面包屑"><a href="${link('/')}">首页</a><span>/</span><a href="${link(academyPath)}">${academyTitle}</a><span>/</span><span>${escapeHtml(item.categoryName)}</span></nav>
             <span class="eyebrow">${escapeHtml(item.categoryName)}</span>
             <h1>${escapeHtml(item.title)}</h1>
             <p>${escapeHtml(item.lead)}</p>
@@ -1182,17 +1180,11 @@
           <aside class="reading-aside">
             <span class="eyebrow">CONTINUE LEARNING</span>
             <h2>继续学习</h2>
-            ${related.map(article => `<a href="${link(`/training/${article.id}`)}"><span>${escapeHtml(article.categoryName)}</span><strong>${escapeHtml(article.title)}</strong></a>`).join('')}
-            <a class="button outline full" href="${publicLink('/courses')}">浏览图文课程</a>
+            ${related.map(article => `<a href="${link(`${academyPath}/${article.id}`)}"><span>${escapeHtml(article.categoryName)}</span><strong>${escapeHtml(article.title)}</strong></a>`).join('')}
+            <a class="button outline full" href="${link(academyPath)}">返回${academyTitle}</a>
           </aside>
         </div>
-      </article>
-      <section class="section-block connected-content-section">
-        <div class="shell">
-          ${sectionHeading('CONNECTED PRODUCTS', '相关商业资料', '农技培训与商业平台共享内容关联，但产品选择和实际使用仍需单独核验。', `<a class="section-action" href="${businessLink('/products')}">前往商业平台</a>`)}
-          <div class="product-grid related-grid">${relatedProducts.map(productCard).join('')}</div>
-        </div>
-      </section>`
+      </article>`
   }
 
   function renderPolicies() {
@@ -1609,16 +1601,16 @@
   }
 
   async function renderMerchants() {
-    setMeta('入驻商家', '查看平台已入驻商家的公司简介、经营品类和公开联系方式')
+    setMeta('入驻商家', '查看平台已确认合作商家的公司简介、经营品类和联系方式')
     setActiveNav('merchants')
-    main.innerHTML = `${pageHero('SETTLED MERCHANTS', '入驻商家', '集中展示已入驻经营主体的公司简介、主营品类和公开联系方式。', 'merchant-hero')}<section class="section-block"><div class="shell"><div class="loading-panel">正在加载商家信息...</div></div></section>`
+    main.innerHTML = `${pageHero('MERCHANT DIRECTORY', '入驻商家', '集中展示平台已确认合作商家的经营主体与商品信息。', 'merchant-hero')}<section class="section-block"><div class="shell"><div class="loading-panel">正在加载商家信息...</div></div></section>`
     try {
-      const result = await runtime.requestJson('/api/commerce/merchants')
-      const rows = Array.isArray(result.data) ? result.data : []
+      const rows = await loadCommerceMerchants()
       main.innerHTML = `
-        ${pageHero('SETTLED MERCHANTS', '入驻商家', '集中展示已入驻经营主体的公司简介、主营品类和公开联系方式。', 'merchant-hero')}
+        ${pageHero('MERCHANT DIRECTORY', '入驻商家', '集中展示平台已确认合作商家的经营主体与商品信息。', 'merchant-hero')}
         <section class="section-block"><div class="shell">
-          <div class="merchant-page-head"><p>共 ${rows.length} 家入驻商家</p></div>
+          ${rows.some(item => item.demo) ? '<div class="merchant-demo-notice prominent"><strong>演示条目单独标识</strong><span>带“演示数据”标识的商家仅用于页面功能展示，不代表真实入驻或合作关系。</span></div>' : ''}
+          <div class="merchant-page-head"><p>共 ${rows.length} 家商家</p></div>
           ${rows.length ? `<div class="settled-merchant-grid merchant-directory-page">${rows.map(merchantProfileCard).join('')}</div>` : '<div class="empty-state"><h2>暂无公开商家</h2><p>商家审核通过后将在这里展示。</p></div>'}
           <div class="settled-merchant-join compact"><div><span>MERCHANT APPLICATION</span><h2>申请加入官方商城</h2><p>提交经营主体和商品资料，审核通过后即可开设商家主页。</p></div><a class="button primary" href="/portal/register.html?role=merchant">商家入驻 <span aria-hidden="true">→</span></a></div>
         </div></section>`
@@ -1632,37 +1624,24 @@
     const merchants = await loadCommerceMerchants()
     const item = merchants.find(merchant => String(merchant.id) === String(id))
     if (!item) return renderNotFound()
-    setMeta(item.name, `${item.name}的商家简介、联系方式和在售商品`)
+    setMeta(`${item.name}店铺`, `${item.name}展示的棉花生产资料商品`)
     const merchantProducts = data.products.filter(product => String(product.merchantId || '') === String(item.id))
     main.innerHTML = `
-      <section class="merchant-profile-hero">
-        <div class="shell">
-          <nav class="breadcrumbs" aria-label="面包屑"><a href="${businessLink('/')}">首页</a><span>/</span><a href="${businessLink('/merchants')}">入驻商家</a><span>/</span><span>${escapeHtml(item.name)}</span></nav>
-          <div class="merchant-profile-heading">
-            <span class="merchant-profile-mark" aria-hidden="true">${escapeHtml(item.name.slice(0, 1))}</span>
-            <div><span class="merchant-verified">平台入驻商家</span><h1>${escapeHtml(item.name)}</h1><p>${escapeHtml(item.intro)}</p></div>
+      <section class="merchant-profile-hero merchant-store-hero">
+        <div class="shell merchant-store-hero-inner">
+          <span class="merchant-store-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10v9h16v-9M3 5h18l-1 5a3 3 0 0 1-5 1 3 3 0 0 1-6 0 3 3 0 0 1-5-1L3 5Zm6 14v-5h6v5"/></svg></span>
+          <div class="merchant-store-copy">
+            <span class="merchant-store-status ${item.demo ? 'demo' : ''}">${item.demo ? '演示店铺 · 非真实入驻' : '平台入驻商家'}</span>
+            <h1>${escapeHtml(item.name)}</h1>
+            <p>${escapeHtml(item.category)}</p>
+            <div class="merchant-store-benefits"><span>商品信息清晰</span><span>支持在线下单</span><span>订单进度可查</span></div>
           </div>
         </div>
       </section>
-      <section class="section-block merchant-profile-section"><div class="shell merchant-profile-layout">
-        <article class="merchant-profile-about">
-          <span class="eyebrow">COMPANY PROFILE</span><h2>商家信息</h2>
-          <p>${escapeHtml(item.intro)}</p>
-          <dl>
-            <div><dt>主营业务</dt><dd>${escapeHtml(item.category)}</dd></div>
-            <div><dt>联系人员</dt><dd>${escapeHtml(item.contactName || '暂未公开')}</dd></div>
-            <div><dt>联系电话</dt><dd>${escapeHtml(item.phone || '暂未公开')}</dd></div>
-            <div><dt>联系邮箱</dt><dd>${escapeHtml(item.email || '暂未公开')}</dd></div>
-            ${item.wechat ? `<div><dt>客服微信</dt><dd>${escapeHtml(item.wechat)}</dd></div>` : ''}
-            <div><dt>服务地区</dt><dd>${escapeHtml(item.location || '由商家确认')}</dd></div>
-            ${item.registeredAddress ? `<div><dt>经营地址</dt><dd>${escapeHtml(item.registeredAddress)}</dd></div>` : ''}
-          </dl>
-        </article>
-        <aside class="merchant-profile-aside"><span>在售商品</span><strong>${Number(item.productCount || merchantProducts.length)}<small> 项</small></strong><p>商品价格、库存、配送及售后信息以商品详情和订单确认页为准。</p><a class="button primary full" href="${businessLink('/products')}?merchant=${encodeURIComponent(item.id)}">查看该商家商品</a></aside>
-      </div></section>
-      <section class="section-block merchant-profile-products"><div class="shell">
-        ${sectionHeading('PRODUCTS', '商家商品', merchantProducts.length ? '查看该商家当前展示的商品。' : '该商家暂未发布公开商品。')}
-        ${merchantProducts.length ? `<div class="product-grid">${merchantProducts.slice(0, 8).map(productCard).join('')}</div>` : '<div class="empty-state compact"><h2>暂无公开商品</h2><p>商品发布后会在这里展示。</p></div>'}
+      <section class="section-block merchant-store-products"><div class="shell">
+        ${sectionHeading('STORE PRODUCTS', '店铺商品', `共 ${merchantProducts.length} 件商品`)}
+        ${item.demo ? '<div class="merchant-demo-notice prominent"><strong>演示数据，不代表真实入驻或合作关系</strong><span>本页商品归属仅用于页面与交易流程演示，不代表该企业实际销售这些商品；商品和企业信息请以正式审核资料为准。</span></div>' : ''}
+        ${merchantProducts.length ? `<div class="product-grid merchant-store-grid">${merchantProducts.map(productCard).join('')}</div>` : '<div class="empty-state compact"><h2>暂无店铺商品</h2><p>商品发布后会在这里展示。</p></div>'}
       </div></section>`
   }
 
@@ -1721,7 +1700,7 @@
     const cart = readLocalList(cartKey)
     const items = cart.map(entry => ({ entry, product: productById(String(entry.id)) })).filter(item => item.product)
     const total = items.reduce((sum, item) => sum + Number(item.product.price || 0) * Number(item.entry.qty || 1), 0)
-    main.innerHTML = `${pageHero('SHOPPING CART', '购物车', '确认商品、数量与金额后进入订单确认。', 'cart-hero')}<section class="section-block"><div class="shell cart-layout"><div>${items.length ? `<div class="cart-list">${items.map(({ entry, product }) => `<article>${productVisual(product)}<div><small>${escapeHtml(product.categoryName)}</small><h2><a href="${businessLink(`/products/${product.id}`)}">${escapeHtml(product.name)}</a></h2><p>${escapeHtml(product.merchantName || '')}</p></div><strong>¥${Number(product.price || 0).toFixed(2)}</strong><div class="cart-qty">数量 ${Number(entry.qty || 1)}</div><button type="button" data-remove-cart="${escapeHtml(product.id)}">删除</button></article>`).join('')}</div>` : '<div class="empty-state"><h2>购物车还是空的</h2><p>浏览商品后，可以把需要的商品加入购物车。</p><a class="button primary" href="/business/products">去选购商品</a></div>'}</div><aside class="cart-summary"><span>商品合计</span><strong>¥${total.toFixed(2)}</strong><p>配送费用和可用优惠将在确认订单时计算。</p><button class="button primary full" type="button" ${items.length ? '' : 'disabled'} data-checkout>确认订单</button></aside></div></section>`
+    main.innerHTML = `${pageHero('SHOPPING CART', '购物车', '确认商品、数量与金额后进入订单确认。', 'cart-hero')}<section class="section-block"><div class="shell cart-layout"><div>${items.length ? `<div class="cart-list">${items.map(({ entry, product }) => `<article>${productVisual(product)}<div><small>${escapeHtml(product.categoryName)}</small><h2><a href="${businessLink(`/products/${product.id}`)}">${escapeHtml(product.name)}</a></h2><p>${escapeHtml(product.merchantName || '')}</p></div><strong>¥${Number(product.price || 0).toFixed(2)}</strong><div class="cart-qty">数量 ${Number(entry.qty || 1)}</div><button type="button" data-remove-cart="${escapeHtml(product.id)}">删除</button></article>`).join('')}</div>` : '<div class="empty-state"><h2>购物车还是空的</h2><p>浏览商品后，可以把需要的商品加入购物车。</p><a class="button primary" href="/business/products">进入官方商城</a></div>'}</div><aside class="cart-summary"><span>商品合计</span><strong>¥${total.toFixed(2)}</strong><p>配送费用和可用优惠将在确认订单时计算。</p><button class="button primary full" type="button" ${items.length ? '' : 'disabled'} data-checkout>确认订单</button></aside></div></section>`
   }
 
   function renderFavorites() {
@@ -1729,7 +1708,7 @@
     setActiveNav('favorites')
     const ids = readLocalList(favoriteKey).map(String)
     const items = data.products.filter(item => ids.includes(String(item.id)))
-    main.innerHTML = `${pageHero('FAVORITES', '我的收藏', '收藏保存在当前浏览器中，登录后的跨设备同步将在后续版本开放。', 'favorites-hero')}<section class="section-block"><div class="shell">${items.length ? `<div class="product-grid">${items.map(productCard).join('')}</div>` : '<div class="empty-state"><h2>暂无收藏商品</h2><p>在商品卡片或详情页点击“收藏”即可保存。</p><a class="button primary" href="/business/products">浏览商品</a></div>'}</div></section>`
+    main.innerHTML = `${pageHero('FAVORITES', '我的收藏', '收藏保存在当前浏览器中，登录后的跨设备同步将在后续版本开放。', 'favorites-hero')}<section class="section-block"><div class="shell">${items.length ? `<div class="product-grid">${items.map(productCard).join('')}</div>` : '<div class="empty-state"><h2>暂无收藏商品</h2><p>在商品卡片或详情页点击“收藏”即可保存。</p><a class="button primary" href="/business/products">进入官方商城</a></div>'}</div></section>`
   }
 
   function renderCommerceLogin() {
@@ -1753,7 +1732,7 @@
             <span class="eyebrow">ONE ACCOUNT</span>
             <h2>连接商品与生产服务</h2>
             <p>个人用户与商家使用同一注册入口。个人账号注册后即可使用；商家提交主体资料后，由管理员审核开通。</p>
-            <div><strong>无需登录</strong><span>浏览商品、农机服务、官方商城和公开供需信息</span></div>
+            <div><strong>无需登录</strong><span>浏览官方商城、农机服务和公开供需信息</span></div>
             <div><strong>注册后</strong><span>个人可管理订单与购物车，审核通过的商家可发布和管理商品</span></div>
           </div>
           <div class="public-auth-card">
@@ -1994,7 +1973,7 @@
       const result = await runtime.requestJson('/api/orders/my', {}, { token })
       const rows = Array.isArray(result.data) ? result.data : (result.data?.orders || [])
       const statusNames = { pending: '待处理', paid: '已支付', shipped: '配送中', completed: '已完成', cancelled: '已取消' }
-      main.innerHTML = `${pageHero('MY ORDERS', '我的订单', '查看商品订单、支付、配送和售后状态。', 'orders-hero')}<section class="section-block"><div class="shell">${rows.length ? `<div class="order-list">${rows.map(order => `<article><div><small>订单号</small><strong>${escapeHtml(order.order_no || order.orderNo || order.id)}</strong></div><div><small>下单时间</small><span>${escapeHtml(order.created_at || order.createdAt || '')}</span></div><div><small>订单金额</small><strong>¥${Number(order.total_amount || order.totalAmount || 0).toFixed(2)}</strong></div><span class="order-status">${escapeHtml(statusNames[order.status] || order.status || '处理中')}</span></article>`).join('')}</div>` : '<div class="empty-state"><h2>暂无商品订单</h2><p>完成商品选购后，订单会显示在这里。</p><a class="button primary" href="/business/products">浏览商品</a></div>'}</div></section>`
+      main.innerHTML = `${pageHero('MY ORDERS', '我的订单', '查看商品订单、支付、配送和售后状态。', 'orders-hero')}<section class="section-block"><div class="shell">${rows.length ? `<div class="order-list">${rows.map(order => `<article><div><small>订单号</small><strong>${escapeHtml(order.order_no || order.orderNo || order.id)}</strong></div><div><small>下单时间</small><span>${escapeHtml(order.created_at || order.createdAt || '')}</span></div><div><small>订单金额</small><strong>¥${Number(order.total_amount || order.totalAmount || 0).toFixed(2)}</strong></div><span class="order-status">${escapeHtml(statusNames[order.status] || order.status || '处理中')}</span></article>`).join('')}</div>` : '<div class="empty-state"><h2>暂无商品订单</h2><p>完成商品选购后，订单会显示在这里。</p><a class="button primary" href="/business/products">进入官方商城</a></div>'}</div></section>`
     } catch (error) {
       main.querySelector('.loading-panel').textContent = error.message
     }
@@ -2233,6 +2212,7 @@
         <a href="${businessLink('/products')}" data-nav="products">官方商城</a>
         <a href="${businessLink('/machinery')}" data-nav="machinery">生产服务</a>
         <a href="${businessLink('/merchants')}" data-nav="merchants">入驻商家</a>
+        <a href="${businessLink('/academy')}" data-nav="academy">优棉学堂</a>
         <a href="${businessLink('/local')}" data-nav="local">本地商圈</a>
         <a href="${businessLink('/about')}" data-nav="about">关于我们</a>`
       let account = null
@@ -2272,6 +2252,7 @@
           <a href="${businessLink('/products')}">官方商城</a>
           <a href="${businessLink('/machinery')}">生产服务</a>
           <a href="${businessLink('/merchants')}">入驻商家</a>
+          <a href="${businessLink('/academy')}">优棉学堂</a>
           <a href="${businessLink('/about')}">关于我们</a>
         </nav>
         <nav class="header-account-links" aria-label="购物与账户">
@@ -2381,6 +2362,8 @@
   else if (platform === 'business' && pageGroup === 'news') renderNewsDetail(newsById(pathParts[1]))
   else if (platform === 'business' && pageGroup === 'merchants' && pathParts.length === 1) renderMerchants()
   else if (platform === 'business' && pageGroup === 'merchants') renderMerchantDetail(pathParts[1])
+  else if (platform === 'business' && pageGroup === 'academy' && pathParts.length === 1) renderTraining()
+  else if (platform === 'business' && pageGroup === 'academy') renderTrainingDetail(trainingById(pathParts[1]))
   else if (platform === 'business' && pageGroup === 'local') renderLocalMarket()
   else if (platform === 'business' && pageGroup === 'activities') renderCommerceActivities()
   else if (platform === 'business' && pageGroup === 'cart') renderCart()
