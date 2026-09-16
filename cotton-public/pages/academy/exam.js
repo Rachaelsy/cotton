@@ -12,8 +12,8 @@ Page({
     const right = this.data.questions.filter(q => this.data.selected[q.id] === q.answer).length
     const score = Math.round(right / this.data.questions.length * 100), passed = score >= 80
     this.setData({ submitted: true, score, passed })
-    if (passed) { wx.setStorageSync('academy_level_2_unlocked', true); wx.showToast({ title: '考试通过，获得50积分', icon: 'success' }) }
+    if (passed) { wx.setStorageSync('academy_basic_exam_passed', true); wx.showToast({ title: '初级自测通过', icon: 'success' }) }
   },
   retry() { this.setData({ selected: {}, submitted: false, score: 0, passed: false }) },
-  backAcademy() { wx.switchTab({ url: '/pages/academy/index' }) }
+  backAcademy() { if (getCurrentPages().length > 1) wx.navigateBack(); else wx.redirectTo({ url: '/pages/academy/index' }) }
 })

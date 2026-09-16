@@ -1,1 +1,59 @@
-<view class="page"><view class="cover"><image src="{{course.cover}}" mode="aspectFill"/><view class="play" wx:if="{{course.type==='视频'}}">▶</view></view><view class="summary"><view><strong>{{course.title}}</strong><small>{{course.type}} · {{course.level}} · {{course.duration}}</small></view><label>+{{course.reward}}分</label></view><view class="teacher"><view class="avatar">师</view><view><strong>{{course.teacher}}</strong><small>喀什优棉公共服务平台特邀农技专家</small></view></view><view class="content"><h2>课程内容</h2><p>{{course.intro}}</p></view><view class="content"><h2>本课要点</h2><view class="point" wx:for="{{course.points}}" wx:key="*this"><i>{{index+1}}</i><text>{{item}}</text></view></view><button class="complete {{completed?'done':''}}" bindtap="complete">{{completed?'✓ 本课已完成':'完成本课 · 获得学习积分'}}</button></view>
+<view class="course-page">
+  <view class="course-nav" style="padding-top:{{navTop}}px">
+    <view class="course-back" bindtap="back">‹</view>
+    <text>优棉学堂</text>
+    <button open-type="share">分享</button>
+  </view>
+
+  <view class="video-stage">
+    <video wx:if="{{course.videoUrl}}" src="{{course.videoUrl}}" poster="{{course.cover}}" autoplay="true" controls="true" show-center-play-btn="true" enable-play-gesture="true" object-fit="contain" bindtimeupdate="onVideoTimeUpdate" bindended="onVideoEnded"></video>
+    <block wx:else>
+      <image src="{{course.cover}}" mode="aspectFill"></image>
+      <view class="video-shade"></view>
+      <view class="video-play" wx:if="{{course.type==='视频'}}">▶</view>
+    </block>
+  </view>
+
+  <view class="video-info">
+    <view class="video-labels"><text>{{level.name}}</text><label>{{course.type}} · {{course.duration}}</label></view>
+    <strong class="video-title">{{course.lessonNo}}. {{course.title}}</strong>
+    <text class="video-summary">{{course.summary}}</text>
+    <view class="video-actions">
+      <view><small>课程编制</small><strong>{{course.teacher}}</strong></view>
+      <button class="{{completed?'done':''}}" bindtap="complete">{{completed?'✓ 已学完':'标记学完'}}</button>
+    </view>
+  </view>
+
+  <view class="directory-link" wx:if="{{course.seriesKey}}" bindtap="openDirectory">
+    <view class="directory-icon">☷</view>
+    <view><small>课程目录</small><strong>{{course.seriesTitle}}</strong></view>
+    <text>›</text>
+  </view>
+
+  <view class="knowledge-strip">
+    <view wx:for="{{course.objectives}}" wx:key="*this"><i>{{index+1}}</i><text>{{item}}</text></view>
+  </view>
+
+  <view class="comment-section">
+    <view class="comment-head"><strong>评论</strong><text>{{comments.length}} 条</text></view>
+    <view class="comment-loading" wx:if="{{commentsLoading}}">评论加载中...</view>
+    <view class="comment-empty" wx:elif="{{!comments.length}}"><strong>还没有评论</strong><text>看完课程后，说说你的收获或问题吧</text></view>
+    <view class="comment-item" wx:for="{{comments}}" wx:key="id">
+      <image wx:if="{{item.avatarUrl}}" class="comment-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+      <view wx:else class="comment-avatar fallback">{{item.avatarText}}</view>
+      <view class="comment-main">
+        <view class="comment-author"><strong>{{item.author}}</strong><text>{{item.timeText}}</text></view>
+        <view class="reply-target" wx:if="{{item.parentAuthor}}">回复 @{{item.parentAuthor}}</view>
+        <text class="comment-body">{{item.content}}</text>
+        <view class="comment-actions"><text data-id="{{item.id}}" bindtap="replyComment">回复</text><text class="{{item.liked?'liked':''}}" data-id="{{item.id}}" bindtap="toggleLike">赞 {{item.likeCount||''}}</text></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="comment-bottom-space"></view>
+  <view class="replying" wx:if="{{replyTo}}"><text>回复 @{{replyTo.author}}</text><text bindtap="cancelReply">取消</text></view>
+  <view class="comment-bar">
+    <input value="{{commentText}}" focus="{{commentFocus}}" maxlength="500" placeholder="发一条友善的评论" confirm-type="send" bindinput="onCommentInput" bindconfirm="submitComment"></input>
+    <button loading="{{sending}}" disabled="{{sending}}" bindtap="submitComment">发送</button>
+  </view>
+</view>

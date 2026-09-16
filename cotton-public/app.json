@@ -16,6 +16,7 @@
     "pages/varieties/index",
     "pages/varieties/detail",
     "pages/academy/index",
+    "pages/academy/series",
     "pages/academy/course",
     "pages/academy/exam",
     "pages/my/index",

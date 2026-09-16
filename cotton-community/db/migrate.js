@@ -393,6 +393,32 @@ async function run() {
   `)
 
   await db.query(`
+    CREATE TABLE IF NOT EXISTS academy_comments (
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      course_id VARCHAR(80) NOT NULL,
+      user_id INT UNSIGNED NOT NULL,
+      parent_id BIGINT UNSIGNED DEFAULT NULL,
+      content VARCHAR(500) NOT NULL,
+      status ENUM('visible','hidden') NOT NULL DEFAULT 'visible',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_academy_comment_course (course_id,status,created_at),
+      INDEX idx_academy_comment_parent (parent_id,created_at),
+      INDEX idx_academy_comment_user (user_id,created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='优棉学堂课程评论'
+  `)
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS academy_comment_likes (
+      comment_id BIGINT UNSIGNED NOT NULL,
+      user_id INT UNSIGNED NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (comment_id,user_id),
+      INDEX idx_academy_comment_like_user (user_id,created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='优棉学堂评论点赞'
+  `)
+
+  await db.query(`
     CREATE TABLE IF NOT EXISTS community_service_products (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       service_type ENUM('machinery','supplies') NOT NULL,

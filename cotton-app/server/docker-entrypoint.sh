@@ -79,6 +79,7 @@ run_migration db/migrate_feedbacks.js
 run_migration db/migrate_marketing.js
 run_migration db/migrate_points.js
 run_migration db/migrate_pest_recognitions.js
+run_migration db/migrate_academy.js
 run_migration db/migrate_private_applyment_files.js
 run_migration db/migrate_encrypt_applyment_drafts.js
 

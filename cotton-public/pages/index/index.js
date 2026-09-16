@@ -279,14 +279,10 @@ Page({
 
   openModule(e) {
     const key = e.currentTarget.dataset.key
-    if (key === 'academy') {
-      wx.showToast({ title: '正在开发中', icon: 'none' })
-      return
-    }
     const routes = {
       fields: '/pages/fields/index', pest: '/pages/pest/index', weather: '/pages/weather/index',
       expert: '/pages/expert/index', records: '/pages/records/index',
-      policy: '/pages/policy/index', finance: '/pages/finance/index'
+      policy: '/pages/policy/index', finance: '/pages/finance/index', academy: '/pages/academy/index'
     }
     if (routes[key]) wx.navigateTo({ url: routes[key] })
   },

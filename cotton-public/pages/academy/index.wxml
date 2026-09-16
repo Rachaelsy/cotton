@@ -1,8 +1,35 @@
-<view class="page">
-  <view class="hero"><small>棉花种植成长路径</small><h1>优棉学堂</h1><p>图文学方法，视频看实操，从入门到数字棉田</p><view class="score"><view><small>我的学习积分</small><strong>{{points}}</strong></view><view><small>总学习进度</small><strong>4 / 18 课</strong></view></view></view>
-  <view class="path">
-    <view class="level"><view class="node">1</view><view class="panel"><view class="title"><strong>初级 · 种棉入门</strong><text>4/6 课</text></view><p>建立从播种到苗期管理的基础认知</p><block wx:for="{{courses}}" wx:key="id"><view wx:if="{{item.level===1}}" class="lesson" bindtap="openCourse" data-id="{{item.id}}"><label class="{{item.type==='视频'?'video':''}}">{{item.type}}</label><strong>{{item.title}}</strong><small>{{item.done?'✓ 已学':item.duration}}</small></view></block><button bindtap="openExam">阶段考试 · 通过后解锁中级</button></view></view>
-    <view class="level {{level2Unlocked?'':'locked'}}"><view class="node">{{level2Unlocked?'2':'锁'}}</view><view class="panel"><view class="title"><strong>中级 · 丰产管理</strong><text>{{level2Unlocked?'已解锁 · 0/6课':'待解锁 · 6课'}}</text></view><p>掌握水肥、株型和病虫害综合管理</p><block wx:for="{{courses}}" wx:key="id"><view wx:if="{{item.level===2}}" class="lesson" bindtap="openCourse" data-id="{{item.id}}" data-locked="{{item.locked}}"><label class="{{item.type==='视频'?'video':''}}">{{item.type}}</label><strong>{{item.title}}</strong><small>{{item.locked?'🔒':item.duration}}</small></view></block></view></view>
-    <view class="level locked"><view class="node">锁</view><view class="panel"><view class="title"><strong>高级 · 数字棉田</strong><text>待解锁 · 6课</text></view><p>产量诊断、品质提升与全周期数据决策</p></view></view>
+<view class="academy-page">
+  <view class="academy-nav" style="padding-top:{{navTop}}px">
+    <view class="nav-action" bindtap="back">‹</view>
+    <strong>优棉学堂</strong>
+    <view class="nav-action nav-placeholder"></view>
   </view>
+
+  <view class="level-tabs">
+    <view wx:for="{{levels}}" wx:key="key" class="level-tab {{activeLevel===item.key?'active':''}}" data-key="{{item.key}}" bindtap="switchLevel">{{item.name}}</view>
+  </view>
+
+  <view class="series-head">
+    <strong>{{activeLevel==='basic'?'初级系列课程':activeLevel==='intermediate'?'中级系列课程':'高级系列课程'}}</strong>
+    <text>点击课程查看完整目录</text>
+  </view>
+
+  <view class="series-grid" wx:if="{{series.length}}">
+    <view class="series-card" wx:for="{{series}}" wx:key="id" data-id="{{item.id}}" bindtap="openSeries">
+      <view class="series-cover">
+        <image src="{{item.cover}}" mode="aspectFill"></image>
+        <view class="cover-shade"></view>
+        <text class="lesson-count">共{{item.lessonCount}}节</text>
+        <view class="series-level">{{activeLevel==='basic'?'入门':activeLevel==='intermediate'?'进阶':'提升'}}</view>
+      </view>
+      <strong class="series-title">{{item.title}}</strong>
+      <text class="series-summary">{{item.summary}}</text>
+      <view class="series-meta"><text>{{item.teacher}}</text><text>{{item.durationText}}</text></view>
+      <view class="series-progress" wx:if="{{item.progress>0}}"><view style="width:{{item.progress}}%"></view></view>
+      <text class="progress-copy" wx:if="{{item.progress>0}}">已完成 {{item.completed}}/{{item.lessonCount}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:elif="{{!loading}}">该级别暂时没有系列课程</view>
+
+  <view class="academy-note">课程用于农业科普学习，具体田间措施应结合地块情况和属地农技指导。</view>
 </view>

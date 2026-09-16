@@ -11,6 +11,9 @@ const homeJs = read('pages/index/index.js')
 const loginWxml = read('pages/login/index.wxml')
 const i18n = read('utils/i18n.js')
 const expertJs = read('pages/expert/index.js')
+const academyData = read('utils/academy-data.js')
+const academyHome = read('pages/academy/index.wxml')
+const academyCourse = read('pages/academy/course.wxml')
 
 for (const icon of ['fields', 'pest', 'weather', 'policy', 'expert', 'records', 'academy', 'finance', 'machine', 'supplies', 'processing', 'varieties']) {
   assert(homeWxml.includes(`/images/home-icons/${icon}.png`), `home page is missing the ${icon} service icon`)
@@ -19,7 +22,13 @@ for (const icon of ['fields', 'pest', 'weather', 'policy', 'expert', 'records', 
 assert(!/<i\b[^>]*>[田识气讯讲记学金]<\/i>/.test(homeWxml), 'home page should use designed service icons instead of single-character placeholders')
 assert(homeWxss.includes('.tool-icon-art') && homeWxss.includes('.production-icon-art'), 'home service icons should use compact local image styles')
 assert(!homeWxss.includes('data:image/svg+xml'), 'home page should avoid large inline SVG data that can break WebView synchronization')
-assert(homeJs.includes("key === 'academy'") && homeJs.includes("正在开发中") && !homeJs.includes("academy: '/pages/academy/index'"), 'unfinished academy should show a development notice instead of opening its content')
+assert(homeJs.includes("academy: '/pages/academy/index'") && !homeJs.includes("key === 'academy'") && !homeJs.includes("正在开发中"), 'finished academy should open from the public mini program home page')
+for (const level of ["key: 'basic'", "key: 'intermediate'", "key: 'advanced'"]) {
+  assert(academyData.includes(level), `academy is missing course level ${level}`)
+}
+assert((academyData.match(/type: '视频'/g) || []).length >= 15, 'academy should use video as its primary course format')
+assert(academyData.includes("name: '初级课程'") && academyData.includes("name: '中级课程'") && academyData.includes("name: '高级课程'") && academyHome.includes('level-tabs'), 'academy home should expose three learning levels')
+assert(academyCourse.includes('<video') && academyCourse.includes('autoplay="true"') && academyCourse.includes('class="comment-section"'), 'academy course detail should support short-video learning and comments')
 assert(i18n.includes("brand: '喀什优棉公共服务平台'") && !i18n.includes('棉花智能体') && !i18n.includes('智慧棉花管理平台'), 'login and registration copy should use the unified public service platform name')
 assert(loginWxml.includes('wx:if="{{copy.brandSub}}"') && expertJs.includes("org: '喀什优棉公共服务平台'"), 'obsolete brand subtitles and expert fallback organization should not expose old platform names')
 

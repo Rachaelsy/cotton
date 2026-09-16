@@ -1,0 +1,37 @@
+<view class="series-page">
+  <view class="series-nav" style="padding-top:{{navTop}}px">
+    <view class="nav-back" bindtap="back">‹</view>
+    <strong>课程目录</strong>
+    <button open-type="share">分享</button>
+  </view>
+
+  <view class="series-hero">
+    <image src="{{series.cover}}" mode="aspectFill"></image>
+    <view class="hero-shade"></view>
+    <view class="hero-copy">
+      <text>{{level.name}} · 系列课程</text>
+      <strong>{{series.title}}</strong>
+      <label>共 {{lessons.length}} 节 · 已完成 {{completed}} 节</label>
+    </view>
+  </view>
+
+  <view class="series-intro">
+    <strong>课程介绍</strong>
+    <text>{{series.summary}}</text>
+    <view><text>课程编制</text><strong>{{series.teacher}}</strong></view>
+  </view>
+
+  <view class="directory-head"><strong>课程目录</strong><text>点击课时开始播放</text></view>
+  <view class="lesson-list">
+    <view class="lesson-item" wx:for="{{lessons}}" wx:key="id" data-id="{{item.id}}" bindtap="openLesson">
+      <view class="lesson-index {{item.completed?'done':''}}">{{item.completed?'✓':item.lessonNo}}</view>
+      <view class="lesson-copy">
+        <small>第 {{item.lessonNo}} 节 · {{item.type}}</small>
+        <strong>{{item.title}}</strong>
+        <text>{{item.duration}}<label wx:if="{{item.progress>0&&!item.completed}}"> · 已学 {{item.progress}}%</label></text>
+      </view>
+      <view class="lesson-play">▶</view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!loading&&!lessons.length}}">该系列暂时没有已上架课时</view>
+</view>
