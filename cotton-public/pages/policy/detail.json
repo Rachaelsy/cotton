@@ -1,1 +1,8 @@
-{ "navigationStyle": "custom", "enableShareAppMessage": true, "enableShareTimeline": true }
+{
+  "navigationStyle": "custom",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true,
+  "usingComponents": {
+    "mp-html": "/components/mp-html/index"
+  }
+}

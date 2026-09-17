@@ -51,10 +51,10 @@ function parseLine(line) {
   const trimmed = raw.trim()
   if (!trimmed) return []
 
-  const heading = trimmed.match(/^#{1,6}\s+(.+)$/)
+  const heading = trimmed.match(/^(#{1,6})\s+(.+)$/)
   if (heading) {
     return [
-      elementNode('strong', parseInline(heading[1]), {
+      elementNode('strong', parseInline(heading[2]), {
         style: 'font-weight:700;color:#111111;'
       })
     ]

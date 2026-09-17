@@ -51,28 +51,38 @@ function parseLine(line, options = {}) {
   const trimmed = raw.trim()
   if (!trimmed) return []
 
-  const heading = trimmed.match(/^#{1,6}\s+(.+)$/)
+  const heading = trimmed.match(/^(#{1,6})\s+(.+)$/)
   if (heading) {
+    const level = Math.min(3, heading[1].length)
+    const styles = {
+      1: 'display:block;margin:48rpx 0 22rpx;padding:0;color:#15251C;font-size:38rpx;font-weight:800;line-height:1.45;',
+      2: 'display:block;margin:44rpx 0 20rpx;padding-left:16rpx;border-left:7rpx solid #1B7A55;color:#173B2B;font-size:34rpx;font-weight:800;line-height:1.5;',
+      3: 'display:block;margin:36rpx 0 16rpx;color:#1B4935;font-size:31rpx;font-weight:800;line-height:1.55;'
+    }
     return [
-      elementNode('strong', parseInline(heading[1]), {
-        style: 'font-weight:700;color:#111111;'
-      })
+      elementNode(`h${level}`, parseInline(heading[2]), { style: styles[level] })
     ]
   }
 
   const bullet = trimmed.match(/^[-*+]\s+(.+)$/)
   if (bullet) {
-    return [textNode('• '), ...parseInline(bullet[1])]
+    return [elementNode('div', [textNode('• '), ...parseInline(bullet[1])], {
+      style: 'display:block;margin:10rpx 0;padding-left:30rpx;text-indent:-24rpx;color:#303B35;font-size:29rpx;line-height:1.8;'
+    })]
   }
 
   const ordered = trimmed.match(/^(\d+)[.)]\s+(.+)$/)
   if (ordered) {
-    return [textNode(`${ordered[1]}. `), ...parseInline(ordered[2])]
+    return [elementNode('div', [textNode(`${ordered[1]}. `), ...parseInline(ordered[2])], {
+      style: 'display:block;margin:10rpx 0;padding-left:34rpx;text-indent:-30rpx;color:#303B35;font-size:29rpx;line-height:1.8;'
+    })]
   }
 
-  return options.indentParagraphs
-    ? [textNode('\u3000\u3000'), ...parseInline(raw.trimStart())]
-    : parseInline(raw)
+  return [elementNode('p', parseInline(raw.trim()), {
+    style: options.indentParagraphs
+      ? 'display:block;margin:0 0 26rpx;color:#303833;font-size:29rpx;line-height:1.86;text-align:justify;text-indent:2em;letter-spacing:.4rpx;'
+      : 'display:block;margin:0 0 18rpx;color:#303833;font-size:29rpx;line-height:1.78;'
+  })]
 }
 
 function parseTableCells(line) {
@@ -98,15 +108,19 @@ function tableAlignment(dividerCell) {
 function tableNode(header, divider, rows) {
   const alignments = divider.map(tableAlignment)
   const columnCount = header.length
-  const minWidth = Math.max(620, columnCount * 190)
+  const fontSize = columnCount >= 5 ? 21 : columnCount === 4 ? 22 : 24
   const cellStyle = (index, headerCell = false) => [
-    'padding:16rpx 18rpx',
-    'border:1rpx solid #DDE6E0',
+    `padding:${headerCell ? 16 : 15}rpx ${columnCount >= 5 ? 7 : 13}rpx`,
+    'border:1px solid #D5E2DA',
     `text-align:${alignments[index] || 'left'}`,
-    'vertical-align:top',
-    'white-space:nowrap',
+    'vertical-align:middle',
+    'white-space:normal',
+    'word-break:normal',
+    'overflow-wrap:anywhere',
+    `font-size:${fontSize}rpx`,
+    'line-height:1.55',
     headerCell ? 'font-weight:700' : '',
-    headerCell ? 'background:#EEF6F1' : 'background:#FFFFFF',
+    headerCell ? 'background:#EAF4EE' : 'background:#FFFFFF',
     headerCell ? 'color:#174E3A' : 'color:#27332C'
   ].filter(Boolean).join(';') + ';'
   const rowNode = (cells, name) => elementNode('tr', header.map((_, index) =>
@@ -118,10 +132,10 @@ function tableNode(header, divider, rows) {
       elementNode('thead', [rowNode(header, 'th')]),
       elementNode('tbody', rows.map(row => rowNode(row, 'td')))
     ], {
-      style: `width:100%;min-width:${minWidth}rpx;border-collapse:collapse;border-spacing:0;font-size:25rpx;line-height:1.55;`
+      style: 'width:100%;border-collapse:collapse;border-spacing:0;table-layout:fixed;'
     })
   ], {
-    style: 'display:block;width:100%;margin:20rpx 0;overflow-x:auto;-webkit-overflow-scrolling:touch;'
+    style: 'display:block;width:100%;margin:24rpx 0 38rpx;overflow:hidden;border-radius:12rpx;background:#FFFFFF;'
   })
 }
 
@@ -146,12 +160,10 @@ function markdownToRichTextNodes(markdown, options = {}) {
         index += 1
       }
       nodes.push(tableNode(header, divider, rows))
-      if (index < lines.length) nodes.push(elementNode('br', []))
       continue
     }
 
     nodes.push(...parseLine(lines[index], options))
-    if (index < lines.length - 1) nodes.push(elementNode('br', []))
     index += 1
   }
 

@@ -5,7 +5,19 @@
   </view>
   <view wx:if="{{loading}}" class="loading">正在加载正文…</view>
   <view wx:if="{{!loading}}" class="article-wrap">
-    <view class="article-body"><rich-text wx:if="{{bodyNodes.length && policy.markdown}}" nodes="{{bodyNodes}}"></rich-text><view wx:if="{{!policy.markdown}}"><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view></view>
+    <view class="article-body">
+      <mp-html
+        wx:if="{{bodyMarkdown}}"
+        class="article-content"
+        content="{{bodyMarkdown}}"
+        markdown="{{true}}"
+        scroll-table="{{true}}"
+        selectable="{{true}}"
+        lazy-load="{{true}}"
+        tag-style="{{articleTagStyle}}"
+      />
+      <view wx:if="{{!bodyMarkdown}}"><text class="paragraph" wx:for="{{policy.paragraphs}}" wx:key="*this">{{item}}</text></view>
+    </view>
     <view class="source-note"><text>信息来源：{{policy.issuer || '待补充发布单位'}}</text><text>{{policy.originalUrl?'已提供官方原文链接':'请以发布单位正式原文为准'}}</text><button bindtap="copySource">{{policy.originalUrl?'复制原文链接':'复制来源说明'}}</button></view>
     <view class="comments"><view class="comments-title"><i></i><text>评论</text><small>{{commentCount ? commentCount + ' 条' : ''}}</small></view>
       <view wx:if="{{commentsLoading}}" class="comment-empty">评论加载中…</view>

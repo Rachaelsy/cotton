@@ -47,6 +47,9 @@ function run() {
   assert.ok(!tableText.includes('---') && !tableText.includes('|'), 'markdown table delimiters should not be rendered as plain text')
   const publicTableNodes = publicMarkdownToRichTextNodes('| 品种 | 产量 |\n\n| --- | ---: |\n\n| 源棉8号 | 396.2公斤/亩 |', { indentParagraphs: true })
   assert.ok(hasNode(publicTableNodes, 'table') && hasNode(publicTableNodes, 'td'), 'cotton-public policy pages should render markdown tables')
+  const publicArticleNodes = publicMarkdownToRichTextNodes('## 适宜种植条件\n\n正文段落。', { indentParagraphs: true })
+  assert.ok(hasNode(publicArticleNodes, 'h2') && hasNode(publicArticleNodes, 'p'), 'policy articles should render section headings and paragraphs as separate blocks')
+  assert.ok(collectText(publicArticleNodes).includes('适宜种植条件') && !collectText(publicArticleNodes).includes('##'), 'policy heading text should not expose Markdown markers')
 
   const aiPage = readRootFile('pages', 'ai', 'index.js')
   const aiWxml = readRootFile('pages', 'ai', 'index.wxml')
