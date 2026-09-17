@@ -14,6 +14,7 @@ const styles = read('public/site/styles.css')
 const dataSource = read('public/site/data.js')
 const commerce = read('routes/commerce.js')
 const publicService = read('routes/public-service.js')
+const publicModules = read('public/site/public-modules.js')
 
 const context = { window: {} }
 vm.runInNewContext(dataSource, context)
@@ -36,6 +37,7 @@ for (const routePath of [
 assert(route.includes("router.get('/public/login', redirectWithQuery('/business/login'))"), 'old login URL should redirect to ecommerce login')
 assert(route.includes("router.get('/public/*', redirectWithQuery('/business/'))"), 'retired public-service URLs should redirect to ecommerce')
 assert(!shell.includes('喀什优棉公共服务平台') && !shell.includes('/public/'), 'the website shell must not expose public-service content')
+assert(publicModules.includes('isMarkdownTableDivider') && publicModules.includes('database-table-wrap') && styles.includes('.database-table-wrap table'), 'public article pages should render Markdown tables with responsive table styling')
 assert(!shell.includes('/knowledge/site/learning.js') && !shell.includes('/knowledge/site/public-modules.js'), 'public-service bundles must not load on the ecommerce site')
 assert(shell.includes('川月智能') && shell.includes('/business/login'), 'the ecommerce brand and login must be visible')
 

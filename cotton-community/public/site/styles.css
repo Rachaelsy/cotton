@@ -1271,6 +1271,44 @@
   text-decoration: underline;
 }
 
+.database-table-wrap {
+  max-width: 100%;
+  margin: 24px 0 30px;
+  overflow-x: auto;
+  border: 1px solid #dce6df;
+  border-radius: 12px;
+  background: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.database-table-wrap table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.database-table-wrap th,
+.database-table-wrap td {
+  padding: 13px 16px;
+  border-right: 1px solid #dce6df;
+  border-bottom: 1px solid #dce6df;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.database-table-wrap th {
+  background: #eef6f1;
+  color: #174e3a;
+  font-weight: 700;
+}
+
+.database-table-wrap tr:last-child td { border-bottom: 0; }
+.database-table-wrap th:last-child,
+.database-table-wrap td:last-child { border-right: 0; }
+
 .database-article-aside {
   position: sticky;
   top: 120px;

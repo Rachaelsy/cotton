@@ -39,27 +39,67 @@
       return html
     }
 
+    function markdownTableCells(line) {
+      let value = String(line || '').trim()
+      if (!value.includes('|')) return []
+      if (value.startsWith('|')) value = value.slice(1)
+      if (value.endsWith('|')) value = value.slice(0, -1)
+      return value.split('|').map(cell => cell.trim())
+    }
+
+    function isMarkdownTableDivider(line, expectedColumns) {
+      const cells = markdownTableCells(line)
+      return cells.length === expectedColumns && cells.every(cell => /^:?-{3,}:?$/.test(cell))
+    }
+
+    function markdownTableHtml(header, divider, rows) {
+      const alignment = divider.map(cell => cell.startsWith(':') && cell.endsWith(':') ? 'center' : cell.endsWith(':') ? 'right' : 'left')
+      const cells = (row, tag) => header.map((_, index) => `<${tag} style="text-align:${alignment[index] || 'left'}">${inlineMarkdown(row[index] || '')}</${tag}>`).join('')
+      return `<div class="database-table-wrap"><table><thead><tr>${cells(header, 'th')}</tr></thead><tbody>${rows.map(row => `<tr>${cells(row, 'td')}</tr>`).join('')}</tbody></table></div>`
+    }
+
     function markdownToHtml(markdown) {
       const lines = String(markdown || '').replace(/\r/g, '').split('\n')
       const result = []
       let listOpen = false
       const closeList = () => { if (listOpen) { result.push('</ul>'); listOpen = false } }
-      lines.forEach(line => {
+      for (let index = 0; index < lines.length;) {
+        const header = markdownTableCells(lines[index])
+        let dividerIndex = index + 1
+        while (dividerIndex < lines.length && !lines[dividerIndex].trim()) dividerIndex += 1
+        if (header.length > 1 && dividerIndex < lines.length && isMarkdownTableDivider(lines[dividerIndex], header.length)) {
+          closeList()
+          const divider = markdownTableCells(lines[dividerIndex])
+          const rows = []
+          index = dividerIndex + 1
+          while (index < lines.length) {
+            if (!lines[index].trim()) { index += 1; continue }
+            const row = markdownTableCells(lines[index])
+            if (row.length !== header.length) break
+            rows.push(row)
+            index += 1
+          }
+          result.push(markdownTableHtml(header, divider, rows))
+          continue
+        }
+
+        const line = lines[index]
+        index += 1
         const text = line.trim()
         const image = text.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)$/)
         const heading = text.match(/^(#{1,3})\s+(.+)$/)
         const bullet = text.match(/^[-*]\s+(.+)$/)
-        if (!text) { closeList(); return }
-        if (image) { closeList(); result.push(`<figure><img src="${escapeHtml(image[2])}" alt="${escapeHtml(image[1])}" loading="lazy"></figure>`); return }
-        if (heading) { closeList(); const level = Math.min(3, heading[1].length + 1); result.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`); return }
+        if (!text) { closeList(); continue }
+        if (image) { closeList(); result.push(`<figure><img src="${escapeHtml(image[2])}" alt="${escapeHtml(image[1])}" loading="lazy"></figure>`); continue }
+        if (heading) { closeList(); const level = Math.min(3, heading[1].length + 1); result.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`); continue }
         if (bullet) {
           if (!listOpen) { result.push('<ul>'); listOpen = true }
           result.push(`<li>${inlineMarkdown(bullet[1])}</li>`)
-          return
+          continue
         }
         closeList()
         result.push(`<p>${inlineMarkdown(text)}</p>`)
-      })
+      }
       closeList()
       return result.join('') || '<p>正文内容正在整理。</p>'
     }
