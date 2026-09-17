@@ -22,8 +22,8 @@
     const head = $('expertStudioHead')
     const body = $('expertStudioTable')
     if (state.tab === 'experts') {
-      head.innerHTML = '<tr><th>专家</th><th>职称/单位</th><th>擅长领域</th><th>在线状态</th><th>排序</th><th>更新时间</th><th>操作</th></tr>'
-      body.innerHTML = state.experts.length ? state.experts.map(item => `<tr><td><div class="expert-profile-cell">${item.avatarUrl ? `<img src="${esc(item.avatarUrl)}" alt="">` : `<span class="product-thumb expert-avatar-fallback">${esc(item.avatar || '专')}</span>`}<strong>${esc(item.name)}</strong></div></td><td>${esc(item.title || '—')}<br><span class="question-excerpt">${esc(item.org || '—')}</span></td><td>${esc((item.tags || []).join('、') || '—')}</td><td><span class="status-pill ${item.isActive ? 'published' : ''}">${item.isActive ? '在线' : '停用'}</span></td><td>${item.sortOrder}</td><td>${item.updatedAt ? new Date(item.updatedAt).toLocaleString('zh-CN') : '—'}</td><td><div class="product-actions"><button class="small-btn primary" data-studio-expert-edit="${item.id}">编辑</button>${item.profileOnly ? `<button class="small-btn danger" data-studio-expert-delete="${item.id}">删除</button>` : ''}</div></td></tr>`).join('') : '<tr><td colspan="7">暂无专家资料，点击右上角新增。</td></tr>'
+      head.innerHTML = '<tr><th>专家</th><th>登录账号</th><th>职称/单位</th><th>擅长领域</th><th>在线状态</th><th>排序</th><th>更新时间</th><th>操作</th></tr>'
+      body.innerHTML = state.experts.length ? state.experts.map(item => `<tr><td><div class="expert-profile-cell">${item.avatarUrl ? `<img src="${esc(item.avatarUrl)}" alt="">` : `<span class="product-thumb expert-avatar-fallback">${esc(item.avatar || '专')}</span>`}<strong>${esc(item.name)}</strong></div></td><td>${item.canLogin ? `${esc(item.phone)}<br><span class="status-pill published">可登录</span>` : '<span class="question-excerpt">仅展示资料</span>'}</td><td>${esc(item.title || '—')}<br><span class="question-excerpt">${esc(item.org || '—')}</span></td><td>${esc((item.tags || []).join('、') || '—')}</td><td><span class="status-pill ${item.isActive ? 'published' : ''}">${item.isActive ? '在线' : '停用'}</span></td><td>${item.sortOrder}</td><td>${item.updatedAt ? new Date(item.updatedAt).toLocaleString('zh-CN') : '—'}</td><td><div class="product-actions"><button class="small-btn primary" data-studio-expert-edit="${item.id}">编辑/重置密码</button>${item.profileOnly ? `<button class="small-btn danger" data-studio-expert-delete="${item.id}">删除</button>` : ''}</div></td></tr>`).join('') : '<tr><td colspan="8">暂无专家账号，点击右上角新增。</td></tr>'
     } else {
       const items = state.contents.filter(item => item.type === 'qa')
       head.innerHTML = '<tr><th>问题</th><th>专家/分类</th><th>封面</th><th>精选</th><th>状态</th><th>排序</th><th>更新时间</th><th>操作</th></tr>'
@@ -58,6 +58,7 @@
     const item = state.experts.find(row => row.id === id)
     $('studioExpertId').value = item ? item.id : ''; $('expertProfileModalTitle').textContent = item ? '编辑在线专家' : '新增在线专家'
     $('studioExpertName').value = item ? item.name : ''; $('studioExpertTitle').value = item ? item.title : ''; $('studioExpertOrg').value = item ? item.org : ''
+    $('studioExpertPhone').value = item ? item.phone : ''; $('studioExpertPassword').value = ''; $('studioExpertPassword').dataset.required = !item || item.profileOnly ? '1' : '0'; $('studioExpertPasswordLabel').textContent = !item || item.profileOnly ? '初始登录密码 *' : '重置登录密码（选填）'
     $('studioExpertAvatarUrl').value = item ? item.avatarUrl : ''; $('studioExpertAvatar').value = item ? item.avatar : '专'; $('studioExpertSort').value = item ? item.sortOrder : 0
     $('studioExpertTags').value = item ? (item.tags || []).join('\n') : ''; $('studioExpertBio').value = item ? item.bio : ''; $('studioExpertActive').checked = item ? item.isActive : true
     $('expertAvatarUploadStatus').textContent = ''; $('expertProfileMessage').textContent = ''; $('expertProfileModal').classList.remove('hidden')
@@ -65,8 +66,9 @@
   function closeExpert() { $('expertProfileModal').classList.add('hidden') }
   async function saveExpert(event) {
     event.preventDefault(); const id = $('studioExpertId').value
-    const body = { name: $('studioExpertName').value.trim(), title: $('studioExpertTitle').value.trim(), org: $('studioExpertOrg').value.trim(), avatar_url: $('studioExpertAvatarUrl').value.trim(), avatar: $('studioExpertAvatar').value.trim() || '专', tags: lines($('studioExpertTags').value), bio: $('studioExpertBio').value.trim(), sort_order: $('studioExpertSort').value, is_active: $('studioExpertActive').checked }
-    if (!body.name || !body.bio) { $('expertProfileMessage').textContent = '专家姓名和简介不能为空'; return }
+    const body = { phone: $('studioExpertPhone').value.trim(), password: $('studioExpertPassword').value, name: $('studioExpertName').value.trim(), title: $('studioExpertTitle').value.trim(), org: $('studioExpertOrg').value.trim(), avatar_url: $('studioExpertAvatarUrl').value.trim(), avatar: $('studioExpertAvatar').value.trim() || '专', tags: lines($('studioExpertTags').value), bio: $('studioExpertBio').value.trim(), sort_order: $('studioExpertSort').value, is_active: $('studioExpertActive').checked }
+    if (!body.name || !body.bio || !/^1\d{10}$/.test(body.phone)) { $('expertProfileMessage').textContent = '请填写专家姓名、简介和正确的11位登录手机号'; return }
+    if ($('studioExpertPassword').dataset.required === '1' && !body.password) { $('expertProfileMessage').textContent = '请设置专家初始登录密码'; return }
     $('expertProfileMessage').textContent = '正在保存...'
     try { await api(`/admin/experts${id ? `/${id}` : ''}`, { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); closeExpert(); await load(); runtime.notify('在线专家已保存', 'success') } catch (error) { $('expertProfileMessage').textContent = error.message }
   }

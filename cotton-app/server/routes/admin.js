@@ -226,6 +226,8 @@ function normalizeExpertQuestion(row = {}) {
   return {
     id: row.id,
     userId: row.user_id,
+    expertId: row.expert_id || null,
+    expertName: row.expert_name || '',
     farmerName: row.farmer_name || '农户',
     farmerPhone: row.farmer_phone || '',
     category: row.category || '种植咨询',
@@ -509,8 +511,120 @@ router.patch('/commission-change-requests/:id', adminAuth, async (req, res) => {
 })
 
 function expertMoved(req, res) {
-  return R_FAIL(res, '专家回复和课程上架已迁移到专家后台，请使用专家账号登录 /expert/login.html', 410)
+  return R_FAIL(res, '专家回复和课程上架已迁移到专家后台，请在统一登录页选择“专家”登录', 410)
 }
+
+function normalizeExpertAccount(row = {}) {
+  return {
+    id: Number(row.id),
+    phone: row.phone || '',
+    name: row.name || '',
+    title: row.title || '',
+    org: row.org || '',
+    avatar: row.avatar || '专',
+    avatarUrl: row.avatar_url || '',
+    specialties: parseJson(row.specialties, []),
+    bio: row.bio || '',
+    isActive: !!row.is_active,
+    pendingQuestions: Number(row.pending_questions || 0),
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null
+  }
+}
+
+function expertAccountBody(body = {}) {
+  const specialties = Array.isArray(body.specialties)
+    ? body.specialties
+    : String(body.specialties || '').split(/[,，、\n]/)
+  return {
+    phone: String(body.phone || '').trim(),
+    password: String(body.password || ''),
+    name: String(body.name || '').trim().slice(0, 64),
+    title: String(body.title || '').trim().slice(0, 64),
+    org: String(body.org || '').trim().slice(0, 128),
+    specialties: [...new Set(specialties.map(item => String(item).trim()).filter(Boolean))].slice(0, 12),
+    bio: String(body.bio || '').trim().slice(0, 10000),
+    isActive: body.isActive === false || body.isActive === 0 || body.isActive === '0' ? 0 : 1
+  }
+}
+
+router.get('/expert-accounts', adminAuth, async (_req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT e.id,e.phone,e.name,e.title,e.org,e.avatar,e.avatar_url,e.specialties,e.bio,e.is_active,e.created_at,e.updated_at,
+             SUM(q.status='pending') AS pending_questions
+        FROM experts e
+        LEFT JOIN expert_questions q ON q.expert_id=e.id
+       WHERE e.profile_only=0
+       GROUP BY e.id
+       ORDER BY e.is_active DESC,e.sort_order ASC,e.id DESC
+    `)
+    return R_OK(res, rows.map(normalizeExpertAccount))
+  } catch (error) {
+    console.error('[admin-expert-accounts]', error)
+    return R_FAIL(res, '专家账号加载失败', 500)
+  }
+})
+
+router.post('/expert-accounts', adminAuth, async (req, res) => {
+  const data = expertAccountBody(req.body)
+  if (!/^1\d{10}$/.test(data.phone)) return R_FAIL(res, '请输入正确的11位手机号')
+  if (!data.name) return R_FAIL(res, '请填写专家姓名')
+  const passwordError = validateStrongPassword(data.password)
+  if (passwordError) return R_FAIL(res, passwordError)
+  try {
+    const hash = await bcrypt.hash(data.password, 12)
+    const [result] = await db.query(
+      `INSERT INTO experts (phone,password,name,title,org,avatar,specialties,bio,profile_only,sort_order,is_active)
+       VALUES (?,?,?,?,?,'专',?,?,0,0,?)`,
+      [data.phone,hash,data.name,data.title,data.org,JSON.stringify(data.specialties),data.bio,data.isActive]
+    )
+    return R_OK(res, { id: Number(result.insertId) }, '专家账号已创建')
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return R_FAIL(res, '该手机号已存在')
+    console.error('[admin-expert-account-create]', error)
+    return R_FAIL(res, '专家账号创建失败', 500)
+  }
+})
+
+router.put('/expert-accounts/:id', adminAuth, async (req, res) => {
+  const data = expertAccountBody(req.body)
+  if (!/^1\d{10}$/.test(data.phone)) return R_FAIL(res, '请输入正确的11位手机号')
+  if (!data.name) return R_FAIL(res, '请填写专家姓名')
+  if (data.password) {
+    const passwordError = validateStrongPassword(data.password)
+    if (passwordError) return R_FAIL(res, passwordError)
+  }
+  try {
+    const values = [data.phone,data.name,data.title,data.org,JSON.stringify(data.specialties),data.bio,data.isActive]
+    let sql = 'UPDATE experts SET phone=?,name=?,title=?,org=?,specialties=?,bio=?,is_active=?,profile_only=0'
+    if (data.password) {
+      sql += ',password=?'
+      values.push(await bcrypt.hash(data.password, 12))
+    }
+    sql += ' WHERE id=? AND profile_only=0'
+    values.push(req.params.id)
+    const [result] = await db.query(sql, values)
+    if (!result.affectedRows) return R_FAIL(res, '专家账号不存在', 404)
+    return R_OK(res, null, data.password ? '专家资料和密码已更新' : '专家资料已更新')
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') return R_FAIL(res, '该手机号已存在')
+    console.error('[admin-expert-account-update]', error)
+    return R_FAIL(res, '专家账号更新失败', 500)
+  }
+})
+
+router.patch('/expert-accounts/:id/status', adminAuth, async (req, res) => {
+  const isActive = req.body.isActive === true || req.body.isActive === 1 || req.body.isActive === '1' ? 1 : 0
+  try {
+    const [result] = await db.query('UPDATE experts SET is_active=? WHERE id=? AND profile_only=0', [isActive, req.params.id])
+    if (!result.affectedRows) return R_FAIL(res, '专家账号不存在', 404)
+    return R_OK(res, null, isActive ? '专家账号已启用' : '专家账号已停用')
+  } catch (error) {
+    return R_FAIL(res, '专家账号状态更新失败', 500)
+  }
+})
+
 router.all('/expert-upload', adminAuth, expertMoved)
 router.all('/expert-contents', adminAuth, expertMoved)
 router.all('/expert-contents/:id', adminAuth, expertMoved)

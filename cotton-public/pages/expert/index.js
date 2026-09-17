@@ -90,6 +90,7 @@ Page({
     quickQuestions: QUICK_QUESTIONS,
     qaContents: [],
     myQuestions: [],
+    selectedExpert: null,
     showQuestionModal: false,
     questionSubmitting: false,
     uploadingQuestionImages: false,
@@ -150,6 +151,7 @@ Page({
         tags: item.tags || [],
         online: item.online !== false
       }))
+      const selectedExpert = this.data.selectedExpert && this._remoteExperts.find(item => String(item.id) === String(this.data.selectedExpert.id))
       this.setData({
         loading: false,
         allCourses: courses,
@@ -157,7 +159,8 @@ Page({
         featured: courses.filter(item => item.isFeatured),
         filteredCourses: filterCourses(courses, this.data.activeCategoryKey),
         categories: this._remoteCategories,
-        experts: this._remoteExperts
+        experts: this._remoteExperts,
+        selectedExpert: selectedExpert || null
       })
     } catch (error) {
       this.setData({ loading: false, loadError: error.message || '专家讲堂加载失败' })
@@ -212,11 +215,19 @@ Page({
   onExpertTap(e) {
     const id = e.currentTarget.dataset.id
     const expert = (this.data.experts || []).find(item => String(item.id) === String(id))
-    if (expert) wx.setStorageSync('expert_selected_profile', expert)
-    wx.navigateTo({ url: `/pages/expert/detail?expertId=${e.currentTarget.dataset.id}` })
+    if (!expert || !expert.online) {
+      wx.showToast({ title: '该专家当前不在线', icon: 'none' })
+      return
+    }
+    this.setData({ selectedExpert: expert })
   },
 
   onAskExpert() {
+    if (!this.data.selectedExpert) {
+      this.setData({ activeLectureTab: 'experts' })
+      wx.showToast({ title: '请先选择在线专家', icon: 'none' })
+      return
+    }
     this.setData({ showQuestionModal: true })
   },
 
@@ -304,14 +315,17 @@ Page({
 
   onQuickQuestion(e) {
     const question = e.currentTarget.dataset.question || ''
-    this.setData({
-      showQuestionModal: true,
-      'questionForm.question': question
-    })
+    this.setData({ 'questionForm.question': question })
+    this.onAskExpert()
   },
 
   async submitQuestion() {
     const form = this.data.questionForm || {}
+    const expert = this.data.selectedExpert
+    if (!expert || !expert.online) {
+      wx.showToast({ title: '请先选择在线专家', icon: 'none' })
+      return
+    }
     const question = String(form.question || '').trim()
     if (question.length < 5) {
       wx.showToast({ title: '问题再写具体一点', icon: 'none' })
@@ -320,6 +334,7 @@ Page({
     this.setData({ questionSubmitting: true })
     try {
       const res = await auth.request('POST', '/api/expert/questions', {
+        expertId: expert.id,
         category: form.category,
         cropStage: form.cropStage,
         plotId: form.plotId,

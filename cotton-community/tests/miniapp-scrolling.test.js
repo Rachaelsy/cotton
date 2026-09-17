@@ -26,7 +26,7 @@ assert(homeJs.includes("academy: '/pages/academy/index'") && !homeJs.includes("k
 for (const level of ["key: 'basic'", "key: 'intermediate'", "key: 'advanced'"]) {
   assert(academyData.includes(level), `academy is missing course level ${level}`)
 }
-assert((academyData.match(/type: '视频'/g) || []).length >= 15, 'academy should use video as its primary course format')
+assert(academyData.includes('const COURSES = []') && academyData.includes('const SERIES = []'), 'academy demo content should remain empty until real videos are published')
 assert(academyData.includes("name: '初级课程'") && academyData.includes("name: '中级课程'") && academyData.includes("name: '高级课程'") && academyHome.includes('level-tabs'), 'academy home should expose three learning levels')
 assert(academyCourse.includes('<video') && academyCourse.includes('autoplay="true"') && academyCourse.includes('class="comment-section"'), 'academy course detail should support short-video learning and comments')
 assert(i18n.includes("brand: '喀什优棉公共服务平台'") && !i18n.includes('棉花智能体') && !i18n.includes('智慧棉花管理平台'), 'login and registration copy should use the unified public service platform name')

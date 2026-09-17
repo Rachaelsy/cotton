@@ -63,10 +63,18 @@ function stringList(value) {
   return source.map(item => String(item).trim()).filter(Boolean).slice(0, 12).map(item => item.slice(0, 60))
 }
 
+function passwordError(value) {
+  const password = String(value || '')
+  if (password.length < 12) return '密码至少需要12位'
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) return '密码必须包含大小写字母、数字和特殊字符'
+  if (password.length > 72) return '密码不能超过72位'
+  return ''
+}
+
 function normalizeExpert(row) {
   let tags = []
   try { tags = JSON.parse(row.specialties || '[]') } catch {}
-  return { id: Number(row.id), name: row.name || '', title: row.title || '', org: row.org || '', avatar: row.avatar || '专', avatarUrl: row.avatar_url || '', tags, bio: row.bio || '', isActive: !!row.is_active, profileOnly: !!row.profile_only, sortOrder: Number(row.sort_order || 0), updatedAt: row.updated_at || null }
+  return { id: Number(row.id), phone: row.profile_only ? '' : (row.phone || ''), name: row.name || '', title: row.title || '', org: row.org || '', avatar: row.avatar || '专', avatarUrl: row.avatar_url || '', tags, bio: row.bio || '', isActive: !!row.is_active, profileOnly: !!row.profile_only, canLogin: !row.profile_only, sortOrder: Number(row.sort_order || 0), updatedAt: row.updated_at || null }
 }
 
 function normalizeContent(row) {
@@ -138,22 +146,32 @@ router.post('/admin/upload', adminAuth, upload.single('file'), (req, res) => {
 router.post('/admin/experts', adminAuth, async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 64)
   if (!name) return fail(res, '专家姓名不能为空')
-  const phone = `P${Date.now().toString().slice(-10)}`
-  const password = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10)
+  const phone = String(req.body.phone || '').trim()
+  if (!/^1\d{10}$/.test(phone)) return fail(res, '请输入正确的11位专家登录手机号')
+  const validation = passwordError(req.body.password)
+  if (validation) return fail(res, validation)
+  const password = await bcrypt.hash(String(req.body.password), 12)
   try {
-    const [result] = await db.query(`INSERT INTO experts (phone,password,name,title,org,avatar,avatar_url,specialties,bio,profile_only,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?,?,1,?,?)`, [phone, password, name, String(req.body.title || '').trim().slice(0, 64), String(req.body.org || '').trim().slice(0, 128), String(req.body.avatar || '专').trim().slice(0, 16), safeUrl(req.body.avatar_url), JSON.stringify(stringList(req.body.tags)), String(req.body.bio || '').trim().slice(0, 10000), Number.parseInt(req.body.sort_order, 10) || 0, req.body.is_active === false || req.body.is_active === 0 || req.body.is_active === '0' ? 0 : 1])
-    return ok(res, { id: Number(result.insertId) }, '在线专家已创建')
-  } catch (error) { console.error('[expert-studio-expert-create]', error); return fail(res, '在线专家保存失败', 500) }
+    const [result] = await db.query(`INSERT INTO experts (phone,password,name,title,org,avatar,avatar_url,specialties,bio,profile_only,sort_order,is_active) VALUES (?,?,?,?,?,?,?,?,?,0,?,?)`, [phone, password, name, String(req.body.title || '').trim().slice(0, 64), String(req.body.org || '').trim().slice(0, 128), String(req.body.avatar || '专').trim().slice(0, 16), safeUrl(req.body.avatar_url), JSON.stringify(stringList(req.body.tags)), String(req.body.bio || '').trim().slice(0, 10000), Number.parseInt(req.body.sort_order, 10) || 0, req.body.is_active === false || req.body.is_active === 0 || req.body.is_active === '0' ? 0 : 1])
+    return ok(res, { id: Number(result.insertId) }, '专家登录账号已创建')
+  } catch (error) { if (error.code === 'ER_DUP_ENTRY') return fail(res, '该手机号已存在'); console.error('[expert-studio-expert-create]', error); return fail(res, '在线专家保存失败', 500) }
 })
 
 router.put('/admin/experts/:id', adminAuth, async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 64)
   if (!name) return fail(res, '专家姓名不能为空')
+  const phone = String(req.body.phone || '').trim()
+  if (!/^1\d{10}$/.test(phone)) return fail(res, '请输入正确的11位专家登录手机号')
+  if (req.body.password) { const validation = passwordError(req.body.password); if (validation) return fail(res, validation) }
   try {
-    const [result] = await db.query(`UPDATE experts SET name=?,title=?,org=?,avatar=?,avatar_url=?,specialties=?,bio=?,sort_order=?,is_active=? WHERE id=?`, [name, String(req.body.title || '').trim().slice(0, 64), String(req.body.org || '').trim().slice(0, 128), String(req.body.avatar || '专').trim().slice(0, 16), safeUrl(req.body.avatar_url), JSON.stringify(stringList(req.body.tags)), String(req.body.bio || '').trim().slice(0, 10000), Number.parseInt(req.body.sort_order, 10) || 0, req.body.is_active === false || req.body.is_active === 0 || req.body.is_active === '0' ? 0 : 1, req.params.id])
+    const params = [phone,name,String(req.body.title || '').trim().slice(0, 64),String(req.body.org || '').trim().slice(0, 128),String(req.body.avatar || '专').trim().slice(0, 16),safeUrl(req.body.avatar_url),JSON.stringify(stringList(req.body.tags)),String(req.body.bio || '').trim().slice(0, 10000),Number.parseInt(req.body.sort_order, 10) || 0,req.body.is_active === false || req.body.is_active === 0 || req.body.is_active === '0' ? 0 : 1]
+    let sql = 'UPDATE experts SET phone=?,name=?,title=?,org=?,avatar=?,avatar_url=?,specialties=?,bio=?,sort_order=?,is_active=?,profile_only=0'
+    if (req.body.password) { sql += ',password=?'; params.push(await bcrypt.hash(String(req.body.password), 12)) }
+    sql += ' WHERE id=?'; params.push(req.params.id)
+    const [result] = await db.query(sql, params)
     if (!result.affectedRows) return fail(res, '专家不存在', 404)
-    return ok(res, null, '在线专家已更新')
-  } catch (error) { console.error('[expert-studio-expert-update]', error); return fail(res, '在线专家更新失败', 500) }
+    return ok(res, null, req.body.password ? '专家资料和登录密码已更新' : '在线专家已更新')
+  } catch (error) { if (error.code === 'ER_DUP_ENTRY') return fail(res, '该手机号已存在'); console.error('[expert-studio-expert-update]', error); return fail(res, '在线专家更新失败', 500) }
 })
 
 router.delete('/admin/experts/:id', adminAuth, async (req, res) => {

@@ -704,6 +704,8 @@ async function run() {
     CREATE TABLE IF NOT EXISTS expert_questions (
       id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       user_id INT UNSIGNED DEFAULT NULL,
+      expert_id INT UNSIGNED DEFAULT NULL,
+      expert_name VARCHAR(100) DEFAULT '',
       farmer_name VARCHAR(64) DEFAULT '',
       farmer_phone VARCHAR(32) DEFAULT '',
       category VARCHAR(64) DEFAULT '',
@@ -719,9 +721,12 @@ async function run() {
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_expert_questions_user_created (user_id,created_at),
+      INDEX idx_expert_questions_expert_created (expert_id,created_at),
       INDEX idx_expert_questions_status_created (status,created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='共享专家咨询记录'
   `)
+  if (!(await hasColumn('expert_questions', 'expert_id'))) await db.query("ALTER TABLE expert_questions ADD COLUMN expert_id INT UNSIGNED DEFAULT NULL AFTER user_id")
+  if (!(await hasColumn('expert_questions', 'expert_name'))) await db.query("ALTER TABLE expert_questions ADD COLUMN expert_name VARCHAR(100) DEFAULT '' AFTER expert_id")
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS community_service_requests (

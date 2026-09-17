@@ -6,7 +6,7 @@
         <text class="exp-title">{{copy.title}}</text>
         <text class="exp-sub">{{copy.subtitle}}</text>
       </view>
-      <view class="exp-ask" bindtap="onAskExpert"><text>{{copy.ask}}</text></view>
+      <view class="exp-top-placeholder"></view>
     </view>
     <text class="exp-slogan">{{copy.slogan}}</text>
     <view class="exp-stats">
@@ -26,7 +26,6 @@
     <view wx:if="{{loadError}}" class="notice-card weak">{{loadError}}</view>
 
     <view wx:if="{{activeLectureTab === 'qa'}}" class="lecture-panel">
-      <view class="ask-banner" bindtap="onAskExpert"><view><text class="ask-title">有生产问题，向专家提问</text></view><text class="ask-action">去提问 ›</text></view>
       <view class="qa-list">
         <view class="qa-item" wx:for="{{qaContents}}" wx:key="id" bindtap="onCourseTap" data-id="{{item.id}}">
           <view class="qa-mark">问</view><view class="qa-main"><text class="qa-title">{{item.title}}</text><text class="qa-answer">{{item.intro || item.content}}</text><view class="qa-meta"><text>{{item.teacher}}</text><text>{{item.category}}</text><text>查看解答 ›</text></view></view>
@@ -35,18 +34,22 @@
       </view>
       <view class="my-question-wrap" wx:if="{{myQuestions.length}}">
         <view class="section-head"><text class="section-title">我的提问</text><text class="section-more" bindtap="loadMyQuestions">刷新</text></view>
-        <view class="question-card" wx:for="{{myQuestions}}" wx:key="id"><view class="question-row"><text class="question-category">{{item.category}}</text><text class="question-status status-{{item.status}}">{{item.statusLabel}}</text></view><text class="question-text">{{item.question}}</text><view class="answer-box" wx:if="{{item.reply}}"><text class="answer-label">专家回复</text><text class="answer-text">{{item.reply}}</text></view></view>
+        <view class="question-card" wx:for="{{myQuestions}}" wx:key="id"><view class="question-row"><text class="question-category">{{item.category}}</text><text class="question-status status-{{item.status}}">{{item.statusLabel}}</text></view><text class="question-expert" wx:if="{{item.expertName}}">提问专家：{{item.expertName}}</text><text class="question-text">{{item.question}}</text><view class="answer-box" wx:if="{{item.reply}}"><text class="answer-label">专家回复</text><text class="answer-text">{{item.reply}}</text></view></view>
       </view>
     </view>
 
     <view wx:if="{{activeLectureTab === 'experts'}}" class="lecture-panel expert-list">
-      <view class="expert-list-card" wx:for="{{experts}}" wx:key="id" bindtap="onExpertTap" data-id="{{item.id}}">
+      <view class="expert-list-card {{selectedExpert && selectedExpert.id === item.id ? 'selected' : ''}}" wx:for="{{experts}}" wx:key="id" bindtap="onExpertTap" data-id="{{item.id}}">
         <image wx:if="{{item.avatarUrl}}" class="expert-photo" src="{{item.avatarUrl}}" mode="aspectFill"></image>
         <text wx:if="{{!item.avatarUrl}}" class="expert-avatar">{{item.avatar}}</text>
         <view class="expert-info"><view class="expert-name-row"><text class="expert-name">{{item.name}}</text><text class="expert-title-name">{{item.titleName}}</text></view><text class="expert-org">{{item.org}}</text><view class="expert-tags"><text wx:for="{{item.tags}}" wx:key="*this" class="expert-tag">{{item}}</text></view><text class="expert-bio">{{item.bio}}</text></view>
-        <text class="expert-online {{item.online ? 'on' : ''}}">{{item.online ? '在线' : '离线'}}</text>
+        <text class="expert-online {{item.online ? 'on' : ''}}">{{selectedExpert && selectedExpert.id === item.id ? '已选择' : (item.online ? '在线' : '离线')}}</text>
       </view>
       <view wx:if="{{!loading && !experts.length}}" class="empty-state"><text class="empty-icon">专</text><text class="empty-title">暂无在线专家</text></view>
+      <view class="selected-expert-action" wx:if="{{selectedExpert}}">
+        <view><text>已选择 {{selectedExpert.name}}</text><text>{{selectedExpert.titleName || selectedExpert.org}}</text></view>
+        <button bindtap="onAskExpert">向TA提问</button>
+      </view>
     </view>
 
     <view class="bottom-gap"></view>
@@ -55,7 +58,7 @@
   <view class="question-modal-mask" wx:if="{{showQuestionModal}}" catchtap="closeQuestionModal" style="padding-top: {{statusBarHeight + 72}}px;">
     <view class="question-modal" catchtap="noop">
       <view class="question-modal-head">
-        <text class="question-modal-title">向专家提问</text>
+        <view class="question-modal-target"><text class="question-modal-title">向 {{selectedExpert.name}} 提问</text><text>{{selectedExpert.titleName || selectedExpert.org}}</text></view>
         <text class="question-modal-close" bindtap="closeQuestionModal">×</text>
       </view>
       <view class="question-modal-body">
@@ -90,7 +93,7 @@
       </view>
       <view class="question-modal-actions">
         <button class="question-btn plain" bindtap="closeQuestionModal">取消</button>
-        <button class="question-btn primary" loading="{{questionSubmitting}}" bindtap="submitQuestion">提交给管理员</button>
+        <button class="question-btn primary" loading="{{questionSubmitting}}" bindtap="submitQuestion">提交给专家</button>
       </view>
     </view>
   </view>

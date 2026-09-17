@@ -24,6 +24,6 @@ assert(courseWxml.includes('autoplay="true"') && courseWxml.includes('class="com
 assert(academyIndex.includes('level-tabs') && academyIndex.includes('series-grid'), 'academy should show level tabs and series course cards')
 assert(seriesPage.includes('课程目录') && seriesPage.includes('openLesson'), 'series page should show a clickable lesson directory')
 assert(courseJs.includes('/api/academy/courses/') && courseJs.includes('submitComment') && courseJs.includes('toggleLike'), 'course page is not connected to shared comments')
-assert((courseData.match(/duration: '(?:\d+秒|1分\d+秒)'/g) || []).length >= 15, 'video lessons should be approximately one minute long')
+assert(courseData.includes('const COURSES = []') && courseData.includes('const SERIES = []'), 'mini program must not contain demo academy content')
 
 console.log('academy tests passed')

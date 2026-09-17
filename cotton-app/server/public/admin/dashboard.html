@@ -318,6 +318,9 @@
     <div class="nav-item" data-panel="farmers" onclick="switchPanel(this)">
       <span class="nav-icon">👨‍🌾</span> 农户管理
     </div>
+    <div class="nav-item" data-panel="expertAccounts" onclick="switchPanel(this)">
+      <span class="nav-icon">🎓</span> 专家账号
+    </div>
     <div class="nav-item" data-panel="points" onclick="switchPanel(this)">
       <span class="nav-icon">积</span> 积分运营
     </div>
@@ -741,6 +744,22 @@
       </div>
     </div>
 
+    <div class="panel" id="panel-expertAccounts">
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-title">专家账号管理</span>
+          <span class="badge" id="expert-account-count">0 位专家</span>
+          <button class="act-btn approve" onclick="openExpertAccountAdd()">＋ 创建专家账号</button>
+          <button class="act-btn" onclick="loadExpertAccounts()" style="background:#F0F0F0;color:#555">刷新</button>
+        </div>
+        <div style="padding:12px 16px;color:#68736B;font-size:12px;background:#F7FAF8;border-bottom:1px solid #EEF1EE">专家使用手机号和密码，在统一登录页选择“专家”进入后台；登录后只会看到分配给自己的农户问题。</div>
+        <table>
+          <thead><tr><th>专家</th><th>登录手机号</th><th>单位/职称</th><th>擅长领域</th><th>待回复</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="expertAccountTable"><tr class="empty-row"><td colspan="7">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="panel" id="panel-knowledgeComments">
       <div class="table-wrap">
         <div class="table-head knowledge-toolbar">
@@ -969,6 +988,33 @@
   </div>
 </div>
 
+<div class="modal-mask" id="modalExpertAccount">
+  <div class="modal">
+    <h3 id="expertAccountModalTitle">创建专家账号</h3>
+    <input type="hidden" id="expert-account-id">
+    <div class="mrow">
+      <div class="mfield"><label>专家姓名 <span class="req">*</span></label><input id="expert-account-name" maxlength="64" placeholder="请输入真实姓名"></div>
+      <div class="mfield"><label>登录手机号 <span class="req">*</span></label><input id="expert-account-phone" maxlength="11" inputmode="numeric" placeholder="11位手机号"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>职称</label><input id="expert-account-title" maxlength="64" placeholder="如：高级农艺师"></div>
+      <div class="mfield"><label>工作单位</label><input id="expert-account-org" maxlength="128" placeholder="如：喀什地区农技推广站"></div>
+    </div>
+    <div class="mfield"><label>擅长领域</label><input id="expert-account-specialties" placeholder="种植技术、水肥管理、病虫害防治"></div>
+    <div class="mfield"><label>专家简介</label><textarea id="expert-account-bio" rows="4" maxlength="10000" placeholder="填写专家从业经历和专业方向"></textarea></div>
+    <div class="mfield">
+      <label id="expert-account-password-label">初始登录密码 <span class="req">*</span></label>
+      <input id="expert-account-password" type="password" autocomplete="new-password" placeholder="至少12位，包含大小写字母、数字和特殊字符">
+      <div class="help-text">编辑时留空表示不修改密码；填写新密码即可为专家重置密码。</div>
+    </div>
+    <div class="mfield"><label><input id="expert-account-active" type="checkbox" checked> 账号启用并在小程序显示为在线专家</label></div>
+    <div class="mbtns">
+      <button class="mbtn cancel" onclick="closeModal('modalExpertAccount')">取消</button>
+      <button class="mbtn save" onclick="saveExpertAccount()">保存账号</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 弹窗：专家讲堂内容（新增/编辑）══ -->
 <div class="modal-mask" id="modalExpert">
   <div class="modal expert-form-modal">
@@ -1137,6 +1183,7 @@
   let supportSocketReconnectTimer = null
   let marketingCampaignData = []
   let marketingRejectMode = false
+  let expertAccountsData = []
 
   // 时间
   function updateTime() { document.getElementById('topbarTime').textContent = new Date().toLocaleString('zh-CN') }
@@ -1178,7 +1225,7 @@
   }
 
   // ── 面板切换 ────────────────────────────────
-  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', points: '积分运营', verifications: '实名审核', merchants: '商户管理', products: '商品管理', marketing: '营销审核', orders: '订单管理', announcements: '平台公告', supportChats: '在线客服', feedbacks: '客服反馈', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核', knowledgeContents: '网站内容', knowledgeComments: '课程评论', knowledgeForum: '问答社区', serviceRequests: '服务需求', accountSecurity: '账户安全' }
+  const TITLES = { overview: '数据概览', applications: '商户审批', operatorApps: '机主审批', farmers: '农户管理', expertAccounts: '专家账号', points: '积分运营', verifications: '实名审核', merchants: '商户管理', products: '商品管理', marketing: '营销审核', orders: '订单管理', announcements: '平台公告', supportChats: '在线客服', feedbacks: '客服反馈', aftersale: '售后管理', finance: '财务管理', commissionRequests: '佣金审核', knowledgeContents: '网站内容', knowledgeComments: '课程评论', knowledgeForum: '问答社区', serviceRequests: '服务需求', accountSecurity: '账户安全' }
   function switchPanel(el) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
     el.classList.add('active')
@@ -1194,6 +1241,7 @@
     else if (panel === 'applications') loadApplications()
     else if (panel === 'operatorApps') loadOperatorApps()
     else if (panel === 'farmers')     loadFarmers()
+    else if (panel === 'expertAccounts') loadExpertAccounts()
     else if (panel === 'points')      loadPoints()
     else if (panel === 'verifications') loadVerifications()
     else if (panel === 'merchants')   loadMerchants()
@@ -2512,6 +2560,100 @@
     else alert(r?.msg || '删除失败')
   }
 
+  // ── 专家账号 ─────────────────────────────────
+  async function loadExpertAccounts() {
+    const tbody = document.getElementById('expertAccountTable')
+    if (!tbody) return
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">加载中...</td></tr>'
+    const result = await api('GET', '/expert-accounts')
+    if (!result || result.code !== 200) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="7">${esc(result?.msg || '专家账号加载失败')}</td></tr>`
+      return
+    }
+    expertAccountsData = result.data || []
+    document.getElementById('expert-account-count').textContent = `${expertAccountsData.length} 位专家`
+    if (!expertAccountsData.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">暂无专家账号，请点击“创建专家账号”。</td></tr>'
+      return
+    }
+    tbody.innerHTML = expertAccountsData.map(item => `
+      <tr>
+        <td><strong>${esc(item.name)}</strong></td>
+        <td>${esc(item.phone)}</td>
+        <td>${esc(item.org || '—')}<br><span style="color:#888;font-size:12px">${esc(item.title || '未填写职称')}</span></td>
+        <td>${(item.specialties || []).map(tag => `<span class="badge">${esc(tag)}</span>`).join(' ') || '—'}</td>
+        <td><span class="badge ${Number(item.pendingQuestions) ? 'badge-warn' : ''}">${Number(item.pendingQuestions || 0)} 条</span></td>
+        <td><span class="badge ${item.isActive ? 'badge-ok' : 'badge-info'}">${item.isActive ? '已启用' : '已停用'}</span></td>
+        <td style="white-space:nowrap">
+          <button class="act-btn edit" onclick="openExpertAccountEdit(${item.id})">编辑/重置密码</button>
+          <button class="act-btn ${item.isActive ? 'disable' : 'approve'}" onclick="toggleExpertAccount(${item.id},${item.isActive ? 0 : 1})">${item.isActive ? '停用' : '启用'}</button>
+        </td>
+      </tr>
+    `).join('')
+  }
+
+  function fillExpertAccountForm(item = {}) {
+    document.getElementById('expert-account-id').value = item.id || ''
+    document.getElementById('expert-account-name').value = item.name || ''
+    document.getElementById('expert-account-phone').value = item.phone || ''
+    document.getElementById('expert-account-title').value = item.title || ''
+    document.getElementById('expert-account-org').value = item.org || ''
+    document.getElementById('expert-account-specialties').value = (item.specialties || []).join('、')
+    document.getElementById('expert-account-bio').value = item.bio || ''
+    document.getElementById('expert-account-password').value = ''
+    document.getElementById('expert-account-active').checked = item.id ? Boolean(item.isActive) : true
+    document.getElementById('expert-account-password-label').innerHTML = item.id ? '重置登录密码（选填）' : '初始登录密码 <span class="req">*</span>'
+  }
+
+  function openExpertAccountAdd() {
+    fillExpertAccountForm()
+    document.getElementById('expertAccountModalTitle').textContent = '创建专家账号'
+    document.getElementById('modalExpertAccount').classList.add('show')
+  }
+
+  function openExpertAccountEdit(id) {
+    const item = expertAccountsData.find(row => Number(row.id) === Number(id))
+    if (!item) return alert('专家账号不存在')
+    fillExpertAccountForm(item)
+    document.getElementById('expertAccountModalTitle').textContent = '编辑专家账号'
+    document.getElementById('modalExpertAccount').classList.add('show')
+  }
+
+  async function saveExpertAccount() {
+    const id = document.getElementById('expert-account-id').value
+    const password = document.getElementById('expert-account-password').value
+    const body = {
+      name: document.getElementById('expert-account-name').value.trim(),
+      phone: document.getElementById('expert-account-phone').value.trim(),
+      title: document.getElementById('expert-account-title').value.trim(),
+      org: document.getElementById('expert-account-org').value.trim(),
+      specialties: document.getElementById('expert-account-specialties').value,
+      bio: document.getElementById('expert-account-bio').value.trim(),
+      password,
+      isActive: document.getElementById('expert-account-active').checked
+    }
+    if (!body.name || !/^1\d{10}$/.test(body.phone)) return alert('请填写专家姓名和正确的11位手机号')
+    if (!id && !password) return alert('请设置专家初始密码')
+    if (password && (password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password))) {
+      return alert('密码至少12位，并包含大小写字母、数字和特殊字符')
+    }
+    const result = await api(id ? 'PUT' : 'POST', `/expert-accounts${id ? `/${id}` : ''}`, body)
+    if (result?.code !== 200) return alert(result?.msg || '专家账号保存失败')
+    closeModal('modalExpertAccount')
+    CottonRuntime.notify(result.msg || '专家账号已保存', 'success')
+    loadExpertAccounts()
+  }
+
+  async function toggleExpertAccount(id, isActive) {
+    const action = isActive ? '启用' : '停用'
+    if (!confirm(`确定${action}这个专家账号吗？`)) return
+    const result = await api('PATCH', `/expert-accounts/${id}/status`, { isActive })
+    if (result?.code === 200) {
+      CottonRuntime.notify(result.msg || `账号已${action}`, 'success')
+      loadExpertAccounts()
+    } else alert(result?.msg || `${action}失败`)
+  }
+
   // ── 专家讲堂 ─────────────────────────────────
   let expertContentsData = []
   const EXPERT_TYPE_LABEL = { video: '视频课', article: '图文课', qa: '问答课' }
@@ -2718,7 +2860,7 @@
         ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${images.map(url => `<img src="${esc(url)}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #EEE">`).join('')}</div>`
         : ''
       return `<tr>
-        <td><strong>${esc(item.farmerName || '农户')}</strong><br><span style="color:#888;font-size:12px">${esc(item.farmerPhone || '')}</span></td>
+        <td><strong>${esc(item.farmerName || '农户')}</strong><br><span style="color:#888;font-size:12px">${esc(item.farmerPhone || '')}</span><br><span style="color:#16805c;font-size:12px">提交给：${esc(item.expertName || '平台专家')}</span></td>
         <td>${esc(item.category || '种植咨询')}<br><span style="color:#888;font-size:12px">${esc(detail || '未填写')}</span></td>
         <td style="max-width:420px">${esc(item.question || '')}${imageHtml}${item.reply ? `<br><span style="color:#16A34A;font-size:12px">已回复：${esc(item.reply)}</span>` : ''}</td>
         <td><span class="badge ${statusInfo.cls}">${statusInfo.label}</span></td>
@@ -2742,6 +2884,7 @@
       : ''
     document.getElementById('eq-detail').innerHTML = `
       <p><strong>农户：</strong>${esc(item.farmerName || '农户')} ${esc(item.farmerPhone || '')}</p>
+      <p><strong>指定专家：</strong>${esc(item.expertName || '平台专家')}</p>
       <p><strong>分类：</strong>${esc(item.category || '种植咨询')} ${item.cropStage ? `｜${esc(item.cropStage)}` : ''} ${item.plotName ? `｜${esc(item.plotName)}` : ''}</p>
       <p><strong>问题：</strong>${esc(item.question || '')}</p>
       ${imageHtml}

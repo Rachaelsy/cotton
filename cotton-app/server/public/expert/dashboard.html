@@ -72,6 +72,20 @@
     .modal-foot { padding: 16px 24px 24px; display: flex; justify-content: flex-end; gap: 10px; }
     .preview { margin-top: 8px; color: #657267; word-break: break-all; font-size: 13px; }
     .reply-box { background: #f5f8f4; border-radius: 14px; padding: 14px; margin-top: 12px; color: #405246; line-height: 1.65; white-space: pre-wrap; }
+    .settings-wrap { display: grid; grid-template-columns: minmax(0, 720px) minmax(240px, 1fr); gap: 18px; align-items: start; }
+    .settings-body { padding: 24px; }
+    .settings-body .form-grid { gap: 20px; }
+    .readonly { background: #f3f5f2; color: #69746b; cursor: not-allowed; }
+    .field-help { color: #7b867c; font-size: 13px; line-height: 1.6; }
+    .form-actions { display: flex; align-items: center; gap: 12px; margin-top: 22px; }
+    .form-message { min-height: 22px; color: #247a43; font-size: 14px; font-weight: 700; }
+    .form-message.error { color: #c0392b; }
+    .profile-summary { padding: 24px; text-align: center; }
+    .profile-avatar { width: 92px; height: 92px; margin: 0 auto 16px; border-radius: 26px; display: grid; place-items: center; overflow: hidden; background: #e9f4e9; color: #1f7040; font-size: 32px; font-weight: 900; }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-summary h3 { font-size: 21px; margin-bottom: 8px; }
+    .profile-summary p { color: #728076; line-height: 1.6; }
+    .security-note { margin-bottom: 22px; padding: 16px 18px; border-radius: 12px; background: #f5f8f4; color: #536158; line-height: 1.7; }
     @media (max-width: 920px) {
       .layout { grid-template-columns: 1fr; }
       .side { position: static; }
@@ -79,6 +93,7 @@
       .top, .content { padding-left: 16px; padding-right: 16px; }
       table { min-width: 760px; }
       .table-scroll { overflow-x: auto; }
+      .settings-wrap { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -93,6 +108,8 @@
       <nav class="nav">
         <button class="active" data-panel="questions" onclick="switchPanel('questions')">农户提问</button>
         <button data-panel="contents" onclick="switchPanel('contents')">培训内容</button>
+        <button data-panel="profile" onclick="switchPanel('profile')">个人资料</button>
+        <button data-panel="security" onclick="switchPanel('security')">账号安全</button>
       </nav>
       <div class="side-foot">
         <strong id="expertName">平台专家</strong>
@@ -107,7 +124,7 @@
       </header>
 
       <section class="content">
-        <div class="stats">
+        <div class="stats" id="statsSummary">
           <div class="stat"><span>待回复问题</span><strong id="statPending">0</strong></div>
           <div class="stat"><span>已回复问题</span><strong id="statReplied">0</strong></div>
           <div class="stat"><span>已上架课程</span><strong id="statPublished">0</strong></div>
@@ -151,6 +168,93 @@
                 <thead><tr><th>封面</th><th>标题</th><th>类型</th><th>分类</th><th>价格</th><th>互动</th><th>状态</th><th>操作</th></tr></thead>
                 <tbody id="contentTable"><tr><td colspan="8" class="empty">加载中...</td></tr></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="panel-profile">
+          <div class="settings-wrap">
+            <div class="card">
+              <div class="card-head"><div class="card-title">编辑个人资料</div></div>
+              <div class="settings-body">
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="profilePhone">登录手机号</label>
+                    <input id="profilePhone" class="readonly" readonly>
+                    <div class="field-help">登录手机号由平台管理员维护。</div>
+                  </div>
+                  <div class="field">
+                    <label for="profileName">专家姓名 *</label>
+                    <input id="profileName" maxlength="64" placeholder="请输入姓名">
+                  </div>
+                  <div class="field">
+                    <label for="profileTitle">职称</label>
+                    <input id="profileTitle" maxlength="64" placeholder="如：高级农艺师">
+                  </div>
+                  <div class="field">
+                    <label for="profileOrg">所属单位</label>
+                    <input id="profileOrg" maxlength="128" placeholder="请输入所属单位">
+                  </div>
+                  <div class="field">
+                    <label for="profileAvatar">头像文字</label>
+                    <input id="profileAvatar" maxlength="16" placeholder="未上传头像时显示，如：专">
+                  </div>
+                  <div class="field">
+                    <label for="profileAvatarUrl">头像图片</label>
+                    <div class="input-row">
+                      <input id="profileAvatarUrl" maxlength="500" placeholder="上传头像或填写图片地址">
+                      <button class="btn gray" type="button" onclick="pickUpload('profileAvatarFile')">上传</button>
+                    </div>
+                    <input id="profileAvatarFile" type="file" accept="image/*" style="display:none" onchange="uploadProfileAvatar(this)">
+                  </div>
+                  <div class="field full">
+                    <label for="profileSpecialties">擅长领域</label>
+                    <input id="profileSpecialties" placeholder="多个领域用逗号分隔，如：棉花种植、水肥管理">
+                  </div>
+                  <div class="field full">
+                    <label for="profileBio">个人简介 *</label>
+                    <textarea id="profileBio" maxlength="2000" placeholder="介绍从业经历、专业方向和服务范围"></textarea>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="btn" id="saveProfileBtn" onclick="saveProfile()">保存个人资料</button>
+                  <span class="form-message" id="profileMessage"></span>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="profile-summary">
+                <div class="profile-avatar" id="profilePreviewAvatar">专</div>
+                <h3 id="profilePreviewName">专家姓名</h3>
+                <p id="profilePreviewMeta">职称 · 所属单位</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="panel-security">
+          <div class="card" style="max-width:720px">
+            <div class="card-head"><div class="card-title">修改登录密码</div></div>
+            <div class="settings-body">
+              <div class="security-note">修改密码前需要验证当前密码。新密码至少12位，并同时包含大写字母、小写字母、数字和特殊字符。修改成功后需要重新登录。</div>
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="currentPassword">当前密码 *</label>
+                  <input id="currentPassword" type="password" autocomplete="current-password" placeholder="请输入当前登录密码">
+                </div>
+                <div class="field">
+                  <label for="newPassword">新密码 *</label>
+                  <input id="newPassword" type="password" autocomplete="new-password" placeholder="至少12位强密码">
+                </div>
+                <div class="field">
+                  <label for="confirmPassword">确认新密码 *</label>
+                  <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="再次输入新密码">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn" id="changePasswordBtn" onclick="changePassword()">确认修改密码</button>
+                <span class="form-message" id="passwordMessage"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -293,8 +397,9 @@
     const token = localStorage.getItem('expert_token')
     let questions = []
     let contents = []
+    let profile = null
 
-    if (!token) location.href = '/expert/login.html'
+    if (!token) location.href = '/admin/login.html?role=expert'
     document.getElementById('expertName').textContent = localStorage.getItem('expert_name') || '平台专家'
 
     function authHeaders(extra = {}) {
@@ -356,15 +461,19 @@
     function switchPanel(panel) {
       document.querySelectorAll('.nav button').forEach(btn => btn.classList.toggle('active', btn.dataset.panel === panel))
       document.querySelectorAll('.panel').forEach(el => el.classList.toggle('active', el.id === `panel-${panel}`))
-      document.getElementById('pageTitle').textContent = panel === 'contents' ? '培训内容' : '农户提问'
+      const titles = { questions: '农户提问', contents: '培训内容', profile: '个人资料', security: '账号安全' }
+      document.getElementById('pageTitle').textContent = titles[panel] || '专家后台'
+      document.getElementById('statsSummary').style.display = ['questions', 'contents'].includes(panel) ? '' : 'none'
       if (panel === 'contents') loadContents()
       if (panel === 'questions') loadQuestions()
+      if (panel === 'profile') loadProfile()
+      if (panel === 'security') resetPasswordForm()
     }
 
     function logout() {
       localStorage.removeItem('expert_token')
       localStorage.removeItem('expert_name')
-      location.href = '/expert/login.html'
+      location.href = '/admin/login.html?role=expert'
     }
 
     async function loadQuestions() {
@@ -377,6 +486,121 @@
         updateStats()
       } catch (error) {
         tbody.innerHTML = `<tr><td colspan="6" class="empty">${esc(error.message)}</td></tr>`
+      }
+    }
+
+    function setFormMessage(id, message, isError = false) {
+      const el = document.getElementById(id)
+      el.textContent = message || ''
+      el.classList.toggle('error', !!isError)
+    }
+
+    function renderProfilePreview() {
+      const name = document.getElementById('profileName').value.trim() || '专家姓名'
+      const title = document.getElementById('profileTitle').value.trim()
+      const org = document.getElementById('profileOrg').value.trim()
+      const avatar = document.getElementById('profileAvatar').value.trim() || '专'
+      const avatarUrl = document.getElementById('profileAvatarUrl').value.trim()
+      document.getElementById('profilePreviewName').textContent = name
+      document.getElementById('profilePreviewMeta').textContent = [title, org].filter(Boolean).join(' · ') || '职称 · 所属单位'
+      document.getElementById('profilePreviewAvatar').innerHTML = avatarUrl
+        ? `<img src="${esc(avatarUrl)}" alt="${esc(name)}">`
+        : esc(avatar)
+    }
+
+    async function loadProfile() {
+      setFormMessage('profileMessage', '正在加载...')
+      try {
+        profile = await api('GET', '/profile')
+        document.getElementById('profilePhone').value = profile.phone || ''
+        document.getElementById('profileName').value = profile.name || ''
+        document.getElementById('profileTitle').value = profile.title || ''
+        document.getElementById('profileOrg').value = profile.org || ''
+        document.getElementById('profileAvatar').value = profile.avatar || '专'
+        document.getElementById('profileAvatarUrl').value = profile.avatarUrl || ''
+        document.getElementById('profileSpecialties').value = (profile.specialties || []).join('、')
+        document.getElementById('profileBio').value = profile.bio || ''
+        renderProfilePreview()
+        setFormMessage('profileMessage', '')
+      } catch (error) {
+        setFormMessage('profileMessage', error.message, true)
+      }
+    }
+
+    async function saveProfile() {
+      const button = document.getElementById('saveProfileBtn')
+      const body = {
+        name: document.getElementById('profileName').value.trim(),
+        title: document.getElementById('profileTitle').value.trim(),
+        org: document.getElementById('profileOrg').value.trim(),
+        avatar: document.getElementById('profileAvatar').value.trim() || '专',
+        avatarUrl: document.getElementById('profileAvatarUrl').value.trim(),
+        specialties: document.getElementById('profileSpecialties').value.trim(),
+        bio: document.getElementById('profileBio').value.trim()
+      }
+      if (!body.name || !body.bio) return setFormMessage('profileMessage', '请填写专家姓名和个人简介', true)
+      button.disabled = true
+      setFormMessage('profileMessage', '正在保存...')
+      try {
+        await api('PUT', '/profile', body)
+        localStorage.setItem('expert_name', body.name)
+        document.getElementById('expertName').textContent = body.name
+        renderProfilePreview()
+        setFormMessage('profileMessage', '个人资料已保存')
+      } catch (error) {
+        setFormMessage('profileMessage', error.message, true)
+      } finally {
+        button.disabled = false
+      }
+    }
+
+    async function uploadProfileAvatar(input) {
+      const file = input.files && input.files[0]
+      if (!file) return
+      const form = new FormData()
+      form.append('file', file)
+      setFormMessage('profileMessage', '头像上传中...')
+      try {
+        const data = await CottonRuntime.requestJson(`${API}/upload`, {
+          method: 'POST', headers: authHeaders(), body: form
+        }, { timeoutMs: 600000, onUnauthorized: logout })
+        if (data.code !== 200) throw new Error(data.msg || '头像上传失败')
+        document.getElementById('profileAvatarUrl').value = data.data.url
+        renderProfilePreview()
+        setFormMessage('profileMessage', '头像已上传，请点击“保存个人资料”完成更新')
+      } catch (error) {
+        setFormMessage('profileMessage', error.message, true)
+      } finally {
+        input.value = ''
+      }
+    }
+
+    function resetPasswordForm() {
+      document.getElementById('currentPassword').value = ''
+      document.getElementById('newPassword').value = ''
+      document.getElementById('confirmPassword').value = ''
+      setFormMessage('passwordMessage', '')
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById('currentPassword').value
+      const newPassword = document.getElementById('newPassword').value
+      const confirmPassword = document.getElementById('confirmPassword').value
+      const button = document.getElementById('changePasswordBtn')
+      if (!currentPassword || !newPassword || !confirmPassword) return setFormMessage('passwordMessage', '请完整填写三个密码字段', true)
+      if (newPassword !== confirmPassword) return setFormMessage('passwordMessage', '两次输入的新密码不一致', true)
+      if (newPassword.length < 12 || !/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/\d/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+        return setFormMessage('passwordMessage', '新密码至少12位，并需包含大小写字母、数字和特殊字符', true)
+      }
+      button.disabled = true
+      setFormMessage('passwordMessage', '正在修改...')
+      try {
+        await api('PATCH', '/password', { currentPassword, newPassword })
+        setFormMessage('passwordMessage', '密码修改成功，即将返回登录页')
+        setTimeout(logout, 1200)
+      } catch (error) {
+        setFormMessage('passwordMessage', error.message, true)
+        button.disabled = false
       }
     }
 
@@ -395,7 +619,7 @@
         const reply = item.reply ? `<div class="reply-box"><b>已回复：</b>${esc(item.reply)}</div>` : ''
         return `
           <tr>
-            <td><b>${esc(item.farmerName)}</b><br><span class="muted">${esc(item.farmerPhone || '-')}</span></td>
+            <td><b>${esc(item.farmerName)}</b><br><span class="muted">${esc(item.farmerPhone || '-')}</span><br><span class="muted">提交给：${esc(item.expertName || '当前专家')}</span></td>
             <td>
               <span class="badge gold">${esc(item.category)}</span>
               <div class="question-text">${esc(item.question)}</div>

@@ -62,6 +62,8 @@ const noCache = (_req, res, next) => {
   res.set('Cache-Control', 'no-store')
   next()
 }
+// 专家与其他后台角色共用统一登录页；保留旧地址跳转，兼容历史书签。
+app.get('/expert/login.html', (_req, res) => res.redirect(302, '/admin/login.html?role=expert'))
 app.use('/admin',    noCache, express.static(path.join(__dirname, 'public/admin')))
 app.use('/expert',   noCache, express.static(path.join(__dirname, 'public/expert')))
 app.use('/merchant', noCache, express.static(path.join(__dirname, 'public/merchant')))

@@ -12,6 +12,7 @@ const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d'
 const { MEDIA_TYPES, makeFileFilter, safeExtension } = require('../utils/upload-policy')
 const { isProductionDefaultCredential } = require('../utils/default-credentials')
+const { validateStrongPassword } = require('../utils/password-policy')
 
 const uploadDir = path.join(__dirname, '../public/uploads/expert')
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
@@ -90,6 +91,22 @@ function parseJson(value, fallback) {
   try { return JSON.parse(value) } catch { return fallback }
 }
 
+function normalizeProfile(row = {}) {
+  return {
+    id: Number(row.id),
+    phone: row.phone || '',
+    name: row.name || '',
+    title: row.title || '',
+    org: row.org || '',
+    avatar: row.avatar || '专',
+    avatarUrl: row.avatar_url || '',
+    specialties: parseJson(row.specialties, []),
+    bio: row.bio || '',
+    isActive: !!row.is_active,
+    updatedAt: row.updated_at || null
+  }
+}
+
 function normalizeContentBody(body = {}, expert = {}) {
   const priceType = body.price_type === 'paid' ? 'paid' : 'free'
   const price = priceType === 'paid' ? Math.max(0, Number(body.price || 0)) : 0
@@ -126,6 +143,8 @@ function normalizeQuestion(row = {}) {
   return {
     id: row.id,
     userId: row.user_id,
+    expertId: row.expert_id || null,
+    expertName: row.expert_name || '',
     farmerName: row.farmer_name || '农户',
     farmerPhone: row.farmer_phone || '',
     category: row.category || '种植咨询',
@@ -173,6 +192,73 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('[expert-admin-login]', error)
     return fail(res, '服务器错误', 500)
+  }
+})
+
+router.get('/profile', expertAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT id,phone,name,title,org,avatar,avatar_url,specialties,bio,is_active,updated_at
+       FROM experts WHERE id=? LIMIT 1`,
+      [req.expert.id]
+    )
+    if (!rows.length) return fail(res, '专家账号不存在', 404)
+    return ok(res, normalizeProfile(rows[0]))
+  } catch (error) {
+    console.error('[expert-admin-profile]', error)
+    return fail(res, '个人资料加载失败', 500)
+  }
+})
+
+router.put('/profile', expertAuth, async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim().slice(0, 64)
+    const title = String(req.body.title || '').trim().slice(0, 64)
+    const org = String(req.body.org || '').trim().slice(0, 128)
+    const avatar = String(req.body.avatar || '专').trim().slice(0, 16) || '专'
+    const avatarUrl = String(req.body.avatarUrl || req.body.avatar_url || '').trim().slice(0, 500)
+    const specialties = splitTags(req.body.specialties).slice(0, 12)
+    const bio = String(req.body.bio || '').trim().slice(0, 2000)
+    if (!name) return fail(res, '请填写专家姓名')
+    if (!bio) return fail(res, '请填写个人简介')
+    if (avatarUrl && !/^(https?:\/\/|\/uploads\/)/i.test(avatarUrl)) {
+      return fail(res, '头像地址格式不正确')
+    }
+
+    const [result] = await db.query(
+      `UPDATE experts SET name=?,title=?,org=?,avatar=?,avatar_url=?,specialties=?,bio=?
+       WHERE id=? AND is_active=1`,
+      [name, title, org, avatar, avatarUrl, JSON.stringify(specialties), bio, req.expert.id]
+    )
+    if (!result.affectedRows) return fail(res, '专家账号不存在或已停用', 404)
+    return ok(res, { name }, '个人资料已保存')
+  } catch (error) {
+    console.error('[expert-admin-profile-update]', error)
+    return fail(res, '个人资料保存失败', 500)
+  }
+})
+
+router.patch('/password', expertAuth, async (req, res) => {
+  try {
+    const currentPassword = String(req.body.currentPassword || '')
+    const newPassword = String(req.body.newPassword || '')
+    if (!currentPassword) return fail(res, '请输入当前密码')
+    if (currentPassword === newPassword) return fail(res, '新密码不能与当前密码相同')
+    const passwordError = validateStrongPassword(newPassword)
+    if (passwordError) return fail(res, passwordError)
+
+    const [rows] = await db.query('SELECT password,is_active FROM experts WHERE id=? LIMIT 1', [req.expert.id])
+    const expert = rows[0]
+    if (!expert) return fail(res, '专家账号不存在', 404)
+    if (!expert.is_active) return fail(res, '专家账号已停用', 403)
+    if (!await bcrypt.compare(currentPassword, expert.password)) return fail(res, '当前密码不正确', 401)
+
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+    await db.query('UPDATE experts SET password=? WHERE id=?', [passwordHash, req.expert.id])
+    return ok(res, null, '密码修改成功，请重新登录')
+  } catch (error) {
+    console.error('[expert-admin-password-update]', error)
+    return fail(res, '密码修改失败', 500)
   }
 })
 
@@ -263,9 +349,9 @@ router.get('/questions', expertAuth, async (req, res) => {
   try {
     const status = ['pending', 'replied', 'closed'].includes(req.query.status) ? req.query.status : ''
     const sql = status
-      ? 'SELECT * FROM expert_questions WHERE status=? ORDER BY created_at DESC LIMIT 200'
-      : 'SELECT * FROM expert_questions ORDER BY created_at DESC LIMIT 200'
-    const [rows] = await db.query(sql, status ? [status] : [])
+      ? 'SELECT * FROM expert_questions WHERE expert_id=? AND status=? ORDER BY created_at DESC LIMIT 200'
+      : 'SELECT * FROM expert_questions WHERE expert_id=? ORDER BY created_at DESC LIMIT 200'
+    const [rows] = await db.query(sql, status ? [req.expert.id, status] : [req.expert.id])
     return ok(res, rows.map(normalizeQuestion))
   } catch (error) {
     console.error('[expert-admin-questions]', error)
@@ -280,8 +366,8 @@ router.patch('/questions/:id/reply', expertAuth, async (req, res) => {
     const [result] = await db.query(
       `UPDATE expert_questions
        SET reply=?, status='replied', replied_by=?, replied_at=NOW()
-       WHERE id=?`,
-      [reply, req.expert.id, req.params.id]
+       WHERE id=? AND expert_id=?`,
+      [reply, req.expert.id, req.params.id, req.expert.id]
     )
     if (!result.affectedRows) return fail(res, '提问不存在', 404)
     return ok(res, null, '已回复农户')
@@ -295,7 +381,7 @@ router.patch('/questions/:id/status', expertAuth, async (req, res) => {
   try {
     const status = ['pending', 'replied', 'closed'].includes(req.body.status) ? req.body.status : ''
     if (!status) return fail(res, '状态不正确')
-    const [result] = await db.query('UPDATE expert_questions SET status=? WHERE id=?', [status, req.params.id])
+    const [result] = await db.query('UPDATE expert_questions SET status=? WHERE id=? AND expert_id=?', [status, req.params.id, req.expert.id])
     if (!result.affectedRows) return fail(res, '提问不存在', 404)
     return ok(res, null, '状态已更新')
   } catch (error) {

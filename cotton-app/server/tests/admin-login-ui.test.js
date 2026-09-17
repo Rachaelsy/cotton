@@ -18,6 +18,7 @@ function run() {
   const runtime = readServerFile('public', 'admin', 'assets', 'runtime.js')
   const knowledgeManagement = readServerFile('public', 'admin', 'assets', 'knowledge-management.js')
   const adminRoute = readServerFile('routes', 'admin.js')
+  const serverIndex = readServerFile('index.js')
 
   assert.ok(login.includes('Cotton'), 'unified login should keep Cotton branding')
   assert.ok(!login.includes('<strong>公共服务平台</strong>'), 'retired public service platform entry should stay hidden')
@@ -26,6 +27,7 @@ function run() {
   assert.ok(login.includes('data-role="admin"'), 'admin role card should exist')
   assert.ok(login.includes('data-role="merchant"'), 'merchant role card should exist')
   assert.ok(login.includes('data-role="operator"'), 'operator role card should exist')
+  assert.ok(login.includes('data-role="expert"'), 'expert role card should exist')
   assert.ok(login.includes('./assets/cotton-field-sky.png'), 'cotton field background should be used')
   assert.ok(fs.existsSync(path.join(serverDir, 'public', 'admin', 'assets', 'cotton-field-sky.png')))
 
@@ -50,12 +52,17 @@ function run() {
   assert.ok(login.includes('/api/admin/login'))
   assert.ok(login.includes('/api/merchant/login'))
   assert.ok(login.includes('/api/operator/login'))
+  assert.ok(login.includes('/api/expert-admin/login'))
   assert.ok(login.includes('/admin/dashboard.html'))
   assert.ok(login.includes('data.data.dashboard || cfg.dashboard'), 'unified login should honor the backend-selected dashboard')
   assert.ok(adminRoute.includes('SELECT * FROM community_admins'), 'admin login should recognize public mini-program administrators')
   assert.ok(adminRoute.includes("dashboard: '/knowledge/policy-admin.html'"), 'public administrators should enter the public mini-program dashboard')
   assert.ok(login.includes('/merchant/dashboard.html'))
   assert.ok(login.includes('/operator/dashboard.html'))
+  assert.ok(login.includes('/expert/dashboard.html'))
+  assert.ok(!fs.existsSync(path.join(serverDir, 'public', 'expert', 'login.html')), 'standalone expert login page should be removed')
+  assert.ok(serverIndex.includes("app.get('/expert/login.html'") && serverIndex.includes("'/admin/login.html?role=expert'"), 'legacy expert login URL should redirect to the unified login')
+  assert.ok(expertDashboard.includes("/admin/login.html?role=expert") && !expertDashboard.includes("/expert/login.html"), 'expert logout and expired sessions should return to the unified login')
 
   assert.ok(merchantLogin.includes('/admin/login.html?role=merchant'))
   assert.ok(login.includes('/admin/assets/runtime.js'), 'unified login should use the shared request runtime')

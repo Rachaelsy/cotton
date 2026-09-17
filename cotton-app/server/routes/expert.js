@@ -158,6 +158,8 @@ function normalizeQuestion(row) {
   return {
     id: row.id,
     userId: row.user_id,
+    expertId: row.expert_id || null,
+    expertName: row.expert_name || '',
     farmerName: row.farmer_name || '',
     farmerPhone: row.farmer_phone || '',
     category: row.category || '',
@@ -226,6 +228,16 @@ router.post('/questions', farmerAuth, async (req, res) => {
     if (question.length > 1000) return res.status(400).json({ code: 400, msg: '问题内容过长，请控制在1000字以内', data: null })
 
     const [[user]] = await db.query('SELECT real_name, phone FROM users WHERE id=?', [req.user.id])
+    const submittedExpertId = req.body.expertId || req.body.expert_id
+    let expertId = null
+    let expertName = '平台专家'
+    if (String(submittedExpertId) !== 'platform') {
+      expertId = parsePositiveId(submittedExpertId)
+      if (!expertId) return res.status(400).json({ code: 400, msg: '请先选择在线专家', data: null })
+      const [[expert]] = await db.query('SELECT id,name FROM experts WHERE id=? AND is_active=1 LIMIT 1', [expertId])
+      if (!expert) return res.status(400).json({ code: 400, msg: '所选专家当前不在线，请重新选择', data: null })
+      expertName = expert.name || ''
+    }
     const plotId = parsePositiveId(req.body.plotId || req.body.plot_id)
     let plotName = ''
     if (plotId) {
@@ -236,10 +248,12 @@ router.post('/questions', farmerAuth, async (req, res) => {
     const images = cleanImages(req.body.images)
     const [result] = await db.query(
       `INSERT INTO expert_questions
-       (user_id, farmer_name, farmer_phone, category, crop_stage, plot_id, plot_name, question, images)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
+       (user_id, expert_id, expert_name, farmer_name, farmer_phone, category, crop_stage, plot_id, plot_name, question, images)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [
         req.user.id,
+        expertId,
+        expertName,
         user?.real_name || req.user.real_name || '',
         user?.phone || req.user.phone || '',
         String(req.body.category || '').trim().slice(0, 64),
