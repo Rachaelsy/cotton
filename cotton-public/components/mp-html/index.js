@@ -146,20 +146,7 @@ Component({
       this.plugins.push(new plugins[i](this))
     }
 
-    // #ifdef MP-ALIPAY
-    if (this.properties.content) {
-      this.setContent(this.properties.content)
-    }
-    // #endif
   },
-
-  // #ifdef MP-ALIPAY
-  didUpdate (e) {
-    if (e.content !== this.properties.content) {
-      this.setContent(this.properties.content)
-    }
-  },
-  // #endif
 
   detached () {
     // 注销插件
@@ -196,17 +183,9 @@ Component({
           return
         }
         // 跨组件选择器
-        const deep =
-          // #ifdef MP-WEIXIN || MP-QQ || MP-TOUTIAO
-          '>>>'
-        // #endif
-        // #ifdef MP-BAIDU || MP-ALIPAY
-        ' ' // eslint-disable-line
-        // #endif
+        const deep = '>>>'
         const selector = wx.createSelectorQuery()
-          // #ifndef MP-ALIPAY
           .in(this._in ? this._in.page : this)
-          // #endif
           .select((this._in ? this._in.selector : '._root') + (id ? `${deep}#${id}` : '')).boundingClientRect()
         if (this._in) {
           selector.select(this._in.selector).scrollOffset()
@@ -279,9 +258,7 @@ Component({
     getRect () {
       return new Promise((resolve, reject) => {
         wx.createSelectorQuery()
-          // #ifndef MP-ALIPAY
           .in(this)
-          // #endif
           .select('._root').boundingClientRect().exec(res => res[0] ? resolve(res[0]) : reject(Error('Root label not found')))
       })
     },
@@ -329,21 +306,11 @@ Component({
       }
 
       this.setData(data,
-        // #ifndef MP-TOUTIAO
         () => {
           this._hook('onLoad')
           this.triggerEvent('load')
         }
-        // #endif
       )
-
-      // #ifdef MP-TOUTIAO
-      this.selectComponent('#_root', child => {
-        child.root = this
-        this._hook('onLoad')
-        this.triggerEvent('load')
-      })
-      // #endif
 
       if (this.properties.lazyLoad || this.imgList._unloadimgs < this.imgList.length / 2) {
         // 设置懒加载，每 350ms 获取高度，不变则认为加载完毕
@@ -385,18 +352,12 @@ Component({
       }
     },
 
-    // #ifndef MP-TOUTIAO
     /**
      * @description 添加子组件
      * @private
      */
     _add (e) {
-      e
-        // #ifndef MP-ALIPAY
-        .detail
-        // #endif
-        .root = this
+      e.detail.root = this
     }
-    // #endif
   }
 })

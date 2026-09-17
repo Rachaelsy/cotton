@@ -36,7 +36,10 @@ function formatTime(value) {
 }
 
 function articleMarkdown(value) {
-  const lines = String(value || '').replace(/^\s*#\s+[^\n]+\n+/, '').replace(/\r\n/g, '\n').split('\n')
+  const normalized = String(value || '')
+    .replace(/^\s*#\s+[^\n]+\n+/, '')
+    .replace(/\r\n/g, '\n')
+  const lines = normalized.split('\n')
   return lines.filter((line, index) => {
     if (line.trim()) return true
     let previousIndex = index - 1
@@ -82,7 +85,7 @@ function arrangeComments(rows) {
 Page({
   data: {
     statusBarHeight: 20, policy: {}, collected: false, loading: true, demoMode: false,
-    bodyMarkdown: '', articleTagStyle, isIndustry: false, isHome: false, comments: [], commentsLoading: true,
+    bodyContent: '', renderMarkdown: false, articleTagStyle, isIndustry: false, isHome: false, comments: [], commentsLoading: true,
     commentText: '', commentFocus: false, submittingComment: false,
     commentCount: 0, replyTargetId: 0, replyTargetAuthor: ''
   },
@@ -114,7 +117,8 @@ Page({
       isHome,
       demoMode,
       loading: false,
-      bodyMarkdown: articleMarkdown(policy.markdown),
+      bodyContent: policy.html || articleMarkdown(policy.markdown),
+      renderMarkdown: !policy.html,
       collected: !!wx.getStorageSync(`policy_collected_${policy.id}`)
     })
   },

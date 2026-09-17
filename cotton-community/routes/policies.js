@@ -2,6 +2,7 @@ const express = require('express')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const db = require('../db/database')
+const { renderMarkdown } = require('../utils/markdown-html')
 
 const router = express.Router()
 const ok = (res, data = null, msg = 'ok') => res.json({ code: 200, msg, data })
@@ -171,7 +172,10 @@ function normalize(row, includeMarkdown = false) {
     publishDate: dateTimeText(row.source_published_at) || dateTimeText(row.published_at) || dateTimeText(row.created_at) || null,
     createdAt: row.created_at || null, updatedAt: row.updated_at || null
   }
-  if (includeMarkdown) article.markdown = row.body_markdown || ''
+  if (includeMarkdown) {
+    article.markdown = row.body_markdown || ''
+    article.html = renderMarkdown(row.body_markdown || '', { stripFirstHeading: true })
+  }
   return article
 }
 

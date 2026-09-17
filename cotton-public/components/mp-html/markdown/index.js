@@ -13,8 +13,13 @@ function Markdown (vm) {
 
 Markdown.prototype.onUpdate = function (content) {
   if (this.vm.properties.markdown) {
-    // 解决中文标点符号后粗体失效的问题，增加零宽空格
-    content = content.replace(/\*\*([^*]+)\*\*([，。！？；：])/g, '**$1**&#8203;$2')
+    content = content
+      // 后台粘贴内容有时会把 Markdown 星号转义，展示文章时恢复加粗标记。
+      .replace(/\\\*\\\*/g, '**')
+      // 只在行首或列表项内清理结束标记前的隐藏空格，避免跨段误配两组星号。
+      .replace(/(^|\n)([ \t]*(?:(?:[-+*]|\d+\.)[ \t]+)?)\*\*([^*\n]*?\S)[ \t\u00a0\u200b\ufeff]+\*\*/g, '$1$2**$3** ')
+      // 中文紧跟在结束标记后时增加零宽分隔，避免 marked 将 ** 当作普通文本。
+      .replace(/\*\*([^*\n]+)\*\*(?=\S)/g, '**$1**&#8203;')
     return marked(content)
   }
 }
