@@ -5,14 +5,18 @@
     <button open-type="share">分享</button>
   </view>
 
+  <view class="academy-status" wx:if="{{loading}}">课程加载中…</view>
+  <view class="academy-status" wx:elif="{{error}}"><text>{{error}}</text><button bindtap="loadCourse">重新加载</button></view>
+  <block wx:else>
   <view class="video-stage">
-    <video wx:if="{{course.videoUrl}}" src="{{course.videoUrl}}" poster="{{course.cover}}" autoplay="true" controls="true" show-center-play-btn="true" enable-play-gesture="true" object-fit="contain" bindtimeupdate="onVideoTimeUpdate" bindended="onVideoEnded"></video>
+    <video wx:if="{{course.videoUrl && !videoError}}" id="academyPlayer" src="{{course.videoUrl}}" initial-time="{{initialTime}}" poster="{{course.cover}}" autoplay="true" controls="true" show-center-play-btn="true" enable-play-gesture="true" object-fit="contain" bindtimeupdate="onVideoTimeUpdate" bindended="onVideoEnded" binderror="onVideoError" bindpause="persistProgress"></video>
     <block wx:else>
       <image src="{{course.cover}}" mode="aspectFill"></image>
       <view class="video-shade"></view>
       <view class="video-play" wx:if="{{course.type==='视频'}}">▶</view>
     </block>
   </view>
+  <view class="academy-status" wx:if="{{videoError || !course.videoUrl}}"><text>{{videoError || '该课时暂无可播放的视频'}}</text><button bindtap="retryVideo">重试播放</button></view>
 
   <view class="video-info">
     <view class="video-labels"><text>{{level.name}}</text><label>{{course.type}} · {{course.duration}}</label></view>
@@ -20,8 +24,14 @@
     <text class="video-summary">{{course.summary}}</text>
     <view class="video-actions">
       <view><small>课程编制</small><strong>{{course.teacher}}</strong></view>
-      <button class="{{completed?'done':''}}" bindtap="complete">{{completed?'✓ 已学完':'标记学完'}}</button>
+      <text>{{completed?'✓ 已学完':'已学 '+progress+'%'}}</text>
     </view>
+  </view>
+
+  <view class="lesson-controls"><button disabled="{{!previousId}}" data-id="{{previousId}}" bindtap="selectLesson">上一节</button><button data-id="{{nextId}}" disabled="{{!nextId}}" bindtap="selectLesson">{{ended?'学习下一节':'下一节'}}</button></view>
+  <view class="inline-directory" wx:if="{{showDirectory}}">
+    <view wx:if="{{directoryError}}" bindtap="retryDirectory">{{directoryError}}</view>
+    <view wx:for="{{lessons}}" wx:key="id" data-id="{{item.id}}" bindtap="selectLesson" class="directory-row {{item.id===course.id?'selected':''}}"><text>{{item.lessonNo}}. {{item.title}}</text><text>{{item.id===course.id?'播放中':item.duration}}</text></view>
   </view>
 
   <view class="directory-link" wx:if="{{course.seriesKey}}" bindtap="openDirectory">
@@ -37,6 +47,7 @@
   <view class="comment-section">
     <view class="comment-head"><strong>评论</strong><text>{{comments.length}} 条</text></view>
     <view class="comment-loading" wx:if="{{commentsLoading}}">评论加载中...</view>
+    <view class="comment-loading" wx:elif="{{commentsError}}" bindtap="loadComments">评论加载失败，点击重试</view>
     <view class="comment-empty" wx:elif="{{!comments.length}}"><strong>还没有评论</strong><text>看完课程后，说说你的收获或问题吧</text></view>
     <view class="comment-item" wx:for="{{comments}}" wx:key="id">
       <image wx:if="{{item.avatarUrl}}" class="comment-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
@@ -56,4 +67,5 @@
     <input value="{{commentText}}" focus="{{commentFocus}}" maxlength="500" placeholder="发一条友善的评论" confirm-type="send" bindinput="onCommentInput" bindconfirm="submitComment"></input>
     <button loading="{{sending}}" disabled="{{sending}}" bindtap="submitComment">发送</button>
   </view>
+  </block>
 </view>

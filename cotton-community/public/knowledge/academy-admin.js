@@ -1,7 +1,7 @@
 (() => {
   const token = localStorage.getItem('admin_token') || ''
   const runtime = window.CottonRuntime
-  const state = { courses: [], series: [], comments: [], storage: { configured: false }, coverFile: null, loaded: false }
+  const state = { courses: [], series: [], comments: [], loaded: false, selected: '', tab: 'series' }
   const $ = id => document.getElementById(id)
   const esc = value => String(value == null ? '' : value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char])
   const levels = { basic: '初级', intermediate: '中级', advanced: '高级' }
@@ -14,9 +14,7 @@
 
   async function request(path, options = {}) {
     const result = await runtime.requestJson(`/api/miniapp-academy/admin${path}`, options, {
-      token,
-      timeoutMs: options.timeoutMs || 30000,
-      onUnauthorized: returnToLogin
+      token, timeoutMs: options.timeoutMs || 30000, onUnauthorized: returnToLogin
     })
     return result.data
   }
@@ -34,19 +32,38 @@
     load()
   }
 
+  function statusText(status) {
+    return status === 'published' ? '已上架' : status === 'offline' ? '已下架' : '草稿'
+  }
+
+  function renderSeries() {
+    const rows = state.series.filter(item => (!$('academyFilterLevel').value || item.level === $('academyFilterLevel').value) && (!$('academyFilterStatus').value || item.status === $('academyFilterStatus').value) && item.title.includes($('academySearch').value.trim()))
+    $('academySeriesCount').textContent = state.series.length
+    $('academySeriesTable').innerHTML = rows.length ? rows.map(item => `<tr>
+      <td>${item.cover ? `<img class="academy-thumb" src="${esc(item.cover)}" alt="">` : '<div class="academy-thumb product-placeholder">系列</div>'}</td>
+      <td class="academy-course-title"><button class="small-btn primary" data-manage-series="${esc(item.id)}">${esc(item.title)} · 管理课时</button><div class="academy-muted">${esc(item.summary || '')}</div></td>
+      <td>${esc(levels[item.level] || item.level)}${item.isFeatured ? '<div class="academy-muted">本级推荐</div>' : ''}</td>
+      <td>${Number(item.lessonCount || 0)} 节</td>
+      <td><span class="status-pill ${item.status === 'published' ? 'published' : ''}">${statusText(item.status)}</span></td>
+      <td>${Number(item.sortOrder || 0)}</td>
+      <td><div class="academy-actions"><button class="small-btn primary" data-academy-series-course="${esc(item.id)}">添加视频</button><button class="small-btn primary" data-academy-series-edit="${item.databaseId}">编辑</button><button class="small-btn ${item.status === 'published' ? 'danger' : 'primary'}" data-academy-series-toggle="${item.databaseId}" data-status="${esc(item.status)}">${item.status === 'published' ? '下架' : '上架'}</button><button class="small-btn danger" data-academy-series-delete="${item.databaseId}">删除</button></div></td>
+    </tr>`).join('') : '<tr><td colspan="7">暂无系列课程，请先点击“新增系列”。</td></tr>'
+  }
+
   function renderCourses() {
     $('academyCourseCount').textContent = state.courses.length
     $('academyPublishedCount').textContent = state.courses.filter(item => item.status === 'published').length
-    $('academyCourseTable').innerHTML = state.courses.length ? state.courses.map(item => `<tr>
+    const rows = seriesCourses()
+    $('academyCourseTable').innerHTML = rows.length ? rows.map(item => `<tr draggable="true" data-course-row="${item.databaseId}">
       <td>${item.cover ? `<img class="academy-thumb" src="${esc(item.cover)}" alt="">` : '<div class="academy-thumb product-placeholder">课</div>'}</td>
-      <td class="academy-course-title"><strong>${esc(item.title)}</strong><div class="academy-muted">${esc(item.id)}</div></td>
-      <td>${esc(levels[item.level] || item.level)}<div class="academy-muted">${esc(item.seriesTitle || '未分组')} · 第${Number(item.lessonNo || 1)}节</div>${item.isFeatured ? '<div class="academy-muted">本级推荐</div>' : ''}</td>
+      <td class="academy-course-title"><strong>${esc(item.title)}</strong><div class="academy-muted"><button class="small-btn" data-move="${item.databaseId}" data-direction="-1">↑</button> <button class="small-btn" data-move="${item.databaseId}" data-direction="1">↓</button> 拖动调整顺序</div></td>
+      <td>${esc(levels[item.level] || item.level)}<div class="academy-muted">${esc(item.seriesTitle || '未分组')} · 第${Number(item.lessonNo || 1)}节</div></td>
       <td>${esc(item.type)}<div class="academy-muted">${esc(item.duration)}</div></td>
-      <td>${item.vodFileId ? `<span class="status-on">VOD</span><div class="academy-muted">FileId ${esc(item.vodFileId)}</div>` : item.videoRawUrl ? '<span class="status-on">已有视频</span>' : '<span class="academy-muted">未上传</span>'}</td>
-      <td><span class="status-pill ${item.status === 'published' ? 'published' : ''}">${item.status === 'published' ? '已上架' : item.status === 'offline' ? '已下架' : '草稿'}</span></td>
+      <td>${item.vodFileId ? `<span class="status-on">VOD</span><div class="academy-muted">FileID ${esc(item.vodFileId)}</div>` : item.videoRawUrl ? '<span class="status-on">已有播放地址</span>' : '<span class="academy-muted">未填写</span>'}</td>
+      <td><span class="status-pill ${item.status === 'published' ? 'published' : ''}">${statusText(item.status)}</span></td>
       <td>${Number(item.viewCount || 0)}</td>
       <td><div class="academy-actions"><button class="small-btn primary" data-academy-edit="${item.databaseId}">编辑</button><button class="small-btn ${item.status === 'published' ? 'danger' : 'primary'}" data-academy-toggle="${item.databaseId}" data-status="${esc(item.status)}">${item.status === 'published' ? '下架' : '上架'}</button><button class="small-btn danger" data-academy-delete="${item.databaseId}">删除</button></div></td>
-    </tr>`).join('') : '<tr><td colspan="8">暂无课程，请点击“新增课程”。</td></tr>'
+    </tr>`).join('') : '<tr><td colspan="8">暂无视频课程，请先创建系列课程，再添加视频。</td></tr>'
   }
 
   function renderComments() {
@@ -59,48 +76,86 @@
     </tr>`).join('') : '<tr><td colspan="6">暂无课程评论。</td></tr>'
   }
 
-  async function loadStorage() {
-    state.storage = await request('/storage')
-    const node = $('academyStorage')
-    if (state.storage.configured) {
-      node.classList.remove('warn')
-      node.innerHTML = `<strong>腾讯云云点播已连接</strong>　APPID：${esc(state.storage.appId)}${state.storage.subAppId ? `　子应用：${esc(state.storage.subAppId)}` : ''}<br>视频由浏览器直接上传至云点播，密钥只在服务器端用于签发短时上传凭证。`
-    } else {
-      node.classList.add('warn')
-      node.innerHTML = '<strong>腾讯云云点播尚未配置</strong><br>请配置 VOD_APP_ID、VOD_SECRET_ID、VOD_SECRET_KEY；使用子应用时再配置 VOD_SUB_APP_ID。完成后重新创建 app 容器。'
-    }
-  }
-
   async function load() {
+    $('academySeriesTable').innerHTML = '<tr><td colspan="7">正在加载...</td></tr>'
     $('academyCourseTable').innerHTML = '<tr><td colspan="8">正在加载...</td></tr>'
     try {
-      const [courses, series, comments] = await Promise.all([request('/courses'), request('/series'), request('/comments'), loadStorage()])
+      const [courses, series, comments, stats] = await Promise.all([request('/courses'), request('/series'), request('/comments'), request('/learning-stats')])
       state.courses = courses || []
       state.series = series || []
       state.comments = comments || []
+      $('academyLearnerCount').textContent = Number(stats && stats.learnerCount || 0)
+      $('academyCompletionRate').textContent = `${Number(stats && stats.completionRate || 0)}%`
+      $('academyPointsIssued').textContent = Number(stats && stats.pointsIssued || 0)
       state.loaded = true
-      renderCourses()
-      renderComments()
+      renderSeries(); renderCourses(); renderComments()
+      updateWorkspace()
     } catch (error) {
+      $('academySeriesTable').innerHTML = `<tr><td colspan="7">${esc(error.message || '系列课程加载失败')}</td></tr>`
       $('academyCourseTable').innerHTML = `<tr><td colspan="8">${esc(error.message || '课程加载失败')}</td></tr>`
-      runtime.notify(error.message || '课程加载失败', 'error')
+      runtime.notify(error.message || '优棉学堂数据加载失败', 'error')
     }
+  }
+
+  function fillSeriesForm(item = {}) {
+    $('academySeriesId').value = item.databaseId || ''
+    $('academySeriesLevel').value = item.level || 'basic'
+    $('academySeriesTitle').value = item.title || ''
+    $('academySeriesSummary').value = item.summary || ''
+    $('academySeriesTeacher').value = item.teacher || '平台农技组'
+    $('academySeriesSort').value = item.sortOrder == null ? 10 : item.sortOrder
+    $('academySeriesCoverUrl').value = item.cover || ''
+    $('academySeriesPublished').checked = item.status === 'published'
+    $('academySeriesFeatured').checked = Boolean(item.isFeatured)
+    $('academySeriesMessage').textContent = ''
+  }
+
+  function openSeries(id = 0) {
+    fillSeriesForm(state.series.find(item => Number(item.databaseId) === Number(id)) || {})
+    $('academySeriesModalTitle').textContent = id ? '编辑系列课程' : '新增系列课程'
+    $('academySeriesModal').classList.remove('hidden')
+  }
+
+  function closeSeries() {
+    $('academySeriesModal').classList.add('hidden')
+    $('academySeriesForm').reset()
+  }
+
+  async function saveSeries(event) {
+    event.preventDefault()
+    const submit = event.target.querySelector('[type="submit"]')
+    if (submit.disabled) return
+    submit.disabled = true
+    const databaseId = $('academySeriesId').value
+    const body = {
+      level: $('academySeriesLevel').value,
+      title: $('academySeriesTitle').value, summary: $('academySeriesSummary').value,
+      teacher: $('academySeriesTeacher').value, coverUrl: $('academySeriesCoverUrl').value,
+      sortOrder: $('academySeriesSort').value,
+      status: $('academySeriesPublished').checked ? 'published' : 'draft',
+      isFeatured: $('academySeriesFeatured').checked
+    }
+    $('academySeriesMessage').textContent = '正在保存...'
+    try {
+      await request(`/series${databaseId ? `/${databaseId}` : ''}`, { method: databaseId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      closeSeries(); await load(); runtime.notify('系列课程已保存', 'success')
+    } catch (error) { $('academySeriesMessage').textContent = error.message || '保存失败' }
+    finally { submit.disabled = false }
   }
 
   function syncSeries(selected = '') {
     const rows = state.series.filter(item => item.level === $('academyLevel').value)
-    $('academySeries').innerHTML = rows.length ? rows.map(item => `<option value="${esc(item.id)}">${esc(item.title)}</option>`).join('') : '<option value="">暂无系列课程</option>'
+    $('academySeries').innerHTML = rows.length ? rows.map(item => `<option value="${esc(item.id)}">${esc(item.title)}</option>`).join('') : '<option value="">暂无系列课程，请先创建</option>'
     if (selected && rows.some(item => item.id === selected)) $('academySeries').value = selected
   }
 
-  function fillForm(item = {}) {
+  function fillCourseForm(item = {}) {
     $('academyCourseId').value = item.databaseId || ''
     $('academyLevel').value = item.level || 'basic'
     syncSeries(item.seriesKey || '')
     $('academyLessonNo').value = item.lessonNo || 1
     $('academyType').value = item.rawType || 'video'
-    $('academyKey').value = item.id || ''
-    $('academySort').value = item.sortOrder || 10
+    $('academySort').value = item.sortOrder == null ? 10 : item.sortOrder
     $('academyTitle').value = item.title || ''
     $('academySummary').value = item.summary || ''
     $('academyTeacher').value = item.teacher || '平台农技组'
@@ -112,142 +167,87 @@
     $('academyCoverUrl').value = item.coverUrl || ''
     $('academyVideoUrl').value = item.videoRawUrl || ''
     $('academyVodFileId').value = item.vodFileId || ''
-    $('academyVodStatus').value = item.vodStatus || (item.vodFileId ? 'ready' : 'none')
-    state.coverFile = null
-    $('academyCoverStatus').textContent = item.coverUrl ? '当前已有课程封面' : ''
-    $('academyVideoStatus').textContent = item.vodFileId ? `云点播 FileId：${item.vodFileId}` : ''
-    $('academyCoverProgress').style.width = '0'
-    $('academyVideoProgress').style.width = '0'
+    $('academyVodStatus').value = item.vodStatus || (item.videoRawUrl ? 'ready' : 'none')
     $('academyCourseMessage').textContent = ''
+    updateRewardHint()
   }
 
-  function openCourse(id = 0) {
-    fillForm(state.courses.find(item => Number(item.databaseId) === Number(id)) || {})
-    $('academyCourseModalTitle').textContent = id ? '编辑课程' : '新增课程'
+  function updateRewardHint() {
+    const rewards = { basic: 5, intermediate: 8, advanced: 10 }
+    const level = $('academyLevel').value
+    $('academyRewardHint').textContent = `${levels[level] || '初级'}课时首次有效完成可获得 ${rewards[level] || 5} 学习积分`
+  }
+
+  function openCourse(id = 0, initialSeriesKey = '') {
+    if (!state.series.length) return runtime.notify('请先创建系列课程，再添加视频课程', 'error')
+    const course = state.courses.find(item => Number(item.databaseId) === Number(id)) || {}
+    if (!id) {
+      const series = state.series.find(item => item.id === (initialSeriesKey || state.selected))
+      if (!series) return runtime.notify('请先进入一个系列，再添加视频', 'error')
+      const lessonNo = Math.max(0, ...state.courses.filter(item => item.seriesKey === series.id).map(item => item.lessonNo)) + 1
+      Object.assign(course, { level: series.level, seriesKey: series.id, teacher: series.teacher, coverUrl: series.cover, lessonNo, sortOrder: lessonNo })
+    }
+    fillCourseForm(course)
+    $('academyCourseModalTitle').textContent = id ? '编辑视频课程' : '添加视频课程'
     $('academyCourseModal').classList.remove('hidden')
   }
 
   function closeCourse() {
+    $('academyPreview').pause()
+    $('academyPreview').removeAttribute('src')
+    $('academyPreview').load()
+    $('academyPreview').classList.add('hidden')
     $('academyCourseModal').classList.add('hidden')
     $('academyCourseForm').reset()
   }
 
-  function vodConstructor() {
-    return window.TcVod && (window.TcVod.default || window.TcVod)
-  }
-
-  function percent(value) {
-    const number = Number(value || 0)
-    return Math.max(0, Math.min(100, Math.round(number <= 1 ? number * 100 : number)))
-  }
-
-  function createVodClient() {
-    const Constructor = vodConstructor()
-    if (!Constructor) throw new Error('云点播上传组件加载失败，请检查网络后刷新页面')
-    return new Constructor({
-      appId: Number(state.storage.appId || 0),
-      getSignature: async () => {
-        const data = await request('/upload-signature', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ courseKey: $('academyKey').value || 'new-course' })
-        })
-        return data.signature
-      }
-    })
-  }
-
-  async function uploadVideoToVod(input) {
-    const file = input.files && input.files[0]
-    if (!file) return
-    if (!state.storage.configured) { input.value = ''; return runtime.notify('请先配置腾讯云云点播', 'error') }
-    if (!/^video\/(mp4|webm|quicktime|x-m4v|ogg)$/i.test(file.type || '')) { input.value = ''; return runtime.notify('请选择 MP4、WebM、MOV、M4V 或 OGV 视频', 'error') }
-    if (file.size > 300 * 1024 * 1024) { input.value = ''; return runtime.notify('课程视频不能超过 300MB', 'error') }
-    $('academyVideoStatus').textContent = `正在上传 ${file.name}...`
-    $('academyVideoProgress').style.width = '2%'
-    $('uploadAcademyVideoBtn').disabled = true
-    try {
-      const uploader = createVodClient().upload({
-        mediaFile: file,
-        coverFile: state.coverFile || undefined,
-        mediaName: String($('academyTitle').value || file.name).trim()
-      })
-      uploader.on('media_progress', info => { $('academyVideoProgress').style.width = `${percent(info.percent)}%` })
-      uploader.on('cover_progress', info => { $('academyCoverProgress').style.width = `${percent(info.percent)}%` })
-      const result = await uploader.done()
-      if (!result || !result.fileId || !result.video || !result.video.url) throw new Error('云点播未返回有效的媒资信息')
-      $('academyVodFileId').value = result.fileId
-      $('academyVodStatus').value = 'ready'
-      $('academyVideoUrl').value = String(result.video.url).replace(/^http:\/\//i, 'https://')
-      if (result.cover && result.cover.url) $('academyCoverUrl').value = String(result.cover.url).replace(/^http:\/\//i, 'https://')
-      $('academyVideoProgress').style.width = '100%'
-      if (state.coverFile) $('academyCoverProgress').style.width = '100%'
-      $('academyVideoStatus').textContent = `上传完成，云点播 FileId：${result.fileId}`
-      $('academyCoverStatus').textContent = result.cover && result.cover.url ? '封面已随视频上传' : $('academyCoverStatus').textContent
-      state.coverFile = null
-      runtime.notify('视频已上传到腾讯云云点播，请保存课程', 'success')
-    } catch (error) {
-      $('academyVodStatus').value = 'failed'
-      $('academyVideoProgress').style.width = '0'
-      $('academyVideoStatus').textContent = error.message || '云点播上传失败'
-    } finally {
-      $('uploadAcademyVideoBtn').disabled = false
-      input.value = ''
-    }
-  }
-
-  async function selectOrUploadCover(input) {
-    const file = input.files && input.files[0]
-    if (!file) return
-    if (!/^image\/(jpeg|png|webp|gif|avif)$/i.test(file.type || '') || file.size > 10 * 1024 * 1024) {
-      input.value = ''
-      return runtime.notify('请选择不超过 10MB 的 JPG、PNG、WebP、GIF 或 AVIF 图片', 'error')
-    }
-    state.coverFile = file
-    $('academyCoverStatus').textContent = $('academyVodFileId').value ? '正在更新云点播封面...' : `已选择 ${file.name}，上传视频时将一并提交`
-    $('academyCoverProgress').style.width = '2%'
-    if (!$('academyVodFileId').value) { input.value = ''; return }
-    try {
-      if (!state.storage.configured) throw new Error('请先配置腾讯云云点播')
-      const uploader = createVodClient().upload({ coverFile: file, fileId: $('academyVodFileId').value })
-      uploader.on('cover_progress', info => { $('academyCoverProgress').style.width = `${percent(info.percent)}%` })
-      const result = await uploader.done()
-      if (result.cover && result.cover.url) $('academyCoverUrl').value = String(result.cover.url).replace(/^http:\/\//i, 'https://')
-      $('academyCoverProgress').style.width = '100%'
-      $('academyCoverStatus').textContent = '云点播封面已更新，请保存课程'
-      state.coverFile = null
-    } catch (error) {
-      $('academyCoverProgress').style.width = '0'
-      $('academyCoverStatus').textContent = error.message || '封面上传失败'
-    } finally { input.value = '' }
-  }
-
   async function saveCourse(event) {
     event.preventDefault()
+    const submit = event.target.querySelector('[type="submit"]')
+    if (submit.disabled) return
+    submit.disabled = true
     const databaseId = $('academyCourseId').value
+    const videoUrl = $('academyVideoUrl').value.trim()
     const body = {
-      courseKey: $('academyKey').value, seriesKey: $('academySeries').value, lessonNo: $('academyLessonNo').value,
-      level: $('academyLevel').value, type: $('academyType').value,
-      sortOrder: $('academySort').value, title: $('academyTitle').value, summary: $('academySummary').value,
+      seriesKey: $('academySeries').value, lessonNo: $('academyLessonNo').value,
+      level: $('academyLevel').value, type: $('academyType').value, sortOrder: $('academySort').value,
+      title: $('academyTitle').value, summary: $('academySummary').value,
       teacher: $('academyTeacher').value, teacherTitle: $('academyTeacherTitle').value,
       durationSeconds: $('academyDuration').value, objectives: $('academyObjectives').value,
-      coverUrl: $('academyCoverUrl').value,
-      videoUrl: $('academyVideoUrl').value,
-      vodFileId: $('academyVodFileId').value, vodStatus: $('academyVodStatus').value,
+      coverUrl: $('academyCoverUrl').value, videoUrl,
+      vodFileId: $('academyVodFileId').value, vodStatus: videoUrl ? 'ready' : 'none',
       status: $('academyPublished').checked ? 'published' : 'draft', isFeatured: $('academyFeatured').checked
     }
     $('academyCourseMessage').textContent = '正在保存...'
     try {
       await request(`/courses${databaseId ? `/${databaseId}` : ''}`, { method: databaseId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      closeCourse()
-      await load()
-      runtime.notify('课程已保存', 'success')
+      closeCourse(); await load(); runtime.notify('视频课程已保存', 'success')
     } catch (error) { $('academyCourseMessage').textContent = error.message || '保存失败' }
+    finally { submit.disabled = false }
   }
 
   async function tableAction(event) {
     const button = event.target.closest('button')
     if (!button) return
     try {
+      if (button.dataset.manageSeries) { state.selected = button.dataset.manageSeries; updateWorkspace(); return }
+      if (button.dataset.move) {
+        const rows = seriesCourses(); const from = rows.findIndex(item => item.databaseId === Number(button.dataset.move)); const to = from + Number(button.dataset.direction)
+        if (from >= 0 && to >= 0 && to < rows.length) { const [item] = rows.splice(from, 1); rows.splice(to, 0, item); await saveOrder(rows) }
+        return
+      }
+      if (button.dataset.academySeriesCourse) { state.selected = button.dataset.academySeriesCourse; updateWorkspace(); return openCourse(0, state.selected) }
+      if (button.dataset.academySeriesEdit) return openSeries(button.dataset.academySeriesEdit)
+      if (button.dataset.academySeriesToggle) {
+        const status = button.dataset.status === 'published' ? 'offline' : 'published'
+        await request(`/series/${button.dataset.academySeriesToggle}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
+        await load(); return runtime.notify(status === 'published' ? '系列课程已上架' : '系列课程已下架', 'success')
+      }
+      if (button.dataset.academySeriesDelete) {
+        if (!confirm('确定删除这个系列课程吗？系列内仍有课程时不能删除。')) return
+        await request(`/series/${button.dataset.academySeriesDelete}`, { method: 'DELETE' })
+        await load(); return runtime.notify('系列课程已删除', 'success')
+      }
       if (button.dataset.academyEdit) return openCourse(button.dataset.academyEdit)
       if (button.dataset.academyToggle) {
         const status = button.dataset.status === 'published' ? 'offline' : 'published'
@@ -255,7 +255,7 @@
         await load(); return runtime.notify(status === 'published' ? '课程已上架' : '课程已下架', 'success')
       }
       if (button.dataset.academyDelete) {
-        if (!confirm('确定删除这门课程吗？相关评论将同时删除，云点播中的媒资文件会保留。')) return
+        if (!confirm('确定删除这门课程吗？相关评论将同时删除，腾讯云 VOD 中的视频不会被删除。')) return
         await request(`/courses/${button.dataset.academyDelete}`, { method: 'DELETE' })
         await load(); return runtime.notify('课程已删除', 'success')
       }
@@ -267,20 +267,71 @@
     } catch (error) { runtime.notify(error.message || '操作失败', 'error') }
   }
 
+  function seriesCourses() { return state.courses.filter(item => item.seriesKey === state.selected).sort((a,b) => a.lessonNo-b.lessonNo || a.sortOrder-b.sortOrder || a.databaseId-b.databaseId) }
+  async function saveOrder(rows) {
+    const series = state.series.find(item => item.id === state.selected)
+    await request(`/series/${series.databaseId}/order`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: rows.map(item => item.databaseId) }) })
+    await load()
+  }
+  function updateWorkspace() {
+    const series = state.series.find(item => item.id === state.selected)
+    const comments = state.tab === 'comments'
+    $('academySeriesTable').closest('.academy-section').classList.toggle('hidden', comments || Boolean(series))
+    $('academyCourseTable').closest('.academy-section').classList.toggle('hidden', comments || !series)
+    $('academyCommentTable').closest('.academy-section').classList.toggle('hidden', !comments)
+    $('academyFilters').classList.toggle('hidden', comments || Boolean(series))
+    $('academySeriesContext').classList.toggle('hidden', comments || !series)
+    $('academySeriesContextTitle').textContent = series ? `${series.title} · ${levels[series.level]} · ${statusText(series.status)}` : ''
+    $('academyAddCourse').classList.toggle('hidden', comments || !series)
+    $('academyAddSeries').classList.toggle('hidden', comments || Boolean(series))
+    renderCourses()
+  }
+  const controls = document.createElement('div')
+  controls.innerHTML = `<div style="padding:18px 21px"><button class="btn secondary" id="academySeriesTab">系列管理</button> <button class="btn secondary" id="academyCommentsTab">评论管理</button></div><div id="academyFilters" style="padding:0 21px 16px;display:flex;gap:12px;flex-wrap:wrap"><input id="academySearch" placeholder="搜索系列名称"><select id="academyFilterLevel"><option value="">全部等级</option><option value="basic">初级</option><option value="intermediate">中级</option><option value="advanced">高级</option></select><select id="academyFilterStatus"><option value="">全部状态</option><option value="published">已上架</option><option value="draft">草稿</option><option value="offline">已下架</option></select></div><div id="academySeriesContext" class="hidden" style="padding:18px 21px"><button class="small-btn" id="academyBackSeries">← 返回系列</button> <strong id="academySeriesContextTitle"></strong><p>在此管理课时顺序和上架状态。视频上架后，还需要上架所属系列才能在小程序展示。</p></div>`
+  $('academyPanel').insertBefore(controls, $('academySeriesTable').closest('.academy-section'))
+  $('academySeriesTab').onclick = () => { state.tab = 'series'; state.selected = ''; updateWorkspace() }
+  $('academyCommentsTab').onclick = () => { state.tab = 'comments'; updateWorkspace() }
+  $('academyBackSeries').onclick = () => { state.selected = ''; updateWorkspace() }
+  ;['academySearch','academyFilterLevel','academyFilterStatus'].forEach(id => $(id).addEventListener('input', renderSeries))
+  $('academyCourseTable').addEventListener('dragstart', event => { const row = event.target.closest('[data-course-row]'); if (row) event.dataTransfer.setData('text/plain', row.dataset.courseRow) })
+  $('academyCourseTable').addEventListener('dragover', event => event.preventDefault())
+  $('academyCourseTable').addEventListener('drop', async event => {
+    event.preventDefault(); const target = event.target.closest('[data-course-row]'); if (!target) return
+    const rows = seriesCourses(); const from = rows.findIndex(item => item.databaseId === Number(event.dataTransfer.getData('text/plain'))); const to = rows.findIndex(item => item.databaseId === Number(target.dataset.courseRow))
+    if (from < 0 || to < 0 || from === to) return
+    const [item] = rows.splice(from,1); rows.splice(to,0,item)
+    try { await saveOrder(rows) } catch (error) { runtime.notify(error.message || '排序保存失败','error') }
+  })
+  $('academyPreviewButton').onclick = () => {
+    const url = $('academyVideoUrl').value.trim()
+    if (!/^https:\/\//i.test(url)) return runtime.notify('请填写 HTTPS 视频播放地址', 'error')
+    const player = $('academyPreview'); player.src = url; player.poster = $('academyCoverUrl').value; player.classList.remove('hidden'); player.load()
+    $('academyCourseMessage').textContent = '点击播放器试听，确认画面和声音正常后再发布。'
+  }
+  $('academyPreview').onloadedmetadata = () => { if (Number.isFinite($('academyPreview').duration)) $('academyDuration').value = Math.ceil($('academyPreview').duration) }
+  $('academyPreview').onerror = () => { $('academyCourseMessage').textContent = '预览失败，请检查链接、有效期或浏览器是否支持该视频格式。' }
+  const advanced = document.createElement('details')
+  advanced.className = 'full'
+  advanced.innerHTML = '<summary>更多课程信息 · 讲师、时长和学习要点</summary><div class="policy-fields" style="margin-top:16px"></div>'
+  $('academyObjectives').closest('.policy-fields').appendChild(advanced)
+  ;['academyTeacher','academyTeacherTitle','academyDuration','academyObjectives'].forEach(id => advanced.querySelector('.policy-fields').appendChild($(id).parentElement))
+  updateWorkspace()
   document.querySelector('[data-view="academy"]').onclick = show
   document.querySelectorAll('[data-view]:not([data-view="academy"])').forEach(item => item.addEventListener('click', () => $('academyPanel').classList.add('hidden')))
   $('academyRefresh').onclick = load
+  $('academyAddSeries').onclick = () => openSeries()
   $('academyAddCourse').onclick = () => openCourse()
+  $('closeAcademySeriesModal').onclick = closeSeries
+  $('cancelAcademySeriesBtn').onclick = closeSeries
+  $('academySeriesForm').addEventListener('submit', saveSeries)
   $('closeAcademyCourseModal').onclick = closeCourse
   $('cancelAcademyCourseBtn').onclick = closeCourse
   $('academyCourseForm').addEventListener('submit', saveCourse)
-  $('academyLevel').addEventListener('change', () => syncSeries())
+  $('academyLevel').addEventListener('change', () => { syncSeries(); updateRewardHint() })
+  $('academySeriesTable').addEventListener('click', tableAction)
   $('academyCourseTable').addEventListener('click', tableAction)
   $('academyCommentTable').addEventListener('click', tableAction)
-  $('uploadAcademyCoverBtn').onclick = () => $('academyCoverFile').click()
-  $('uploadAcademyVideoBtn').onclick = () => $('academyVideoFile').click()
-  $('academyCoverFile').addEventListener('change', event => selectOrUploadCover(event.target))
-  $('academyVideoFile').addEventListener('change', event => uploadVideoToVod(event.target))
+  $('academySeriesModal').addEventListener('click', event => { if (event.target === $('academySeriesModal')) closeSeries() })
   $('academyCourseModal').addEventListener('click', event => { if (event.target === $('academyCourseModal')) closeCourse() })
   window.AcademyAdmin = { show, load }
 })()

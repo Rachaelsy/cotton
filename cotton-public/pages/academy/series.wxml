@@ -5,6 +5,9 @@
     <button open-type="share">分享</button>
   </view>
 
+  <view class="empty" wx:if="{{loading}}">课程目录加载中…</view>
+  <view class="empty" wx:elif="{{error}}"><text>{{error}}</text><button bindtap="loadSeries">重新加载</button></view>
+  <block wx:else>
   <view class="series-hero">
     <image src="{{series.cover}}" mode="aspectFill"></image>
     <view class="hero-shade"></view>
@@ -16,10 +19,12 @@
   </view>
 
   <view class="series-intro">
-    <strong>课程介绍</strong>
-    <text>{{series.summary}}</text>
+    <strong bindtap="toggleIntro">课程介绍 {{introExpanded?'收起':'展开'}}</strong>
+    <text wx:if="{{introExpanded}}">{{series.summary}}</text>
     <view><text>课程编制</text><strong>{{series.teacher}}</strong></view>
   </view>
+
+  <button class="start-learning" wx:if="{{lessons.length}}" bindtap="startLearning">{{continueLabel}}</button>
 
   <view class="directory-head"><strong>课程目录</strong><text>点击课时开始播放</text></view>
   <view class="lesson-list">
@@ -34,4 +39,5 @@
     </view>
   </view>
   <view class="empty" wx:if="{{!loading&&!lessons.length}}">该系列暂时没有已上架课时</view>
+  </block>
 </view>

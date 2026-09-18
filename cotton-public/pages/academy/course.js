@@ -1,21 +1,13 @@
 const auth = require('../../utils/auth')
 const { COURSES, getCourse, getLevel } = require('../../utils/academy-data')
 
-const PROGRESS_KEY = 'academy_course_progress'
+const progressStore = require('../../utils/academy-progress')
 const ACADEMY_API = '/api/miniapp-academy'
-const LEGACY_COMMENT_API = '/api/academy/courses/'
 
 function readProgress() {
-  const value = wx.getStorageSync(PROGRESS_KEY)
-  return value && typeof value === 'object' ? value : {}
+  return progressStore.percentages()
 }
 
-function saveProgress(courseId, percent) {
-  const progress = readProgress()
-  progress[courseId] = Math.max(Number(progress[courseId] || 0), Math.max(0, Math.min(100, Math.round(percent))))
-  wx.setStorageSync(PROGRESS_KEY, progress)
-  return progress[courseId]
-}
 
 function relativeTime(value) {
   const time = new Date(value).getTime()
@@ -32,6 +24,7 @@ function relativeTime(value) {
 Page({
   data: {
     navTop: 24,
+    loading: true, error: '', videoError: '', initialTime: 0, lessons: [], showDirectory: false, ended: false,
     course: {},
     level: {},
     progress: 0,
@@ -45,6 +38,7 @@ Page({
   },
 
   onLoad(options) {
+    this.progressOwner = auth.getUser() && auth.getUser().id || 'guest'
     let navTop = 24
     try { navTop = wx.getSystemInfoSync().statusBarHeight || 24 } catch (error) {}
     const requestedId = String(options.id || '')
@@ -53,15 +47,16 @@ Page({
     const progress = Number(readProgress()[course.id] || 0)
     this.courseId = course.id
     this.setData({ navTop, course, level, progress, completed: progress >= 100 })
-    if (progress === 0) this.setData({ progress: saveProgress(course.id, 5) })
     this.loadCourse()
     this.loadComments()
   },
 
   async loadCourse() {
+    this.setData({ loading: true, error: '', videoError: '' })
     try {
+      await progressStore.sync()
       const result = await auth.request('GET', `/api/miniapp-academy/courses/${encodeURIComponent(this.courseId)}`)
-      if (!result || result.code !== 200 || !result.data) return
+      if (!result || result.code !== 200 || !result.data) throw new Error(result && result.code === 404 ? '课程已下架或不存在' : '课程加载失败，请重试')
       const remote = result.data
       const current = this.data.course || {}
       const remoteCover = /^(https:\/\/|\/uploads\/)/.test(String(remote.cover || '')) ? remote.cover : ''
@@ -71,50 +66,85 @@ Page({
         cover: remoteCover || current.cover || '/images/cotton-seedling-inspection-v1.jpg',
         objectives: Array.isArray(remote.objectives) && remote.objectives.length ? remote.objectives : (current.objectives || [])
       }
-      this.setData({ course, level: getLevel(course.level) })
+      const saved = progressStore.read()[this.courseId] || {}
+      this.position = saved.percent >= 100 ? 0 : Number(saved.position || 0)
+      this.setData({ course, level: getLevel(course.level), initialTime: this.position, progress: saved.percent || 0, completed: Boolean(saved.completed || saved.percent >= 90), loading: false })
+      if (course.seriesKey) this.loadDirectory(course.seriesKey)
     } catch (error) {
-      console.warn('[academy-course-detail]', error && error.message || error)
+      this.setData({ error: error.message || '课程加载失败，请重试', loading: false, course: {} })
     }
   },
 
+  async loadDirectory(key) {
+    try {
+      const result = await auth.request('GET', `/api/miniapp-academy/series/${encodeURIComponent(key)}`)
+      if (result.code !== 200) throw new Error('目录加载失败')
+      const lessons = result.data.lessons || []; const index = lessons.findIndex(item => item.id === this.courseId)
+      this.setData({ lessons, previousId: index > 0 ? lessons[index - 1].id : '', nextId: index >= 0 && index < lessons.length - 1 ? lessons[index + 1].id : '', directoryError: '' })
+    } catch (_) { this.setData({ directoryError: '目录加载失败，点击重试' }) }
+  },
+  retryDirectory() { this.loadDirectory(this.data.course.seriesKey) },
+  selectLesson(event) {
+    const id = event.currentTarget.dataset.id
+    if (id && id !== this.courseId) wx.redirectTo({ url: `/pages/academy/course?id=${encodeURIComponent(id)}` })
+  },
+  onVideoError() { this.setData({ videoError: '视频暂时无法播放，请重试；如仍失败，请联系平台检查播放链接。' }) },
+  retryVideo() { this.loadCourse() },
+  onHide() { this.persistProgress() },
+  onUnload() { this.persistProgress() },
+  persistProgress() {
+    if (!this.hasPlayed || this.progressOwner !== (auth.getUser() && auth.getUser().id || 'guest')) return
+    progressStore.save(this.courseId, this.position, this.data.progress, this.pendingWatchRanges || [])
+    this.pendingWatchRanges = []
+    this.flushProgress()
+  },
+
   async loadComments() {
-    this.setData({ commentsLoading: true })
+    this.setData({ commentsLoading: true, commentsError: false })
     try {
       const result = await this.commentRequest('GET', '/comments')
+      if (!result || result.code !== 200) throw new Error('评论加载失败')
       const rows = result && result.code === 200 && Array.isArray(result.data) ? result.data : []
       this.setData({ comments: rows.map(item => ({ ...item, timeText: relativeTime(item.createdAt), avatarText: String(item.author || '棉').slice(0, 1) })), commentsLoading: false })
     } catch (error) {
-      this.setData({ comments: [], commentsLoading: false })
+      this.setData({ comments: [], commentsLoading: false, commentsError: true })
     }
   },
 
   async commentRequest(method, suffix, data) {
     const courseId = encodeURIComponent(this.courseId)
-    const result = await auth.request(method, `${ACADEMY_API}/courses/${courseId}${suffix}`, data)
-    if (!result || result.code !== 404) return result
-    return auth.request(method, `${LEGACY_COMMENT_API}${courseId}${suffix}`, data)
+    return auth.request(method, `${ACADEMY_API}/courses/${courseId}${suffix}`, data)
   },
 
   onVideoTimeUpdate(event) {
+    if (this.progressOwner !== (auth.getUser() && auth.getUser().id || 'guest')) return
     const detail = event.detail || {}
     if (!detail.duration) return
+    this.position = detail.currentTime
+    this.hasPlayed = detail.currentTime > 0
+    const delta = this.lastVideoTime == null ? 0 : detail.currentTime - this.lastVideoTime
+    this.lastVideoTime = detail.currentTime
+    if (delta > 0 && delta <= 3) (this.pendingWatchRanges || (this.pendingWatchRanges = [])).push([this.lastVideoTime - delta, this.lastVideoTime])
     const percent = Math.min(99, detail.currentTime / detail.duration * 100)
-    if (percent >= this.data.progress + 5) this.setData({ progress: saveProgress(this.courseId, percent) })
+    if (this.hasPlayed && (!this.lastSaved || Date.now() - this.lastSaved > 5000)) {
+      this.lastSaved = Date.now()
+      const saved = progressStore.save(this.courseId, this.position, percent, this.pendingWatchRanges || [])
+      this.pendingWatchRanges = []
+      this.setData({ progress: saved.percent })
+      this.flushProgress()
+    }
   },
 
   onVideoEnded() {
-    this.finishCourse(false)
+    this.persistProgress()
+    this.setData({ ended: true })
   },
 
-  complete() {
-    if (this.data.completed) return wx.showToast({ title: '本课已完成', icon: 'none' })
-    this.finishCourse(true)
-  },
-
-  finishCourse(showToast) {
-    saveProgress(this.courseId, 100)
-    this.setData({ progress: 100, completed: true })
-    if (showToast) wx.showToast({ title: '已完成本课', icon: 'success' })
+  async flushProgress() {
+    const result = await progressStore.flush(this.courseId)
+    if (!result) return
+    this.setData({ progress: result.percent, completed: result.completed })
+    if (result.awardedPoints) wx.showToast({ title: `课时完成，积分 +${result.awardedPoints}`, icon: 'none', duration: 2500 })
   },
 
   onCommentInput(event) {
@@ -180,8 +210,7 @@ Page({
   },
 
   openDirectory() {
-    const seriesKey = this.data.course && this.data.course.seriesKey
-    if (seriesKey) wx.navigateTo({ url: `/pages/academy/series?id=${encodeURIComponent(seriesKey)}` })
+    this.setData({ showDirectory: !this.data.showDirectory })
   },
 
   onShareAppMessage() {

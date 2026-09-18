@@ -91,7 +91,7 @@ Page({
 
   openPage(event) {
     const key = event.currentTarget.dataset.key
-    const protectedKeys = ['verification', 'fields']
+    const protectedKeys = ['verification', 'fields', 'learning']
     if (protectedKeys.includes(key) && !auth.isLoggedIn()) {
       wx.showToast({ title: '请先登录', icon: 'none' })
       setTimeout(() => this.login(), 500)
@@ -100,7 +100,7 @@ Page({
     const routes = {
       verification: '/pages/verification/index',
       fields: '/pages/fields/index',
-      learning: '/pages/academy/index',
+      learning: '/pages/learning/index',
       collection: '/pages/collection/index',
       settings: '/pages/settings/index',
       about: '/pages/about/index'

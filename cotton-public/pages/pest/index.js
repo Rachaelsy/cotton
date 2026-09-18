@@ -81,6 +81,7 @@ Page({
         n: item.name,
         type: (copy.categoryLabels && copy.categoryLabels[item.category]) || item.categoryName,
         icon: item.icon || '🌿',
+        coverUrl: item.coverUrl && item.coverUrl.startsWith('/') ? `${auth.BASE_URL}${item.coverUrl}` : item.coverUrl,
         bg: backgrounds[item.category] || 'c2'
       }))
       this.setData({
@@ -154,6 +155,11 @@ Page({
     this._applyFilter(filter)
   },
 
+  onMorePests() {
+    const rootFilter = (this.data.filters || [])[0]
+    if (rootFilter) this._applyFilter(rootFilter)
+  },
+
   onTakePhoto() {
     wx.chooseMedia({
       count: 1,
@@ -165,9 +171,10 @@ Page({
           this._openResultPage(filePath)
         }
       },
-      fail: () => {
+      fail: (error) => {
+        if (/cancel/i.test((error && error.errMsg) || '')) return
         wx.showToast({
-          title: this.textCopy.photoCancel,
+          title: this.textCopy.photoFail,
           icon: 'none'
         })
       }
@@ -185,9 +192,10 @@ Page({
           this._openResultPage(filePath)
         }
       },
-      fail: () => {
+      fail: (error) => {
+        if (/cancel/i.test((error && error.errMsg) || '')) return
         wx.showToast({
-          title: this.textCopy.albumCancel,
+          title: this.textCopy.albumFail,
           icon: 'none'
         })
       }

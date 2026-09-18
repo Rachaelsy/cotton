@@ -1,35 +1,54 @@
 <view class="academy-page">
   <view class="academy-nav" style="padding-top:{{navTop}}px">
     <view class="nav-action" bindtap="back">‹</view>
-    <strong>优棉学堂</strong>
+    <text class="nav-title">优棉学堂</text>
     <view class="nav-action nav-placeholder"></view>
   </view>
 
+  <view class="academy-hero">
+    <image class="hero-image" src="/images/cotton-seedling-inspection-v1.jpg" mode="aspectFill"></image>
+    <view class="hero-shade"></view>
+    <view class="hero-copy">
+      <view class="hero-badge"><view class="badge-leaf">◆</view><text>喀什优棉 · 农技课堂</text></view>
+      <text class="hero-title">学种棉，来优棉学堂</text>
+      <text class="hero-subtitle">实用农技课程，助力科学种植</text>
+    </view>
+  </view>
+
   <view class="level-tabs">
-    <view wx:for="{{levels}}" wx:key="key" class="level-tab {{activeLevel===item.key?'active':''}}" data-key="{{item.key}}" bindtap="switchLevel">{{item.name}}</view>
+    <view wx:for="{{levels}}" wx:key="key" class="level-tab {{activeLevel===item.key?'active':''}}" data-key="{{item.key}}" bindtap="switchLevel">
+      <text>{{item.name}}</text>
+    </view>
   </view>
 
   <view class="series-head">
-    <strong>{{activeLevel==='basic'?'初级系列课程':activeLevel==='intermediate'?'中级系列课程':'高级系列课程'}}</strong>
-    <text>点击课程查看完整目录</text>
+    <view class="series-heading"><view class="heading-bar"></view><text>{{activeLevel==='basic'?'初级专题课程':activeLevel==='intermediate'?'中级专题课程':'高级专题课程'}}</text></view>
+    <text class="series-guide">选择专题开始学习</text>
   </view>
 
-  <view class="series-grid" wx:if="{{series.length}}">
+  <view class="empty-state" wx:if="{{loading}}"><text>课程加载中…</text></view>
+  <view class="empty-state" wx:elif="{{error}}"><text>{{error}}</text><button bindtap="loadSeries">重新加载</button></view>
+  <view class="series-grid" wx:elif="{{series.length}}">
     <view class="series-card" wx:for="{{series}}" wx:key="id" data-id="{{item.id}}" bindtap="openSeries">
-      <view class="series-cover">
-        <image src="{{item.cover}}" mode="aspectFill"></image>
-        <view class="cover-shade"></view>
-        <text class="lesson-count">共{{item.lessonCount}}节</text>
-        <view class="series-level">{{activeLevel==='basic'?'入门':activeLevel==='intermediate'?'进阶':'提升'}}</view>
+      <image class="series-cover" src="{{item.cover}}" mode="aspectFill"></image>
+      <view class="series-card-copy">
+        <text class="series-title">{{item.title}}</text>
+        <text class="series-summary">{{item.summary}}</text>
+        <view class="series-bottom"><text>{{item.lessonCount}} 节 · {{item.durationText}}</text><text class="series-arrow">›</text></view>
       </view>
-      <strong class="series-title">{{item.title}}</strong>
-      <text class="series-summary">{{item.summary}}</text>
-      <view class="series-meta"><text>{{item.teacher}}</text><text>{{item.durationText}}</text></view>
-      <view class="series-progress" wx:if="{{item.progress>0}}"><view style="width:{{item.progress}}%"></view></view>
-      <text class="progress-copy" wx:if="{{item.progress>0}}">已完成 {{item.completed}}/{{item.lessonCount}}</text>
+      <view wx:if="{{item.progress>0}}" class="series-progress"><view style="width:{{item.progress}}%"></view></view>
     </view>
   </view>
-  <view class="empty" wx:elif="{{!loading}}">该级别暂时没有系列课程</view>
 
-  <view class="academy-note">课程用于农业科普学习，具体田间措施应结合地块情况和属地农技指导。</view>
+  <view class="empty-state" wx:elif="{{!loading}}">
+    <view class="empty-illustration">
+      <view class="book-page left"><view></view><view></view><view></view></view>
+      <view class="book-page right"><view></view><view></view><view></view></view>
+      <view class="book-spine"></view>
+    </view>
+    <text class="empty-title">暂无已发布课程</text>
+    <text class="empty-copy">请选择其他课程级别查看</text>
+  </view>
+
+  <view class="bottom-space"></view>
 </view>

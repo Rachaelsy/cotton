@@ -11,6 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET
 const LEVELS = new Set(['basic', 'intermediate', 'advanced'])
 const TYPES = new Set(['video', 'article'])
 const STATUSES = new Set(['draft', 'published', 'offline'])
+const LEARNING_POINTS = { basic: 5, intermediate: 8, advanced: 10 }
 
 function tokenPayload(req) {
   const auth = String(req.headers.authorization || '')
@@ -58,6 +59,22 @@ function parseList(value, max = 8) {
     if (Array.isArray(parsed)) return parsed.map(item => String(item || '').trim()).filter(Boolean).slice(0, max)
   } catch {}
   return String(value).split(/[，,\n]/).map(item => item.trim()).filter(Boolean).slice(0, max)
+}
+
+function mergeWatchRanges(value, duration) {
+  const source = Array.isArray(value) ? value : (() => { try { return JSON.parse(value || '[]') } catch { return [] } })()
+  const ranges = source
+    .filter(item => Array.isArray(item) && item.length === 2 && Number.isFinite(Number(item[0])) && Number.isFinite(Number(item[1])))
+    .map(item => [Math.max(0, Math.min(duration, Number(item[0]))), Math.max(0, Math.min(duration, Number(item[1])))])
+    .filter(item => item[1] > item[0])
+    .sort((a, b) => a[0] - b[0])
+  const merged = []
+  for (const range of ranges) {
+    const previous = merged[merged.length - 1]
+    if (previous && range[0] <= previous[1] + 0.5) previous[1] = Math.max(previous[1], range[1])
+    else merged.push(range)
+  }
+  return merged.slice(0, 500)
 }
 
 function safeUrl(value) {
@@ -131,6 +148,25 @@ function coursePayload(body = {}) {
   }
 }
 
+function generatedCourseKey() {
+  return `course-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`
+}
+
+function seriesPayload(body = {}) {
+  const rawKey = String(body.seriesKey || body.series_key || '').trim().toLowerCase()
+  return {
+    seriesKey: rawKey.replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 80),
+    level: LEVELS.has(body.level) ? body.level : 'basic',
+    title: String(body.title || '').trim().slice(0, 160),
+    summary: String(body.summary || '').trim().slice(0, 1000),
+    teacher: String(body.teacher || '平台农技组').trim().slice(0, 100),
+    coverUrl: safeUrl(body.coverUrl || body.cover_url),
+    status: STATUSES.has(body.status) ? body.status : 'draft',
+    featured: body.isFeatured === true || Number(body.isFeatured || body.is_featured) === 1 ? 1 : 0,
+    sortOrder: Math.max(-99999, Math.min(99999, Number.parseInt(body.sortOrder || body.sort_order, 10) || 0))
+  }
+}
+
 function courseView(row, admin = false) {
   const cover = row.cover_url
   const videoUrl = row.video_url
@@ -176,6 +212,7 @@ function seriesView(row) {
     summary: row.summary || '',
     teacher: row.teacher || '平台农技组',
     cover: row.cover_url || '',
+    status: row.status || 'draft',
     lessonCount: Number(row.lesson_count || 0),
     totalSeconds: Number(row.total_seconds || 0),
     isFeatured: Boolean(row.is_featured),
@@ -185,7 +222,7 @@ function seriesView(row) {
 
 async function ensurePublishedCourse(req, res, next) {
   try {
-    const [[course]] = await db.query("SELECT id FROM academy_courses WHERE course_key=? AND status='published' LIMIT 1", [req.params.courseId])
+    const [[course]] = await db.query("SELECT c.id FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key WHERE c.course_key=? AND c.status='published' AND s.status='published' LIMIT 1", [req.params.courseId])
     if (!course) return fail(res, '课程不存在', 404)
     next()
   } catch (error) {
@@ -197,9 +234,9 @@ async function ensurePublishedCourse(req, res, next) {
 router.get('/courses', async (req, res) => {
   try {
     const params = []
-    let where = "status='published'"
-    if (LEVELS.has(req.query.level)) { where += ' AND level=?'; params.push(req.query.level) }
-    const [rows] = await db.query(`SELECT * FROM academy_courses WHERE ${where} ORDER BY sort_order,id`, params)
+    let where = "c.status='published' AND s.status='published'"
+    if (LEVELS.has(req.query.level)) { where += ' AND c.level=?'; params.push(req.query.level) }
+    const [rows] = await db.query(`SELECT c.* FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key WHERE ${where} ORDER BY c.lesson_no,c.sort_order,c.id`, params)
     return ok(res, rows.map(row => courseView(row)))
   } catch (error) {
     console.error('[academy-course-list]', error)
@@ -238,7 +275,7 @@ router.get('/series/:seriesKey', async (req, res) => {
 
 router.get('/courses/:courseId', async (req, res) => {
   try {
-    const [[row]] = await db.query("SELECT c.*,s.title series_title FROM academy_courses c LEFT JOIN academy_series s ON s.series_key=c.series_key WHERE c.course_key=? AND c.status='published' LIMIT 1", [req.params.courseId])
+    const [[row]] = await db.query("SELECT c.*,s.title series_title FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key WHERE c.course_key=? AND c.status='published' AND s.status='published' LIMIT 1", [req.params.courseId])
     if (!row) return fail(res, '课程不存在', 404)
     await db.query('UPDATE academy_courses SET view_count=view_count+1 WHERE id=?', [row.id])
     row.view_count = Number(row.view_count || 0) + 1
@@ -317,11 +354,178 @@ router.post('/courses/:courseId/comments/:commentId/like', farmerAuth, ensurePub
   }
 })
 
+router.get('/progress', farmerAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT course_key,position_seconds,watched_seconds,percent,completed_at,updated_at FROM academy_progress WHERE user_id=?', [req.viewer.id])
+    return ok(res, rows)
+  } catch (error) { return fail(res, '学习记录加载失败', 500) }
+})
+
+router.put('/courses/:courseId/progress', farmerAuth, ensurePublishedCourse, async (req, res) => {
+  const position = Number(req.body.position)
+  const incomingRanges = req.body.ranges
+  if (!Number.isFinite(position) || position < 0 || position > 86400 || !Array.isArray(incomingRanges) || incomingRanges.length > 120) return fail(res, '学习记录格式不正确')
+  const connection = await db.getConnection()
+  try {
+    await connection.beginTransaction()
+    const [[course]] = await connection.query(
+      `SELECT c.duration_seconds,c.level FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key
+       WHERE c.course_key=? AND c.status='published' AND s.status='published' LIMIT 1 FOR UPDATE`,
+      [req.params.courseId]
+    )
+    if (!course) { await connection.rollback(); return fail(res, '课程已下架或不存在', 404) }
+    await connection.query(
+      'INSERT IGNORE INTO academy_progress(user_id,course_key,position_seconds,watched_seconds,percent) VALUES (?,?,0,0,0)',
+      [req.viewer.id, req.params.courseId]
+    )
+    const [[current]] = await connection.query(
+      'SELECT watched_seconds,watched_ranges_json,percent,completed_at FROM academy_progress WHERE user_id=? AND course_key=? FOR UPDATE',
+      [req.viewer.id, req.params.courseId]
+    )
+    const duration = Math.max(1, Number(course.duration_seconds || 60))
+    const validIncoming = incomingRanges.every(item => Array.isArray(item) && item.length === 2 &&
+      Number.isFinite(Number(item[0])) && Number.isFinite(Number(item[1])) &&
+      Number(item[0]) >= 0 && Number(item[1]) > Number(item[0]) && Number(item[1]) - Number(item[0]) <= 10)
+    if (!validIncoming) { await connection.rollback(); return fail(res, '观看区间格式不正确') }
+    const oldRanges = mergeWatchRanges(current.watched_ranges_json, duration)
+    const newRanges = mergeWatchRanges(incomingRanges, duration)
+    const watchedRanges = mergeWatchRanges([...oldRanges, ...newRanges], duration)
+    const watchedSeconds = Math.min(duration, watchedRanges.reduce((sum, item) => sum + item[1] - item[0], 0))
+    const watchedPercent = Math.min(100, Math.floor(watchedSeconds / duration * 100))
+    const completed = watchedPercent >= 90
+    const percent = completed ? 100 : Math.min(89, Math.max(Number(current.percent || 0), watchedPercent))
+    await connection.query(
+      `UPDATE academy_progress SET position_seconds=?,watched_seconds=?,watched_ranges_json=?,percent=?,completed_at=IF(?=1,COALESCE(completed_at,NOW()),completed_at)
+       WHERE user_id=? AND course_key=?`,
+      [Math.min(position, duration), watchedSeconds, JSON.stringify(watchedRanges), percent, completed ? 1 : 0, req.viewer.id, req.params.courseId]
+    )
+    let awardedPoints = 0
+    if (completed) {
+      const points = LEARNING_POINTS[course.level] || 5
+      const [award] = await connection.query(
+        `INSERT IGNORE INTO academy_learning_points(user_id,course_key,points,reason) VALUES (?,?,?,'首次完成课时')`,
+        [req.viewer.id, req.params.courseId, points]
+      )
+      if (award.affectedRows) awardedPoints = points
+    }
+    const [[total]] = await connection.query('SELECT COALESCE(SUM(points),0) total FROM academy_learning_points WHERE user_id=?', [req.viewer.id])
+    await connection.commit()
+    return ok(res, { position: Math.min(position, duration), watchedSeconds, percent, completed, awardedPoints, totalPoints: Number(total.total || 0) })
+  } catch (error) {
+    await connection.rollback()
+    console.error('[academy-progress-save]', error)
+    return fail(res, '学习记录保存失败', 500)
+  } finally { connection.release() }
+})
+
+router.get('/learning', farmerAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT p.course_key,p.position_seconds,p.watched_seconds,
+              CASE WHEN p.completed_at IS NULL THEN LEAST(p.percent,89) ELSE 100 END percent,
+              p.completed_at,p.updated_at,
+              c.title,c.summary,c.cover_url,c.duration_seconds,c.lesson_no,c.level,c.series_key,
+              s.title series_title,s.cover_url series_cover,s.summary series_summary,
+              (SELECT COUNT(*) FROM academy_courses tc WHERE tc.series_key=c.series_key AND tc.status='published') series_course_count,
+              COALESCE(lp.points,0) earned_points
+         FROM academy_progress p
+         JOIN academy_courses c ON c.course_key=p.course_key
+         LEFT JOIN academy_series s ON s.series_key=c.series_key
+         LEFT JOIN academy_learning_points lp ON lp.user_id=p.user_id AND lp.course_key=p.course_key
+        WHERE p.user_id=? AND (p.watched_seconds>0 OR p.percent>0)
+        ORDER BY p.updated_at DESC`,
+      [req.viewer.id]
+    )
+    const seriesMap = new Map()
+    for (const row of rows) {
+      const key = row.series_key || `course:${row.course_key}`
+      if (!seriesMap.has(key)) seriesMap.set(key, {
+        id: key, title: row.series_title || row.title, cover: row.series_cover || row.cover_url || '',
+        summary: row.series_summary || '', level: row.level, courses: [], learnedCount: 0,
+        completedCount: 0, totalCount: Number(row.series_course_count || 1), points: 0, totalPercent: 0, updatedAt: row.updated_at
+      })
+      const group = seriesMap.get(key)
+      const course = {
+        id: row.course_key, title: row.title, cover: row.cover_url || '', lessonNo: Number(row.lesson_no || 1),
+        durationSeconds: Number(row.duration_seconds || 0), position: Number(row.position_seconds || 0),
+        percent: Number(row.percent || 0), completed: Boolean(row.completed_at), points: Number(row.earned_points || 0),
+        updatedAt: row.updated_at
+      }
+      group.courses.push(course)
+      group.learnedCount += 1
+      group.completedCount += course.completed ? 1 : 0
+      group.points += course.points
+      group.totalPercent += course.percent
+    }
+    const series = [...seriesMap.values()].map(group => ({
+      ...group,
+      progress: Math.round(group.totalPercent / Math.max(1, group.totalCount)),
+      currentCourse: group.courses.find(course => !course.completed) || group.courses[0]
+    }))
+    const [[summary]] = await db.query(
+      `SELECT COALESCE(SUM(p.watched_seconds),0) watched_seconds,
+              SUM(CASE WHEN p.completed_at IS NOT NULL THEN 1 ELSE 0 END) completed_count,
+              (SELECT COALESCE(SUM(points),0) FROM academy_learning_points WHERE user_id=?) total_points
+         FROM academy_progress p WHERE p.user_id=?`,
+      [req.viewer.id, req.viewer.id]
+    )
+    const [pointRows] = await db.query(
+      `SELECT lp.id,lp.points,lp.reason,lp.created_at,c.title,c.level FROM academy_learning_points lp
+       LEFT JOIN academy_courses c ON c.course_key=lp.course_key WHERE lp.user_id=? ORDER BY lp.id DESC LIMIT 50`,
+      [req.viewer.id]
+    )
+    return ok(res, {
+      summary: { totalPoints: Number(summary.total_points || 0), completedCount: Number(summary.completed_count || 0), watchedSeconds: Number(summary.watched_seconds || 0) },
+      series, pointRecords: pointRows
+    })
+  } catch (error) {
+    console.error('[academy-learning]', error)
+    return fail(res, '学习中心加载失败', 500)
+  }
+})
+
+router.put('/admin/series/:id/order', adminAuth, async (req, res) => {
+  const ids = req.body.ids
+  if (!Array.isArray(ids) || ids.some(id => !Number.isInteger(id)) || new Set(ids).size !== ids.length) return fail(res, '课时顺序无效')
+  const connection = await db.getConnection()
+  try {
+    await connection.beginTransaction()
+    const [[series]] = await connection.query('SELECT series_key FROM academy_series WHERE id=? FOR UPDATE', [req.params.id])
+    if (!series) { await connection.rollback(); return fail(res, '系列不存在', 404) }
+    const [rows] = await connection.query('SELECT id FROM academy_courses WHERE series_key=? FOR UPDATE', [series.series_key])
+    if (rows.length !== ids.length || rows.some(row => !ids.includes(Number(row.id)))) {
+      await connection.rollback(); return fail(res, '课时已变化，请刷新后重试')
+    }
+    for (let index = 0; index < ids.length; index++) await connection.query('UPDATE academy_courses SET lesson_no=?,sort_order=? WHERE id=?', [index + 1, index + 1, ids[index]])
+    await connection.commit()
+    return ok(res)
+  } catch (error) { await connection.rollback(); return fail(res, '顺序保存失败', 500) }
+  finally { connection.release() }
+})
+
 router.get('/admin/courses', adminAuth, async (_req, res) => {
   try {
     const [rows] = await db.query('SELECT c.*,s.title series_title FROM academy_courses c LEFT JOIN academy_series s ON s.series_key=c.series_key ORDER BY c.sort_order,c.id')
     return ok(res, rows.map(row => courseView(row, true)))
   } catch (error) { console.error('[academy-admin-list]', error); return fail(res, '课程加载失败', 500) }
+})
+
+router.get('/admin/learning-stats', adminAuth, async (_req, res) => {
+  try {
+    const [[row]] = await db.query(
+      `SELECT COUNT(DISTINCT CASE WHEN p.watched_seconds>0 THEN p.user_id END) learner_count,
+              SUM(CASE WHEN p.watched_seconds>0 THEN 1 ELSE 0 END) started_count,
+              SUM(CASE WHEN p.completed_at IS NOT NULL THEN 1 ELSE 0 END) completed_count,
+              (SELECT COALESCE(SUM(points),0) FROM academy_learning_points) points_issued
+         FROM academy_progress p`
+    )
+    const started = Number(row.started_count || 0), completed = Number(row.completed_count || 0)
+    return ok(res, {
+      learnerCount: Number(row.learner_count || 0), completedCount: completed,
+      completionRate: started ? Math.round(completed / started * 100) : 0,
+      pointsIssued: Number(row.points_issued || 0)
+    })
+  } catch (error) { return fail(res, '学习统计加载失败', 500) }
 })
 
 router.get('/admin/series', adminAuth, async (_req, res) => {
@@ -331,11 +535,84 @@ router.get('/admin/series', adminAuth, async (_req, res) => {
   } catch (error) { console.error('[academy-admin-series]', error); return fail(res, '系列课程加载失败', 500) }
 })
 
+router.post('/admin/series', adminAuth, async (req, res) => {
+  const data = seriesPayload(req.body)
+  data.seriesKey = `series-${crypto.randomBytes(12).toString('hex')}`
+  if (!data.title) return fail(res, '请填写系列名称')
+  try {
+    const [result] = await db.query(
+      `INSERT INTO academy_series
+       (series_key,level,title,summary,teacher,cover_url,status,is_featured,sort_order)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [data.seriesKey,data.level,data.title,data.summary,data.teacher,data.coverUrl,data.status,data.featured,data.sortOrder]
+    )
+    return ok(res, { id: Number(result.insertId) }, '系列课程已创建')
+  } catch (error) {
+    if (error && error.code === 'ER_DUP_ENTRY') return fail(res, '系列标识已存在')
+    console.error('[academy-series-create]', error)
+    return fail(res, '系列课程保存失败', 500)
+  }
+})
+
+router.put('/admin/series/:id', adminAuth, async (req, res) => {
+  const data = seriesPayload(req.body)
+  if (!data.title) return fail(res, '请填写系列名称')
+  try {
+    const [[current]] = await db.query('SELECT series_key FROM academy_series WHERE id=? LIMIT 1', [req.params.id])
+    if (!current) return fail(res, '系列课程不存在', 404)
+    data.seriesKey = current.series_key
+    await db.query(
+      `UPDATE academy_series SET series_key=?,level=?,title=?,summary=?,teacher=?,cover_url=?,status=?,is_featured=?,sort_order=? WHERE id=?`,
+      [data.seriesKey,data.level,data.title,data.summary,data.teacher,data.coverUrl,data.status,data.featured,data.sortOrder,req.params.id]
+    )
+    if (current.series_key !== data.seriesKey) {
+      await db.query('UPDATE academy_courses SET series_key=?,level=? WHERE series_key=?', [data.seriesKey,data.level,current.series_key])
+    } else {
+      await db.query('UPDATE academy_courses SET level=? WHERE series_key=?', [data.level,data.seriesKey])
+    }
+    return ok(res, null, '系列课程已保存')
+  } catch (error) {
+    if (error && error.code === 'ER_DUP_ENTRY') return fail(res, '系列标识已存在')
+    console.error('[academy-series-update]', error)
+    return fail(res, '系列课程保存失败', 500)
+  }
+})
+
+router.patch('/admin/series/:id/status', adminAuth, async (req, res) => {
+  const status = STATUSES.has(req.body.status) ? req.body.status : 'draft'
+  try {
+    const [result] = await db.query('UPDATE academy_series SET status=? WHERE id=?', [status, req.params.id])
+    if (!result.affectedRows) return fail(res, '系列课程不存在', 404)
+    return ok(res, null, status === 'published' ? '系列课程已上架' : '系列课程已下架')
+  } catch (error) {
+    console.error('[academy-series-status]', error)
+    return fail(res, '系列课程状态更新失败', 500)
+  }
+})
+
+router.delete('/admin/series/:id', adminAuth, async (req, res) => {
+  try {
+    const [[series]] = await db.query('SELECT series_key FROM academy_series WHERE id=? LIMIT 1', [req.params.id])
+    if (!series) return fail(res, '系列课程不存在', 404)
+    const [[used]] = await db.query('SELECT COUNT(*) total FROM academy_courses WHERE series_key=?', [series.series_key])
+    if (Number(used.total || 0) > 0) return fail(res, '该系列下仍有课程，请先删除或移动课程')
+    await db.query('DELETE FROM academy_series WHERE id=?', [req.params.id])
+    return ok(res, null, '系列课程已删除')
+  } catch (error) {
+    console.error('[academy-series-delete]', error)
+    return fail(res, '系列课程删除失败', 500)
+  }
+})
+
 router.post('/admin/courses', adminAuth, async (req, res) => {
   const data = coursePayload(req.body)
-  if (!data.courseKey || !data.title || !data.seriesKey) return fail(res, '请选择系列课程并填写课程标识和标题')
-  if (data.type === 'video' && data.status === 'published' && !data.videoUrl) return fail(res, '视频课程上架前请先上传到云点播')
+  if (!data.title || !data.seriesKey) return fail(res, '请选择系列课程并填写课程标题')
+  data.courseKey = generatedCourseKey()
+  if (data.type === 'video' && data.status === 'published' && !data.videoUrl) return fail(res, '视频课程上架前请填写腾讯云 VOD 播放地址')
   try {
+    const [[series]] = await db.query('SELECT level FROM academy_series WHERE series_key=? LIMIT 1', [data.seriesKey])
+    if (!series) return fail(res, '所选系列课程不存在')
+    data.level = series.level
     const [result] = await db.query(
       `INSERT INTO academy_courses
        (course_key,series_key,lesson_no,level,type,title,summary,teacher,teacher_title,cover_url,cover_object_key,video_url,video_object_key,vod_file_id,vod_status,duration_seconds,objectives_json,status,is_featured,sort_order,created_by,published_at)
@@ -344,16 +621,22 @@ router.post('/admin/courses', adminAuth, async (req, res) => {
     )
     return ok(res, { id: Number(result.insertId) }, '课程已创建')
   } catch (error) {
-    if (error && error.code === 'ER_DUP_ENTRY') return fail(res, '课程标识已存在')
+    if (error && error.code === 'ER_DUP_ENTRY') return fail(res, '课程数据冲突，请重新保存')
     console.error('[academy-admin-create]', error); return fail(res, '课程保存失败', 500)
   }
 })
 
 router.put('/admin/courses/:id', adminAuth, async (req, res) => {
   const data = coursePayload(req.body)
-  if (!data.courseKey || !data.title || !data.seriesKey) return fail(res, '请选择系列课程并填写课程标识和标题')
-  if (data.type === 'video' && data.status === 'published' && !data.videoUrl) return fail(res, '视频课程上架前请先上传到云点播')
+  if (!data.title || !data.seriesKey) return fail(res, '请选择系列课程并填写课程标题')
+  if (data.type === 'video' && data.status === 'published' && !data.videoUrl) return fail(res, '视频课程上架前请填写腾讯云 VOD 播放地址')
   try {
+    const [[current]] = await db.query('SELECT course_key FROM academy_courses WHERE id=? LIMIT 1', [req.params.id])
+    if (!current) return fail(res, '课程不存在', 404)
+    data.courseKey = current.course_key
+    const [[series]] = await db.query('SELECT level FROM academy_series WHERE series_key=? LIMIT 1', [data.seriesKey])
+    if (!series) return fail(res, '所选系列课程不存在')
+    data.level = series.level
     const [result] = await db.query(
       `UPDATE academy_courses SET course_key=?,series_key=?,lesson_no=?,level=?,type=?,title=?,summary=?,teacher=?,teacher_title=?,cover_url=?,cover_object_key='',video_url=?,video_object_key='',vod_file_id=?,vod_status=?,duration_seconds=?,objectives_json=?,status=?,is_featured=?,sort_order=?,published_at=IF(?='published',COALESCE(published_at,NOW()),published_at) WHERE id=?`,
       [data.courseKey,data.seriesKey,data.lessonNo,data.level,data.type,data.title,data.summary,data.teacher,data.teacherTitle,data.coverUrl,data.videoUrl,data.vodFileId,data.vodStatus,data.durationSeconds,data.objectivesJson,data.status,data.featured,data.sortOrder,data.status,req.params.id]
@@ -372,7 +655,7 @@ router.patch('/admin/courses/:id/status', adminAuth, async (req, res) => {
     if (status === 'published') {
       const [[course]] = await db.query('SELECT type,video_url FROM academy_courses WHERE id=?', [req.params.id])
       if (!course) return fail(res, '课程不存在', 404)
-      if (course.type === 'video' && !course.video_url) return fail(res, '请先上传到云点播再上架')
+      if (course.type === 'video' && !course.video_url) return fail(res, '请先填写腾讯云 VOD 播放地址再上架')
     }
     const [result] = await db.query("UPDATE academy_courses SET status=?,published_at=IF(?='published',COALESCE(published_at,NOW()),published_at) WHERE id=?", [status,status,req.params.id])
     if (!result.affectedRows) return fail(res, '课程不存在', 404)

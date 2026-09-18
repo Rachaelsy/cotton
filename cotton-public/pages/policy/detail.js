@@ -200,10 +200,6 @@ Page({
     wx.showToast({ title: collected ? '已收藏' : '已取消收藏', icon: 'none' })
   },
 
-  copySource() {
-    const policy = this.data.policy
-    wx.setClipboardData({ data: policy.originalUrl || `${policy.issuer}（请以发布单位正式原文为准）` })
-  },
   back() { if (getCurrentPages().length > 1) wx.navigateBack(); else wx.navigateTo({ url: '/pages/policy/index' }) },
   onShareAppMessage() { return { title: this.data.policy.title, path: `/pages/policy/detail?id=${this.data.policy.id}` } },
   onShareTimeline() { return { title: this.data.policy.title, query: `id=${this.data.policy.id}` } }

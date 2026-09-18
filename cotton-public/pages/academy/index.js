@@ -1,11 +1,10 @@
 const { LEVELS, SERIES, COURSES } = require('../../utils/academy-data')
 const auth = require('../../utils/auth')
 
-const PROGRESS_KEY = 'academy_course_progress'
+const progressStore = require('../../utils/academy-progress')
 
 function readProgress() {
-  const value = wx.getStorageSync(PROGRESS_KEY)
-  return value && typeof value === 'object' ? value : {}
+  return progressStore.percentages()
 }
 
 function durationText(seconds) {
@@ -25,7 +24,6 @@ Page({
   },
 
   onShow() {
-    this.render(this.data.activeLevel)
     this.loadSeries()
   },
 
@@ -33,7 +31,7 @@ Page({
     const progress = readProgress()
     return seriesRows.map(series => {
       const lessons = lessonRows.filter(item => item.seriesKey === series.id)
-      const completed = lessons.filter(item => Number(progress[item.id] || 0) >= 100).length
+      const completed = lessons.filter(item => Number(progress[item.id] || 0) >= 90).length
       const totalProgress = lessons.reduce((sum, item) => sum + Math.min(100, Number(progress[item.id] || 0)), 0)
       const lessonCount = Number(series.lessonCount || lessons.length)
       const totalSeconds = Number(series.totalSeconds || lessons.reduce((sum, item) => sum + Number(item.durationSeconds || item.minutes * 60 || 60), 0))
@@ -48,14 +46,17 @@ Page({
   },
 
   async loadSeries() {
+    this.setData({ loading: true, error: '' })
     try {
+      await progressStore.sync()
       const [seriesResult, lessonsResult] = await Promise.all([
         auth.request('GET', '/api/miniapp-academy/series'),
         auth.request('GET', '/api/miniapp-academy/courses')
       ])
+      if (!seriesResult || seriesResult.code !== 200 || !lessonsResult || lessonsResult.code !== 200) throw new Error('课程加载失败，请稍后重试')
       const seriesRows = seriesResult && seriesResult.code === 200 && Array.isArray(seriesResult.data) ? seriesResult.data : []
       const lessonRows = lessonsResult && lessonsResult.code === 200 && Array.isArray(lessonsResult.data) ? lessonsResult.data : []
-      if (seriesRows.length) {
+      {
         const localSeries = new Map(SERIES.map(item => [item.id, item]))
         const mergedSeries = seriesRows.map(item => {
           const fallback = localSeries.get(item.id) || {}
@@ -69,13 +70,15 @@ Page({
         this.allSeries = this.buildSeries(mergedSeries, lessonRows)
       }
     } catch (error) {
-      console.warn('[academy-series-list]', error && error.message || error)
+      this.allSeries = []
+      this.setData({ error: '课程加载失败，请检查网络后重试' })
     }
     this.render(this.data.activeLevel)
+    this.setData({ loading: false })
   },
 
   render(level) {
-    this.setData({ activeLevel: level, series: (this.allSeries || []).filter(item => item.level === level), loading: false })
+    this.setData({ activeLevel: level, series: (this.allSeries || []).filter(item => item.level === level) })
   },
 
   switchLevel(event) {

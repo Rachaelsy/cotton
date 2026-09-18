@@ -10,6 +10,15 @@ async function ensureColumn(column, definition) {
   if (!Number(row.total)) await db.query(`ALTER TABLE academy_courses ADD COLUMN ${column} ${definition}`)
 }
 
+async function ensureProgressColumn(column, definition) {
+  const [[row]] = await db.query(
+    `SELECT COUNT(*) total FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='academy_progress' AND COLUMN_NAME=?`,
+    [column]
+  )
+  if (!Number(row.total)) await db.query(`ALTER TABLE academy_progress ADD COLUMN ${column} ${definition}`)
+}
+
 async function run() {
   await db.query(`
     CREATE TABLE IF NOT EXISTS academy_series (
@@ -91,6 +100,27 @@ async function run() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='优棉学堂评论点赞'
   `)
 
+  await db.query(`CREATE TABLE IF NOT EXISTS academy_progress (
+    user_id INT UNSIGNED NOT NULL,
+    course_key VARCHAR(80) NOT NULL,
+    position_seconds DOUBLE NOT NULL DEFAULT 0,
+    percent INT NOT NULL DEFAULT 0,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(user_id,course_key)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`)
+  await ensureProgressColumn('watched_seconds', 'DOUBLE NOT NULL DEFAULT 0 AFTER position_seconds')
+  await ensureProgressColumn('watched_ranges_json', "TEXT NULL AFTER watched_seconds")
+  await ensureProgressColumn('completed_at', 'DATETIME DEFAULT NULL AFTER percent')
+  await db.query(`CREATE TABLE IF NOT EXISTS academy_learning_points (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    course_key VARCHAR(80) NOT NULL,
+    points INT UNSIGNED NOT NULL,
+    reason VARCHAR(80) NOT NULL DEFAULT '首次完成课时',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_academy_point_course (user_id,course_key),
+    INDEX idx_academy_point_user (user_id,created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='优棉学堂学习积分流水'`)
   console.log('[migrate] academy schema ready (no demo courses are seeded)')
 }
 

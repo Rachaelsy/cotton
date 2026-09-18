@@ -23,7 +23,7 @@ assert(route.includes("router.get('/courses/:courseId/comments'") && route.inclu
 assert(courseWxml.includes('autoplay="true"') && courseWxml.includes('class="comment-section"') && courseWxml.includes('class="comment-bar"'), 'course detail should autoplay configured videos and show a comment interface')
 assert(academyIndex.includes('level-tabs') && academyIndex.includes('series-grid'), 'academy should show level tabs and series course cards')
 assert(seriesPage.includes('课程目录') && seriesPage.includes('openLesson'), 'series page should show a clickable lesson directory')
-assert(courseJs.includes('/api/academy/courses/') && courseJs.includes('submitComment') && courseJs.includes('toggleLike'), 'course page is not connected to shared comments')
+assert(courseJs.includes('/api/miniapp-academy') && courseJs.includes('submitComment') && courseJs.includes('toggleLike'), 'course page is not connected to mini program course comments')
 assert(courseData.includes('const COURSES = []') && courseData.includes('const SERIES = []'), 'mini program must not contain demo academy content')
 
 console.log('academy tests passed')

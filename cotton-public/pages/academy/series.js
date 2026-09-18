@@ -1,11 +1,10 @@
 const auth = require('../../utils/auth')
 const { getSeries, getSeriesLessons, getLevel } = require('../../utils/academy-data')
 
-const PROGRESS_KEY = 'academy_course_progress'
+const progressStore = require('../../utils/academy-progress')
 
 function readProgress() {
-  const value = wx.getStorageSync(PROGRESS_KEY)
-  return value && typeof value === 'object' ? value : {}
+  return progressStore.percentages()
 }
 
 Page({
@@ -20,24 +19,25 @@ Page({
   },
 
   onShow() {
-    this.renderLessons(getSeriesLessons(this.seriesId))
     this.loadSeries()
   },
 
   async loadSeries() {
+    this.setData({ loading: true, error: '' })
     try {
+      await progressStore.sync()
       const result = await auth.request('GET', `/api/miniapp-academy/series/${encodeURIComponent(this.seriesId)}`)
-      if (!result || result.code !== 200 || !result.data) return
+      if (!result || result.code !== 200 || !result.data) throw new Error(result && result.code === 404 ? '该系列已下架或不存在' : '课程目录加载失败，请重试')
       const remote = result.data
       const local = this.data.series || {}
       const series = {
         ...local, ...remote,
-        cover: /^(https:\/\/|\/uploads\/)/.test(String(remote.cover || '')) ? remote.cover : local.cover
+        cover: /^(https:\/\/|\/uploads\/)/.test(String(remote.cover || '')) ? remote.cover : '/images/cotton-seedling-inspection-v1.jpg'
       }
       this.setData({ series, level: getLevel(series.level) })
       this.renderLessons(Array.isArray(remote.lessons) ? remote.lessons : [])
     } catch (error) {
-      console.warn('[academy-series-detail]', error && error.message || error)
+      this.setData({ error: error.message || '课程目录加载失败，请重试', lessons: [] })
     } finally { this.setData({ loading: false }) }
   },
 
@@ -45,10 +45,14 @@ Page({
     const progress = readProgress()
     const lessons = rows.map((item, index) => {
       const percent = Math.max(0, Math.min(100, Number(progress[item.id] || 0)))
-      return { ...item, lessonNo: Number(item.lessonNo || index + 1), progress: percent, completed: percent >= 100 }
+      return { ...item, lessonNo: Number(item.lessonNo || index + 1), progress: percent, completed: percent >= 90 }
     })
-    this.setData({ lessons, completed: lessons.filter(item => item.completed).length, loading: false })
+    const next = lessons.find(item => item.progress > 0 && !item.completed) || lessons.find(item => !item.completed) || lessons[0]
+    this.setData({ lessons, completed: lessons.filter(item => item.completed).length, nextId: next && next.id, continueLabel: lessons.some(item => item.progress > 0) ? '继续学习' : '开始学习' })
   },
+
+  startLearning() { if (this.data.nextId) wx.navigateTo({ url: `/pages/academy/course?id=${encodeURIComponent(this.data.nextId)}` }) },
+  toggleIntro() { this.setData({ introExpanded: !this.data.introExpanded }) },
 
   openLesson(event) {
     const id = event.currentTarget.dataset.id
