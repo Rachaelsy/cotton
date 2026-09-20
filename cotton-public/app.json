@@ -18,6 +18,7 @@
     "pages/academy/index",
     "pages/academy/series",
     "pages/academy/course",
+    "pages/academy/quiz",
     "pages/academy/exam",
     "pages/my/index",
     "pages/profile/index",

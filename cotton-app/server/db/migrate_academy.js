@@ -73,6 +73,17 @@ async function run() {
   await ensureColumn('vod_status', "ENUM('none','ready','processing','failed') NOT NULL DEFAULT 'none' AFTER vod_file_id")
   await ensureColumn('series_key', "VARCHAR(80) NOT NULL DEFAULT '' AFTER course_key")
   await ensureColumn('lesson_no', "INT UNSIGNED NOT NULL DEFAULT 1 AFTER series_key")
+  const [[typeColumn]] = await db.query("SELECT COLUMN_TYPE column_type FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='academy_courses' AND COLUMN_NAME='type'")
+  if (!typeColumn.column_type.includes("'quiz'")) await db.query("ALTER TABLE academy_courses MODIFY type ENUM('video','article','quiz') NOT NULL DEFAULT 'video'")
+  await ensureColumn('quiz_json', 'MEDIUMTEXT NULL')
+  await ensureColumn('quiz_version', 'INT NOT NULL DEFAULT 0')
+  await db.query(`CREATE TABLE IF NOT EXISTS academy_quiz_attempts (
+    id VARCHAR(64) PRIMARY KEY, course_key VARCHAR(80) NOT NULL, user_id INT UNSIGNED NULL,
+    version INT NOT NULL, snapshot MEDIUMTEXT NOT NULL, answers MEDIUMTEXT NULL,
+    score INT NULL, passed TINYINT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, submitted_at DATETIME NULL,
+    INDEX idx_quiz_user(user_id,course_key)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`)
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS academy_comments (

@@ -84,6 +84,10 @@ Page({
       const result = await auth.request('GET', `/api/miniapp-academy/courses/${encodeURIComponent(this.courseId)}`)
       if (!result || result.code !== 200 || !result.data) throw new Error(result && result.code === 404 ? '课程已下架或不存在' : '课程加载失败，请重试')
       const remote = result.data
+      if (remote.rawType === 'quiz') {
+        wx.redirectTo({ url: `/pages/academy/quiz?id=${encodeURIComponent(this.courseId)}` })
+        return
+      }
       const current = this.data.course || {}
       const remoteCover = /^(https:\/\/|\/uploads\/)/.test(String(remote.cover || '')) ? remote.cover : ''
       const course = {
@@ -109,13 +113,14 @@ Page({
       const result = await auth.request('GET', `/api/miniapp-academy/series/${encodeURIComponent(key)}`)
       if (result.code !== 200) throw new Error('目录加载失败')
       const lessons = result.data.lessons || []; const index = lessons.findIndex(item => item.id === this.courseId)
-      this.setData({ lessons, previousId: index > 0 ? lessons[index - 1].id : '', nextId: index >= 0 && index < lessons.length - 1 ? lessons[index + 1].id : '', directoryError: '' })
+      this.setData({ lessons, previousId: index > 0 ? lessons[index - 1].id : '', nextId: index >= 0 && index < lessons.length - 1 ? lessons[index + 1].id : '', nextIsQuiz: Boolean(lessons[index+1] && lessons[index+1].rawType === 'quiz'), directoryError: '' })
     } catch (_) { this.setData({ directoryError: '目录加载失败，点击重试' }) }
   },
   retryDirectory() { this.loadDirectory(this.data.course.seriesKey) },
   selectLesson(event) {
     const id = event.currentTarget.dataset.id
-    if (id && id !== this.courseId) wx.redirectTo({ url: `/pages/academy/course?id=${encodeURIComponent(id)}` })
+    const item = this.data.lessons.find(row => row.id === id)
+    if (id && id !== this.courseId) wx.redirectTo({ url: `/pages/academy/${item && item.rawType === 'quiz' ? 'quiz' : 'course'}?id=${encodeURIComponent(id)}` })
   },
   onVideoError() { this.setData({ videoError: '视频暂时无法播放，请重试；如仍失败，请联系平台检查播放链接。' }) },
   retryVideo() { this.loadCourse() },

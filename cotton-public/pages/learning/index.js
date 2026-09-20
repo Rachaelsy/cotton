@@ -32,8 +32,8 @@ Page({
       const source = result.data || {}
       const series = (source.series || []).map(item => ({
         ...item, cover: item.cover || '/images/cotton-seedling-inspection-v1.jpg', levelName: LEVEL_NAMES[item.level] || '课程',
-        status: item.totalCount > 0 && item.completedCount >= item.totalCount ? 'completed' : 'studying',
-        statusText: item.totalCount > 0 && item.completedCount >= item.totalCount ? '已完成' : '继续学习', updatedText: dateText(item.updatedAt)
+        status: (item.totalCount > 0 || item.quizCount > 0) && item.completedCount >= item.totalCount && (item.quizPassedCount||0) >= (item.quizCount||0) ? 'completed' : 'studying',
+        statusText: (item.totalCount > 0 || item.quizCount > 0) && item.completedCount >= item.totalCount && (item.quizPassedCount||0) >= (item.quizCount||0) ? '已完成' : '继续学习', updatedText: dateText(item.updatedAt)
       }))
       const pointRecords = (source.pointRecords || []).map(item => ({ ...item, levelName: LEVEL_NAMES[item.level] || '课程', timeText: dateText(item.created_at) }))
       const recentGroup = series.find(item => item.status === 'studying') || series[0] || null

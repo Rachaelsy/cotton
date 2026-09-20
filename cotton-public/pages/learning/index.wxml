@@ -71,6 +71,7 @@
           <view class="series-badges"><text class="level">{{item.levelName}}</text><text class="status {{item.status}}">{{item.statusText}}</text></view>
           <strong>{{item.title}}</strong>
           <text class="course-meta">已完成 {{item.completedCount}} / {{item.totalCount}} 节 · 已获 {{item.points}} 分</text>
+          <text class="course-meta" wx:if="{{item.quizCount}}">测验已通过 {{item.quizPassedCount}} / {{item.quizCount}}</text>
           <view class="progress"><view style="width:{{item.progress}}%"></view></view>
           <small>最近学习 {{item.updatedText}}</small>
         </view>

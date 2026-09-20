@@ -26,7 +26,7 @@
 
   <button class="start-learning" wx:if="{{lessons.length}}" bindtap="startLearning">{{continueLabel}}</button>
 
-  <view class="directory-head"><strong>课程目录</strong><text>点击课时开始播放</text></view>
+  <view class="directory-head"><strong>课程目录</strong><text>选择视频或小测验</text></view>
   <view class="lesson-list">
     <view class="lesson-item" wx:for="{{lessons}}" wx:key="id" data-id="{{item.id}}" bindtap="openLesson">
       <view class="lesson-index {{item.completed?'done':''}}">{{item.completed?'✓':item.lessonNo}}</view>
@@ -35,7 +35,7 @@
         <strong>{{item.title}}</strong>
         <text>{{item.duration}}<label wx:if="{{item.progress>0&&!item.completed}}"> · 已学 {{item.progress}}%</label></text>
       </view>
-      <view class="lesson-play">▶</view>
+      <view class="lesson-play">{{item.rawType==='quiz'?'答题':'▶'}}</view>
     </view>
   </view>
   <view class="empty" wx:if="{{!loading&&!lessons.length}}">该系列暂时没有已上架课时</view>

@@ -1,0 +1,23 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="card">正在加载测验…</view>
+  <view wx:elif="{{error}}" class="card"><text>{{error}}</text><button wx:if="{{needsLogin}}" bindtap="login">去登录</button><button wx:else bindtap="start">重新加载</button></view>
+  <block wx:elif="{{quiz}}">
+    <view class="heading">{{quiz.title}}</view>
+    <view class="hint" wx:if="{{quiz.guest}}">游客可练习，登录后保存个人成绩</view>
+    <block wx:if="{{!result}}">
+      <view class="meta">{{typeName}} · 第 {{index+1}} / {{quiz.questions.length}} 题</view>
+      <view class="bar"><view style="width:{{(index+1)/quiz.questions.length*100}}%"></view></view>
+      <view class="card"><text class="title">{{question.title}}</text><text class="hint">{{question.type==='multiple'?'请选择全部正确选项':'请选择一个答案'}}</text>
+        <view wx:for="{{options}}" wx:key="index" class="option {{item.selected?'selected':''}}" data-index="{{item.index}}" bindtap="select"><text>{{item.selected?'✓':'○'}}</text><text>{{item.text}}</text></view>
+      </view>
+      <view class="actions"><button disabled="{{index===0||submitting}}" bindtap="previous">上一题</button><button wx:if="{{index<quiz.questions.length-1}}" bindtap="next">下一题</button><button wx:else loading="{{submitting}}" disabled="{{submitting}}" bindtap="submit">提交答案</button></view>
+    </block>
+    <block wx:else>
+      <view class="card score"><text>{{result.score}} 分</text><view>{{result.passed?'测验通过':'继续加油'}} · 答对 {{result.correctCount}} / {{quiz.questions.length}} 题</view></view>
+      <view class="actions"><button bindtap="start">再次练习</button><button bindtap="continueLearning">继续学习</button></view>
+      <view class="meta" bindtap="toggleWrong">{{onlyWrong?'查看全部题目':'只看错题'}}</view>
+      <view class="card" wx:for="{{visibleReviews}}" wx:key="number"><text class="title">{{item.number}}. {{item.title}}</text><text class="verdict">{{item.correct?'✓ 回答正确':'× 回答错误'}}</text><text>你的答案：{{item.selectedText}}</text><text>正确答案：{{item.answerText}}</text><text class="hint">{{item.explanation||'暂无解析'}}</text></view>
+    </block>
+    <button class="directory" bindtap="directory">返回课程目录</button>
+  </block>
+</view>

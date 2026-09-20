@@ -21,7 +21,7 @@ function tokenPayload(req) {
 
 function academyViewer(req) {
   const payload = tokenPayload(req)
-  return payload && payload.id ? payload : null
+  return payload && payload.id && payload.role === 'farmer' ? payload : null
 }
 
 function canAccessLevel(req, level) {
@@ -193,7 +193,7 @@ function courseView(row, admin = false) {
     lessonNo: Number(row.lesson_no || 1),
     level: row.level,
     requiresLogin: row.level !== 'basic',
-    type: row.type === 'video' ? '视频' : '图文',
+    type: row.type === 'quiz' ? '小测验' : row.type === 'video' ? '视频' : '图文',
     rawType: row.type,
     order: Number(row.sort_order || 0) % 100 || 1,
     title: row.title,
@@ -202,7 +202,7 @@ function courseView(row, admin = false) {
     role: row.teacher_title || '',
     cover: cover || '',
     videoUrl: videoUrl || '',
-    duration: durationText(row.duration_seconds),
+    duration: row.type === 'quiz' ? `${JSON.parse(row.quiz_json || '{"questions":[]}').questions.length} 题` : durationText(row.duration_seconds),
     durationSeconds: Number(row.duration_seconds || 0),
     objectives: parseList(row.objectives_json),
     status: row.status,
@@ -400,7 +400,7 @@ router.put('/courses/:courseId/progress', farmerAuth, ensurePublishedCourse, asy
     await connection.beginTransaction()
     const [[course]] = await connection.query(
       `SELECT c.duration_seconds,c.level FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key
-       WHERE c.course_key=? AND c.status='published' AND s.status='published' LIMIT 1 FOR UPDATE`,
+       WHERE c.course_key=? AND c.type!='quiz' AND c.status='published' AND s.status='published' LIMIT 1 FOR UPDATE`,
       [req.params.courseId]
     )
     if (!course) { await connection.rollback(); return fail(res, '课程已下架或不存在', 404) }
@@ -456,7 +456,8 @@ router.get('/learning', farmerAuth, async (req, res) => {
               p.completed_at,p.updated_at,
               c.title,c.summary,c.cover_url,c.duration_seconds,c.lesson_no,c.level,c.series_key,
               s.title series_title,s.cover_url series_cover,s.summary series_summary,
-              (SELECT COUNT(*) FROM academy_courses tc WHERE tc.series_key=c.series_key AND tc.status='published') series_course_count,
+              (SELECT COUNT(*) FROM academy_courses tc WHERE tc.series_key=c.series_key AND tc.status='published' AND tc.type!='quiz') series_course_count,
+              (SELECT COUNT(*) FROM academy_courses tq WHERE tq.series_key=c.series_key AND tq.status='published' AND tq.type='quiz') series_quiz_count,
               COALESCE(lp.points,0) earned_points
          FROM academy_progress p
          JOIN academy_courses c ON c.course_key=p.course_key
@@ -472,7 +473,7 @@ router.get('/learning', farmerAuth, async (req, res) => {
       if (!seriesMap.has(key)) seriesMap.set(key, {
         id: key, title: row.series_title || row.title, cover: row.series_cover || row.cover_url || '',
         summary: row.series_summary || '', level: row.level, courses: [], learnedCount: 0,
-        completedCount: 0, totalCount: Number(row.series_course_count || 1), points: 0, totalPercent: 0, updatedAt: row.updated_at
+        completedCount: 0, totalCount: Number(row.series_course_count || 1), quizCount: Number(row.series_quiz_count || 0), points: 0, totalPercent: 0, updatedAt: row.updated_at
       })
       const group = seriesMap.get(key)
       const course = {
@@ -487,11 +488,25 @@ router.get('/learning', farmerAuth, async (req, res) => {
       group.points += course.points
       group.totalPercent += course.percent
     }
+    const viewerQuizRows = await db.query(`SELECT c.series_key,c.level,s.title,s.cover_url,s.summary,
+      MAX(a.submitted_at) updated_at,COUNT(DISTINCT CASE WHEN a.passed=1 AND c.status='published' THEN c.course_key END) passed_count,
+      (SELECT COUNT(*) FROM academy_courses q WHERE q.series_key=c.series_key AND q.type='quiz' AND q.status='published') quiz_count,
+      (SELECT COUNT(*) FROM academy_courses v WHERE v.series_key=c.series_key AND v.type!='quiz' AND v.status='published') video_count
+      FROM academy_quiz_attempts a JOIN academy_courses c ON c.course_key=a.course_key JOIN academy_series s ON s.series_key=c.series_key
+      WHERE a.user_id=? AND a.submitted_at IS NOT NULL GROUP BY c.series_key,c.level,s.title,s.cover_url,s.summary`, [req.viewer.id])
+    for (const q of viewerQuizRows[0]) {
+      if (!seriesMap.has(q.series_key)) seriesMap.set(q.series_key,{ id:q.series_key,title:q.title,cover:q.cover_url,summary:q.summary,level:q.level,courses:[],learnedCount:0,completedCount:0,totalCount:Number(q.video_count),quizCount:Number(q.quiz_count),points:0,totalPercent:0,updatedAt:q.updated_at })
+      const group = seriesMap.get(q.series_key)
+      group.quizPassedCount = Number(q.passed_count)
+      if (new Date(q.updated_at) > new Date(group.updatedAt)) group.updatedAt = q.updated_at
+    }
     const series = [...seriesMap.values()].map(group => ({
       ...group,
-      progress: Math.round(group.totalPercent / Math.max(1, group.totalCount)),
+      quizPassedCount: Number((viewerQuizRows[0].find(q=>q.series_key===group.id)||{}).passed_count || 0),
+      progress: Math.min(100, Math.round((group.totalPercent + Number(group.quizPassedCount || 0) * 100) / Math.max(1, group.totalCount + group.quizCount))),
       currentCourse: group.courses.find(course => !course.completed) || group.courses[0]
     }))
+    series.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt))
     const [[summary]] = await db.query(
       `SELECT COALESCE(SUM(p.watched_seconds),0) watched_seconds,
               SUM(CASE WHEN p.completed_at IS NOT NULL THEN 1 ELSE 0 END) completed_count,
@@ -661,8 +676,9 @@ router.put('/admin/courses/:id', adminAuth, async (req, res) => {
   if (!data.title || !data.seriesKey) return fail(res, '请选择系列课程并填写课程标题')
   if (data.type === 'video' && data.status === 'published' && !data.videoUrl) return fail(res, '视频课程上架前请填写腾讯云 VOD 播放地址')
   try {
-    const [[current]] = await db.query('SELECT course_key FROM academy_courses WHERE id=? LIMIT 1', [req.params.id])
+    const [[current]] = await db.query('SELECT course_key,type FROM academy_courses WHERE id=? LIMIT 1', [req.params.id])
     if (!current) return fail(res, '课程不存在', 404)
+    if (current.type === 'quiz') return fail(res, '请使用测验编辑器')
     data.courseKey = current.course_key
     const [[series]] = await db.query('SELECT level FROM academy_series WHERE series_key=? LIMIT 1', [data.seriesKey])
     if (!series) return fail(res, '所选系列课程不存在')
@@ -746,4 +762,5 @@ router.patch('/admin/comments/:id/status', adminAuth, async (req, res) => {
   } catch (error) { console.error('[academy-admin-comment-status]', error); return fail(res, '操作失败', 500) }
 })
 
+require('./academy-quiz')(router, { db, adminAuth, academyViewer, requireLevelAccess, ok, fail })
 module.exports = router

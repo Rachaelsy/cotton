@@ -28,7 +28,7 @@
     </view>
   </view>
 
-  <view class="lesson-controls"><button disabled="{{!previousId}}" data-id="{{previousId}}" bindtap="selectLesson">上一节</button><button data-id="{{nextId}}" disabled="{{!nextId}}" bindtap="selectLesson">{{ended?'学习下一节':'下一节'}}</button></view>
+  <view class="lesson-controls"><button disabled="{{!previousId}}" data-id="{{previousId}}" bindtap="selectLesson">上一节</button><button data-id="{{nextId}}" disabled="{{!nextId}}" bindtap="selectLesson">{{nextIsQuiz?'开始小测验':ended?'学习下一节':'下一节'}}</button></view>
   <view class="inline-directory" wx:if="{{showDirectory}}">
     <view wx:if="{{directoryError}}" bindtap="retryDirectory">{{directoryError}}</view>
     <view wx:for="{{lessons}}" wx:key="id" data-id="{{item.id}}" bindtap="selectLesson" class="directory-row {{item.id===course.id?'selected':''}}"><text>{{item.lessonNo}}. {{item.title}}</text><text>{{item.id===course.id?'播放中':item.duration}}</text></view>

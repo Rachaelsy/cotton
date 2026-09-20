@@ -55,6 +55,11 @@ Page({
         cover: /^(https:\/\/|\/uploads\/)/.test(String(remote.cover || '')) ? remote.cover : '/images/cotton-seedling-inspection-v1.jpg'
       }
       this.setData({ series, level: getLevel(series.level) })
+      this.quizResults = {}
+      if (auth.isLoggedIn()) {
+        const results = await auth.request('GET', '/api/miniapp-academy/quiz-results')
+        if (results.code === 200) (results.data || []).forEach(q => { this.quizResults[q.course_key] = q })
+      }
       this.renderLessons(Array.isArray(remote.lessons) ? remote.lessons : [])
     } catch (error) {
       if (error && error.statusCode === 401) {
@@ -67,6 +72,10 @@ Page({
   renderLessons(rows) {
     const progress = readProgress()
     const lessons = rows.map((item, index) => {
+      if (item.rawType === 'quiz') {
+        const result = (this.quizResults || {})[item.id]
+        return { ...item, progress: 0, completed: Boolean(result && result.passed), duration: item.duration + (result ? ` · 最高 ${result.score} 分 · ${result.passed?'已通过':'已作答'}` : ' · 待测验') }
+      }
       const percent = Math.max(0, Math.min(100, Number(progress[item.id] || 0)))
       return { ...item, lessonNo: Number(item.lessonNo || index + 1), progress: percent, completed: percent >= 90 }
     })
@@ -74,13 +83,17 @@ Page({
     this.setData({ lessons, completed: lessons.filter(item => item.completed).length, nextId: next && next.id, continueLabel: lessons.some(item => item.progress > 0) ? '继续学习' : '开始学习' })
   },
 
-  startLearning() { if (this.data.nextId && this.canOpenProtectedCourse()) wx.navigateTo({ url: `/pages/academy/course?id=${encodeURIComponent(this.data.nextId)}` }) },
+  navigateContent(id) {
+    const item = this.data.lessons.find(row => row.id === id)
+    wx.navigateTo({ url: `/pages/academy/${item && item.rawType === 'quiz' ? 'quiz' : 'course'}?id=${encodeURIComponent(id)}` })
+  },
+  startLearning() { if (this.data.nextId && this.canOpenProtectedCourse()) this.navigateContent(this.data.nextId) },
   toggleIntro() { this.setData({ introExpanded: !this.data.introExpanded }) },
 
   openLesson(event) {
     const id = event.currentTarget.dataset.id
     if (!this.canOpenProtectedCourse()) return
-    if (id) wx.navigateTo({ url: `/pages/academy/course?id=${encodeURIComponent(id)}` })
+    if (id) this.navigateContent(id)
   },
 
   back() {

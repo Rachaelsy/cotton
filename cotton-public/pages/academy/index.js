@@ -47,7 +47,7 @@ Page({
   buildSeries(seriesRows, lessonRows) {
     const progress = readProgress()
     return seriesRows.map(series => {
-      const lessons = lessonRows.filter(item => item.seriesKey === series.id)
+      const lessons = lessonRows.filter(item => item.seriesKey === series.id && item.rawType !== 'quiz')
       const completed = lessons.filter(item => Number(progress[item.id] || 0) >= 90).length
       const totalProgress = lessons.reduce((sum, item) => sum + Math.min(100, Number(progress[item.id] || 0)), 0)
       const lessonCount = Number(series.lessonCount || lessons.length)

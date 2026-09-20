@@ -11,7 +11,7 @@ const db = { query: async (sql, params) => { queries.push({ sql, params }); retu
 const router = {}
 ;['get','post','put','patch','delete'].forEach(method => { router[method] = (url, ...handlers) => routes.set(`${method} ${url}`, handlers) })
 vm.runInNewContext(read('cotton-app/server/routes/academy.js'), {
-  require: name => name === 'express' ? { Router: () => router } : name === '../db/database' ? db : name === 'jsonwebtoken' ? { verify: () => ({ id: 1, role: 'farmer' }) } : require(name),
+  require: name => name === './academy-quiz' ? require('../routes/academy-quiz') : name === 'express' ? { Router: () => router } : name === '../db/database' ? db : name === 'jsonwebtoken' ? { verify: () => ({ id: 1, role: 'farmer' }) } : require(name),
   module: { exports: {} }, process: { env: {} }, console, Buffer
 })
 async function invoke(method, url, req = {}) {

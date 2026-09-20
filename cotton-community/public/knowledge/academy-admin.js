@@ -59,11 +59,11 @@
       <td class="academy-course-title"><strong>${esc(item.title)}</strong><div class="academy-muted"><button class="small-btn" data-move="${item.databaseId}" data-direction="-1">↑</button> <button class="small-btn" data-move="${item.databaseId}" data-direction="1">↓</button> 拖动调整顺序</div></td>
       <td>${esc(levels[item.level] || item.level)}<div class="academy-muted">${esc(item.seriesTitle || '未分组')} · 第${Number(item.lessonNo || 1)}节</div></td>
       <td>${esc(item.type)}<div class="academy-muted">${esc(item.duration)}</div></td>
-      <td>${item.vodFileId ? `<span class="status-on">VOD</span><div class="academy-muted">FileID ${esc(item.vodFileId)}</div>` : item.videoRawUrl ? '<span class="status-on">已有播放地址</span>' : '<span class="academy-muted">未填写</span>'}</td>
+      <td>${item.rawType === 'quiz' ? '<span class="status-on">在线答题 · 自动判分</span>' : item.vodFileId ? `<span class="status-on">VOD</span><div class="academy-muted">FileID ${esc(item.vodFileId)}</div>` : item.videoRawUrl ? '<span class="status-on">已有播放地址</span>' : '<span class="academy-muted">未填写</span>'}</td>
       <td><span class="status-pill ${item.status === 'published' ? 'published' : ''}">${statusText(item.status)}</span></td>
       <td>${Number(item.viewCount || 0)}</td>
       <td><div class="academy-actions"><button class="small-btn primary" data-academy-edit="${item.databaseId}">编辑</button><button class="small-btn ${item.status === 'published' ? 'danger' : 'primary'}" data-academy-toggle="${item.databaseId}" data-status="${esc(item.status)}">${item.status === 'published' ? '下架' : '上架'}</button><button class="small-btn danger" data-academy-delete="${item.databaseId}">删除</button></div></td>
-    </tr>`).join('') : '<tr><td colspan="8">暂无视频课程，请先创建系列课程，再添加视频。</td></tr>'
+    </tr>`).join('') : '<tr><td colspan="8">暂无课程内容，请添加视频或小测验。</td></tr>'
   }
 
   function renderComments() {
@@ -179,6 +179,7 @@
   }
 
   function openCourse(id = 0, initialSeriesKey = '') {
+    if (id && state.courses.some(item => Number(item.databaseId) === Number(id) && item.rawType === 'quiz')) return openQuiz(id)
     if (!state.series.length) return runtime.notify('请先创建系列课程，再添加视频课程', 'error')
     const course = state.courses.find(item => Number(item.databaseId) === Number(id)) || {}
     if (!id) {
@@ -283,6 +284,7 @@
     $('academySeriesContext').classList.toggle('hidden', comments || !series)
     $('academySeriesContextTitle').textContent = series ? `${series.title} · ${levels[series.level]} · ${statusText(series.status)}` : ''
     $('academyAddCourse').classList.toggle('hidden', comments || !series)
+    $('academyAddQuiz').classList.toggle('hidden', comments || !series)
     $('academyAddSeries').classList.toggle('hidden', comments || Boolean(series))
     renderCourses()
   }
@@ -315,6 +317,100 @@
   advanced.innerHTML = '<summary>更多课程信息 · 讲师、时长和学习要点</summary><div class="policy-fields" style="margin-top:16px"></div>'
   $('academyObjectives').closest('.policy-fields').appendChild(advanced)
   ;['academyTeacher','academyTeacherTitle','academyDuration','academyObjectives'].forEach(id => advanced.querySelector('.policy-fields').appendChild($(id).parentElement))
+  const addQuiz = document.createElement('button')
+  addQuiz.id = 'academyAddQuiz'; addQuiz.className = 'btn secondary'; addQuiz.textContent = '添加小测验'
+  $('academyAddCourse').after(addQuiz)
+  addQuiz.onclick = () => openQuiz()
+  let quizEdit = null
+  const quizDialog = document.createElement('div')
+  quizDialog.className = 'modal-mask hidden'
+  quizDialog.setAttribute('role', 'dialog')
+  quizDialog.setAttribute('aria-modal', 'true')
+  document.body.appendChild(quizDialog)
+  const freshQuestion = () => ({type:'single',title:'',options:['',''],answer:[],explanation:''})
+  function readQuizForm() {
+    quizEdit.title = quizDialog.querySelector('[name=title]').value
+    quizEdit.passScore = Number(quizDialog.querySelector('[name=passScore]').value)
+    quizEdit.status = quizDialog.querySelector('[name=published]').checked ? 'published' : 'draft'
+    quizDialog.querySelectorAll('[data-question]').forEach((card,i) => {
+      const q=quizEdit.questions[i]
+      q.title=card.querySelector('[name=questionTitle]').value
+      q.explanation=card.querySelector('[name=explanation]').value
+      q.options=[...card.querySelectorAll('[name=option]')].map(el=>el.value)
+      q.answer=[...card.querySelectorAll('[data-answer]:checked')].map(el=>Number(el.dataset.answer))
+    })
+  }
+  function renderQuizEditor() {
+    quizDialog.innerHTML=`<div class="modal-card academy-modal quiz-modal">
+      <div class="modal-head"><div><h2>${quizEdit.id?'编辑':'添加'}小测验</h2><p class="quiz-description">测验可插入系列目录中的任意位置，拖拽题目可调整答题顺序。</p></div><button class="modal-close" type="button" data-close aria-label="关闭">×</button></div>
+      <div class="modal-body quiz-modal-body">
+        <div class="quiz-settings">
+          <label class="quiz-field quiz-title-field"><span>测验标题 <b>*</b></span><input name="title" maxlength="160" value="${esc(quizEdit.title)}" placeholder="例如：播种与出苗知识小测验"></label>
+          <label class="quiz-field quiz-score-field"><span>及格线 <b>*</b></span><div class="quiz-score-input"><input name="passScore" type="number" min="1" max="100" value="${quizEdit.passScore}"><em>分</em></div></label>
+        </div>
+        <div class="quiz-editor-head"><div><strong>题目设置</strong><small>共 ${quizEdit.questions.length} 题，支持单选、多选和判断题</small></div><button class="small-btn primary" type="button" data-add-question>＋ 添加题目</button></div>
+        <div class="quiz-question-list">${quizEdit.questions.map((q,i)=>`<section class="quiz-question-card" draggable="true" data-question="${i}">
+          <div class="quiz-question-head"><div class="quiz-question-number"><i>☷</i><span>第 ${i+1} 题</span><select data-type="${i}" aria-label="题目类型"><option value="single" ${q.type==='single'?'selected':''}>单选题</option><option value="multiple" ${q.type==='multiple'?'selected':''}>多选题</option><option value="boolean" ${q.type==='boolean'?'selected':''}>判断题</option></select></div><div class="quiz-question-actions"><button class="small-btn" type="button" data-copy="${i}">复制</button><button class="small-btn danger" type="button" data-delete="${i}">删除</button></div></div>
+          <label class="quiz-field"><span>题干 <b>*</b></span><textarea name="questionTitle" maxlength="2000" placeholder="请输入题目内容">${esc(q.title)}</textarea></label>
+          <div class="quiz-options-head"><span>选项与正确答案 <b>*</b></span><small>${q.type==='multiple'?'请勾选至少两个正确答案':'请勾选一个正确答案'}</small></div>
+          <div class="quiz-options">${q.options.map((o,j)=>`<div class="quiz-option-row"><label class="quiz-answer-check" title="设为正确答案"><input type="${q.type==='multiple'?'checkbox':'radio'}" name="answer-${i}" data-answer="${j}" ${q.answer.includes(j)?'checked':''}><span>${String.fromCharCode(65+j)}</span></label><input name="option" maxlength="500" value="${esc(o)}" ${q.type==='boolean'?'readonly':''} placeholder="请输入选项 ${String.fromCharCode(65+j)}">${q.type!=='boolean'?`<button class="quiz-remove-option" type="button" data-remove-option="${i}:${j}" aria-label="删除选项">×</button>`:''}</div>`).join('')}</div>
+          ${q.type!=='boolean'?`<button class="quiz-add-option" type="button" data-add-option="${i}">＋ 添加选项</button>`:''}
+          <label class="quiz-field quiz-explanation"><span>答案解析</span><textarea name="explanation" maxlength="3000" placeholder="提交后向学员展示，可填写知识点说明和易错原因">${esc(q.explanation)}</textarea></label>
+        </section>`).join('')}</div>
+        <div class="quiz-publish-row"><label><input name="published" type="checkbox" ${quizEdit.status==='published'?'checked':''}><span>保存后立即发布</span></label><small>未发布的测验不会显示在小程序课程目录中</small></div>
+        <p id="quizMessage" class="form-message"></p>
+      </div>
+      <div class="quiz-modal-footer"><button class="btn secondary" type="button" data-preview>预览测验</button><div><button class="btn secondary" type="button" data-close>取消</button><button class="btn" type="button" data-save>保存测验</button></div></div>
+    </div>`
+  }
+  async function openQuiz(id) {
+    try {
+      quizEdit=id?await request(`/quizzes/${id}`):{title:'',passScore:60,status:'draft',questions:[freshQuestion()]}
+      renderQuizEditor(); quizDialog.classList.remove('hidden')
+    } catch(e){runtime.notify(e.message,'error')}
+  }
+  function closeQuiz() { quizDialog.classList.add('hidden') }
+  quizDialog.addEventListener('change',event=>{
+    if(event.target.dataset.type===undefined)return
+    readQuizForm(); const q=quizEdit.questions[Number(event.target.dataset.type)]
+    q.type=event.target.value;q.answer=[];if(q.type==='boolean')q.options=['正确','错误']
+    renderQuizEditor()
+  })
+  quizDialog.addEventListener('dragstart',event=>{const card=event.target.closest('[data-question]');if(card)event.dataTransfer.setData('text/plain',card.dataset.question)})
+  quizDialog.addEventListener('dragover',event=>event.preventDefault())
+  quizDialog.addEventListener('drop',event=>{
+    event.preventDefault();const card=event.target.closest('[data-question]');const raw=event.dataTransfer.getData('text/plain');if(!card||raw==='')return
+    readQuizForm();const from=Number(raw),to=Number(card.dataset.question);if(!Number.isInteger(from)||!quizEdit.questions[from])return
+    const [q]=quizEdit.questions.splice(from,1);quizEdit.questions.splice(to,0,q);renderQuizEditor()
+  })
+  quizDialog.addEventListener('click',async event=>{
+    const b=event.target.closest('button');if(!b)return
+    if(b.hasAttribute('data-close'))return closeQuiz()
+    readQuizForm()
+    if(b.hasAttribute('data-save')) {
+      b.disabled=true
+      try {
+        await request(`/quizzes${quizEdit.id?'/'+quizEdit.id:''}`,{method:quizEdit.id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...quizEdit,seriesKey:state.selected})})
+        closeQuiz();await load();runtime.notify('测验已保存，可在目录中拖拽排序','success')
+      }catch(e){quizDialog.querySelector('#quizMessage').textContent=e.message}finally{b.disabled=false}
+      return
+    }
+    if(b.hasAttribute('data-preview')) {
+      const preview=document.createElement('div');preview.className='modal-mask'
+      preview.innerHTML=`<div class="modal-card academy-modal quiz-preview-modal"><div class="modal-head"><div><h2>测验预览</h2><p class="quiz-description">${esc(quizEdit.title || '未填写测验标题')}</p></div><button class="modal-close" type="button">×</button></div><div class="modal-body">${quizEdit.questions.map((q,i)=>`<section class="quiz-preview-question"><div><span>${i+1}</span><strong>${esc(q.title || '未填写题干')}</strong><small>${q.type==='multiple'?'多选题':q.type==='boolean'?'判断题':'单选题'}</small></div>${q.options.map((o,j)=>`<p><label><input type="${q.type==='multiple'?'checkbox':'radio'}" name="preview-${i}"> ${esc(o || `选项 ${String.fromCharCode(65+j)}`)}</label></p>`).join('')}<details><summary>查看答案与解析</summary><b>正确答案：${q.answer.map(j=>esc(q.options[j])).join('、') || '未设置'}</b><p>${esc(q.explanation || '暂无解析')}</p></details></section>`).join('')}</div><div class="quiz-modal-footer"><span></span><button class="btn secondary" type="button">关闭预览</button></div></div>`
+      preview.querySelectorAll('button').forEach(button=>button.onclick=()=>preview.remove());document.body.appendChild(preview);return
+    }
+    if(b.hasAttribute('data-add-question')&&quizEdit.questions.length<50)quizEdit.questions.push(freshQuestion())
+    if(b.dataset.copy!==undefined&&quizEdit.questions.length<50)quizEdit.questions.splice(Number(b.dataset.copy)+1,0,JSON.parse(JSON.stringify(quizEdit.questions[Number(b.dataset.copy)])))
+    if(b.dataset.delete!==undefined){
+      if(quizEdit.questions.length===1)return runtime.notify('测验至少需要保留一道题','error')
+      quizEdit.questions.splice(Number(b.dataset.delete),1)
+    }
+    if(b.dataset.addOption!==undefined){const q=quizEdit.questions[Number(b.dataset.addOption)];if(q.options.length<6)q.options.push('')}
+    if(b.dataset.removeOption!==undefined){const [i,j]=b.dataset.removeOption.split(':').map(Number),q=quizEdit.questions[i];if(q.options.length>2){q.options.splice(j,1);q.answer=q.answer.filter(n=>n!==j).map(n=>n>j?n-1:n)}}
+    renderQuizEditor()
+  })
+  quizDialog.addEventListener('click', event => { if (event.target === quizDialog) closeQuiz() })
   updateWorkspace()
   document.querySelector('[data-view="academy"]').onclick = show
   document.querySelectorAll('[data-view]:not([data-view="academy"])').forEach(item => item.addEventListener('click', () => $('academyPanel').classList.add('hidden')))
