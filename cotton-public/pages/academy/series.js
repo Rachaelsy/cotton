@@ -22,6 +22,26 @@ Page({
     this.loadSeries()
   },
 
+  canOpenProtectedCourse() {
+    if ((this.data.series.level || 'basic') === 'basic' || auth.isLoggedIn()) return true
+    this.promptLogin()
+    return false
+  },
+
+  promptLogin() {
+    if (this.accessPromptOpen) return
+    this.accessPromptOpen = true
+    wx.showModal({
+      title: '登录后学习',
+      content: '该系列属于中级或高级课程，登录后即可查看目录并播放视频。',
+      confirmText: '去登录',
+      complete: result => {
+        this.accessPromptOpen = false
+        if (result.confirm) wx.navigateTo({ url: '/pages/login/index' })
+      }
+    })
+  },
+
   async loadSeries() {
     this.setData({ loading: true, error: '' })
     try {
@@ -37,7 +57,10 @@ Page({
       this.setData({ series, level: getLevel(series.level) })
       this.renderLessons(Array.isArray(remote.lessons) ? remote.lessons : [])
     } catch (error) {
-      this.setData({ error: error.message || '课程目录加载失败，请重试', lessons: [] })
+      if (error && error.statusCode === 401) {
+        this.setData({ error: '中级和高级课程需登录后学习', lessons: [] })
+        this.promptLogin()
+      } else this.setData({ error: error.message || '课程目录加载失败，请重试', lessons: [] })
     } finally { this.setData({ loading: false }) }
   },
 
@@ -51,11 +74,12 @@ Page({
     this.setData({ lessons, completed: lessons.filter(item => item.completed).length, nextId: next && next.id, continueLabel: lessons.some(item => item.progress > 0) ? '继续学习' : '开始学习' })
   },
 
-  startLearning() { if (this.data.nextId) wx.navigateTo({ url: `/pages/academy/course?id=${encodeURIComponent(this.data.nextId)}` }) },
+  startLearning() { if (this.data.nextId && this.canOpenProtectedCourse()) wx.navigateTo({ url: `/pages/academy/course?id=${encodeURIComponent(this.data.nextId)}` }) },
   toggleIntro() { this.setData({ introExpanded: !this.data.introExpanded }) },
 
   openLesson(event) {
     const id = event.currentTarget.dataset.id
+    if (!this.canOpenProtectedCourse()) return
     if (id) wx.navigateTo({ url: `/pages/academy/course?id=${encodeURIComponent(id)}` })
   },
 

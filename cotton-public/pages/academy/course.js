@@ -51,6 +51,32 @@ Page({
     this.loadComments()
   },
 
+  onShow() {
+    if (this.waitingForAccess && auth.isLoggedIn()) {
+      this.waitingForAccess = false
+      this.progressOwner = auth.getUser() && auth.getUser().id || 'guest'
+      this.loadCourse()
+      this.loadComments()
+    }
+  },
+
+  promptCourseLogin() {
+    if (this.accessPromptOpen) return
+    this.accessPromptOpen = true
+    wx.showModal({
+      title: '登录后学习',
+      content: '初级课程可直接播放，中级和高级课程需登录后观看。',
+      confirmText: '去登录',
+      complete: result => {
+        this.accessPromptOpen = false
+        if (result.confirm) {
+          this.waitingForAccess = true
+          wx.navigateTo({ url: '/pages/login/index' })
+        }
+      }
+    })
+  },
+
   async loadCourse() {
     this.setData({ loading: true, error: '', videoError: '' })
     try {
@@ -71,7 +97,10 @@ Page({
       this.setData({ course, level: getLevel(course.level), initialTime: this.position, progress: saved.percent || 0, completed: Boolean(saved.completed || saved.percent >= 90), loading: false })
       if (course.seriesKey) this.loadDirectory(course.seriesKey)
     } catch (error) {
-      this.setData({ error: error.message || '课程加载失败，请重试', loading: false, course: {} })
+      if (error && error.statusCode === 401) {
+        this.setData({ error: '中级和高级课程需登录后学习', loading: false, course: {} })
+        this.promptCourseLogin()
+      } else this.setData({ error: error.message || '课程加载失败，请重试', loading: false, course: {} })
     }
   },
 

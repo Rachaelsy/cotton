@@ -18,7 +18,7 @@ async function invoke(method, url, req = {}) {
   let result; let status = 200
   const res = { status(code) { status = code; return this }, json(body) { result = body; return body } }
   const handlers = routes.get(`${method} ${url}`)
-  await handlers[handlers.length - 1]({ body: {}, params: {}, query: {}, viewer: { id: 1 }, admin: { id: 1 }, ...req }, res)
+  await handlers[handlers.length - 1]({ body: {}, params: {}, query: {}, headers: {}, viewer: { id: 1 }, admin: { id: 1 }, ...req }, res)
   return { status, result }
 }
 async function run() {
@@ -34,6 +34,19 @@ async function run() {
   assert.equal(missing.status, 404)
   assert.match(queries[0].sql, /s.status='published'/)
   assert.match(queries[0].sql, /c.status='published'/)
+  queries = []
+  responder = () => [[]]
+  const guestCourses = await invoke('get', '/courses')
+  assert.equal(guestCourses.status, 200)
+  assert.match(queries[0].sql, /c\.level='basic'/, 'guests must only receive basic courses')
+  queries = []
+  await invoke('get', '/courses', { headers: { authorization: 'Bearer valid-user-token' } })
+  assert.doesNotMatch(queries[0].sql, /c\.level='basic'/, 'logged-in users should receive every course level')
+  const lockedList = await invoke('get', '/series', { query: { level: 'advanced' } })
+  assert.equal(lockedList.status, 401, 'advanced series list must require login')
+  responder = () => [[{ id: 9, course_key: 'advanced-lesson', level: 'advanced', status: 'published' }]]
+  const lockedCourse = await invoke('get', '/courses/:courseId', { params: { courseId: 'advanced-lesson' } })
+  assert.equal(lockedCourse.status, 401, 'direct advanced course links must require login')
   let watched = 0; let watchedRanges = '[]'; let pointAwarded = false
   db.getConnection = async () => ({
     beginTransaction: async () => {}, commit: async () => {}, rollback: async () => {}, release: () => {},

@@ -37,7 +37,9 @@ Page({
       }))
       const pointRecords = (source.pointRecords || []).map(item => ({ ...item, levelName: LEVEL_NAMES[item.level] || '课程', timeText: dateText(item.created_at) }))
       const recentGroup = series.find(item => item.status === 'studying') || series[0] || null
-      const recent = recentGroup && recentGroup.currentCourse ? { ...recentGroup.currentCourse, seriesTitle: recentGroup.title, cover: recentGroup.cover } : null
+      const recent = recentGroup && recentGroup.currentCourse
+        ? { ...recentGroup.currentCourse, seriesTitle: recentGroup.title, cover: recentGroup.currentCourse.cover || recentGroup.cover }
+        : null
       this.setData({ loading: false, series, pointRecords, recent, summary: { ...source.summary, watchedText: durationText(source.summary && source.summary.watchedSeconds) } })
       this.filterSeries(this.data.activeTab)
     } catch (error) { this.setData({ loading: false, error: error.message || '学习记录加载失败' }) }

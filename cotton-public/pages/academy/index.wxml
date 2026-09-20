@@ -18,6 +18,7 @@
   <view class="level-tabs">
     <view wx:for="{{levels}}" wx:key="key" class="level-tab {{activeLevel===item.key?'active':''}}" data-key="{{item.key}}" bindtap="switchLevel">
       <text>{{item.name}}</text>
+      <text wx:if="{{item.key!=='basic'&&!loggedIn}}" class="login-badge">登录后</text>
     </view>
   </view>
 

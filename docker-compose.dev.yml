@@ -12,7 +12,7 @@ services:
       JWT_SECRET: ${DEV_JWT_SECRET}
       PUBLIC_BASE_URL: http://127.0.0.1
       COMMUNITY_BASE_URL: ""
-      COMMUNITY_DIRECT_PORT: 3100
+      COMMUNITY_DIRECT_PORT: ${COMMUNITY_HOST_PORT:-3100}
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
     volumes:
       - ./cotton-app/server:/app
@@ -27,7 +27,7 @@ services:
       NODE_ARGS: --watch
       JWT_SECRET: ${DEV_JWT_SECRET}
       PLATFORM_BASE_URL: ""
-      PLATFORM_DIRECT_PORT: 3000
+      PLATFORM_DIRECT_PORT: ${APP_HOST_PORT:-3000}
     volumes:
       - ./cotton-community:/app
       - community_dev_node_modules:/app/node_modules

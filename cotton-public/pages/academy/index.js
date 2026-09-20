@@ -13,7 +13,7 @@ function durationText(seconds) {
 }
 
 Page({
-  data: { navTop: 24, levels: LEVELS, activeLevel: 'basic', series: [], loading: true },
+  data: { navTop: 24, levels: LEVELS, activeLevel: 'basic', series: [], loading: true, loggedIn: false },
 
   onLoad(options) {
     let navTop = 24
@@ -24,7 +24,24 @@ Page({
   },
 
   onShow() {
+    const loggedIn = auth.isLoggedIn()
+    const activeLevel = loggedIn && this.pendingLevel ? this.pendingLevel : (!loggedIn && this.data.activeLevel !== 'basic' ? 'basic' : this.data.activeLevel)
+    this.pendingLevel = ''
+    this.setData({ loggedIn, activeLevel })
     this.loadSeries()
+  },
+
+  requestLogin(level) {
+    this.pendingLevel = level || ''
+    wx.showModal({
+      title: '登录后学习',
+      content: '初级课程对所有人开放，中级和高级课程需登录后学习。',
+      confirmText: '去登录',
+      success: result => {
+        if (result.confirm) wx.navigateTo({ url: '/pages/login/index' })
+        else this.pendingLevel = ''
+      }
+    })
   },
 
   buildSeries(seriesRows, lessonRows) {
@@ -83,11 +100,14 @@ Page({
 
   switchLevel(event) {
     const level = event.currentTarget.dataset.key
+    if (level !== 'basic' && !auth.isLoggedIn()) return this.requestLogin(level)
     if (LEVELS.some(item => item.key === level)) this.render(level)
   },
 
   openSeries(event) {
     const id = event.currentTarget.dataset.id
+    const series = (this.allSeries || []).find(item => item.id === id)
+    if (series && series.level !== 'basic' && !auth.isLoggedIn()) return this.requestLogin(series.level)
     if (id) wx.navigateTo({ url: `/pages/academy/series?id=${encodeURIComponent(id)}` })
   },
 

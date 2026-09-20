@@ -19,6 +19,21 @@ function tokenPayload(req) {
   try { return jwt.verify(auth.slice(7), JWT_SECRET) } catch { return null }
 }
 
+function academyViewer(req) {
+  const payload = tokenPayload(req)
+  return payload && payload.id ? payload : null
+}
+
+function canAccessLevel(req, level) {
+  return level === 'basic' || Boolean(academyViewer(req))
+}
+
+function requireLevelAccess(req, res, level) {
+  if (canAccessLevel(req, level)) return true
+  fail(res, '中级和高级课程需登录后学习', 401)
+  return false
+}
+
 async function adminAuth(req, res, next) {
   const payload = tokenPayload(req)
   if (!payload || (!payload.is_admin && !payload.is_community_admin)) return fail(res, '管理员登录已过期', 401)
@@ -177,6 +192,7 @@ function courseView(row, admin = false) {
     seriesTitle: row.series_title || '',
     lessonNo: Number(row.lesson_no || 1),
     level: row.level,
+    requiresLogin: row.level !== 'basic',
     type: row.type === 'video' ? '视频' : '图文',
     rawType: row.type,
     order: Number(row.sort_order || 0) % 100 || 1,
@@ -208,6 +224,7 @@ function seriesView(row) {
     id: row.series_key,
     databaseId: Number(row.id),
     level: row.level,
+    requiresLogin: row.level !== 'basic',
     title: row.title,
     summary: row.summary || '',
     teacher: row.teacher || '平台农技组',
@@ -222,8 +239,9 @@ function seriesView(row) {
 
 async function ensurePublishedCourse(req, res, next) {
   try {
-    const [[course]] = await db.query("SELECT c.id FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key WHERE c.course_key=? AND c.status='published' AND s.status='published' LIMIT 1", [req.params.courseId])
+    const [[course]] = await db.query("SELECT c.id,c.level FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key WHERE c.course_key=? AND c.status='published' AND s.status='published' LIMIT 1", [req.params.courseId])
     if (!course) return fail(res, '课程不存在', 404)
+    if (!requireLevelAccess(req, res, course.level)) return
     next()
   } catch (error) {
     console.error('[academy-course-check]', error)
@@ -235,7 +253,12 @@ router.get('/courses', async (req, res) => {
   try {
     const params = []
     let where = "c.status='published' AND s.status='published'"
+    const viewer = academyViewer(req)
+    if (LEVELS.has(req.query.level) && req.query.level !== 'basic' && !viewer) {
+      return fail(res, '中级和高级课程需登录后学习', 401)
+    }
     if (LEVELS.has(req.query.level)) { where += ' AND c.level=?'; params.push(req.query.level) }
+    else if (!viewer) { where += " AND c.level='basic'" }
     const [rows] = await db.query(`SELECT c.* FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key WHERE ${where} ORDER BY c.lesson_no,c.sort_order,c.id`, params)
     return ok(res, rows.map(row => courseView(row)))
   } catch (error) {
@@ -249,7 +272,12 @@ router.get('/series', async (req, res) => {
   try {
     const params = []
     const where = ["s.status='published'"]
+    const viewer = academyViewer(req)
+    if (level && level !== 'basic' && !viewer) {
+      return fail(res, '中级和高级课程需登录后学习', 401)
+    }
     if (level) { where.push('s.level=?'); params.push(level) }
+    else if (!viewer) where.push("s.level='basic'")
     const [rows] = await db.query(
       `SELECT s.*,COUNT(c.id) lesson_count,COALESCE(SUM(c.duration_seconds),0) total_seconds
          FROM academy_series s
@@ -266,6 +294,7 @@ router.get('/series/:seriesKey', async (req, res) => {
   try {
     const [[series]] = await db.query("SELECT * FROM academy_series WHERE series_key=? AND status='published' LIMIT 1", [req.params.seriesKey])
     if (!series) return fail(res, '系列课程不存在', 404)
+    if (!requireLevelAccess(req, res, series.level)) return
     const [lessons] = await db.query("SELECT * FROM academy_courses WHERE series_key=? AND status='published' ORDER BY lesson_no,sort_order,id", [req.params.seriesKey])
     const data = seriesView({ ...series, lesson_count: lessons.length, total_seconds: lessons.reduce((sum, item) => sum + Number(item.duration_seconds || 0), 0) })
     data.lessons = lessons.map(item => courseView({ ...item, series_title: series.title }))
@@ -277,6 +306,7 @@ router.get('/courses/:courseId', async (req, res) => {
   try {
     const [[row]] = await db.query("SELECT c.*,s.title series_title FROM academy_courses c JOIN academy_series s ON s.series_key=c.series_key WHERE c.course_key=? AND c.status='published' AND s.status='published' LIMIT 1", [req.params.courseId])
     if (!row) return fail(res, '课程不存在', 404)
+    if (!requireLevelAccess(req, res, row.level)) return
     await db.query('UPDATE academy_courses SET view_count=view_count+1 WHERE id=?', [row.id])
     row.view_count = Number(row.view_count || 0) + 1
     return ok(res, courseView(row))
