@@ -32,7 +32,7 @@ const actions = window.actions
 const submit = { disabled: false }
 const event = { preventDefault() {}, target: { querySelector: () => submit } }
 async function run() {
-  node('academyVideoUrl').value = 'https://example.com/lesson.mp4'
+  node('academyFeedToken').value = 'token/test'
   node('academyTitle').value = '真实视频标题'
   node('academySeries').value = 'series-a'
   await actions.saveCourse(event)

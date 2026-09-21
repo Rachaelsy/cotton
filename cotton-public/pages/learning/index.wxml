@@ -26,7 +26,7 @@
       <view class="metrics">
         <view class="metric-item"><strong>{{summary.completedCount}}</strong><text>完成课时</text></view>
         <view class="metric-divider"></view>
-        <view class="metric-item"><strong>{{summary.watchedText}}</strong><text>累计学习</text></view>
+        <view class="metric-item"><strong>{{summary.quizPassedCount}}</strong><text>通过测验</text></view>
         <view class="metric-divider"></view>
         <view class="metric-item"><strong>{{series.length}}</strong><text>学习系列</text></view>
       </view>
@@ -47,8 +47,7 @@
         <view class="continue-copy">
           <text class="series-name">{{recent.seriesTitle}}</text>
           <strong>{{recent.title}}</strong>
-          <view class="progress"><view style="width:{{recent.percent}}%"></view></view>
-          <text class="progress-text">已学 {{recent.percent}}%</text>
+          <text class="progress-text">本系列已完成 {{recent.completedCount}} / {{recent.totalCount}} 节</text>
           <view class="continue-action"><text class="action-play">▶</text><text>继续学习</text></view>
         </view>
       </view>
@@ -91,7 +90,7 @@
   <view class="points-page" wx:if="{{showPoints}}">
     <view class="nav" style="padding-top:{{statusBarHeight}}px"><view class="back" bindtap="closePoints">‹</view><text>积分明细</text><view class="space"></view></view>
     <scroll-view class="points-content" scroll-y>
-      <view class="points-total"><text>累计学习积分</text><strong>{{summary.totalPoints}}</strong><small>首次完成课时自动获得，重复观看不重复计分</small></view>
+      <view class="points-total"><text>累计学习积分</text><strong>{{summary.totalPoints}}</strong><small>首次标记完成课时获得，重复操作不重复计分</small></view>
       <view class="rules"><strong>积分规则</strong><view><text>初级课时</text><b>+5</b><text>中级课时</text><b>+8</b><text>高级课时</text><b>+10</b></view></view>
       <view class="records">
         <strong>积分记录</strong>

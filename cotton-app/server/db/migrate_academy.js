@@ -50,10 +50,7 @@ async function run() {
       teacher_title VARCHAR(120) DEFAULT '棉花栽培课程',
       cover_url VARCHAR(500) DEFAULT '',
       cover_object_key VARCHAR(500) DEFAULT '',
-      video_url VARCHAR(500) DEFAULT '',
-      video_object_key VARCHAR(500) DEFAULT '',
-      vod_file_id VARCHAR(64) NOT NULL DEFAULT '',
-      vod_status ENUM('none','ready','processing','failed') NOT NULL DEFAULT 'none',
+      feed_token VARCHAR(1000) NOT NULL DEFAULT '',
       duration_seconds INT UNSIGNED NOT NULL DEFAULT 60,
       objectives_json VARCHAR(2000) DEFAULT '[]',
       status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
@@ -69,8 +66,8 @@ async function run() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='优棉学堂课程'
   `)
 
-  await ensureColumn('vod_file_id', "VARCHAR(64) NOT NULL DEFAULT '' AFTER video_object_key")
-  await ensureColumn('vod_status', "ENUM('none','ready','processing','failed') NOT NULL DEFAULT 'none' AFTER vod_file_id")
+  await ensureColumn('feed_token', "VARCHAR(1000) NOT NULL DEFAULT '' AFTER cover_object_key")
+  await db.query("UPDATE academy_courses SET status='draft' WHERE type='video' AND status='published' AND feed_token=''")
   await ensureColumn('series_key', "VARCHAR(80) NOT NULL DEFAULT '' AFTER course_key")
   await ensureColumn('lesson_no', "INT UNSIGNED NOT NULL DEFAULT 1 AFTER series_key")
   const [[typeColumn]] = await db.query("SELECT COLUMN_TYPE column_type FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='academy_courses' AND COLUMN_NAME='type'")
@@ -114,20 +111,17 @@ async function run() {
   await db.query(`CREATE TABLE IF NOT EXISTS academy_progress (
     user_id INT UNSIGNED NOT NULL,
     course_key VARCHAR(80) NOT NULL,
-    position_seconds DOUBLE NOT NULL DEFAULT 0,
-    percent INT NOT NULL DEFAULT 0,
+    completed_at DATETIME DEFAULT NULL,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY(user_id,course_key)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`)
-  await ensureProgressColumn('watched_seconds', 'DOUBLE NOT NULL DEFAULT 0 AFTER position_seconds')
-  await ensureProgressColumn('watched_ranges_json', "TEXT NULL AFTER watched_seconds")
-  await ensureProgressColumn('completed_at', 'DATETIME DEFAULT NULL AFTER percent')
+  await ensureProgressColumn('completed_at', 'DATETIME DEFAULT NULL AFTER course_key')
   await db.query(`CREATE TABLE IF NOT EXISTS academy_learning_points (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,
     course_key VARCHAR(80) NOT NULL,
     points INT UNSIGNED NOT NULL,
-    reason VARCHAR(80) NOT NULL DEFAULT '首次完成课时',
+    reason VARCHAR(80) NOT NULL DEFAULT '首次标记完成课时',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_academy_point_course (user_id,course_key),
     INDEX idx_academy_point_user (user_id,created_at)

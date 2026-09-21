@@ -1,12 +1,9 @@
 const auth = require('../../utils/auth')
 
-const COURSE_IDS = ['growth', 'seed', 'seedling', 'scout', 'water', 'pest']
-
 function learningSummary() {
-  const completed = COURSE_IDS.filter(id => !!wx.getStorageSync(`course_done_${id}`)).length
-  const rewards = { growth: 10, seed: 15, seedling: 15, scout: 15, water: 20, pest: 20 }
-  const points = COURSE_IDS.reduce((sum, id) => sum + (wx.getStorageSync(`course_done_${id}`) ? rewards[id] : 0), 0)
-  return { completed, points }
+  const user = auth.getUser()
+  const rows = wx.getStorageSync(`academy_completion_v1_${user && user.id || 'guest'}`) || {}
+  return { completed: Object.values(rows).filter(item => item && item.completed).length, points: 0 }
 }
 
 function collectedCount() {
@@ -69,7 +66,21 @@ Page({
       collectedCount: collectedCount(),
       plotCount: loggedIn ? '...' : '--'
     })
-    if (loggedIn) this.loadPlots()
+    if (loggedIn) {
+      this.loadPlots()
+      this.loadLearningSummary()
+    }
+  },
+
+  async loadLearningSummary() {
+    try {
+      const res = await auth.request('GET', '/api/miniapp-academy/learning')
+      if (res.code !== 200 || !res.data || !res.data.summary) return
+      this.setData({
+        courseCount: Number(res.data.summary.completedCount || 0),
+        points: Number(res.data.summary.totalPoints || 0)
+      })
+    } catch {}
   },
 
   async loadPlots() {

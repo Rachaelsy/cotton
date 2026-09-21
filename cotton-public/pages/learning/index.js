@@ -1,12 +1,6 @@
 const auth = require('../../utils/auth')
 
 const LEVEL_NAMES = { basic: '初级', intermediate: '中级', advanced: '高级' }
-function durationText(seconds) {
-  const value = Number(seconds || 0)
-  if (value < 60) return `${Math.round(value)}秒`
-  const hours = Math.floor(value / 3600), minutes = Math.floor(value % 3600 / 60)
-  return hours ? `${hours}小时${minutes ? `${minutes}分钟` : ''}` : `${minutes}分钟`
-}
 function dateText(value) {
   if (!value) return ''
   const date = new Date(value)
@@ -16,7 +10,7 @@ function dateText(value) {
 Page({
   data: {
     statusBarHeight: 24, loading: true, error: '', loggedOut: false, activeTab: 'all', showPoints: false,
-    summary: { totalPoints: 0, completedCount: 0, watchedText: '0分钟' },
+    summary: { totalPoints: 0, completedCount: 0, quizPassedCount: 0 },
     series: [], visibleSeries: [], pointRecords: [], recent: null
   },
   onLoad() { try { this.setData({ statusBarHeight: wx.getSystemInfoSync().statusBarHeight || 24 }) } catch (_) {} },
@@ -38,9 +32,9 @@ Page({
       const pointRecords = (source.pointRecords || []).map(item => ({ ...item, levelName: LEVEL_NAMES[item.level] || '课程', timeText: dateText(item.created_at) }))
       const recentGroup = series.find(item => item.status === 'studying') || series[0] || null
       const recent = recentGroup && recentGroup.currentCourse
-        ? { ...recentGroup.currentCourse, seriesTitle: recentGroup.title, cover: recentGroup.currentCourse.cover || recentGroup.cover }
+        ? { ...recentGroup.currentCourse, seriesTitle: recentGroup.title, cover: recentGroup.currentCourse.cover || recentGroup.cover, completedCount: recentGroup.completedCount, totalCount: recentGroup.totalCount }
         : null
-      this.setData({ loading: false, series, pointRecords, recent, summary: { ...source.summary, watchedText: durationText(source.summary && source.summary.watchedSeconds) } })
+      this.setData({ loading: false, series, pointRecords, recent, summary: source.summary || { totalPoints: 0, completedCount: 0, quizPassedCount: 0 } })
       this.filterSeries(this.data.activeTab)
     } catch (error) { this.setData({ loading: false, error: error.message || '学习记录加载失败' }) }
   },

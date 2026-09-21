@@ -37,7 +37,7 @@ assert(publicModules.includes("pests: '/api/pest-knowledge'") && publicModules.i
 assert(!siteData.includes('pests: ['), 'hardcoded website pest entries should be removed')
 assert(!pestCopy.includes('棉蚜会聚集') && !pestCopy.includes("pests: ["), 'hardcoded mini program pest entries should be removed')
 assert(!home.includes('未来三天持续高温，请及时关注地块墒情变化。'), 'hardcoded home reminder should be removed')
-assert(my.includes("learning: '/pages/academy/index'") && !my.includes("key === 'learning'"), 'my learning entry should open Youmian Academy')
+assert(my.includes("learning: '/pages/learning/index'") && !my.includes("key === 'learning'"), 'my learning entry should open the learning center')
 assert(nginx.includes('location = /api/pest-knowledge') && nginx.includes('location ^~ /api/pest-knowledge/'), 'nginx pest API routes are missing')
 
 console.log('pest-knowledge tests passed')

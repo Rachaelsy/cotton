@@ -8,7 +8,7 @@ const LEVELS = [
 const COURSES = []
 const SERIES = []
 
-const emptyCourse = { id: '', level: 'basic', type: '视频', title: '', summary: '', teacher: '', cover: '', videoUrl: '', objectives: [] }
+const emptyCourse = { id: '', level: 'basic', type: '视频', title: '', summary: '', teacher: '', cover: '', feedToken: '', objectives: [] }
 const emptySeries = { id: '', level: 'basic', title: '', summary: '', teacher: '', cover: '', lessonIds: [] }
 
 const getLevel = key => LEVELS.find(item => item.key === key) || LEVELS[0]

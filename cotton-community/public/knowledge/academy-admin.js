@@ -59,7 +59,7 @@
       <td class="academy-course-title"><strong>${esc(item.title)}</strong><div class="academy-muted"><button class="small-btn" data-move="${item.databaseId}" data-direction="-1">↑</button> <button class="small-btn" data-move="${item.databaseId}" data-direction="1">↓</button> 拖动调整顺序</div></td>
       <td>${esc(levels[item.level] || item.level)}<div class="academy-muted">${esc(item.seriesTitle || '未分组')} · 第${Number(item.lessonNo || 1)}节</div></td>
       <td>${esc(item.type)}<div class="academy-muted">${esc(item.duration)}</div></td>
-      <td>${item.rawType === 'quiz' ? '<span class="status-on">在线答题 · 自动判分</span>' : item.vodFileId ? `<span class="status-on">VOD</span><div class="academy-muted">FileID ${esc(item.vodFileId)}</div>` : item.videoRawUrl ? '<span class="status-on">已有播放地址</span>' : '<span class="academy-muted">未填写</span>'}</td>
+      <td>${item.rawType === 'quiz' ? '<span class="status-on">在线答题 · 自动判分</span>' : item.feedToken ? '<span class="status-on">已配置 feedToken</span>' : '<span class="academy-muted">未填写</span>'}</td>
       <td><span class="status-pill ${item.status === 'published' ? 'published' : ''}">${statusText(item.status)}</span></td>
       <td>${Number(item.viewCount || 0)}</td>
       <td><div class="academy-actions"><button class="small-btn primary" data-academy-edit="${item.databaseId}">编辑</button><button class="small-btn ${item.status === 'published' ? 'danger' : 'primary'}" data-academy-toggle="${item.databaseId}" data-status="${esc(item.status)}">${item.status === 'published' ? '下架' : '上架'}</button><button class="small-btn danger" data-academy-delete="${item.databaseId}">删除</button></div></td>
@@ -85,7 +85,7 @@
       state.series = series || []
       state.comments = comments || []
       $('academyLearnerCount').textContent = Number(stats && stats.learnerCount || 0)
-      $('academyCompletionRate').textContent = `${Number(stats && stats.completionRate || 0)}%`
+      $('academyCompletionRate').textContent = Number(stats && stats.completedCount || 0)
       $('academyPointsIssued').textContent = Number(stats && stats.pointsIssued || 0)
       state.loaded = true
       renderSeries(); renderCourses(); renderComments()
@@ -165,9 +165,7 @@
     $('academyFeatured').checked = Boolean(item.isFeatured)
     $('academyObjectives').value = (item.objectives || []).join('\n')
     $('academyCoverUrl').value = item.coverUrl || ''
-    $('academyVideoUrl').value = item.videoRawUrl || ''
-    $('academyVodFileId').value = item.vodFileId || ''
-    $('academyVodStatus').value = item.vodStatus || (item.videoRawUrl ? 'ready' : 'none')
+    $('academyFeedToken').value = item.feedToken || ''
     $('academyCourseMessage').textContent = ''
     updateRewardHint()
   }
@@ -194,10 +192,6 @@
   }
 
   function closeCourse() {
-    $('academyPreview').pause()
-    $('academyPreview').removeAttribute('src')
-    $('academyPreview').load()
-    $('academyPreview').classList.add('hidden')
     $('academyCourseModal').classList.add('hidden')
     $('academyCourseForm').reset()
   }
@@ -208,15 +202,14 @@
     if (submit.disabled) return
     submit.disabled = true
     const databaseId = $('academyCourseId').value
-    const videoUrl = $('academyVideoUrl').value.trim()
     const body = {
       seriesKey: $('academySeries').value, lessonNo: $('academyLessonNo').value,
       level: $('academyLevel').value, type: $('academyType').value, sortOrder: $('academySort').value,
       title: $('academyTitle').value, summary: $('academySummary').value,
       teacher: $('academyTeacher').value, teacherTitle: $('academyTeacherTitle').value,
       durationSeconds: $('academyDuration').value, objectives: $('academyObjectives').value,
-      coverUrl: $('academyCoverUrl').value, videoUrl,
-      vodFileId: $('academyVodFileId').value, vodStatus: videoUrl ? 'ready' : 'none',
+      coverUrl: $('academyCoverUrl').value,
+      feedToken: $('academyFeedToken').value,
       status: $('academyPublished').checked ? 'published' : 'draft', isFeatured: $('academyFeatured').checked
     }
     $('academyCourseMessage').textContent = '正在保存...'
@@ -256,7 +249,7 @@
         await load(); return runtime.notify(status === 'published' ? '课程已上架' : '课程已下架', 'success')
       }
       if (button.dataset.academyDelete) {
-        if (!confirm('确定删除这门课程吗？相关评论将同时删除，腾讯云 VOD 中的视频不会被删除。')) return
+        if (!confirm('确定删除这门课程吗？相关评论将同时删除，视频号中的原视频不会受到影响。')) return
         await request(`/courses/${button.dataset.academyDelete}`, { method: 'DELETE' })
         await load(); return runtime.notify('课程已删除', 'success')
       }
@@ -304,14 +297,6 @@
     const [item] = rows.splice(from,1); rows.splice(to,0,item)
     try { await saveOrder(rows) } catch (error) { runtime.notify(error.message || '排序保存失败','error') }
   })
-  $('academyPreviewButton').onclick = () => {
-    const url = $('academyVideoUrl').value.trim()
-    if (!/^https:\/\//i.test(url)) return runtime.notify('请填写 HTTPS 视频播放地址', 'error')
-    const player = $('academyPreview'); player.src = url; player.poster = $('academyCoverUrl').value; player.classList.remove('hidden'); player.load()
-    $('academyCourseMessage').textContent = '点击播放器试听，确认画面和声音正常后再发布。'
-  }
-  $('academyPreview').onloadedmetadata = () => { if (Number.isFinite($('academyPreview').duration)) $('academyDuration').value = Math.ceil($('academyPreview').duration) }
-  $('academyPreview').onerror = () => { $('academyCourseMessage').textContent = '预览失败，请检查链接、有效期或浏览器是否支持该视频格式。' }
   const advanced = document.createElement('details')
   advanced.className = 'full'
   advanced.innerHTML = '<summary>更多课程信息 · 讲师、时长和学习要点</summary><div class="policy-fields" style="margin-top:16px"></div>'

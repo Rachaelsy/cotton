@@ -47,30 +47,23 @@ async function run() {
   responder = () => [[{ id: 9, course_key: 'advanced-lesson', level: 'advanced', status: 'published' }]]
   const lockedCourse = await invoke('get', '/courses/:courseId', { params: { courseId: 'advanced-lesson' } })
   assert.equal(lockedCourse.status, 401, 'direct advanced course links must require login')
-  let watched = 0; let watchedRanges = '[]'; let pointAwarded = false
+  let completed = false; let pointAwarded = false
   db.getConnection = async () => ({
     beginTransaction: async () => {}, commit: async () => {}, rollback: async () => {}, release: () => {},
     query: async (sql, params) => {
-      if (sql.includes('SELECT c.duration_seconds')) return [[{ duration_seconds: 60, level: 'basic' }]]
-      if (sql.startsWith('SELECT watched_seconds')) return [[{ watched_seconds: watched, watched_ranges_json: watchedRanges, percent: Math.floor(watched / 60 * 100), completed_at: pointAwarded ? new Date() : null }]]
-      if (sql.startsWith('UPDATE academy_progress')) { watched = params[1]; watchedRanges = params[2]; return [{ affectedRows: 1 }] }
+      if (sql.includes('SELECT c.level')) return [[{ level: 'basic' }]]
+      if (sql.startsWith('SELECT completed_at')) return completed ? [[{ completed_at: new Date() }]] : [[]]
+      if (sql.startsWith('INSERT IGNORE INTO academy_progress')) { completed = true; return [{ affectedRows: 1 }] }
       if (sql.startsWith('INSERT IGNORE INTO academy_learning_points')) { const affectedRows = pointAwarded ? 0 : 1; pointAwarded = true; return [{ affectedRows }] }
       if (sql.startsWith('SELECT COALESCE(SUM(points)')) return [[{ total: pointAwarded ? 5 : 0 }]]
       return [{ affectedRows: 1 }]
     }
   })
-  const firstRanges = [[0,10],[10,20],[20,30]]
-  const firstWatch = await invoke('put', '/courses/:courseId/progress', { params: { courseId: 'lesson' }, body: { position: 30, ranges: firstRanges }, viewer: { id: 42 } })
-  assert.equal(firstWatch.result.data.percent, 50)
-  assert.equal(firstWatch.result.data.awardedPoints, 0)
-  const repeatedRange = await invoke('put', '/courses/:courseId/progress', { params: { courseId: 'lesson' }, body: { position: 30, ranges: firstRanges }, viewer: { id: 42 } })
-  assert.equal(repeatedRange.result.data.percent, 50, 'replaying the same range must not increase progress')
-  const completedWatch = await invoke('put', '/courses/:courseId/progress', { params: { courseId: 'lesson' }, body: { position: 60, ranges: [[30,40],[40,50],[50,60]] }, viewer: { id: 42 } })
-  assert.equal(completedWatch.result.data.completed, true)
-  assert.equal(completedWatch.result.data.awardedPoints, 5)
-  const repeatedWatch = await invoke('put', '/courses/:courseId/progress', { params: { courseId: 'lesson' }, body: { position: 60, ranges: [[0,1]] }, viewer: { id: 42 } })
-  assert.equal(repeatedWatch.result.data.awardedPoints, 0)
-  assert.equal((await invoke('put', '/courses/:courseId/progress', { body: { position: -1, ranges: [[0,31]] } })).status, 400)
+  const firstComplete = await invoke('post', '/courses/:courseId/complete', { params: { courseId: 'lesson' }, viewer: { id: 42 } })
+  assert.equal(firstComplete.result.data.completed, true)
+  assert.equal(firstComplete.result.data.awardedPoints, 5)
+  const repeatedComplete = await invoke('post', '/courses/:courseId/complete', { params: { courseId: 'lesson' }, viewer: { id: 42 } })
+  assert.equal(repeatedComplete.result.data.awardedPoints, 0, 'repeated completion must not award points twice')
   let committed = false; let rolledBack = false; const orderUpdates = []
   db.getConnection = async () => ({
     beginTransaction: async () => {}, commit: async () => { committed = true }, rollback: async () => { rolledBack = true }, release: () => {},
@@ -87,15 +80,15 @@ async function run() {
 
   let page
   const store = {}; let user = { id: 1 }
-  const auth = { getUser: () => user, isLoggedIn: () => false, request: async () => ({ code: 200, data: [] }) }
+  const auth = { getUser: () => user, isLoggedIn: () => true, request: async (method, url) => url.endsWith('/complete') ? ({ code: 200, data: { completed: true, awardedPoints: 5 } }) : ({ code: 200, data: [] }) }
   const wx = { getStorageSync: key => store[key], setStorageSync: (key,value) => { store[key] = value } }
   const progressModule = { exports: {} }
   vm.runInNewContext(read('cotton-public/utils/academy-progress.js'), { require: () => auth, module: progressModule, wx, console })
   const progress = progressModule.exports
-  progress.save('lesson', 15, 25)
-  assert.equal(progress.read().lesson.position, 15)
+  await progress.complete('lesson')
+  assert.equal(progress.read().lesson.completed, true)
   user = { id: 2 }; assert.equal(progress.read().lesson, undefined)
-  user = { id: 1 }; assert.equal(progress.percentages().lesson, 25)
+  user = { id: 1 }; assert.equal(progress.percentages().lesson, 100)
   vm.runInNewContext(read('cotton-public/pages/academy/index.js'), { require: name => name.includes('academy-progress') ? progress : name.includes('academy-data') ? { LEVELS: [], SERIES: [], COURSES: [] } : auth, Page: value => { page = value }, wx, console })
   page.setData = function(value) { Object.assign(this.data, value) }
   page.allSeries = [{ id: 'old', level: 'basic' }]

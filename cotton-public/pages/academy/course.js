@@ -24,7 +24,7 @@ function relativeTime(value) {
 Page({
   data: {
     navTop: 24,
-    loading: true, error: '', videoError: '', initialTime: 0, lessons: [], showDirectory: false, ended: false,
+    loading: true, error: '', videoError: '', lessons: [], showDirectory: false,
     course: {},
     level: {},
     progress: 0,
@@ -97,8 +97,7 @@ Page({
         objectives: Array.isArray(remote.objectives) && remote.objectives.length ? remote.objectives : (current.objectives || [])
       }
       const saved = progressStore.read()[this.courseId] || {}
-      this.position = saved.percent >= 100 ? 0 : Number(saved.position || 0)
-      this.setData({ course, level: getLevel(course.level), initialTime: this.position, progress: saved.percent || 0, completed: Boolean(saved.completed || saved.percent >= 90), loading: false })
+      this.setData({ course, level: getLevel(course.level), progress: saved.completed ? 100 : 0, completed: Boolean(saved.completed), loading: false })
       if (course.seriesKey) this.loadDirectory(course.seriesKey)
     } catch (error) {
       if (error && error.statusCode === 401) {
@@ -122,16 +121,8 @@ Page({
     const item = this.data.lessons.find(row => row.id === id)
     if (id && id !== this.courseId) wx.redirectTo({ url: `/pages/academy/${item && item.rawType === 'quiz' ? 'quiz' : 'course'}?id=${encodeURIComponent(id)}` })
   },
-  onVideoError() { this.setData({ videoError: '视频暂时无法播放，请重试；如仍失败，请联系平台检查播放链接。' }) },
+  onVideoError() { this.setData({ videoError: '视频号内容暂时无法播放，请检查视频号动态信息或稍后重试。' }) },
   retryVideo() { this.loadCourse() },
-  onHide() { this.persistProgress() },
-  onUnload() { this.persistProgress() },
-  persistProgress() {
-    if (!this.hasPlayed || this.progressOwner !== (auth.getUser() && auth.getUser().id || 'guest')) return
-    progressStore.save(this.courseId, this.position, this.data.progress, this.pendingWatchRanges || [])
-    this.pendingWatchRanges = []
-    this.flushProgress()
-  },
 
   async loadComments() {
     this.setData({ commentsLoading: true, commentsError: false })
@@ -150,35 +141,27 @@ Page({
     return auth.request(method, `${ACADEMY_API}/courses/${courseId}${suffix}`, data)
   },
 
-  onVideoTimeUpdate(event) {
-    if (this.progressOwner !== (auth.getUser() && auth.getUser().id || 'guest')) return
-    const detail = event.detail || {}
-    if (!detail.duration) return
-    this.position = detail.currentTime
-    this.hasPlayed = detail.currentTime > 0
-    const delta = this.lastVideoTime == null ? 0 : detail.currentTime - this.lastVideoTime
-    this.lastVideoTime = detail.currentTime
-    if (delta > 0 && delta <= 3) (this.pendingWatchRanges || (this.pendingWatchRanges = [])).push([this.lastVideoTime - delta, this.lastVideoTime])
-    const percent = Math.min(99, detail.currentTime / detail.duration * 100)
-    if (this.hasPlayed && (!this.lastSaved || Date.now() - this.lastSaved > 5000)) {
-      this.lastSaved = Date.now()
-      const saved = progressStore.save(this.courseId, this.position, percent, this.pendingWatchRanges || [])
-      this.pendingWatchRanges = []
-      this.setData({ progress: saved.percent })
-      this.flushProgress()
+  async markComplete() {
+    if (this.data.completed) return
+    if (!auth.isLoggedIn()) {
+      return wx.showModal({
+        title: '登录后保存学习成果',
+        content: '初级课程可以直接观看，登录后可标记完成并获得学习积分。',
+        confirmText: '去登录',
+        success: result => { if (result.confirm) wx.navigateTo({ url: '/pages/login/index' }) }
+      })
     }
-  },
-
-  onVideoEnded() {
-    this.persistProgress()
-    this.setData({ ended: true })
-  },
-
-  async flushProgress() {
-    const result = await progressStore.flush(this.courseId)
-    if (!result) return
-    this.setData({ progress: result.percent, completed: result.completed })
-    if (result.awardedPoints) wx.showToast({ title: `课时完成，积分 +${result.awardedPoints}`, icon: 'none', duration: 2500 })
+    if (this.completing) return
+    this.completing = true
+    try {
+      const result = await progressStore.complete(this.courseId)
+      this.setData({ progress: 100, completed: true })
+      wx.showToast({ title: result.awardedPoints ? `已完成，积分 +${result.awardedPoints}` : '已标记完成', icon: 'none', duration: 2500 })
+    } catch (error) {
+      wx.showToast({ title: error.message || '操作失败，请重试', icon: 'none' })
+    } finally {
+      this.completing = false
+    }
   },
 
   onCommentInput(event) {
