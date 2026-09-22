@@ -5,7 +5,9 @@ const i18n = require('../../utils/i18n')
 const layout = require('../../utils/layout')
 const { markdownToRichTextNodes } = require('../../utils/markdown')
 
-const HISTORY_KEY = 'ai_chat_history_v1'
+const LEGACY_HISTORY_KEY = 'ai_chat_history_v1'
+const HISTORY_KEY_PREFIX = 'ai_chat_history_v2'
+const GUEST_HISTORY_OWNER_KEY = 'ai_chat_guest_owner_v1'
 const MAX_HISTORY = 30
 const MAX_TTS_CHARS = 180
 const VOICE_RESULT_TIMEOUT_MS = 12000
@@ -64,16 +66,21 @@ Page({
   _autoJumpTimer: null,
   _trainingPromptConsumed: false,
   _audio: null,
+  _activeHistoryKey: '',
 
   onLoad() {
     const info = wx.getSystemInfoSync()
     const d = new Date()
+    const historyKey = this._getHistoryKey()
+    this._activeHistoryKey = historyKey
+    // 旧版本共用一个缓存键，无法判断属于哪个账号，因此不迁移，避免串号。
+    wx.removeStorageSync(LEGACY_HISTORY_KEY)
     this.applyLanguage()
     this.setData({
       statusBarHeight: info.statusBarHeight || 20,
       capsuleSafeRight: layout.getCapsuleSafeRight(),
       timeStr: this._formatTime(d),
-      messages: this._loadHistory(),
+      messages: this._loadHistory(historyKey),
       voiceSupported: !!speechManager
     })
     this._initSpeech()
@@ -82,6 +89,7 @@ Page({
 
   onShow() {
     this.applyLanguage()
+    this._syncHistoryOwner()
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1, copy: i18n.getCopy('tab') })
     }
@@ -123,6 +131,21 @@ Page({
     this._doSend(text)
   },
 
+  onQuickQuestion(e) {
+    const text = String(e.currentTarget.dataset.text || '').trim()
+    if (!text || this.data.typing) return
+    this._doSend(text)
+  },
+
+  onPlayWelcome() {
+    const text = '您好，我是小棉。您可以告诉我棉花的病虫害、生育期和种植面积，我会为您提供更准确的农事建议。'
+    if (this.data.speaking) {
+      this._stopSpeechPlayback()
+      return
+    }
+    this._speak(text)
+  },
+
   _consumeTrainingPrompt() {
     if (this._trainingPromptConsumed || this.data.typing) return
     const prompt = wx.getStorageSync('ai_training_prompt')
@@ -133,6 +156,7 @@ Page({
   },
 
   async _doSend(text, options = {}) {
+    const historyKey = this._activeHistoryKey || this._getHistoryKey()
     const userMsg = {
       id: ++this._msgId,
       role: 'user',
@@ -160,6 +184,7 @@ Page({
       const reply = (res.code === 200 && res.data?.reply)
         ? res.data.reply
         : (res.msg || this.textCopy.aiUnavailable)
+      if (this._activeHistoryKey !== historyKey) return
       this._appendAI(reply, {
         intent: res.data && res.data.intent,
         jump: res.data && res.data.jump,
@@ -168,6 +193,7 @@ Page({
         speak: options.fromVoice || this.data.voiceAnswerEnabled
       })
     } catch {
+      if (this._activeHistoryKey !== historyKey) return
       this._appendAI(this.textCopy.networkFail, {}, {
         speak: options.fromVoice || this.data.voiceAnswerEnabled
       })
@@ -751,9 +777,34 @@ Page({
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
   },
 
-  _loadHistory() {
+  _getHistoryKey() {
+    const user = auth.getUser()
+    if (user && user.id) return `${HISTORY_KEY_PREFIX}_user_${user.id}`
+
+    let guestOwner = wx.getStorageSync(GUEST_HISTORY_OWNER_KEY)
+    if (!guestOwner) {
+      guestOwner = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
+      wx.setStorageSync(GUEST_HISTORY_OWNER_KEY, guestOwner)
+    }
+    return `${HISTORY_KEY_PREFIX}_guest_${guestOwner}`
+  },
+
+  _syncHistoryOwner() {
+    const historyKey = this._getHistoryKey()
+    if (historyKey === this._activeHistoryKey) return
+    this._activeHistoryKey = historyKey
+    this._stopSpeechPlayback()
+    this.setData({
+      messages: this._loadHistory(historyKey),
+      typing: false,
+      inputText: '',
+      scrollToId: 'bottom'
+    })
+  },
+
+  _loadHistory(historyKey = this._activeHistoryKey || this._getHistoryKey()) {
     try {
-      const saved = wx.getStorageSync(HISTORY_KEY)
+      const saved = wx.getStorageSync(historyKey)
       if (!Array.isArray(saved)) return []
       const messages = saved.slice(-MAX_HISTORY)
         .map(item => {
@@ -778,7 +829,7 @@ Page({
       const safeMessages = messages
         .filter(item => !item.image)
         .slice(-MAX_HISTORY)
-      wx.setStorageSync(HISTORY_KEY, safeMessages)
+      wx.setStorageSync(this._activeHistoryKey || this._getHistoryKey(), safeMessages)
     } catch (error) {}
   },
 
@@ -794,7 +845,7 @@ Page({
             success: (r) => {
               if (r.confirm) {
                 this.setData({ messages: [] })
-                wx.removeStorageSync(HISTORY_KEY)
+                wx.removeStorageSync(this._activeHistoryKey || this._getHistoryKey())
               }
             }
           })

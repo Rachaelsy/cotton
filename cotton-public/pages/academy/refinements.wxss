@@ -9,7 +9,6 @@
 .academy-page .series-bottom{color:#48755e;font-size:21rpx;margin-top:18rpx}
 .series-page .series-hero{height:280rpx}
 .series-page .lesson-copy strong{white-space:normal;line-height:1.5}
-.series-page .start-learning{margin:24rpx;background:#18734e;color:#fff;border-radius:18rpx;font-size:28rpx;line-height:84rpx}
 .academy-status{padding:48rpx 28rpx;text-align:center;color:#6b7b71;font-size:27rpx;line-height:1.7}
 .course-page .course-nav{position:relative;min-height:88rpx;background:#fff;color:#193d2e}
 .course-page .course-nav>text{color:#193d2e;text-shadow:none}

@@ -1,71 +1,105 @@
 <view class="course-page">
   <view class="course-nav" style="padding-top:{{navTop}}px">
-    <view class="course-back" bindtap="back">‹</view>
-    <text>优棉学堂</text>
-    <button open-type="share">分享</button>
-  </view>
-
-  <view class="academy-status" wx:if="{{loading}}">课程加载中…</view>
-  <view class="academy-status" wx:elif="{{error}}"><text>{{error}}</text><button bindtap="loadCourse">重新加载</button></view>
-  <block wx:else>
-  <view class="video-stage">
-    <channel-video wx:if="{{!videoError && course.feedToken}}" feed-token="{{course.feedToken}}" autoplay="false" object-fit="contain" binderror="onVideoError"></channel-video>
-    <block wx:else>
-      <image src="{{course.cover}}" mode="aspectFill"></image>
-      <view class="video-shade"></view>
-      <view class="video-play" wx:if="{{course.type==='视频'}}">▶</view>
-    </block>
-  </view>
-  <view class="academy-status" wx:if="{{videoError || !course.feedToken}}"><text>{{videoError || '该课时暂未配置视频号 feedToken'}}</text><button bindtap="retryVideo">重新加载</button></view>
-
-  <view class="video-info">
-    <view class="video-labels"><text>{{level.name}}</text><label>{{course.type}} · {{course.duration}}</label></view>
-    <strong class="video-title">{{course.lessonNo}}. {{course.title}}</strong>
-    <text class="video-summary">{{course.summary}}</text>
-    <view class="video-actions">
-      <view><small>课程编制</small><strong>{{course.teacher}}</strong></view>
-      <button class="complete-button {{completed?'done':''}}" disabled="{{completed}}" bindtap="markComplete">{{completed?'✓ 已完成':'完成本节'}}</button>
+    <view class="course-nav-inner">
+      <view class="course-back" bindtap="back">‹</view>
+      <text>课程学习</text>
+      <view class="course-nav-space"></view>
     </view>
   </view>
 
-  <view class="lesson-controls"><button disabled="{{!previousId}}" data-id="{{previousId}}" bindtap="selectLesson">上一节</button><button data-id="{{nextId}}" disabled="{{!nextId}}" bindtap="selectLesson">{{nextIsQuiz?'开始小测验':'下一节'}}</button></view>
-  <view class="inline-directory" wx:if="{{showDirectory}}">
-    <view wx:if="{{directoryError}}" bindtap="retryDirectory">{{directoryError}}</view>
-    <view wx:for="{{lessons}}" wx:key="id" data-id="{{item.id}}" bindtap="selectLesson" class="directory-row {{item.id===course.id?'selected':''}}"><text>{{item.lessonNo}}. {{item.title}}</text><text>{{item.id===course.id?'播放中':item.duration}}</text></view>
+  <view class="academy-status page-status" wx:if="{{loading}}">课程加载中…</view>
+  <view class="academy-status page-status" wx:elif="{{error}}">
+    <text>{{error}}</text>
+    <button bindtap="loadCourse">重新加载</button>
   </view>
 
-  <view class="directory-link" wx:if="{{course.seriesKey}}" bindtap="openDirectory">
-    <view class="directory-icon">☷</view>
-    <view><small>课程目录</small><strong>{{course.seriesTitle}}</strong></view>
-    <text>›</text>
-  </view>
-
-  <view class="knowledge-strip">
-    <view wx:for="{{course.objectives}}" wx:key="*this"><i>{{index+1}}</i><text>{{item}}</text></view>
-  </view>
-
-  <view class="comment-section">
-    <view class="comment-head"><strong>评论</strong><text>{{comments.length}} 条</text></view>
-    <view class="comment-loading" wx:if="{{commentsLoading}}">评论加载中...</view>
-    <view class="comment-loading" wx:elif="{{commentsError}}" bindtap="loadComments">评论加载失败，点击重试</view>
-    <view class="comment-empty" wx:elif="{{!comments.length}}"><strong>还没有评论</strong><text>看完课程后，说说你的收获或问题吧</text></view>
-    <view class="comment-item" wx:for="{{comments}}" wx:key="id">
-      <image wx:if="{{item.avatarUrl}}" class="comment-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
-      <view wx:else class="comment-avatar fallback">{{item.avatarText}}</view>
-      <view class="comment-main">
-        <view class="comment-author"><strong>{{item.author}}</strong><text>{{item.timeText}}</text></view>
-        <view class="reply-target" wx:if="{{item.parentAuthor}}">回复 @{{item.parentAuthor}}</view>
-        <text class="comment-body">{{item.content}}</text>
-        <view class="comment-actions"><text data-id="{{item.id}}" bindtap="replyComment">回复</text><text class="{{item.liked?'liked':''}}" data-id="{{item.id}}" bindtap="toggleLike">赞 {{item.likeCount||''}}</text></view>
+  <block wx:else>
+    <view class="video-stage">
+      <video
+        wx:if="{{!videoError && course.videoUrl}}"
+        id="academyVideo" src="{{course.videoUrl}}" poster="{{course.cover}}" controls="{{true}}" show-center-play-btn="{{true}}"
+        autoplay="{{true}}"
+        object-fit="contain"
+        binderror="onVideoError"
+        initial-time="{{resumePosition}}"
+        bindplay="onVideoPlay" bindpause="onVideoPause" bindtimeupdate="onVideoTimeUpdate"
+        bindwaiting="onVideoWaiting" bindended="onVideoEnded"
+        bindloadedmetadata="onVideoMetadata"
+      ></video>
+      <image wx:else class="video-cover" src="{{course.cover}}" mode="aspectFill"></image>
+      <view class="video-fallback" wx:if="{{videoError || !course.videoUrl}}">
+        <view class="retry-ring">↻</view>
+        <strong>视频暂时无法播放</strong>
+        <text>{{videoError ? '请稍后重试' : '该课时暂未配置视频地址'}}</text>
+        <button bindtap="retryVideo">重新加载</button>
       </view>
     </view>
-  </view>
 
-  <view class="comment-bottom-space"></view>
-  <view class="replying" wx:if="{{replyTo}}"><text>回复 @{{replyTo.author}}</text><text bindtap="cancelReply">取消</text></view>
-  <view class="comment-bar">
-    <input value="{{commentText}}" focus="{{commentFocus}}" maxlength="500" placeholder="发一条友善的评论" confirm-type="send" bindinput="onCommentInput" bindconfirm="submitComment"></input>
-    <button loading="{{sending}}" disabled="{{sending}}" bindtap="submitComment">发送</button>
-  </view>
+    <view class="course-info-card">
+      <view class="video-labels">
+        <text>{{level.name}}</text>
+        <label>{{course.type}} · {{course.duration}}</label>
+      </view>
+      <strong class="video-title">{{course.title}}</strong>
+      <view class="course-author"><text>课程编制</text><i>·</i><strong>{{course.teacher}}</strong></view>
+
+    </view>
+
+    <view class="content-zone">
+      <view class="directory-card" wx:if="{{course.seriesKey}}">
+        <view class="directory-head">
+          <strong>课程目录</strong>
+          <view bindtap="openDirectory">查看专题 <text>›</text></view>
+        </view>
+        <text class="series-title">{{course.seriesTitle}}</text>
+        <view class="directory-error" wx:if="{{directoryError}}" bindtap="retryDirectory">{{directoryError}}</view>
+        <view class="directory-list" wx:else>
+          <view
+            wx:for="{{lessons}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            bindtap="selectLesson"
+            class="directory-row {{item.id===course.id?'selected':''}}"
+          >
+            <text class="lesson-number">{{item.displayNo}}</text>
+            <view class="lesson-copy"><strong>{{item.title}}</strong><small wx:if="{{item.rawType==='quiz'}}">小测验</small></view>
+            <text class="lesson-state">{{item.id===course.id?'当前课时':item.duration}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="knowledge-card" wx:if="{{course.objectives.length}}">
+        <strong>本课要点</strong>
+        <view wx:for="{{course.objectives}}" wx:key="*this"><i>{{index+1}}</i><text>{{item}}</text></view>
+      </view>
+
+      <view class="comment-section">
+        <view class="comment-head"><strong>评论</strong><text>{{comments.length}} 条</text></view>
+        <view class="comment-loading" wx:if="{{commentsLoading}}">评论加载中...</view>
+        <view class="comment-loading" wx:elif="{{commentsError}}" bindtap="loadComments">评论加载失败，点击重试</view>
+        <view class="comment-empty" wx:elif="{{!comments.length}}">
+          <view class="comment-empty-icon"><text>•••</text></view>
+          <strong>还没有评论</strong>
+          <text>分享你的学习心得吧</text>
+        </view>
+        <view class="comment-item" wx:for="{{comments}}" wx:key="id">
+          <image wx:if="{{item.avatarUrl}}" class="comment-avatar" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+          <view wx:else class="comment-avatar fallback">{{item.avatarText}}</view>
+          <view class="comment-main">
+            <view class="comment-author"><strong>{{item.author}}</strong><text>{{item.timeText}}</text></view>
+            <view class="reply-target" wx:if="{{item.parentAuthor}}">回复 @{{item.parentAuthor}}</view>
+            <text class="comment-body">{{item.content}}</text>
+            <view class="comment-actions"><text data-id="{{item.id}}" bindtap="replyComment">回复</text><text class="{{item.liked?'liked':''}}" data-id="{{item.id}}" bindtap="toggleLike">赞 {{item.likeCount||''}}</text></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="comment-bottom-space"></view>
+    <view class="replying" wx:if="{{replyTo}}"><text>回复 @{{replyTo.author}}</text><text bindtap="cancelReply">取消</text></view>
+    <view class="comment-bar">
+      <input value="{{commentText}}" focus="{{commentFocus}}" maxlength="500" placeholder="发一条友善的评论" confirm-type="send" bindinput="onCommentInput" bindconfirm="submitComment"></input>
+      <button loading="{{sending}}" disabled="{{sending}}" bindtap="submitComment">发送</button>
+    </view>
   </block>
 </view>

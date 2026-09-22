@@ -24,14 +24,12 @@
     <view><text>课程编制</text><strong>{{series.teacher}}</strong></view>
   </view>
 
-  <button class="start-learning" wx:if="{{lessons.length}}" bindtap="startLearning">{{continueLabel}}</button>
-
   <view class="directory-head"><strong>课程目录</strong><text>选择视频或小测验</text></view>
   <view class="lesson-list">
-    <view class="lesson-item" wx:for="{{lessons}}" wx:key="id" data-id="{{item.id}}" bindtap="openLesson">
+    <view class="lesson-item {{item.lastViewed?'last-viewed':''}}" wx:for="{{lessons}}" wx:key="id" data-id="{{item.id}}" bindtap="openLesson">
       <view class="lesson-index {{item.completed?'done':''}}">{{item.completed?'✓':item.lessonNo}}</view>
       <view class="lesson-copy">
-        <small>第 {{item.lessonNo}} 节 · {{item.type}}</small>
+        <view class="lesson-meta"><small>第 {{item.lessonNo}} 节 · {{item.type}}</small><label wx:if="{{item.lastViewed}}">上次学到</label></view>
         <strong>{{item.title}}</strong>
         <text>{{item.duration}}<label wx:if="{{item.progress>0&&!item.completed}}"> · 已学 {{item.progress}}%</label></text>
       </view>

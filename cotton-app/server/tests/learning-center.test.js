@@ -10,6 +10,7 @@ const response = {
   data: {
     summary: { totalPoints: 13, completedCount: 2, quizPassedCount: 1 },
     series: [
+      { id: 'offline', title: '已下架系列', level: 'basic', totalCount: 0, completedCount: 1, points: 5, progress: 100, updatedAt: '2026-09-19T10:00:00', currentCourse: null },
       { id: 'a', title: '播种', level: 'basic', totalCount: 2, completedCount: 1, points: 5, progress: 50, updatedAt: '2026-09-18T10:00:00', currentCourse: { id: 'a2', title: '第二课' } },
       { id: 'b', title: '蕾期', level: 'intermediate', totalCount: 1, completedCount: 1, points: 8, progress: 100, updatedAt: '2026-09-18T11:00:00', currentCourse: { id: 'b1', title: '第一课' } }
     ],
@@ -18,13 +19,13 @@ const response = {
 }
 const auth = { isLoggedIn: () => true, request: async () => response }
 const wx = { getSystemInfoSync: () => ({ statusBarHeight: 30 }), navigateTo: value => navigations.push(value.url), switchTab: value => navigations.push(value.url) }
-vm.runInNewContext(source, { require: () => auth, Page: value => { page = value }, wx, getCurrentPages: () => [{}], console, Date, encodeURIComponent })
+vm.runInNewContext(source, { require: name => name.includes('academy-watch') ? { flushQueue: async () => {} } : auth, Page: value => { page = value }, wx, getCurrentPages: () => [{}], console, Date, encodeURIComponent })
 page.setData = function(value) { Object.assign(this.data, value) }
 async function run() {
   page.onLoad(); await page.load()
   assert.equal(page.data.summary.totalPoints, 13)
   assert.equal(page.data.summary.quizPassedCount, 1)
-  assert.equal(page.data.visibleSeries.length, 2)
+  assert.equal(page.data.visibleSeries.length, 3)
   page.filterSeries('completed')
   assert.deepEqual(page.data.visibleSeries.map(item => item.id), ['b'])
   page.openRecent(); assert.match(navigations[0], /academy\/course\?id=a2/)

@@ -28,7 +28,7 @@ for (const level of ["key: 'basic'", "key: 'intermediate'", "key: 'advanced'"]) 
 }
 assert(academyData.includes('const COURSES = []') && academyData.includes('const SERIES = []'), 'academy demo content should remain empty until real videos are published')
 assert(academyData.includes("name: '初级课程'") && academyData.includes("name: '中级课程'") && academyData.includes("name: '高级课程'") && academyHome.includes('level-tabs'), 'academy home should expose three learning levels')
-assert(academyCourse.includes('<channel-video') && academyCourse.includes('feed-token=') && !academyCourse.includes('feed-id=') && academyCourse.includes('class="comment-section"'), 'academy course detail should support cross-subject Video Accounts learning and comments')
+assert(academyCourse.includes('<video') && academyCourse.includes('src="{{course.videoUrl}}"') && !academyCourse.includes('<channel-video') && !/feed-(?:id|token)=/.test(academyCourse) && academyCourse.includes('class="comment-section"'), 'academy course detail should use Tencent VOD playback and comments')
 assert(i18n.includes("brand: '喀什优棉公共服务平台'") && !i18n.includes('棉花智能体') && !i18n.includes('智慧棉花管理平台'), 'login and registration copy should use the unified public service platform name')
 assert(loginWxml.includes('wx:if="{{copy.brandSub}}"') && expertJs.includes("org: '喀什优棉公共服务平台'"), 'obsolete brand subtitles and expert fallback organization should not expose old platform names')
 

@@ -63,7 +63,7 @@
     "scope.userLocation": { "desc": "用于地块定位、边界绘制和地块气象服务" },
     "scope.record": { "desc": "用于 AI 农技问答的语音提问" }
   },
-  "requiredPrivateInfos": ["getLocation", "chooseLocation", "startLocationUpdate"],
+  "requiredPrivateInfos": ["getLocation", "chooseLocation", "startLocationUpdate", "onLocationChange"],
   "plugins": {
     "WechatSI": { "version": "0.3.7", "provider": "wx069ba97219f66d99" }
   },

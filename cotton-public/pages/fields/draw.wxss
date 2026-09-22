@@ -704,13 +704,20 @@
 
 .field-input {
   flex: 1;
+  min-width: 0;
   color: #18231A;
   font-size: 24rpx;
   text-align: right;
 }
 
+.field-picker-control {
+  flex: 1;
+  min-width: 0;
+}
+
 .field-picker {
-  min-width: 300rpx;
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -718,10 +725,17 @@
 }
 
 .picker-val,
-.picker-placeholder,
-.picker-more {
+.picker-placeholder {
+  flex: 1;
+  min-width: 0;
   font-size: 25rpx;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.picker-more { flex-shrink: 0; font-size: 25rpx; }
 
 .picker-val { color: #18231A; }
 .picker-placeholder { color: #B7C0B8; }

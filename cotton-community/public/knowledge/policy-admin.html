@@ -14,6 +14,7 @@
     @media(max-width:980px){.sidebar{width:188px}.main{margin-left:188px}.editor-shell{grid-template-columns:1fr}.policy-fields{grid-template-columns:1fr}.policy-fields .full{grid-column:auto}}@media(max-width:720px){.sidebar{position:static;width:100%;height:auto}.sidebar-logo{height:auto}.nav{padding:0}.sidebar-user{display:none}.main{margin-left:0}.topbar{padding:0 16px}.content{padding:14px}.policy-fields{grid-template-columns:1fr}}
     #academyPanel .academy-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
     #academyPanel input,#academyPanel select{padding:10px 12px;border:1px solid #dce6df;border-radius:8px;background:white}
+    .site-toast-region{position:fixed;z-index:3000;right:20px;bottom:24px;width:min(360px,calc(100vw - 32px));pointer-events:none}.site-toast{padding:13px 16px;border:1px solid #ccd8d0;border-left:4px solid #237657;border-radius:8px;background:#fff;box-shadow:0 12px 30px rgba(19,46,34,.18);color:#20342b;font-size:14px;line-height:1.55;opacity:0;transform:translateY(8px);transition:.18s}.site-toast.visible{opacity:1;transform:none}.site-toast.error{border-left-color:#a13d34}.site-toast.success{border-left-color:#278159}
     #academyCourseTable tr[draggable]{cursor:grab}
     @media(max-width:800px){#academyPanel .academy-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.quiz-settings{grid-template-columns:1fr}.quiz-question-head,.quiz-publish-row{align-items:flex-start;flex-direction:column;gap:10px}.quiz-question-actions{align-self:flex-end}.quiz-modal-footer{gap:10px;align-items:stretch;flex-direction:column}.quiz-modal-footer>div{justify-content:flex-end}}
   </style>
@@ -97,11 +98,11 @@
         <div class="data-table-wrap"><table class="data-table"><thead id="expertStudioHead"></thead><tbody id="expertStudioTable"><tr><td>加载中...</td></tr></tbody></table></div>
       </section>
       <section id="academyPanel" class="panel-card hidden">
-        <div class="toolbar"><div><h2>优棉学堂课程管理</h2><p>先创建系列课程，再把已发布的视频号动态添加到系列目录。</p></div><div><button class="btn secondary" id="academyRefresh" type="button">刷新</button> <button class="btn secondary" id="academyAddSeries" type="button">＋ 新增系列</button> <button class="btn" id="academyAddCourse" type="button">＋ 添加视频课程</button></div></div>
+        <div class="toolbar"><div><h2>优棉学堂课程管理</h2><p>先创建系列课程，再把腾讯云 VOD 视频链接添加到系列目录。</p></div><div><button class="btn secondary" id="academyRefresh" type="button">刷新</button> <button class="btn secondary" id="academyAddSeries" type="button">＋ 新增系列</button> <button class="btn" id="academyAddCourse" type="button">＋ 添加视频课程</button></div></div>
         <div class="academy-summary"><article><span>系列课程</span><strong id="academySeriesCount">0</strong></article><article><span>视频课程</span><strong id="academyCourseCount">0</strong></article><article><span>已上架课程</span><strong id="academyPublishedCount">0</strong></article><article><span>评论总数</span><strong id="academyCommentCount">0</strong></article><article><span>学习人数</span><strong id="academyLearnerCount">0</strong></article><article><span>已完成课时</span><strong id="academyCompletionRate">0</strong></article><article><span>已发学习积分</span><strong id="academyPointsIssued">0</strong></article></div>
-        <div class="academy-storage"><strong>不同主体视频号使用说明</strong><br>本小程序固定使用 feedToken 内嵌其他主体的视频号内容。请先在微信公众平台开启“获取视频号视频 ID 权限”，再从视频动态中复制“在小程序中引用该视频”生成的 feedToken。</div>
+        <div class="academy-storage"><strong>腾讯云 VOD 视频课程</strong><br>在腾讯云控制台上传视频后，将 HTTPS 播放地址添加到系列课程。可填写 MP4 或 M3U8 播放链接，不要填写控制台页面或 FileId。使用带时效签名的链接时，过期后需更新地址。</div>
         <div class="academy-section"><div class="academy-section-head"><h3>系列课程 <span class="academy-count">小程序按初级、中级和高级展示</span></h3></div><div class="data-table-wrap"><table class="data-table"><thead><tr><th>封面</th><th>系列名称</th><th>等级</th><th>课程数</th><th>状态</th><th>排序</th><th>操作</th></tr></thead><tbody id="academySeriesTable"><tr><td colspan="7">请选择左侧“优棉学堂”。</td></tr></tbody></table></div></div>
-        <div class="academy-section"><div class="academy-section-head"><h3>课程列表 <span class="academy-count">视频由微信视频号承载</span></h3></div><div class="data-table-wrap"><table class="data-table"><thead><tr><th>封面</th><th>课程</th><th>等级</th><th>形式/时长</th><th>视频号</th><th>状态</th><th>浏览</th><th>操作</th></tr></thead><tbody id="academyCourseTable"><tr><td colspan="8">请选择左侧“优棉学堂”。</td></tr></tbody></table></div></div>
+        <div class="academy-section"><div class="academy-section-head"><h3>课程列表 <span class="academy-count">视频由腾讯云 VOD 承载</span></h3></div><div class="data-table-wrap"><table class="data-table"><thead><tr><th>封面</th><th>课程</th><th>等级</th><th>形式/时长</th><th>云点播</th><th>状态</th><th>浏览</th><th>操作</th></tr></thead><tbody id="academyCourseTable"><tr><td colspan="8">请选择左侧“优棉学堂”。</td></tr></tbody></table></div></div>
         <div class="academy-section"><div class="academy-section-head"><h3>课程评论 <span class="academy-count">可隐藏或恢复不当评论</span></h3></div><div class="data-table-wrap"><table class="data-table"><thead><tr><th>课程</th><th>用户</th><th>评论</th><th>时间</th><th>状态</th><th>操作</th></tr></thead><tbody id="academyCommentTable"><tr><td colspan="6">请选择左侧“优棉学堂”。</td></tr></tbody></table></div></div>
       </section>
       <section id="securityPanel" class="panel-card hidden">
@@ -347,12 +348,12 @@
         <div class="full"><label>课程简介</label><textarea id="academySummary" rows="3" maxlength="1000"></textarea></div>
         <div><label>课程编制</label><input id="academyTeacher" maxlength="100" value="平台农技组"></div>
         <div><label>课程栏目</label><input id="academyTeacherTitle" maxlength="120" value="棉花栽培课程"></div>
-        <div><label>视频时长（秒）</label><input id="academyDuration" type="number" min="1" max="86400" value="60"></div>
+        <input id="academyDuration" type="hidden">
         <div><label class="checkbox-label"><input id="academyPublished" type="checkbox">保存后立即上架</label><label class="checkbox-label"><input id="academyFeatured" type="checkbox">设为本级推荐</label></div>
         <div><label>完成奖励</label><div id="academyRewardHint" class="field-hint">初级课时首次完成可获得 5 学习积分</div></div>
         <div class="full"><label>本课要点（每行一项）</label><textarea id="academyObjectives" rows="4" placeholder="最多 8 条"></textarea></div>
-        <div class="full"><label>课程封面 HTTPS 地址</label><input id="academyCoverUrl" maxlength="500" placeholder="填写视频号封面地址或其他 HTTPS 图片地址"></div>
-        <div class="full"><label>视频号 feedToken *</label><textarea id="academyFeedToken" rows="3" maxlength="1000" required placeholder="通常以 token/ 开头，请完整粘贴，不要填写 feedId 或视频分享链接"></textarea><div class="field-hint">该字段用于不同主体的视频号视频。保存后请在微信真机中验证播放，普通网页无法预览 channel-video。</div></div>
+        <div class="full"><label>课程封面 HTTPS 地址</label><input id="academyCoverUrl" maxlength="500" placeholder="填写腾讯云封面地址或其他 HTTPS 图片地址"></div>
+        <div class="full"><label>VOD 视频播放地址</label><input id="academyVideoUrl" type="url" maxlength="2000" placeholder="https://您的播放域名/视频.mp4"><div class="field-hint">上架视频前必须填写有效的 HTTPS 播放链接。上传和转码在腾讯云控制台完成。</div></div>
       </div><p class="form-message" id="academyCourseMessage"></p><div class="editor-actions"><button class="btn secondary" id="cancelAcademyCourseBtn" type="button">取消</button><button class="btn" type="submit">保存课程</button></div></div>
     </form>
   </div>
@@ -387,5 +388,5 @@
       </div><p class="form-message" id="expertContentMessage"></p><div class="editor-actions"><button class="btn secondary" id="cancelExpertContentBtn" type="button">取消</button><button class="btn" type="submit">保存内容</button></div></div>
     </form>
   </div>
-  <script src="/knowledge/site/runtime.js"></script><script src="/knowledge/policy-admin.js?v=20260917-1"></script><script src="/knowledge/pest-admin.js"></script><script src="/knowledge/product-admin.js"></script><script src="/knowledge/factory-admin.js"></script><script src="/knowledge/expert-studio-admin.js"></script><script src="/knowledge/content-admin.js"></script><script src="/knowledge/variety-admin.js"></script><script src="/knowledge/farmer-land-admin.js"></script><script src="/knowledge/voice-admin.js?v=20260822-3"></script><script src="/knowledge/academy-admin.js?v=20260921-channel-video"></script>
+  <script src="/knowledge/site/runtime.js"></script><script src="/knowledge/policy-admin.js?v=20260917-1"></script><script src="/knowledge/pest-admin.js"></script><script src="/knowledge/product-admin.js"></script><script src="/knowledge/factory-admin.js"></script><script src="/knowledge/expert-studio-admin.js"></script><script src="/knowledge/content-admin.js"></script><script src="/knowledge/variety-admin.js"></script><script src="/knowledge/farmer-land-admin.js"></script><script src="/knowledge/voice-admin.js?v=20260822-3"></script><script src="/knowledge/academy-admin.js?v=20260922-auto-duration1"></script>
 </body></html>

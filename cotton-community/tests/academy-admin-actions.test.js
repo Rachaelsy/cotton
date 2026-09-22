@@ -16,6 +16,7 @@ const requests = []; const notifications = []
 const series = [{ id: 'series-a', databaseId: 8, title: '系列', level: 'basic', status: 'draft' }]
 const courses = [1,2].map(id => ({ id: `lesson-${id}`, databaseId: id, seriesKey: 'series-a', lessonNo: id }))
 let failSave = false
+let failMetadata = false
 const window = { CottonRuntime: {
   requestJson: async (url, options) => {
     requests.push({ url, options })
@@ -26,17 +27,19 @@ const window = { CottonRuntime: {
 } }
 // Execute the production event handlers with a minimal form DOM and mock HTTP.
 vm.runInNewContext(source.slice(0, source.indexOf('  const controls =')) + '\nwindow.actions = { saveCourse, tableAction, state }; })()', {
-  window, document: { getElementById: node }, localStorage: { getItem: () => '' }, console
+  window, document: { getElementById: node, createElement: () => ({duration:85.3,removeAttribute(){},load(){ if(this.onloadedmetadata) queueMicrotask(()=>failMetadata?this.onerror():this.onloadedmetadata()) }}) }, localStorage: { getItem: () => '' }, console, URL, setTimeout, clearTimeout
 })
 const actions = window.actions
 const submit = { disabled: false }
 const event = { preventDefault() {}, target: { querySelector: () => submit } }
 async function run() {
-  node('academyFeedToken').value = 'token/test'
   node('academyTitle').value = '真实视频标题'
   node('academySeries').value = 'series-a'
+  node('academyVideoUrl').value = 'https://1441518090.vod-qcloud.com/path/video.mp4'
   await actions.saveCourse(event)
   assert.ok(requests.some(r => r.options.method === 'POST' && r.url.endsWith('/courses')), 'new course must reach the API')
+  assert.equal(JSON.parse(requests.find(r => r.options.method === 'POST' && r.url.endsWith('/courses')).options.body).videoUrl, node('academyVideoUrl').value, 'VOD 地址必须随保存请求提交')
+  assert.equal(JSON.parse(requests.find(r => r.options.method === 'POST' && r.url.endsWith('/courses')).options.body).durationSeconds,85,'必须提交自动读取的实际时长')
   assert.equal(notifications.at(-1).type, 'success')
   assert.equal(submit.disabled, false)
   node('academyCourseId').value = '1'
@@ -51,6 +54,12 @@ async function run() {
   await actions.saveCourse(event)
   assert.equal(node('academyCourseMessage').textContent, '保存失败测试')
   assert.equal(submit.disabled, false, 'failed request must re-enable submit')
+  failSave=false;failMetadata=true
+  const before=requests.length
+  await actions.saveCourse(event)
+  assert.equal(requests.length,before,'时长识别失败不得保存错误时长')
+  assert.match(node('academyCourseMessage').textContent,/无法读取视频时长/)
+  assert.equal(submit.disabled,false)
   console.log('Academy admin create/edit/navigation/reorder behavior tests passed')
 }
 run().catch(error => { console.error(error); process.exitCode = 1 })

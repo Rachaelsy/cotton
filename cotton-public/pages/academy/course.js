@@ -2,6 +2,7 @@ const auth = require('../../utils/auth')
 const { COURSES, getCourse, getLevel } = require('../../utils/academy-data')
 
 const progressStore = require('../../utils/academy-progress')
+const { WatchTracker, flushQueue } = require('../../utils/academy-watch')
 const ACADEMY_API = '/api/miniapp-academy'
 
 function readProgress() {
@@ -24,7 +25,7 @@ function relativeTime(value) {
 Page({
   data: {
     navTop: 24,
-    loading: true, error: '', videoError: '', lessons: [], showDirectory: false,
+    loading: true, error: '', videoError: '', lessons: [],
     course: {},
     level: {},
     progress: 0,
@@ -52,6 +53,15 @@ Page({
   },
 
   onShow() {
+    flushQueue()
+    const currentOwner = auth.getUser() && auth.getUser().id || 'guest'
+    if (currentOwner !== this.progressOwner) {
+      if (this.watchTracker) this.watchTracker.close()
+      this.progressOwner = currentOwner
+      this.loadCourse()
+      this.loadComments()
+      return
+    }
     if (this.waitingForAccess && auth.isLoggedIn()) {
       this.waitingForAccess = false
       this.progressOwner = auth.getUser() && auth.getUser().id || 'guest'
@@ -78,8 +88,10 @@ Page({
   },
 
   async loadCourse() {
+    if (this.watchTracker) await this.watchTracker.close()
     this.setData({ loading: true, error: '', videoError: '' })
     try {
+      await flushQueue()
       await progressStore.sync()
       const result = await auth.request('GET', `/api/miniapp-academy/courses/${encodeURIComponent(this.courseId)}`)
       if (!result || result.code !== 200 || !result.data) throw new Error(result && result.code === 404 ? '课程已下架或不存在' : '课程加载失败，请重试')
@@ -97,8 +109,17 @@ Page({
         objectives: Array.isArray(remote.objectives) && remote.objectives.length ? remote.objectives : (current.objectives || [])
       }
       const saved = progressStore.read()[this.courseId] || {}
-      this.setData({ course, level: getLevel(course.level), progress: saved.completed ? 100 : 0, completed: Boolean(saved.completed), loading: false })
-      if (course.seriesKey) this.loadDirectory(course.seriesKey)
+      const usable = !saved.version || saved.version === course.videoVersion
+      this.watchTracker = new WatchTracker(course, (state, message) => {
+        if (state && state.completed && !this.data.completed) wx.showToast({ title: state.awardedPoints ? `本节已完成，积分 +${state.awardedPoints}` : '本节已完成', icon: 'none' })
+        if (state) this.setData({ progress: state.completed ? 100 : Number(state.percent || 0), completed: Boolean(state.completed), syncMessage: message })
+        else this.setData({ syncMessage: message })
+      })
+      this.setData({ course, level: getLevel(course.level), progress: usable ? (saved.completed ? 100 : Number(saved.percent || 0)) : 0, completed: usable && Boolean(saved.completed), resumePosition: usable && !saved.completed ? Number(saved.position || 0) : 0, syncMessage: auth.isLoggedIn() ? '播放后自动记录学习进度' : '游客进度仅保存在本机，登录后记录学习成果', loading: false })
+      if (course.seriesKey) {
+        progressStore.markViewed(course.id, course.seriesKey)
+        this.loadDirectory(course.seriesKey)
+      }
     } catch (error) {
       if (error && error.statusCode === 401) {
         this.setData({ error: '中级和高级课程需登录后学习', loading: false, course: {} })
@@ -111,7 +132,10 @@ Page({
     try {
       const result = await auth.request('GET', `/api/miniapp-academy/series/${encodeURIComponent(key)}`)
       if (result.code !== 200) throw new Error('目录加载失败')
-      const lessons = result.data.lessons || []; const index = lessons.findIndex(item => item.id === this.courseId)
+      const lessons = (result.data.lessons || []).map((item, itemIndex) => ({
+        ...item,
+        displayNo: String(Number(item.lessonNo || itemIndex + 1)).padStart(2, '0')
+      })); const index = lessons.findIndex(item => item.id === this.courseId)
       this.setData({ lessons, previousId: index > 0 ? lessons[index - 1].id : '', nextId: index >= 0 && index < lessons.length - 1 ? lessons[index + 1].id : '', nextIsQuiz: Boolean(lessons[index+1] && lessons[index+1].rawType === 'quiz'), directoryError: '' })
     } catch (_) { this.setData({ directoryError: '目录加载失败，点击重试' }) }
   },
@@ -121,8 +145,16 @@ Page({
     const item = this.data.lessons.find(row => row.id === id)
     if (id && id !== this.courseId) wx.redirectTo({ url: `/pages/academy/${item && item.rawType === 'quiz' ? 'quiz' : 'course'}?id=${encodeURIComponent(id)}` })
   },
-  onVideoError() { this.setData({ videoError: '视频号内容暂时无法播放，请检查视频号动态信息或稍后重试。' }) },
+  onVideoError() { if (this.watchTracker) this.watchTracker.pause(); this.setData({ videoError: '视频暂时无法播放，请稍后重试或联系平台更新播放地址。' }) },
   retryVideo() { this.loadCourse() },
+  onVideoPlay() { if (this.watchTracker) this.watchTracker.play() },
+  onVideoMetadata(event) { if (this.watchTracker) this.watchTracker.checkDuration(Number(event.detail.duration)) },
+  onVideoTimeUpdate(event) { if (this.watchTracker && this.watchTracker.checkDuration(Number(event.detail.duration))) this.watchTracker.tick(Number(event.detail.currentTime)) },
+  onVideoPause() { if (this.watchTracker) this.watchTracker.pause() },
+  onVideoWaiting() { if (this.watchTracker) this.watchTracker.last = null },
+  onVideoEnded() { if (this.watchTracker) this.watchTracker.pause() },
+  onHide() { if (this.watchTracker) this.watchTracker.pause(); const player=wx.createVideoContext('academyVideo',this); player.pause() },
+  onUnload() { if (this.watchTracker) this.watchTracker.close() },
 
   async loadComments() {
     this.setData({ commentsLoading: true, commentsError: false })
@@ -141,28 +173,6 @@ Page({
     return auth.request(method, `${ACADEMY_API}/courses/${courseId}${suffix}`, data)
   },
 
-  async markComplete() {
-    if (this.data.completed) return
-    if (!auth.isLoggedIn()) {
-      return wx.showModal({
-        title: '登录后保存学习成果',
-        content: '初级课程可以直接观看，登录后可标记完成并获得学习积分。',
-        confirmText: '去登录',
-        success: result => { if (result.confirm) wx.navigateTo({ url: '/pages/login/index' }) }
-      })
-    }
-    if (this.completing) return
-    this.completing = true
-    try {
-      const result = await progressStore.complete(this.courseId)
-      this.setData({ progress: 100, completed: true })
-      wx.showToast({ title: result.awardedPoints ? `已完成，积分 +${result.awardedPoints}` : '已标记完成', icon: 'none', duration: 2500 })
-    } catch (error) {
-      wx.showToast({ title: error.message || '操作失败，请重试', icon: 'none' })
-    } finally {
-      this.completing = false
-    }
-  },
 
   onCommentInput(event) {
     this.setData({ commentText: event.detail.value })
@@ -227,7 +237,7 @@ Page({
   },
 
   openDirectory() {
-    this.setData({ showDirectory: !this.data.showDirectory })
+    if (this.data.course.seriesKey) wx.navigateTo({ url: `/pages/academy/series?id=${encodeURIComponent(this.data.course.seriesKey)}` })
   },
 
   onShareAppMessage() {

@@ -1,30 +1,64 @@
-<!-- pages/ai/index.wxml — AI 助手 -->
+<!-- pages/ai/index.wxml · 小棉 AI 助手 -->
 <view class="page" bindtouchend="onVoiceGlobalEnd" bindtouchcancel="onVoiceGlobalCancel">
+  <view class="ambient ambient-one"></view>
+  <view class="ambient ambient-two"></view>
+
   <view class="ai-nav" style="padding-top: {{statusBarHeight}}px">
     <view class="ai-nav-inner" style="padding-right: {{capsuleSafeRight}}px">
-      <view class="brand-mark"><text class="brand-mark-text">AI</text></view>
+      <view class="cotton-bot cotton-bot-large" aria-label="小棉头像">
+        <view class="cotton-petal petal-top"></view>
+        <view class="cotton-petal petal-left"></view>
+        <view class="cotton-petal petal-right"></view>
+        <view class="cotton-face"><view class="eye eye-left"></view><view class="eye eye-right"></view><view class="smile"></view></view>
+        <view class="bot-leaf leaf-left"></view><view class="bot-leaf leaf-right"></view>
+      </view>
       <view class="ai-nav-center">
-        <text class="ai-name">{{copy.title}}</text>
+        <text class="ai-name">小棉 AI 助手</text>
         <view class="ai-status-row">
           <view class="ai-status-dot {{(recording || recordingStarting) ? 'recording' : ((recognizing || speaking) ? 'speaking' : '')}}"></view>
-          <text class="ai-status-text">{{recordingStarting ? copy.voicePreparing : (recording ? copy.voiceListening : (recognizing ? copy.voiceRecognizing : (speaking ? copy.speaking : copy.status)))}}</text>
+          <text class="ai-status-text">{{recordingStarting ? copy.voicePreparing : (recording ? copy.voiceListening : (recognizing ? copy.voiceRecognizing : (speaking ? copy.speaking : '在线 · 农事问题，随时问我')))}}</text>
         </view>
       </view>
-      <view class="ai-more-btn" bindtap="onMore"><text class="ai-more-icon">···</text></view>
     </view>
   </view>
 
-  <scroll-view class="chat-scroll" scroll-y scroll-into-view="{{scrollToId}}" scroll-with-animation>
+  <scroll-view class="chat-scroll" scroll-y scroll-into-view="{{scrollToId}}" scroll-with-animation enhanced="{{true}}" show-scrollbar="{{false}}">
     <view class="chat-inner">
-      <view wx:if="{{!messages.length}}" class="empty-state">
-        <view class="empty-logo"><text class="empty-logo-text">AI</text></view>
-        <text class="empty-title">{{copy.assistantName}}</text>
-        <text class="empty-description">{{copy.welcome}}</text>
-        <text class="empty-tip">输入棉花种植问题，我会结合农技知识为你解答</text>
-      </view>
+      <view class="chat-date-line"><text class="chat-date-text">今天 {{timeStr}}</text></view>
 
-      <view wx:if="{{messages.length}}" class="chat-date-line">
-        <text class="chat-date-text">{{copy.today}} {{timeStr}}</text>
+      <view wx:if="{{!messages.length}}" class="welcome-conversation">
+        <view class="msg-row ai-row welcome-row">
+          <view class="cotton-bot cotton-bot-small">
+            <view class="cotton-petal petal-top"></view><view class="cotton-petal petal-left"></view><view class="cotton-petal petal-right"></view>
+            <view class="cotton-face"><view class="eye eye-left"></view><view class="eye eye-right"></view><view class="smile"></view></view>
+            <view class="bot-leaf leaf-left"></view><view class="bot-leaf leaf-right"></view>
+          </view>
+          <view class="msg-body ai-body">
+            <view class="message-meta"><text class="assistant-name">小棉</text><text class="message-time">{{timeStr}}</text></view>
+            <view class="ai-answer welcome-card">
+              <view class="answer-heading"><text>先了解您的棉田情况</text></view>
+              <text class="welcome-copy">您好！我是小棉。为了给出更准确的农事建议，您可以先从下面的问题开始：</text>
+              <view class="guide-list">
+                <view class="guide-item" bindtap="onQuickQuestion" data-text="棉花叶片出现虫害，应该怎么防治？">
+                  <text class="guide-number">01</text><text class="guide-label">防治什么病虫害？</text><text class="guide-arrow">›</text>
+                </view>
+                <view class="guide-item" bindtap="onQuickQuestion" data-text="棉花不同生育期应该如何管理？">
+                  <text class="guide-number">02</text><text class="guide-label">棉花现在处于哪个生育期？</text><text class="guide-arrow">›</text>
+                </view>
+                <view class="guide-item" bindtap="onQuickQuestion" data-text="不同种植面积如何计算水肥和用药量？">
+                  <text class="guide-number">03</text><text class="guide-label">种植面积有多少亩？</text><text class="guide-arrow">›</text>
+                </view>
+              </view>
+              <view wx:if="{{voiceSupported}}" class="welcome-play" bindtap="onPlayWelcome">
+                <view class="speaker-icon"><view></view></view><text>播放介绍</text>
+              </view>
+            </view>
+            <view class="quick-prompts">
+              <view class="quick-prompt" bindtap="onQuickQuestion" data-text="棉叶上有虫，帮我判断一下"><text>棉叶上有虫</text></view>
+              <view class="quick-prompt" bindtap="onQuickQuestion" data-text="不确定是什么病，应该怎么办？"><text>不确定什么病</text></view>
+            </view>
+          </view>
+        </view>
       </view>
 
       <view wx:for="{{messages}}" wx:key="id" id="msg{{item.id}}">
@@ -35,32 +69,30 @@
               <text wx:if="{{item.text}}" class="bubble-text">{{item.text}}</text>
             </view>
           </view>
+          <view class="user-avatar"><view class="user-head"></view><view class="user-shoulders"></view></view>
         </view>
 
         <view wx:else class="msg-row ai-row">
-          <view class="assistant-mark"><text class="assistant-mark-text">AI</text></view>
+          <view class="cotton-bot cotton-bot-small">
+            <view class="cotton-petal petal-top"></view><view class="cotton-petal petal-left"></view><view class="cotton-petal petal-right"></view>
+            <view class="cotton-face"><view class="eye eye-left"></view><view class="eye eye-right"></view><view class="smile"></view></view>
+            <view class="bot-leaf leaf-left"></view><view class="bot-leaf leaf-right"></view>
+          </view>
           <view class="msg-body ai-body">
-            <view class="message-meta">
-              <text class="assistant-name">{{copy.assistantName}}</text>
-              <text class="message-time">{{item.time}}</text>
-            </view>
-            <view class="ai-answer">
+            <view class="message-meta"><text class="assistant-name">小棉</text><text class="message-time">{{item.time}}</text></view>
+            <view class="ai-answer answer-card">
               <rich-text wx:if="{{item.richTextNodes}}" class="bubble-text" nodes="{{item.richTextNodes}}"></rich-text>
               <text wx:else class="bubble-text">{{item.text}}</text>
-            </view>
-            <view wx:if="{{item.speakable}}" class="message-actions">
-              <view class="replay-answer {{speaking && speakingMessageId === item.id ? 'active' : ''}}" bindtap="onReplayAnswer" data-id="{{item.id}}">
-                <text class="replay-answer-icon">{{speaking && speakingMessageId === item.id ? '■' : '🔊'}}</text>
-                <text class="replay-answer-text">{{copy.replayAnswer}}</text>
+              <view wx:if="{{item.speakable}}" class="message-actions">
+                <view class="replay-answer {{speaking && speakingMessageId === item.id ? 'active' : ''}}" bindtap="onReplayAnswer" data-id="{{item.id}}">
+                  <view class="speaker-icon"><view></view></view>
+                  <text class="replay-answer-text">{{speaking && speakingMessageId === item.id ? '停止播放' : copy.replayAnswer}}</text>
+                </view>
               </view>
             </view>
             <view wx:if="{{item.jump}}" class="jump-card" bindtap="onJump" data-url="{{item.jump.url}}" data-method="{{item.jump.method}}">
               <view class="jump-icon"><text>{{item.jump.icon}}</text></view>
-              <view class="jump-main">
-                <text class="jump-kicker">{{copy.jumpForYou}}</text>
-                <text class="jump-title">{{item.jump.title}}</text>
-                <text class="jump-desc">{{item.jump.desc}}</text>
-              </view>
+              <view class="jump-main"><text class="jump-kicker">{{copy.jumpForYou}}</text><text class="jump-title">{{item.jump.title}}</text><text class="jump-desc">{{item.jump.desc}}</text></view>
               <text class="jump-enter">{{copy.jumpEnter}}</text>
             </view>
           </view>
@@ -68,11 +100,11 @@
       </view>
 
       <view wx:if="{{typing}}" class="msg-row ai-row">
-        <view class="assistant-mark"><text class="assistant-mark-text">AI</text></view>
-        <view class="msg-body ai-body">
-          <text class="assistant-name">{{copy.assistantName}}</text>
-          <view class="typing-line"><view class="tdot"></view><view class="tdot"></view><view class="tdot"></view></view>
+        <view class="cotton-bot cotton-bot-small loading-bot">
+          <view class="cotton-petal petal-top"></view><view class="cotton-petal petal-left"></view><view class="cotton-petal petal-right"></view>
+          <view class="cotton-face"><view class="eye eye-left"></view><view class="eye eye-right"></view></view>
         </view>
+        <view class="msg-body ai-body"><view class="message-meta"><text class="assistant-name">小棉</text></view><view class="typing-line"><view class="tdot"></view><view class="tdot"></view><view class="tdot"></view></view></view>
       </view>
 
       <view id="bottom" class="scroll-anchor"></view>
@@ -80,17 +112,16 @@
   </scroll-view>
 
   <view class="chat-bottom">
-    <view class="composer-shell">
-      <view class="composer-tools">
-        <view class="voice-answer-toggle {{voiceAnswerEnabled ? 'on' : ''}}" bindtap="onToggleVoiceAnswer">
-          <view class="voice-answer-dot"></view>
-          <text>{{copy.voiceAnswer}}</text>
-          <text class="voice-answer-state">{{voiceAnswerEnabled ? copy.voiceAnswerOn : copy.voiceAnswerOff}}</text>
-        </view>
+    <view class="voice-status-bar">
+      <view class="voice-hint"><view class="tiny-mic"></view><text>{{recognizing ? copy.voiceRecognizing : ((recording || recordingStarting) ? copy.voiceRelease : '长按麦克风，可以直接说话')}}</text></view>
+      <view class="voice-answer-toggle {{voiceAnswerEnabled ? 'on' : ''}}" bindtap="onToggleVoiceAnswer">
+        <view class="mini-speaker"><view></view></view><text>{{copy.voiceAnswer}}</text><view class="switch"><view class="switch-knob"></view></view>
       </view>
+    </view>
+    <view class="composer-shell">
       <view class="input-row">
         <view class="mode-btn" bindtap="onToggleInput">
-          <text wx:if="{{voiceMode}}" class="keyboard-icon">⌨</text>
+          <text wx:if="{{voiceMode}}" class="keyboard-icon">键</text>
           <view wx:else class="microphone-icon"><view class="microphone-head"></view><view class="microphone-stem"></view></view>
         </view>
         <view wx:if="{{voiceMode}}" class="voice-wrap">

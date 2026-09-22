@@ -71,23 +71,22 @@ Page({
 
   renderLessons(rows) {
     const progress = readProgress()
+    const lastViewedId = progressStore.lastViewed(this.seriesId)
     const lessons = rows.map((item, index) => {
       if (item.rawType === 'quiz') {
         const result = (this.quizResults || {})[item.id]
-        return { ...item, progress: 0, completed: Boolean(result && result.passed), duration: item.duration + (result ? ` · 最高 ${result.score} 分 · ${result.passed?'已通过':'已作答'}` : ' · 待测验') }
+        return { ...item, progress: 0, completed: Boolean(result && result.passed), lastViewed: item.id === lastViewedId, duration: item.duration + (result ? ` · 最高 ${result.score} 分 · ${result.passed?'已通过':'已作答'}` : ' · 待测验') }
       }
       const percent = Math.max(0, Math.min(100, Number(progress[item.id] || 0)))
-      return { ...item, lessonNo: Number(item.lessonNo || index + 1), progress: percent, completed: percent >= 90 }
+      return { ...item, lessonNo: Number(item.lessonNo || index + 1), progress: percent, completed: percent >= 100, lastViewed: item.id === lastViewedId }
     })
-    const next = lessons.find(item => item.progress > 0 && !item.completed) || lessons.find(item => !item.completed) || lessons[0]
-    this.setData({ lessons, completed: lessons.filter(item => item.completed).length, nextId: next && next.id, continueLabel: lessons.some(item => item.progress > 0) ? '继续学习' : '开始学习' })
+    this.setData({ lessons, completed: lessons.filter(item => item.completed).length })
   },
 
   navigateContent(id) {
     const item = this.data.lessons.find(row => row.id === id)
     wx.navigateTo({ url: `/pages/academy/${item && item.rawType === 'quiz' ? 'quiz' : 'course'}?id=${encodeURIComponent(id)}` })
   },
-  startLearning() { if (this.data.nextId && this.canOpenProtectedCourse()) this.navigateContent(this.data.nextId) },
   toggleIntro() { this.setData({ introExpanded: !this.data.introExpanded }) },
 
   openLesson(event) {

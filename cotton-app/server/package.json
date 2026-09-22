@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "test:academy-watch": "node tests/academy-watch.test.js && node tests/academy-workflow.test.js && node tests/learning-center.test.js",
     "migrate:runtime": "node db/migrate_openid.js && node db/migrate_miniapp_identities.js && node db/migrate_machines.js && node db/migrate_profit_sharing.js && node db/migrate_commission_requests.js && node db/migrate_farmer_improvements.js && node db/migrate_machine_reliability.js && node db/migrate_points.js && node db/migrate_pest_recognitions.js && node db/migrate_academy.js",
     "test:public-auth": "node tests/miniapp-clients.test.js && node tests/multi-role-auth.test.js",
     "migrate:marketing": "node db/migrate_marketing.js",

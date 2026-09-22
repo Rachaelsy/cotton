@@ -172,25 +172,25 @@
         </view>
         <view class="field-row">
           <text class="field-label">{{copy.sowDate}}</text>
-          <picker mode="date" value="{{form.sowDate}}" bindchange="onSowDateChange">
+          <picker class="field-picker-control" mode="date" value="{{form.sowDate}}" bindchange="onSowDateChange">
             <view class="field-picker"><text class="{{form.sowDate ? 'picker-val' : 'picker-placeholder'}}">{{form.sowDate || copy.chooseDate}}</text><text class="picker-more">{{common.select}}</text></view>
           </picker>
         </view>
         <view class="field-row">
           <text class="field-label">{{copy.irrigation}}</text>
-          <picker mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange">
+          <picker class="field-picker-control" mode="selector" range="{{irrigationOptions}}" value="{{irrigationIndex}}" bindchange="onIrrChange">
             <view class="field-picker"><text class="picker-val">{{irrigationOptions[irrigationIndex]}}</text><text class="picker-more">{{common.change}}</text></view>
           </picker>
         </view>
         <view class="field-row">
           <text class="field-label">{{copy.soil}}</text>
-          <picker mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange">
+          <picker class="field-picker-control" mode="selector" range="{{soilOptions}}" value="{{soilIndex}}" bindchange="onSoilChange">
             <view class="field-picker"><text class="picker-val">{{soilOptions[soilIndex]}}</text><text class="picker-more">{{common.change}}</text></view>
           </picker>
         </view>
         <view class="field-row">
           <text class="field-label">{{copy.planting}}</text>
-          <picker mode="selector" range="{{plantingOptions}}" value="{{plantingIndex}}" bindchange="onPlantingChange">
+          <picker class="field-picker-control" mode="selector" range="{{plantingOptions}}" value="{{plantingIndex}}" bindchange="onPlantingChange">
             <view class="field-picker"><text class="picker-val">{{plantingOptions[plantingIndex]}}</text><text class="picker-more">{{common.change}}</text></view>
           </picker>
         </view>

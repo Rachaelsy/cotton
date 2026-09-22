@@ -50,7 +50,7 @@ async function run() {
       teacher_title VARCHAR(120) DEFAULT '棉花栽培课程',
       cover_url VARCHAR(500) DEFAULT '',
       cover_object_key VARCHAR(500) DEFAULT '',
-      feed_token VARCHAR(1000) NOT NULL DEFAULT '',
+      video_url VARCHAR(2000) NOT NULL DEFAULT '',
       duration_seconds INT UNSIGNED NOT NULL DEFAULT 60,
       objectives_json VARCHAR(2000) DEFAULT '[]',
       status ENUM('draft','published','offline') NOT NULL DEFAULT 'draft',
@@ -66,8 +66,12 @@ async function run() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='优棉学堂课程'
   `)
 
-  await ensureColumn('feed_token', "VARCHAR(1000) NOT NULL DEFAULT '' AFTER cover_object_key")
-  await db.query("UPDATE academy_courses SET status='draft' WHERE type='video' AND status='published' AND feed_token=''")
+  await ensureColumn('video_url', "VARCHAR(2000) NOT NULL DEFAULT '' AFTER cover_object_key")
+  const [[videoColumn]] = await db.query("SELECT CHARACTER_MAXIMUM_LENGTH max_length FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='academy_courses' AND COLUMN_NAME='video_url'")
+  if (videoColumn && Number(videoColumn.max_length) < 2000) {
+    await db.query("ALTER TABLE academy_courses MODIFY video_url VARCHAR(2000) DEFAULT ''")
+  }
+  await db.query("UPDATE academy_courses SET status='draft' WHERE type='video' AND status='published' AND (video_url IS NULL OR TRIM(video_url)='' OR video_url NOT LIKE 'https://%')")
   await ensureColumn('series_key', "VARCHAR(80) NOT NULL DEFAULT '' AFTER course_key")
   await ensureColumn('lesson_no', "INT UNSIGNED NOT NULL DEFAULT 1 AFTER series_key")
   const [[typeColumn]] = await db.query("SELECT COLUMN_TYPE column_type FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='academy_courses' AND COLUMN_NAME='type'")
@@ -116,6 +120,16 @@ async function run() {
     PRIMARY KEY(user_id,course_key)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`)
   await ensureProgressColumn('completed_at', 'DATETIME DEFAULT NULL AFTER course_key')
+  await ensureProgressColumn('video_version', "VARCHAR(64) NOT NULL DEFAULT ''")
+  await ensureProgressColumn('watched_ranges', 'MEDIUMTEXT NULL')
+  await ensureProgressColumn('watched_seconds', 'DOUBLE NOT NULL DEFAULT 0')
+  await ensureProgressColumn('last_position', 'DOUBLE NOT NULL DEFAULT 0')
+  await ensureProgressColumn('completion_source', "VARCHAR(16) NOT NULL DEFAULT 'legacy'")
+  await db.query(`CREATE TABLE IF NOT EXISTS academy_watch_sessions (
+    id VARCHAR(64) PRIMARY KEY,user_id INT UNSIGNED NOT NULL,course_key VARCHAR(80) NOT NULL,
+    video_version VARCHAR(64) NOT NULL,last_sequence INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,INDEX idx_watch_created(created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`)
   await db.query(`CREATE TABLE IF NOT EXISTS academy_learning_points (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNSIGNED NOT NULL,

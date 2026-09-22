@@ -30,6 +30,7 @@
         <view class="metric-divider"></view>
         <view class="metric-item"><strong>{{series.length}}</strong><text>学习系列</text></view>
       </view>
+      <text class="learning-time">累计有效学习 {{watchedTime}}</text>
       <view class="overview-line"></view>
       <view class="points-entry" bindtap="openPoints">
         <view class="points-label"><view class="points-star">★</view><text>学习积分</text></view>
@@ -90,7 +91,7 @@
   <view class="points-page" wx:if="{{showPoints}}">
     <view class="nav" style="padding-top:{{statusBarHeight}}px"><view class="back" bindtap="closePoints">‹</view><text>积分明细</text><view class="space"></view></view>
     <scroll-view class="points-content" scroll-y>
-      <view class="points-total"><text>累计学习积分</text><strong>{{summary.totalPoints}}</strong><small>首次标记完成课时获得，重复操作不重复计分</small></view>
+      <view class="points-total"><text>累计学习积分</text><strong>{{summary.totalPoints}}</strong><small>首次有效观看达到95%自动获得，重复观看不重复计分</small></view>
       <view class="rules"><strong>积分规则</strong><view><text>初级课时</text><b>+5</b><text>中级课时</text><b>+8</b><text>高级课时</text><b>+10</b></view></view>
       <view class="records">
         <strong>积分记录</strong>

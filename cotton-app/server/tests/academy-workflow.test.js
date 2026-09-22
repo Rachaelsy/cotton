@@ -11,8 +11,8 @@ const db = { query: async (sql, params) => { queries.push({ sql, params }); retu
 const router = {}
 ;['get','post','put','patch','delete'].forEach(method => { router[method] = (url, ...handlers) => routes.set(`${method} ${url}`, handlers) })
 vm.runInNewContext(read('cotton-app/server/routes/academy.js'), {
-  require: name => name === './academy-quiz' ? require('../routes/academy-quiz') : name === 'express' ? { Router: () => router } : name === '../db/database' ? db : name === 'jsonwebtoken' ? { verify: () => ({ id: 1, role: 'farmer' }) } : require(name),
-  module: { exports: {} }, process: { env: {} }, console, Buffer
+  require: name => name === './academy-watch' ? require('../routes/academy-watch') : name === './academy-quiz' ? require('../routes/academy-quiz') : name === 'express' ? { Router: () => router } : name === '../db/database' ? db : name === 'jsonwebtoken' ? { verify: () => ({ id: 1, role: 'farmer' }) } : require(name),
+  module: { exports: {} }, process: { env: {} }, console, Buffer, URL
 })
 async function invoke(method, url, req = {}) {
   let result; let status = 200
@@ -22,6 +22,26 @@ async function invoke(method, url, req = {}) {
   return { status, result }
 }
 async function run() {
+  const playback = 'https://media.example.com/course.mp4?sign=keep-me'
+  const videoBody = { title: 'VOD课时', seriesKey: 'series', type: 'video', status: 'published', videoUrl: playback }
+  responder = sql => sql.startsWith('SELECT level') ? [[{ level: 'basic' }]] : [{ insertId: 1, affectedRows: 1 }]
+  assert.equal((await invoke('post', '/admin/courses', { body: videoBody })).status, 200)
+  const insert = queries.find(q => q.sql.includes('INSERT INTO academy_courses'))
+  assert.ok(insert.params.includes(playback), '保存完整地址和签名参数')
+  assert.equal((insert.sql.match(/\?/g) || []).length, insert.params.length, '创建语句参数必须匹配')
+  for (const videoUrl of ['', 'http://media.example.com/a.mp4', 'javascript:alert(1)', 'https://user:password@example.com/a.mp4']) {
+    assert.equal((await invoke('post', '/admin/courses', { body: { ...videoBody, videoUrl } })).status, 400)
+  }
+  assert.equal((await invoke('post', '/admin/courses', { body: { ...videoBody, status: 'draft', videoUrl: 'http://media.example.com/a.mp4' } })).status, 400, '草稿中的无效地址也不能静默清空')
+  queries = []
+  responder = sql => sql.startsWith('SELECT course_key,type') ? [[{ course_key: 'existing', type: 'video' }]] : sql.startsWith('SELECT level') ? [[{ level: 'basic' }]] : [{ affectedRows: 1 }]
+  assert.equal((await invoke('put', '/admin/courses/:id', { params: { id: 1 }, body: videoBody })).status, 200)
+  const update = queries.find(q => q.sql.startsWith('UPDATE academy_courses'))
+  assert.equal((update.sql.match(/\?/g) || []).length, update.params.length)
+  assert.ok(update.params.includes(playback))
+  responder = () => [[{ type: 'video', video_url: '' }]]
+  assert.equal((await invoke('patch', '/admin/courses/:id/status', { params: { id: 1 }, body: { status: 'published' } })).status, 400)
+  queries = []
   responder = () => [{ insertId: 7 }]
   await invoke('post', '/admin/series', { body: { title: '播种课程' } })
   assert.match(queries.at(-1).params[0], /^series-[a-f0-9]{24}$/)
@@ -47,23 +67,7 @@ async function run() {
   responder = () => [[{ id: 9, course_key: 'advanced-lesson', level: 'advanced', status: 'published' }]]
   const lockedCourse = await invoke('get', '/courses/:courseId', { params: { courseId: 'advanced-lesson' } })
   assert.equal(lockedCourse.status, 401, 'direct advanced course links must require login')
-  let completed = false; let pointAwarded = false
-  db.getConnection = async () => ({
-    beginTransaction: async () => {}, commit: async () => {}, rollback: async () => {}, release: () => {},
-    query: async (sql, params) => {
-      if (sql.includes('SELECT c.level')) return [[{ level: 'basic' }]]
-      if (sql.startsWith('SELECT completed_at')) return completed ? [[{ completed_at: new Date() }]] : [[]]
-      if (sql.startsWith('INSERT IGNORE INTO academy_progress')) { completed = true; return [{ affectedRows: 1 }] }
-      if (sql.startsWith('INSERT IGNORE INTO academy_learning_points')) { const affectedRows = pointAwarded ? 0 : 1; pointAwarded = true; return [{ affectedRows }] }
-      if (sql.startsWith('SELECT COALESCE(SUM(points)')) return [[{ total: pointAwarded ? 5 : 0 }]]
-      return [{ affectedRows: 1 }]
-    }
-  })
-  const firstComplete = await invoke('post', '/courses/:courseId/complete', { params: { courseId: 'lesson' }, viewer: { id: 42 } })
-  assert.equal(firstComplete.result.data.completed, true)
-  assert.equal(firstComplete.result.data.awardedPoints, 5)
-  const repeatedComplete = await invoke('post', '/courses/:courseId/complete', { params: { courseId: 'lesson' }, viewer: { id: 42 } })
-  assert.equal(repeatedComplete.result.data.awardedPoints, 0, 'repeated completion must not award points twice')
+  assert.equal((await invoke('post', '/courses/:courseId/complete', { params: { courseId: 'lesson' } })).status, 409, '旧手动完成接口不得继续发放积分')
   let committed = false; let rolledBack = false; const orderUpdates = []
   db.getConnection = async () => ({
     beginTransaction: async () => {}, commit: async () => { committed = true }, rollback: async () => { rolledBack = true }, release: () => {},
@@ -85,7 +89,7 @@ async function run() {
   const progressModule = { exports: {} }
   vm.runInNewContext(read('cotton-public/utils/academy-progress.js'), { require: () => auth, module: progressModule, wx, console })
   const progress = progressModule.exports
-  await progress.complete('lesson')
+  progress.save('lesson', { completed: true, percent: 100 })
   assert.equal(progress.read().lesson.completed, true)
   user = { id: 2 }; assert.equal(progress.read().lesson, undefined)
   user = { id: 1 }; assert.equal(progress.percentages().lesson, 100)
